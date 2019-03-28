@@ -1,0 +1,3 @@
+syntax: glob
+bds-types/target/
+eml-handler/target/
