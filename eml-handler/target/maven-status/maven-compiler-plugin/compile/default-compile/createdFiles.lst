@@ -1,0 +1,5 @@
+it\bologna\ausl\eml\handler\EmlHandlerException.class
+it\bologna\ausl\eml\handler\EmlHandler.class
+it\bologna\ausl\eml\handler\EmlHandlerResult.class
+it\bologna\ausl\eml\handler\EmlHandlerUtils.class
+it\bologna\ausl\eml\handler\EmlHandlerAttachment.class

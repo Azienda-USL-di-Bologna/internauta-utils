@@ -12,6 +12,7 @@
     <!-- sub modules -->
     <modules>
         <module>eml-handler</module>
+        <module>bds-types</module>
     </modules>
     <name>internauta-utils</name>
 </project>
