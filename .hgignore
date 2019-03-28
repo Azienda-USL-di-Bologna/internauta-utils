@@ -1,2 +1,3 @@
 syntax: glob
-jpa-tools/target
+bds-types/target/
+eml-handler/target/
