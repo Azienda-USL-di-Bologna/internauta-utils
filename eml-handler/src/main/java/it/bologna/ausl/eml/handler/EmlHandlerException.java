@@ -15,4 +15,8 @@ public class EmlHandlerException extends Exception {
 		
 		super (message,cause);
 	}
+        
+//        public EmlHandlerResultException (String message) {
+//		super (message);
+//	}
 }

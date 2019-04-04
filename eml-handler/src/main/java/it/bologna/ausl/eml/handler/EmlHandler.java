@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import org.apache.commons.lang3.tuple.Pair;
 
 
 
@@ -209,5 +212,45 @@ public class EmlHandler {
 		return res;
 		
 	}
+        public static InputStream getAttachment(String emlPath, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
+		FileInputStream is = null;
+		MimeMessage m = null;
+		try {
+			try {
+				is = new FileInputStream(emlPath);
+			} catch (FileNotFoundException e) {
+				throw new EmlHandlerException(
+                            "Unable to open file " + emlPath, e);
+			}
+			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+			return EmlHandlerUtils.getAttachment(m, idAllegato);
+		} finally {
+			try {
+				is.close();
+			} catch (IOException e) {
 
+			}
+		}
+        }
+        
+        public static List<Pair> getAttachments(String emlPath) throws EmlHandlerException, MessagingException, IOException {
+		FileInputStream is = null;
+		MimeMessage m = null;
+		try {
+			try {
+				is = new FileInputStream(emlPath);
+			} catch (FileNotFoundException e) {
+				throw new EmlHandlerException(
+                            "Unable to open file " + emlPath, e);
+			}
+			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+			return EmlHandlerUtils.getAttachments(m);
+		} finally {
+			try {
+				is.close();
+			} catch (IOException e) {
+
+			}
+		}
+        }
 }
