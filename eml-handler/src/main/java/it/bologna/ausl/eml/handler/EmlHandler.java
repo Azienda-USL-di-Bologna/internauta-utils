@@ -5,252 +5,292 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
+import javax.mail.Address;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeUtility;
 import org.apache.commons.lang3.tuple.Pair;
-
-
 
 /**
  * @author andrea zucchelli
  * <br>
  * <p>
- * Questa classe prende in carico un file eml contentente una email.
- * Il file viene parsato, vengono estratti il contenuto testuale sia in formato testo che html,
- * le meta informazioni piu' significative e vengono estratti gli allegati.
- * Questi vengono salvati su filesystem, ogni allegao e' descritto da un oggetto di tipo {@link EmlHandlerAttachment}
+ * Questa classe prende in carico un file eml contentente una email. Il file
+ * viene parsato, vengono estratti il contenuto testuale sia in formato testo
+ * che html, le meta informazioni piu' significative e vengono estratti gli
+ * allegati. Questi vengono salvati su filesystem, ogni allegao e' descritto da
+ * un oggetto di tipo {@link EmlHandlerAttachment}
  * </p>
  */
-
-
 public class EmlHandler {
-	
-	private String rawMessage;
-	private File workingDir;
-	
-	public EmlHandler ()
-	{
-		
-	}
-	
-	public void setParameters(String message,String dir)
-	{
-		rawMessage=message;
-		if (dir != null)
-			workingDir=new File(dir);
-		else
-			dir=null;
-	}
-	
-	public EmlHandlerResult handleRawEml() throws EmlHandlerException
-	{
-		return handleRawEml(rawMessage,workingDir);
-	}
-	
-	public static EmlHandlerResult handleEml(String filePath)
-			throws EmlHandlerException {
-		FileInputStream is = null;
-		MimeMessage m = null;
-		EmlHandlerResult res = null;
 
-		try {
-			File in = new File(filePath);
-			File dir = new File(in.getParent());
+    private String rawMessage;
+    private File workingDir;
 
-			try {
-				is = new FileInputStream(filePath);
-			} catch (FileNotFoundException e) {
-				throw new EmlHandlerException(
-						"Unable to open file " + filePath, e);
-			}
-			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-			res = processEml(m, dir);
-			return res;
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
+    public EmlHandler() {
 
-			}
-		}
-	
-	}
-	
-	
-	public static EmlHandlerResult handleEml(String filePath, String workingDir)
-			throws EmlHandlerException {
+    }
 
-		FileInputStream is = null;
-		MimeMessage m = null;
-		EmlHandlerResult res = null;
-
-		File dir = null;
-
-		try {
-			if (workingDir != null) {
-				dir = new File(workingDir);
-				if (!dir.exists() || !dir.canWrite()) {
-					throw new EmlHandlerException("Working dir: '" + workingDir
-							+ "' must exists and be writeable :F");
-				}
-			}
-			try {
-				is = new FileInputStream(filePath);
-			} catch (FileNotFoundException e) {
-				throw new EmlHandlerException(
-						"Unable to open file " + filePath, e);
-			}
-			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-			res = processEml(m, dir);
-			return res;
-
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-
-			}
-		}
-
-	}
-	
-	
-	public static EmlHandlerResult handleRawEml(String rawMessage,File working_dir) throws EmlHandlerException{
-		
-		MimeMessage m=null;
-		EmlHandlerResult res=null;
-		
-		m=EmlHandlerUtils.BuildMailMessageFromString(rawMessage);
-		//TODO: decidere cosa fare con il path
-		res=processEml(m,working_dir);
-		return res;
-		
-	
-	}
-	
-	/**
-	 * 
-	 * @param filePath patj del file contenente il file eml da parsare e gestire
-	 * @return EmlHandlerResult contenente il risultato dell'elaborazione
-	 * @throws EmlHandlerException
-	 */
-	private static EmlHandlerResult processEml(MimeMessage m,File working_dir) throws EmlHandlerException
-	{ 
-		
-		File dir=working_dir;
-		EmlHandlerResult res=new EmlHandlerResult();
-		
-		try {
-			res.setFrom(m.getFrom()[0]);
-		} catch (MessagingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			res.setTo(m.getRecipients(Message.RecipientType.TO));
-		} catch (MessagingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			res.setCc(m.getRecipients(Message.RecipientType.CC));
-		} catch (MessagingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			res.setSubject(m.getSubject());
-		} catch (MessagingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
-			res.setSendDate(m.getSentDate());
-		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			res.setMessageId(m.getMessageID());
-		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		try {
-			res.setPlainText(EmlHandlerUtils.getText(m));
-		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			res.setHtmlText(EmlHandlerUtils.getHtml(m));
-		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			if (dir!=null){
-				res.setAttachments(EmlHandlerUtils.getAttachments(m, dir));
-			}
-		} catch (MessagingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return res;
-		
-	}
-        public static InputStream getAttachment(String emlPath, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
-		FileInputStream is = null;
-		MimeMessage m = null;
-		try {
-			try {
-				is = new FileInputStream(emlPath);
-			} catch (FileNotFoundException e) {
-				throw new EmlHandlerException(
-                            "Unable to open file " + emlPath, e);
-			}
-			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-			return EmlHandlerUtils.getAttachment(m, idAllegato);
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-
-			}
-		}
+    public void setParameters(String message, String dir) {
+        rawMessage = message;
+        if (dir != null) {
+            workingDir = new File(dir);
+        } else {
+            dir = null;
         }
-        
-        public static List<Pair> getAttachments(String emlPath) throws EmlHandlerException, MessagingException, IOException {
-		FileInputStream is = null;
-		MimeMessage m = null;
-		try {
-			try {
-				is = new FileInputStream(emlPath);
-			} catch (FileNotFoundException e) {
-				throw new EmlHandlerException(
-                            "Unable to open file " + emlPath, e);
-			}
-			m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-			return EmlHandlerUtils.getAttachments(m);
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
+    }
 
-			}
-		}
+    public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException {
+        return handleRawEml(rawMessage, workingDir);
+    }
+
+    public static EmlHandlerResult handleEml(String filePath)
+            throws EmlHandlerException, UnsupportedEncodingException {
+        FileInputStream is = null;
+        MimeMessage m = null;
+        EmlHandlerResult res = null;
+
+        try {
+            File in = new File(filePath);
+            File dir = new File(in.getParent());
+
+            try {
+                is = new FileInputStream(filePath);
+            } catch (FileNotFoundException e) {
+                throw new EmlHandlerException(
+                        "Unable to open file " + filePath, e);
+            }
+            m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+            res = processEml(m, dir);
+            return res;
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
         }
+
+    }
+
+    public static EmlHandlerResult handleEml(String filePath, String workingDir)
+            throws EmlHandlerException, UnsupportedEncodingException {
+
+        FileInputStream is = null;
+        MimeMessage m = null;
+        EmlHandlerResult res = null;
+
+        File dir = null;
+
+        try {
+            if (workingDir != null) {
+                dir = new File(workingDir);
+                if (!dir.exists() || !dir.canWrite()) {
+                    throw new EmlHandlerException("Working dir: '" + workingDir
+                            + "' must exists and be writeable :F");
+                }
+            }
+            try {
+                is = new FileInputStream(filePath);
+            } catch (FileNotFoundException e) {
+                throw new EmlHandlerException(
+                        "Unable to open file " + filePath, e);
+            }
+            m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+            res = processEml(m, dir);
+            return res;
+
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+
+    }
+
+    public static EmlHandlerResult handleRawEml(String rawMessage, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+
+        MimeMessage m = null;
+        EmlHandlerResult res = null;
+
+        m = EmlHandlerUtils.BuildMailMessageFromString(rawMessage);
+        //TODO: decidere cosa fare con il path
+        res = processEml(m, working_dir);
+        return res;
+
+    }
+
+    /**
+     *
+     * @param filePath patj del file contenente il file eml da parsare e gestire
+     * @return EmlHandlerResult contenente il risultato dell'elaborazione
+     * @throws EmlHandlerException
+     */
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+
+        File dir = working_dir;
+        EmlHandlerResult res = new EmlHandlerResult();
+
+        try {
+            Address[] from = m.getFrom();
+            if (from != null && from[0] != null) {
+                res.setFrom(MimeUtility.decodeText(from[0].toString()));
+            }
+        } catch (MessagingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        try {
+            Address[] recipients = m.getRecipients(Message.RecipientType.TO);
+            if (recipients != null) {
+                String[] rec = new String[recipients.length];
+                for (int i = 0; i < recipients.length; i++) {
+                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                }
+                res.setTo(rec);
+            }
+        } catch (MessagingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        try {
+            Address[] recipients = m.getRecipients(Message.RecipientType.CC);
+            if (recipients != null) {
+                String[] rec = new String[recipients.length];
+                for (int i = 0; i < recipients.length; i++) {
+                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                }
+                res.setCc(rec);
+            }
+        } catch (MessagingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        try {
+            res.setSubject(m.getSubject());
+        } catch (MessagingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        try {
+            res.setSendDate(m.getSentDate());
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        try {
+            res.setMessageId(m.getMessageID());
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        try {
+            res.setPlainText(EmlHandlerUtils.getText(m));
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        try {
+            res.setHtmlText(EmlHandlerUtils.getHtml(m));
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        try {
+            if (dir != null) {
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir));
+            }
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        try {
+            if (res.getHtmlText() != null) {
+                res.setHtmlTextImgEmbedded(EmlHandlerUtils.getHtmlWithImg(m, res));
+            }
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return res;
+
+    }
+    
+    /**
+     * Metodo che restituisce l'allegato richiesto
+     * @param emlPath
+     * @param idAllegato
+     * @return
+     * @throws EmlHandlerException
+     * @throws MessagingException
+     * @throws IOException 
+     */
+    public static InputStream getAttachment(String emlPath, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
+        FileInputStream is = null;
+        MimeMessage m = null;
+        try {
+            try {
+                is = new FileInputStream(emlPath);
+            } catch (FileNotFoundException e) {
+                throw new EmlHandlerException(
+                        "Unable to open file " + emlPath, e);
+            }
+            m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+            return EmlHandlerUtils.getAttachment(m, idAllegato);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+    }
+
+    /**
+     * Metodo utile al ritorno degli allegati dell'eml per metterli in uno zip
+     * @param emlPath
+     * @return
+     * @throws EmlHandlerException
+     * @throws MessagingException
+     * @throws IOException 
+     */
+    public static List<Pair> getAttachments(String emlPath) throws EmlHandlerException, MessagingException, IOException {
+        FileInputStream is = null;
+        MimeMessage m = null;
+        try {
+            try {
+                is = new FileInputStream(emlPath);
+            } catch (FileNotFoundException e) {
+                throw new EmlHandlerException(
+                        "Unable to open file " + emlPath, e);
+            }
+            m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+            return EmlHandlerUtils.getAttachments(m);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+    }
 }
