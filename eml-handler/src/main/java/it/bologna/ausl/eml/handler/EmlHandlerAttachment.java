@@ -21,6 +21,7 @@ public class EmlHandlerAttachment {
     private String mimeType;
     private Integer size;
     private Boolean forHtmlAttribute;
+    private byte[] fileBytes;
 
     public Integer getId() {
         return id;
@@ -76,6 +77,14 @@ public class EmlHandlerAttachment {
 
     public void setForHtmlAttribute(Boolean forHtmlAttribute) {
         this.forHtmlAttribute = forHtmlAttribute;
+    }
+
+    public byte[] getFileBytes() {
+        return fileBytes;
+    }
+
+    public void setFileBytes(byte[] fileBytes) {
+        this.fileBytes = fileBytes;
     }
     
     public String toString() {
