@@ -18,6 +18,15 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import com.google.common.io.BaseEncoding;
+import com.google.common.io.ByteStreams;
+import com.sun.mail.util.BASE64DecoderStream;
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.helper.StringUtil;
 
 public class EmlHandlerUtils {
 
@@ -98,6 +107,32 @@ public class EmlHandlerUtils {
         return null;
 
     }
+    
+    public static String getHtmlWithImg(Part p, EmlHandlerResult ehr) throws MessagingException, IOException {
+        Document doc = Jsoup.parse(ehr.getHtmlText());
+        String src = null, id = null;
+        Elements imgs = doc.select("img");
+        
+        for(Element img : imgs) {
+            src = img.attr("src");
+            id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
+            for (EmlHandlerAttachment a : ehr.getAttachments()) {
+                if (a.getContentId().equals(id)) {
+                    if (!a.getMimeType().startsWith("image")) {
+                        break;
+                    }
+                    Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
+                    BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                    String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                    doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
+                    a.setForHtmlAttribute(true);
+                    break;
+                }
+            }
+        }
+
+        return doc.outerHtml();
+    }
 
     private static File saveFile(String fileName, File dir, InputStream is) throws IOException {
 
@@ -165,6 +200,7 @@ public class EmlHandlerUtils {
 
         ArrayList<Part> parts = getAllParts(p);
         Integer i = 0;
+        String[] contentId = null;
         for (Part part : parts) {
             //Part part = mp.getBodyPart(i);
             String disposition = null;
@@ -196,6 +232,11 @@ public class EmlHandlerUtils {
                 a.setSize(size);
                 a.setMimeType(part.getContentType());
                 a.setId(i);
+                contentId = part.getHeader("Content-Id");
+                if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
+                    a.setContentId(part.getHeader("Content-Id")[0].replaceAll("[<>]", ""));
+                }
+                
                 //a.setFilePath(saveFile(filename, dirPath, part.getInputStream()).getAbsolutePath());
                 res.add(a);
             }
@@ -254,6 +295,42 @@ public class EmlHandlerUtils {
             if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)) || (disposition.equals(Part.INLINE)))) || (part.getFileName() != null)) {
                 if (idAllegato.equals(i)) {
                     return part.getInputStream();
+                }
+            }
+            i++;
+        }
+        // TODO: Non ho trovato l'allegato richiesto. Lancio eccezione
+        return null;
+    }
+    
+    public static Object getAttachmentContent(Part p, Integer idAllegato) throws MessagingException, IOException {
+
+        if (!p.isMimeType("multipart/*")) {
+            if (idAllegato.equals(0)) {
+                return p.getContent();
+            } else {
+                // TODO: Lancio eccezione
+            }
+        }
+        
+        ArrayList<Part> parts = getAllParts(p);
+        Integer i = 0;
+        for (Part part : parts) {
+            String disposition = null;
+            try {
+                disposition = part.getDisposition();
+            } catch (javax.mail.internet.ParseException e) {
+                String disp = part.getHeader("Content-Disposition")[0];
+                System.out.println("Original disp: " + disp);
+                disp = disp.replaceAll("^(.*)filename=(.*)(;)?(.*)$", "$1filename=\"$2\"$3$4");
+                System.out.println("New disp disp: " + disp);
+                part.setHeader("Content-Disposition", disp);
+                disposition = part.getDisposition();
+            }
+
+            if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)) || (disposition.equals(Part.INLINE)))) || (part.getFileName() != null)) {
+                if (idAllegato.equals(i)) {
+                    return part.getContent();
                 }
             }
             i++;
