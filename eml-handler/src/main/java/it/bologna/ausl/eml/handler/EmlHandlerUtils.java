@@ -120,18 +120,20 @@ public class EmlHandlerUtils {
         
         for(Element img : imgs) {
             src = img.attr("src");
-            id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
-            for (EmlHandlerAttachment a : ehr.getAttachments()) {
-                if (a.getContentId().equals(id)) {
-                    if (!a.getMimeType().startsWith("image")) {
+            if (src.startsWith("cid:")) {
+                id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
+                for (EmlHandlerAttachment a : ehr.getAttachments()) {
+                    if (a.getContentId().equals(id)) {
+                        if (!a.getMimeType().startsWith("image")) {
+                            break;
+                        }
+                        Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
+                        BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                        String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
+                        a.setForHtmlAttribute(true);
                         break;
                     }
-                    Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
-                    BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
-                    String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
-                    doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
-                    a.setForHtmlAttribute(true);
-                    break;
                 }
             }
         }
