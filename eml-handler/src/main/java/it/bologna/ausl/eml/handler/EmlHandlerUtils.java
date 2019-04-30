@@ -385,13 +385,18 @@ public class EmlHandlerUtils {
      * @param to Array degli indirizzi a cui spedire la mail
      * @param cc Array degli indirizzi da inserire come Copia Carbone
      * @param attachments Gli allegati
+     * @param props JavaMail properties opzionale, se non si vuole passare settare null
      * @return MimeMessage Ritorna la mail
      * @throws MessagingException
      */
-    public MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, ArrayList<EmlHandlerAttachment> attachments) throws MessagingException {
+    public MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
         
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
+        if (props != null) {
+            mailSender.setJavaMailProperties(props);
+        }
         MimeMessage m = mailSender.createMimeMessage();
         m.setFrom(from);
 
