@@ -7,15 +7,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-
+import javax.activation.DataHandler;
+import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.Session;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeUtility;
+import javax.mail.util.ByteArrayDataSource;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.Jsoup;
@@ -26,7 +31,7 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.helper.StringUtil;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class EmlHandlerUtils {
 
@@ -115,18 +120,20 @@ public class EmlHandlerUtils {
         
         for(Element img : imgs) {
             src = img.attr("src");
-            id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
-            for (EmlHandlerAttachment a : ehr.getAttachments()) {
-                if (a.getContentId().equals(id)) {
-                    if (!a.getMimeType().startsWith("image")) {
+            if (src.startsWith("cid:")) {
+                id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
+                for (EmlHandlerAttachment a : ehr.getAttachments()) {
+                    if (a.getContentId().equals(id)) {
+                        if (!a.getMimeType().startsWith("image")) {
+                            break;
+                        }
+                        Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
+                        BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                        String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
+                        a.setForHtmlAttribute(true);
                         break;
                     }
-                    Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
-                    BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
-                    String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
-                    doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
-                    a.setForHtmlAttribute(true);
-                    break;
                 }
             }
         }
@@ -368,4 +375,71 @@ public class EmlHandlerUtils {
         
         return pairs;
     }
+    
+    /**
+     * Il metodo costruisce la mail, può essere utilizzato sia per il salvataggio della bozza che per la spedizione della mail
+     * 
+     * @param message Il testo della mail
+     * @param subject L'oggetto della mail
+     * @param from L'indirizzo del mittente
+     * @param to Array degli indirizzi a cui spedire la mail
+     * @param cc Array degli indirizzi da inserire come Copia Carbone
+     * @param attachments Gli allegati
+     * @param props JavaMail properties opzionale, se non si vuole passare settare null
+     * @return MimeMessage Ritorna la mail
+     * @throws MessagingException
+     */
+    public MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
+        
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        
+        if (props != null) {
+            mailSender.setJavaMailProperties(props);
+        }
+        MimeMessage m = mailSender.createMimeMessage();
+        m.setFrom(from);
+
+        if (to != null) {
+            m.setRecipients(MimeMessage.RecipientType.TO, to);
+        }
+
+        if (cc != null) {
+            m.setRecipients(MimeMessage.RecipientType.CC, cc);
+        }
+
+        if (subject != null) {
+            m.setSubject(subject);
+        }
+
+        if (attachments == null) {
+            m.setContent(message, "text/html");
+        } else {
+            // create the message part
+            MimeBodyPart messageBodyPart = new MimeBodyPart();
+
+            //fill message
+            messageBodyPart.setText(message, "utf-8", "html");
+
+            Multipart multipart = new MimeMultipart();
+            multipart.addBodyPart(messageBodyPart);
+
+            // Part two is attachment
+                        
+            for (EmlHandlerAttachment attachment : attachments) {
+                messageBodyPart = new MimeBodyPart();
+                byte[] fileBytes = attachment.getFileBytes();
+                String attachmentName = attachment.getFileName();
+                ByteArrayDataSource source
+                        = new ByteArrayDataSource(fileBytes, attachment.getMimeType());
+                messageBodyPart.setDataHandler(
+                        new DataHandler(source));
+                messageBodyPart.setFileName(attachmentName);
+                multipart.addBodyPart(messageBodyPart);
+            }
+            // Put parts in message
+            m.setContent(multipart);
+        }
+        return m;
+    }    
 }
