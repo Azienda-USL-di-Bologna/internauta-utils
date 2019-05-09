@@ -399,7 +399,7 @@ public class EmlHandlerUtils {
         return pairs;
     }
     
-    public static ArrayList<EmlHandlerAttachment> getAttachments(Part p, Integer[] idAttachments) throws MessagingException, IOException {
+    public static ArrayList<EmlHandlerAttachment> retrieveAttachments(Part p, Integer[] idAttachments) throws MessagingException, IOException {
         if (!p.isMimeType("multipart/*")) {
             return getEmlAttachment(p, Boolean.TRUE);
         } else {

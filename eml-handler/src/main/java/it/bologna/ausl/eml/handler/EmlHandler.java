@@ -316,7 +316,7 @@ public class EmlHandler {
                         "Unable to open file " + emlPath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            return EmlHandlerUtils.getAttachments(m, idAttachments);
+            return EmlHandlerUtils.retrieveAttachments(m, idAttachments);
         } finally {
             try {
                 is.close();
