@@ -1,5 +1,6 @@
 package it.bologna.ausl.eml.handler;
 
+import java.io.Serializable;
 import java.util.Date;
 import javax.mail.*;
 
@@ -11,7 +12,7 @@ import javax.mail.*;
  * EmlHandler.
  * </p>
  */
-public class EmlHandlerResult {
+public class EmlHandlerResult implements Serializable {
 
     private String plainText;
     private String htmlText;
