@@ -246,16 +246,16 @@ public class EmlHandler {
      * @throws MessagingException
      * @throws IOException 
      */
-    public static InputStream getAttachment(String emlPath, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
-        FileInputStream is = null;
+    public static InputStream getAttachment(FileInputStream is, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
+//        FileInputStream is = null;
         MimeMessage m = null;
         try {
-            try {
-                is = new FileInputStream(emlPath);
-            } catch (FileNotFoundException e) {
-                throw new EmlHandlerException(
-                        "Unable to open file " + emlPath, e);
-            }
+//            try {
+//                is = new FileInputStream(emlPath);
+//            } catch (FileNotFoundException e) {
+//                throw new EmlHandlerException(
+//                        "Unable to open file " + emlPath, e);
+//            }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
             return EmlHandlerUtils.getAttachment(m, idAllegato);
         } finally {
@@ -275,16 +275,16 @@ public class EmlHandler {
      * @throws MessagingException
      * @throws IOException 
      */
-    public static List<Pair> getAttachments(String emlPath) throws EmlHandlerException, MessagingException, IOException {
-        FileInputStream is = null;
+    public static List<Pair> getAttachments(FileInputStream is) throws EmlHandlerException, MessagingException, IOException {
+//        FileInputStream is = null;
         MimeMessage m = null;
         try {
-            try {
-                is = new FileInputStream(emlPath);
-            } catch (FileNotFoundException e) {
-                throw new EmlHandlerException(
-                        "Unable to open file " + emlPath, e);
-            }
+//            try {
+//                is = new FileInputStream(emlPath);
+//            } catch (FileNotFoundException e) {
+//                throw new EmlHandlerException(
+//                        "Unable to open file " + emlPath, e);
+//            }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
             return EmlHandlerUtils.getAttachments(m);
         } finally {
