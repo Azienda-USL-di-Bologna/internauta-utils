@@ -1,5 +1,6 @@
 package it.bologna.ausl.eml.handler;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -305,12 +306,16 @@ public class EmlHandler {
      * @throws MessagingException
      * @throws IOException
      */
-    public static ArrayList<EmlHandlerAttachment> getListAttachments(String emlPath, Integer[] idAttachments) throws EmlHandlerException, MessagingException, IOException {
-        FileInputStream is = null;
+    public static ArrayList<EmlHandlerAttachment> getListAttachments(String emlPath, byte[] emlBytes, Integer[] idAttachments) throws EmlHandlerException, MessagingException, IOException {
+        InputStream is = null;
         MimeMessage m = null;
         try {
             try {
-                is = new FileInputStream(emlPath);
+                if (emlPath != null) {
+                    is = new FileInputStream(emlPath);
+                } else if (emlBytes != null) {
+                    is = new ByteArrayInputStream(emlBytes);
+                }
             } catch (FileNotFoundException e) {
                 throw new EmlHandlerException(
                         "Unable to open file " + emlPath, e);
