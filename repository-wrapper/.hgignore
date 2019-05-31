@@ -1,0 +1,9 @@
+syntax: glob
+.gitignore
+target/
+.mvn/
+mvnw
+mvnw.cmd
+nbactions.xml
+jshell.history
+nb-configuration.xml

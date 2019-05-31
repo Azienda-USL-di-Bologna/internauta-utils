@@ -1,5 +1,7 @@
 package it.bologna.ausl.eml.handler;
 
+import java.io.Serializable;
+
 /**
  * @author andrea zucchelli
  * <br>
@@ -12,7 +14,7 @@ package it.bologna.ausl.eml.handler;
  * <b>mimeType</b> contiene il content type dell'attachment.
  * </p>
  */
-public class EmlHandlerAttachment {
+public class EmlHandlerAttachment  implements Serializable {
 
     private Integer id;
     private String contentId;
