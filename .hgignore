@@ -4,3 +4,4 @@ eml-handler/target/
 jpa-tools/target/
 repository-wrapper/target/
 nb-configuration.xml
+rubrica-client/target/
