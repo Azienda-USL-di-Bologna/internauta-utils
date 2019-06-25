@@ -30,6 +30,7 @@ import org.jsoup.select.Elements;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
+import java.io.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
@@ -197,9 +198,7 @@ public class EmlHandlerUtils {
             a.setMimeType(mime);
             a.setId(0);
             if (saveBytes) {
-                byte[] target = new byte[p.getInputStream().available()];
-                p.getInputStream().read(target);
-                a.setFileBytes(target);              
+                a.setFileBytes(getBytesFromInputStream(p.getInputStream()));              
             }
             res.add(a);
         }
@@ -254,9 +253,7 @@ public class EmlHandlerUtils {
                     a.setContentId(part.getHeader("Content-Id")[0].replaceAll("[<>]", ""));
                 }
                 if (saveBytes) {
-                    byte[] target = new byte[part.getInputStream().available()];
-                    part.getInputStream().read(target);
-                    a.setFileBytes(target);  
+                    a.setFileBytes(getBytesFromInputStream(part.getInputStream()));
                 }
                 res.add(a);
             }
@@ -296,6 +293,19 @@ public class EmlHandlerUtils {
 
         }
     }
+    
+    private static byte[] getBytesFromInputStream(InputStream is) throws IOException {
+        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+            int nRead;
+            byte[] data = new byte[1024];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            byte[] target = buffer.toByteArray();
+            return target;
+        }
+    }    
     
     public static InputStream getAttachment(Part p, Integer idAllegato) throws MessagingException, IOException {
 
