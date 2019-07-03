@@ -22,7 +22,7 @@ public class EmlHandlerAttachment  implements Serializable {
     private String filePath;
     private String mimeType;
     private Integer size;
-    private Boolean forHtmlAttribute;
+    private Boolean forHtmlAttribute = false;
     private byte[] fileBytes;
 
     public Integer getId() {
