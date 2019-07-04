@@ -124,7 +124,7 @@ public class EmlHandlerUtils {
             if (src.startsWith("cid:")) {
                 id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
                 for (EmlHandlerAttachment a : ehr.getAttachments()) {
-                    if (a.getContentId().equals(id)) {
+                    if (a.getContentId() != null && a.getContentId().equals(id)) {
                         if (!a.getMimeType().startsWith("image")) {
                             break;
                         }
