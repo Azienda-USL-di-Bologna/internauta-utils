@@ -14,6 +14,8 @@
         <module>eml-handler</module>
         <module>bds-types</module>
         <module>jpa-tools</module>
+        <module>repository-wrapper</module>
+        <module>rubrica-client</module>
     </modules>
     <name>internauta-utils</name>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->

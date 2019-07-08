@@ -30,6 +30,7 @@ import org.jsoup.select.Elements;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
+import java.io.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
@@ -120,18 +121,20 @@ public class EmlHandlerUtils {
         
         for(Element img : imgs) {
             src = img.attr("src");
-            id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
-            for (EmlHandlerAttachment a : ehr.getAttachments()) {
-                if (a.getContentId().equals(id)) {
-                    if (!a.getMimeType().startsWith("image")) {
+            if (src.startsWith("cid:")) {
+                id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
+                for (EmlHandlerAttachment a : ehr.getAttachments()) {
+                    if (a.getContentId() != null && a.getContentId().equals(id)) {
+                        if (!a.getMimeType().startsWith("image")) {
+                            break;
+                        }
+                        Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
+                        BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                        String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
+                        a.setForHtmlAttribute(true);
                         break;
                     }
-                    Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
-                    BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
-                    String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
-                    doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
-                    a.setForHtmlAttribute(true);
-                    break;
                 }
             }
         }
@@ -174,36 +177,44 @@ public class EmlHandlerUtils {
         is.close();
         return file;
     }
-
-    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
+    
+    private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
-
-        if (!p.isMimeType("multipart/*")) {
-            String mime = p.getContentType();
-            String fname = p.getFileName();
-            Integer size = p.getSize();
-            try {
-                fname = MimeUtility.decodeText(fname);
-            } catch (Exception e) {
-            }
-            if (fname != null || (!mime.startsWith("text/html") && !mime.startsWith("text/plain"))) {
-                EmlHandlerAttachment a = new EmlHandlerAttachment();
-                if (fname == null) {
-                    fname = "allegato_senza_nome";
-                }
-                fname = fname.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_");
-                a.setSize(size);
-                a.setFileName(fname);
-                a.setMimeType(mime);
-                a.setId(0);
-//                a.setFilePath(saveFile(fname, dirPath, p.getInputStream()).getAbsolutePath());
-                res.add(a);
-                return res.toArray(new EmlHandlerAttachment[res.size()]);
-            }
-            return null;
+        String mime = p.getContentType();
+        String fname = p.getFileName();
+        Integer size = p.getSize();
+        try {
+            fname = MimeUtility.decodeText(fname);
+        } catch (Exception e) {
         }
-
+        if (fname != null || (!mime.startsWith("text/html") && !mime.startsWith("text/plain"))) {
+            EmlHandlerAttachment a = new EmlHandlerAttachment();
+            if (fname == null) {
+                fname = "allegato_senza_nome";
+            }
+            fname = fname.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_");
+            a.setSize(size);
+            a.setFileName(fname);
+            a.setMimeType(mime);
+            a.setId(0);
+            if (saveBytes) {
+                a.setFileBytes(getBytesFromInputStream(p.getInputStream()));              
+            }
+            res.add(a);
+        }
+        return res;
+    }
+    
+    private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
+        ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
         ArrayList<Part> parts = getAllParts(p);
+        if (idAttachments != null && idAttachments.length > 0) {
+            ArrayList<Part> tempParts = new ArrayList<>();
+            for (Integer j : idAttachments) {
+                tempParts.add(parts.get(j));
+            }
+            parts = tempParts;
+        }
         Integer i = 0;
         String[] contentId = null;
         for (Part part : parts) {
@@ -241,13 +252,24 @@ public class EmlHandlerUtils {
                 if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
                     a.setContentId(part.getHeader("Content-Id")[0].replaceAll("[<>]", ""));
                 }
-                
-                //a.setFilePath(saveFile(filename, dirPath, part.getInputStream()).getAbsolutePath());
+                if (saveBytes) {
+                    a.setFileBytes(getBytesFromInputStream(part.getInputStream()));
+                }
                 res.add(a);
             }
             i++;
         }
+        return res;
+    }
 
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
+        ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+
+        if (!p.isMimeType("multipart/*")) {
+            res = getEmlAttachment(p, Boolean.FALSE);
+            return res.toArray(new EmlHandlerAttachment[res.size()]);
+        }
+        res = getEmlAttachments(p, null, Boolean.FALSE);
         return res.toArray(new EmlHandlerAttachment[res.size()]);
     }
 
@@ -271,6 +293,19 @@ public class EmlHandlerUtils {
 
         }
     }
+    
+    private static byte[] getBytesFromInputStream(InputStream is) throws IOException {
+        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+            int nRead;
+            byte[] data = new byte[1024];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            byte[] target = buffer.toByteArray();
+            return target;
+        }
+    }    
     
     public static InputStream getAttachment(Part p, Integer idAllegato) throws MessagingException, IOException {
 
@@ -374,22 +409,22 @@ public class EmlHandlerUtils {
         return pairs;
     }
     
-    /**
-     * Il metodo costruisce la mail, può essere utilizzato sia per il salvataggio della bozza che per la spedizione della mail
-     * 
-     * @param message Il testo della mail
-     * @param subject L'oggetto della mail
-     * @param from L'indirizzo del mittente
-     * @param to Array degli indirizzi a cui spedire la mail
-     * @param cc Array degli indirizzi da inserire come Copia Carbone
-     * @param attachments Gli allegati
-     * @return MimeMessage Ritorna la mail
-     * @throws MessagingException
-     */
-    public MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, ArrayList<EmlHandlerAttachment> attachments) throws MessagingException {
+    public static ArrayList<EmlHandlerAttachment> retrieveAttachments(Part p, Integer[] idAttachments) throws MessagingException, IOException {
+        if (!p.isMimeType("multipart/*")) {
+            return getEmlAttachment(p, Boolean.TRUE);
+        } else {
+            return getEmlAttachments(p, idAttachments, Boolean.TRUE);
+        }
+    }
+    
+    public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
         
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
+        if (props != null) {
+            mailSender.setJavaMailProperties(props);
+        }
         MimeMessage m = mailSender.createMimeMessage();
         m.setFrom(from);
 

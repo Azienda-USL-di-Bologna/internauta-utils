@@ -1,12 +1,15 @@
 package it.bologna.ausl.eml.handler;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import javax.mail.Address;
 
 import javax.mail.Message;
@@ -244,16 +247,16 @@ public class EmlHandler {
      * @throws MessagingException
      * @throws IOException 
      */
-    public static InputStream getAttachment(String emlPath, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
-        FileInputStream is = null;
+    public static InputStream getAttachment(FileInputStream is, Integer idAllegato) throws EmlHandlerException, MessagingException, IOException {
+//        FileInputStream is = null;
         MimeMessage m = null;
         try {
-            try {
-                is = new FileInputStream(emlPath);
-            } catch (FileNotFoundException e) {
-                throw new EmlHandlerException(
-                        "Unable to open file " + emlPath, e);
-            }
+//            try {
+//                is = new FileInputStream(emlPath);
+//            } catch (FileNotFoundException e) {
+//                throw new EmlHandlerException(
+//                        "Unable to open file " + emlPath, e);
+//            }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
             return EmlHandlerUtils.getAttachment(m, idAllegato);
         } finally {
@@ -273,16 +276,16 @@ public class EmlHandler {
      * @throws MessagingException
      * @throws IOException 
      */
-    public static List<Pair> getAttachments(String emlPath) throws EmlHandlerException, MessagingException, IOException {
-        FileInputStream is = null;
+    public static List<Pair> getAttachments(FileInputStream is) throws EmlHandlerException, MessagingException, IOException {
+//        FileInputStream is = null;
         MimeMessage m = null;
         try {
-            try {
-                is = new FileInputStream(emlPath);
-            } catch (FileNotFoundException e) {
-                throw new EmlHandlerException(
-                        "Unable to open file " + emlPath, e);
-            }
+//            try {
+//                is = new FileInputStream(emlPath);
+//            } catch (FileNotFoundException e) {
+//                throw new EmlHandlerException(
+//                        "Unable to open file " + emlPath, e);
+//            }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
             return EmlHandlerUtils.getAttachments(m);
         } finally {
@@ -292,5 +295,57 @@ public class EmlHandler {
 
             }
         }
+    }
+    
+    /**
+     * Il metodo estrae gli allegati richiesti dall'eml recuperato dal path passato in ingresso
+     * @param emlPath Il path dove si trova l'eml
+     * @param idAttachments Array con gli id degli allegati che devono essere scaricati
+     * @return La lista degli allegati estratti
+     * @throws EmlHandlerException
+     * @throws MessagingException
+     * @throws IOException
+     */
+    public static ArrayList<EmlHandlerAttachment> getListAttachments(String emlPath, byte[] emlBytes, Integer[] idAttachments) throws EmlHandlerException, MessagingException, IOException {
+        InputStream is = null;
+        MimeMessage m = null;
+        try {
+            try {
+                if (emlPath != null) {
+                    is = new FileInputStream(emlPath);
+                } else if (emlBytes != null) {
+                    is = new ByteArrayInputStream(emlBytes);
+                }
+            } catch (FileNotFoundException e) {
+                throw new EmlHandlerException(
+                        "Unable to open file " + emlPath, e);
+            }
+            m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
+            return EmlHandlerUtils.retrieveAttachments(m, idAttachments);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+
+            }
+        }
+    }
+    
+    /**
+    * Il metodo costruisce la mail, può essere utilizzato sia per il salvataggio della bozza che per la spedizione della mail
+    * 
+    * @param message Il testo della mail
+    * @param subject L'oggetto della mail
+    * @param from L'indirizzo del mittente
+    * @param to Array degli indirizzi a cui spedire la mail
+    * @param cc Array degli indirizzi da inserire come Copia Carbone
+    * @param attachments Gli allegati
+    * @param props JavaMail properties opzionale, se non si vuole passare settare null
+    * @return MimeMessage Ritorna la mail
+    * @throws MessagingException
+    */
+    public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
+        return EmlHandlerUtils.buildDraftMessage(message, subject, from, to, cc, attachments, props);
     }
 }
