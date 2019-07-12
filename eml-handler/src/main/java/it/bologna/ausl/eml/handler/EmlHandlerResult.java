@@ -24,6 +24,7 @@ public class EmlHandlerResult implements Serializable {
     private String messageId;
     private Date sendDate;
     private EmlHandlerAttachment[] attachments;
+    private Integer realAttachmentNumber;
 
     public String getMessageId() {
         return messageId;
@@ -129,4 +130,11 @@ public class EmlHandlerResult implements Serializable {
         this.htmlTextImgEmbedded = htmlTextImgEmbedded;
     }
 
+    public Integer getRealAttachmentNumber() {
+        return realAttachmentNumber;
+    }
+
+    public void setRealAttachmentNumber(Integer realAttachmentNumber) {
+        this.realAttachmentNumber = realAttachmentNumber;
+    }
 }
