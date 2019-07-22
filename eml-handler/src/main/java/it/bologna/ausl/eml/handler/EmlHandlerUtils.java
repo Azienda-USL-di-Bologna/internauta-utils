@@ -246,7 +246,7 @@ public class EmlHandlerUtils {
                 filename = filename.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_");
                 a.setFileName(filename);
                 a.setSize(size);
-                a.setMimeType(part.getContentType().replaceAll("^(.*)name=(.*)(;)?(.*)$", "$1name=\"$2\"$3$4"));
+                a.setMimeType(part.getContentType().replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\""));
                 a.setId(i);
                 contentId = part.getHeader("Content-Id");
                 if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
