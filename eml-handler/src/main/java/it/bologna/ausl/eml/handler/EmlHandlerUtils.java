@@ -380,14 +380,19 @@ public class EmlHandlerUtils {
     }
     
     public static List<Pair> getAttachments(Part p) throws MessagingException, IOException {
+        String filename;
         List<Pair> pairs = new ArrayList();
         if (!p.isMimeType("multipart/*")) {
-            pairs.add(new ImmutablePair(p.getFileName(), p.getInputStream()));
+            filename = p.getFileName();
+            try {
+                filename = MimeUtility.decodeText(filename);
+            } catch (Exception e) {
+            }
+            pairs.add(new ImmutablePair(filename.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_"), p.getInputStream()));
             return pairs;
         }
         
         ArrayList<Part> parts = getAllParts(p);
-
         for (Part part : parts) {
             String disposition = null;
             try {
@@ -402,7 +407,12 @@ public class EmlHandlerUtils {
             }
 
             if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)) || (disposition.equals(Part.INLINE)))) || (part.getFileName() != null)) {
-                pairs.add(new ImmutablePair(part.getFileName(), part.getInputStream()));
+                filename = part.getFileName();
+                try {
+                    filename = MimeUtility.decodeText(filename);
+                } catch (Exception e) {
+                }
+                pairs.add(new ImmutablePair(filename.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_"), part.getInputStream()));
             }
         }
         
