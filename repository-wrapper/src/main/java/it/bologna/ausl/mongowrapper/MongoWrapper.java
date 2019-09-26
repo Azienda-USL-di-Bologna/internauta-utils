@@ -70,6 +70,7 @@ public class MongoWrapper {
     private DB db;
     private GridFS gfs;
     private static final String TRASH_DIR = "/TRASH_DIR";
+    private static final String IS_TEMP_COLLECTION_NAME = "isTemp";
 
     /**
      * istanzia la classe collegandosi a mongo
@@ -1380,6 +1381,10 @@ public class MongoWrapper {
                 throw new MongoException("this shouldn't happen", ex);
             }
         }
+    }
+    
+    public boolean isTemp() {
+        return this.db.collectionExists(IS_TEMP_COLLECTION_NAME);
     }
 
     @Override
