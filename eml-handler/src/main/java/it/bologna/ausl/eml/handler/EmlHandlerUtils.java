@@ -113,13 +113,13 @@ public class EmlHandlerUtils {
         return null;
 
     }
-    
+
     public static String getHtmlWithImg(Part p, EmlHandlerResult ehr) throws MessagingException, IOException {
         Document doc = Jsoup.parse(ehr.getHtmlText());
         String src = null, id = null;
         Elements imgs = doc.select("img");
-        
-        for(Element img : imgs) {
+
+        for (Element img : imgs) {
             src = img.attr("src");
             if (src.startsWith("cid:")) {
                 id = src.substring(4); // Rimuovo i primi 4 caratteri "cid:"
@@ -177,7 +177,7 @@ public class EmlHandlerUtils {
         is.close();
         return file;
     }
-    
+
     private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
         String mime = p.getContentType();
@@ -198,13 +198,13 @@ public class EmlHandlerUtils {
             a.setMimeType(mime);
             a.setId(0);
             if (saveBytes) {
-                a.setFileBytes(getBytesFromInputStream(p.getInputStream()));              
+                a.setFileBytes(getBytesFromInputStream(p.getInputStream()));
             }
             res.add(a);
         }
         return res;
     }
-    
+
     private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
         ArrayList<Part> parts = getAllParts(p);
@@ -226,7 +226,7 @@ public class EmlHandlerUtils {
                 // Pattern rp= Pattern.compile("^.*filename=(.*);?$",Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
                 String disp = part.getHeader("Content-Disposition")[0];
                 System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)filename=(.*)(;)?(.*)$", "$1filename=\"$2\"$3$4");
+                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
                 System.out.println("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
@@ -293,9 +293,9 @@ public class EmlHandlerUtils {
 
         }
     }
-    
+
     private static byte[] getBytesFromInputStream(InputStream is) throws IOException {
-        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+        try ( ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
             int nRead;
             byte[] data = new byte[1024];
             while ((nRead = is.read(data, 0, data.length)) != -1) {
@@ -305,8 +305,8 @@ public class EmlHandlerUtils {
             byte[] target = buffer.toByteArray();
             return target;
         }
-    }    
-    
+    }
+
     public static InputStream getAttachment(Part p, Integer idAllegato) throws MessagingException, IOException {
 
         if (!p.isMimeType("multipart/*")) {
@@ -316,7 +316,7 @@ public class EmlHandlerUtils {
                 // TODO: Lancio eccezione
             }
         }
-        
+
         ArrayList<Part> parts = getAllParts(p);
         Integer i = 0;
         for (Part part : parts) {
@@ -326,7 +326,7 @@ public class EmlHandlerUtils {
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
                 System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)filename=(.*)(;)?(.*)$", "$1filename=\"$2\"$3$4");
+                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
                 System.out.println("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
@@ -342,7 +342,7 @@ public class EmlHandlerUtils {
         // TODO: Non ho trovato l'allegato richiesto. Lancio eccezione
         return null;
     }
-    
+
     public static Object getAttachmentContent(Part p, Integer idAllegato) throws MessagingException, IOException {
 
         if (!p.isMimeType("multipart/*")) {
@@ -352,7 +352,7 @@ public class EmlHandlerUtils {
                 // TODO: Lancio eccezione
             }
         }
-        
+
         ArrayList<Part> parts = getAllParts(p);
         Integer i = 0;
         for (Part part : parts) {
@@ -362,7 +362,7 @@ public class EmlHandlerUtils {
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
                 System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)filename=(.*)(;)?(.*)$", "$1filename=\"$2\"$3$4");
+                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
                 System.out.println("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
@@ -378,7 +378,7 @@ public class EmlHandlerUtils {
         // TODO: Non ho trovato l'allegato richiesto. Lancio eccezione
         return null;
     }
-    
+
     public static List<Pair> getAttachments(Part p) throws MessagingException, IOException {
         String filename;
         List<Pair> pairs = new ArrayList();
@@ -391,7 +391,7 @@ public class EmlHandlerUtils {
             pairs.add(new ImmutablePair(filename.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_"), p.getInputStream()));
             return pairs;
         }
-        
+
         ArrayList<Part> parts = getAllParts(p);
         for (Part part : parts) {
             String disposition = null;
@@ -400,7 +400,7 @@ public class EmlHandlerUtils {
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
                 System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)filename=(.*)(;)?(.*)$", "$1filename=\"$2\"$3$4");
+                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
                 System.out.println("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
@@ -415,10 +415,10 @@ public class EmlHandlerUtils {
                 pairs.add(new ImmutablePair(filename.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_"), part.getInputStream()));
             }
         }
-        
+
         return pairs;
     }
-    
+
     public static ArrayList<EmlHandlerAttachment> retrieveAttachments(Part p, Integer[] idAttachments) throws MessagingException, IOException {
         if (!p.isMimeType("multipart/*")) {
             return getEmlAttachment(p, Boolean.TRUE);
@@ -426,12 +426,12 @@ public class EmlHandlerUtils {
             return getEmlAttachments(p, idAttachments, Boolean.TRUE);
         }
     }
-    
-    public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
+
+    public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc,
             ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
-        
+
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        
+
         if (props != null) {
             mailSender.setJavaMailProperties(props);
         }
@@ -463,7 +463,6 @@ public class EmlHandlerUtils {
             multipart.addBodyPart(messageBodyPart);
 
             // Part two is attachment
-                        
             for (EmlHandlerAttachment attachment : attachments) {
                 messageBodyPart = new MimeBodyPart();
                 byte[] fileBytes = attachment.getFileBytes();
@@ -479,5 +478,5 @@ public class EmlHandlerUtils {
             m.setContent(multipart);
         }
         return m;
-    }    
+    }
 }
