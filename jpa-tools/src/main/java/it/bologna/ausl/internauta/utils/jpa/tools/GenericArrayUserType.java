@@ -58,9 +58,6 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
 
     @Override
     public Object nullSafeGet(ResultSet resultSet, String[] names, SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException, SQLException {
-        if (resultSet.wasNull()) {
-            return null;
-        }
 
         if (resultSet.getArray(names[0]) == null) {
             Object res = null;
@@ -73,6 +70,10 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
                     break;
             }
             return res;
+        }
+        
+        if (resultSet.wasNull()) {
+            return null;
         }
 
         Array array = resultSet.getArray(names[0]);
