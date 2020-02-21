@@ -73,19 +73,28 @@ public class EmlHandlerUtils {
         return Session.getInstance(props);
     }
 
-    public static String getText(Part p) throws MessagingException, IOException {
+    public static String getText(Part p) throws MessagingException, IOException, EmlHandlerException {
         return getTextPart(p, "text/plain");
     }
 
-    public static String getHtml(Part p) throws MessagingException, IOException {
+    public static String getHtml(Part p) throws MessagingException, IOException, EmlHandlerException {
         return getTextPart(p, "text/html");
     }
 
-    private static String getTextPart(Part p, String mime) throws MessagingException, IOException {
-        String text = null;
+    private static String getTextPart(Part p, String mime) throws MessagingException, IOException, EmlHandlerException {
+        String text;
         if (p.isMimeType(mime)) {
-
-            return (String) p.getContent();
+            if (String.class.isAssignableFrom(p.getContent().getClass())) {
+                return (String) p.getContent();
+            } else if (InputStream.class.isAssignableFrom(p.getContent().getClass())) {
+                InputStream is = (InputStream)p.getContent();
+                int n = is.available();
+                byte[] bytes = new byte[n];
+                is.read(bytes, 0, n);
+                return new String(bytes);
+            } else {
+                throw new EmlHandlerException(String.format("la parte %s è del tipo %s che non è gestito", mime, p.getClass().getName()));
+            }
         }
 
         if (p.isMimeType("multipart/alternative")) {
