@@ -258,7 +258,8 @@ public class EmlHandlerUtils {
                 /* Correggiamo i casi dove dopo il primo punto e virgola del mimetype ci sono altri caratteri prima
                  * di name="...", dopo invece correggiamo i casi in cui nel name ci sono virgolette duplicate */
                 String contentType = part.getContentType().replaceAll("^(.*?);(.*)(name=.*$)", "$1; $3");
-                a.setMimeType(contentType.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\""));
+                // Modificata espressione per considerare il caso del charset
+                a.setMimeType(contentType.replaceAll("^(.*)\\s*;\\s*name=\"?(.*?)\"?\\s*(;?\\s*charset\\s*=\\s*\"?([^\"]+?)\"?)?\\s*$", "$1; name=\\\"$2\\\"$3;"));            
                 a.setId(i);
                 contentId = part.getHeader("Content-Id");
                 if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
