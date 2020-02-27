@@ -48,7 +48,7 @@ public class ExtractorCreator {
                 nameForCreatedFile = Extractor.removeExtensionFromFileName(file.getName());
             }
             if (isExtractable(file)) {
-                return recursiveExtract(null, file, outputDir, res, nameForCreatedFile, 0);
+                return recursiveExtract(null, file, outputDir, res, nameForCreatedFile, 0, null,null);
             } else {
                 throw new ExtractorException("il file non è estraibile", file.getName(), null);
             }
@@ -58,7 +58,8 @@ public class ExtractorCreator {
         }
     }
 
-    private ArrayList<ExtractorResult> recursiveExtract(String mimeType, File file, File outputDir, ArrayList<ExtractorResult> partialRes, String nameForCreatedFile, int level) throws ExtractorException {
+    private ArrayList<ExtractorResult> recursiveExtract(String mimeType, File file, File outputDir, ArrayList<ExtractorResult> partialRes, String nameForCreatedFile, int level, String padre,String antenati) throws ExtractorException {
+       
         try {
             level++;
             Class<Extractor> extractorClass = getSupportedExtractorClass(file);
@@ -79,7 +80,8 @@ public class ExtractorCreator {
                 nameForCreatedFile = null;
                 resultFileName = file.getName();
             }
-            ExtractorResult extractorResult = new ExtractorResult(resultFileName, mimeType != null ? mimeType : Extractor.getMimeType(file), file.length(), Extractor.getHashFromFile(file, "SHA-256"), file.getAbsolutePath(), level);
+            
+            ExtractorResult extractorResult = new ExtractorResult(resultFileName, mimeType != null ? mimeType : Extractor.getMimeType(file), file.length(), Extractor.getHashFromFile(file, "SHA-256"), file.getAbsolutePath(), level,padre ,antenati);
             partialRes.add(extractorResult);
 //            }
             if (extractorClass != null) {
@@ -90,7 +92,12 @@ public class ExtractorCreator {
                     ArrayList<ExtractorResult> res = extractor.extract(outputDir, nameForCreatedFile);
                     for (ExtractorResult er : res) {
                         File fileToExtract = new File(er.getPath());
-                        partialRes = recursiveExtract(er.getMimeType(), fileToExtract, outputDir, partialRes, nameForCreatedFile, level);
+                        if (antenati != null && antenati != "null" && antenati != ""){
+                            antenati = antenati + "\\";
+                        }
+                        else
+                            antenati = "";
+                        partialRes = recursiveExtract(er.getMimeType(), fileToExtract, outputDir, partialRes, nameForCreatedFile, level,Extractor.getHashFromFile(file, "SHA-256"), antenati + file.getName());
                         fileToExtract = null;
                     }
                 } catch (ExtractorException ex) {

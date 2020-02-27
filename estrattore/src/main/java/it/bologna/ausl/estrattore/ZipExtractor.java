@@ -110,7 +110,7 @@ public class ZipExtractor extends Extractor {
                             IOUtils.closeQuietly(fos);
                         }
                         try {
-                            extractedFile = new ExtractorResult(newFile.getName(), getMimeType(newFile), newFile.length(), getHashFromFile(newFile, "SHA-256"), newFile.getAbsolutePath(), -1);
+                            extractedFile = new ExtractorResult(newFile.getName(), getMimeType(newFile), newFile.length(), getHashFromFile(newFile, "SHA-256"), newFile.getAbsolutePath(), -1,null,null);
                         } catch (Exception ex) {
                             throw new ExtractorException(ex, file.getName(), fileName);
                         }

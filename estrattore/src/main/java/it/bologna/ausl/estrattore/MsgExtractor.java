@@ -196,7 +196,7 @@ public class MsgExtractor extends Extractor {
                 writeFileFromString(text, textFile);
 
                 // aggiungo agli allegati estratti il file creato
-                ExtractorResult extractorResult = new ExtractorResult(textFileName, getMimeType(textFile), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1);
+                ExtractorResult extractorResult = new ExtractorResult(textFileName, getMimeType(textFile), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1, null,null);
                 attachments.add(extractorResult);
             }
             return attachments;
@@ -299,7 +299,7 @@ public class MsgExtractor extends Extractor {
                                 throw new ExtractorException("errore nell'estrazione del file " + fileName, ex, file.getName(), fileName);
                             }
                         }
-                        extractorResult = new ExtractorResult(fileName, getMimeType(attachmentFile), attachmentFile.length(), getHashFromFile(attachmentFile, "SHA-256"), attachmentFile.getAbsolutePath(), -1);
+                        extractorResult = new ExtractorResult(fileName, getMimeType(attachmentFile), attachmentFile.length(), getHashFromFile(attachmentFile, "SHA-256"), attachmentFile.getAbsolutePath(), -1,null,null);
                         msgAttachments.add(extractorResult);
                     } catch (Exception ex) {
                         if (attachmentFile != null && attachmentFile.exists()) {

@@ -179,7 +179,7 @@ public class EmlExtractor extends Extractor {
 
                 // aggiungo agli allegati estratti il file creato
                 // ExtractorResult extractorResult = new ExtractorResult(textFileName, getMimeType(textFile), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(),-1);
-                ExtractorResult extractorResult = new ExtractorResult(textFileName, textMediaType.toString(), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1);
+                ExtractorResult extractorResult = new ExtractorResult(textFileName, textMediaType.toString(), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1, null,null);
                 attachments.add(extractorResult);
             }
             return attachments;
@@ -204,7 +204,7 @@ public class EmlExtractor extends Extractor {
         ExtractorResult extractorResult;
         EmlHandlerResult emlHandlerResult;
         try {
-            emlHandlerResult = EmlHandler.handleEml(file.getAbsolutePath(), outputDir.getAbsolutePath());
+            emlHandlerResult = EmlHandler.handleEml(file.getAbsolutePath(), outputDir.getAbsolutePath(), true);
 
             MediaType textMediaType = null;
             // estraggo il testo dal file, prima provo estraendolo in formato html
@@ -225,7 +225,7 @@ public class EmlExtractor extends Extractor {
                         throw new ExtractorException("file allegato atteso non trovato: " + attFile.getName() + "\n" + attFile.getAbsolutePath(), file.getName(), attachment.getFileName());
                     }
 
-                    extractorResult = new ExtractorResult(attFile.getName(), getMimeType(attFile), attFile.length(), getHashFromFile(attFile, "SHA-256"), attFile.getAbsolutePath(), -1);
+                    extractorResult = new ExtractorResult(attFile.getName(), getMimeType(attFile), attFile.length(), getHashFromFile(attFile, "SHA-256"), attFile.getAbsolutePath(), -1,null,null);
                     emlAttachments.add(extractorResult);
                 }
             }

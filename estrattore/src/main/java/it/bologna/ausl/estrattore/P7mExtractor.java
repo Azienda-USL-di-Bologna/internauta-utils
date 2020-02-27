@@ -129,7 +129,7 @@ public class P7mExtractor extends Extractor {
         // creo il risultato da restituire
         ExtractorResult extractorResult = null;
         try {
-            extractorResult = new ExtractorResult(renamedFile.getName(), getMimeType(renamedFile), renamedFile.length(), getHashFromFile(renamedFile, "SHA-256"), renamedFile.getAbsolutePath(), -1);
+            extractorResult = new ExtractorResult(renamedFile.getName(), getMimeType(renamedFile), renamedFile.length(), getHashFromFile(renamedFile, "SHA-256"), renamedFile.getAbsolutePath(), -1,null,null);
             res.add(extractorResult);
         } catch (Exception ex) {
             throw new ExtractorException("errore nella creazione del risultato.", ex, file.getName(), null);

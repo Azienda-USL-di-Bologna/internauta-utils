@@ -79,9 +79,12 @@ public class EmlHandler {
         }
 
     }
+    
+    public static EmlHandlerResult handleEml(String filePath, String workingDir) throws EmlHandlerException, UnsupportedEncodingException {
+         return handleEml(filePath, workingDir, false);
+    }
 
-    public static EmlHandlerResult handleEml(String filePath, String workingDir)
-            throws EmlHandlerException, UnsupportedEncodingException {
+    public static EmlHandlerResult handleEml(String filePath, String workingDir, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
 
         FileInputStream is = null;
         MimeMessage m = null;
@@ -104,7 +107,7 @@ public class EmlHandler {
                         "Unable to open file " + filePath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            res = processEml(m, dir);
+            res = processEml(m, dir, saveAttachments);
             return res;
 
         } finally {
@@ -128,6 +131,10 @@ public class EmlHandler {
         return res;
 
     }
+    
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+        return processEml(m, working_dir, false);
+    }
 
     /**
      *
@@ -135,7 +142,7 @@ public class EmlHandler {
      * @return EmlHandlerResult contenente il risultato dell'elaborazione
      * @throws EmlHandlerException
      */
-    private static EmlHandlerResult processEml(MimeMessage m, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
 
         File dir = working_dir;
         EmlHandlerResult res = new EmlHandlerResult();
@@ -214,7 +221,7 @@ public class EmlHandler {
         }
         try {
             if (dir != null) {
-                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir));
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, saveAttachments));
             }
         } catch (MessagingException e) {
             // TODO Auto-generated catch block

@@ -2,6 +2,7 @@ package it.bologna.ausl.estrattore;
 
 import java.lang.reflect.Field;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 
 /**
  *
@@ -14,16 +15,37 @@ private long size;
 private String hash;
 private String path;
 private int level;
+private String padre;
+private String antenati;
 
-    public ExtractorResult(String fileName, String mimeType, long size, String hash, String path, int level) {
+    public ExtractorResult(String fileName, String mimeType, long size, String hash, String path, int level, String padre,String antenati) {
         this.fileName = fileName;
         this.mimeType = mimeType;
         this.size = size;
         this.hash = hash;
         this.path = path;
-        this.level= level;
+        this.level = level;
+        this.padre = padre;
+        this.antenati = antenati;
     }
 
+    public String getAntenati() {
+        return antenati;
+    }
+
+    public void setAntenati(String antenati) {
+        this.antenati = antenati;
+    }
+
+    public String getPadre() {
+        return padre;
+    }
+
+    public void setPadre(String padre) {
+        this.padre = padre;
+    }
+
+    
     public String getFileName() {
         return fileName;
     }
