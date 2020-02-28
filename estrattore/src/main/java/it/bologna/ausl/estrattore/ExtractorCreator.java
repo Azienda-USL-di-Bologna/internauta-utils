@@ -4,6 +4,7 @@ import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Set;
 import org.apache.tika.mime.MediaType;
 
@@ -12,6 +13,10 @@ import org.apache.tika.mime.MediaType;
  * @author Giuseppe De Marco (gdm)
  */
 public class ExtractorCreator {
+
+    public Object stream() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
     public enum MimeTypeSetOperation {
         ALLOWED, DENIED
@@ -35,6 +40,25 @@ public class ExtractorCreator {
         this.file = file;
         this.mimeTypeSet = mimeTypeSet;
         this.mimeTypeSetOperation = mimeTypeSetOperation;
+    }
+    
+    public static boolean isSupportedMimyType(String mimeType) throws Exception {
+        System.out.println("isSupportedMimyType: " + mimeType);
+        SupportedExtractorsClass[] extractors = SupportedExtractorsClass.values();
+        for (SupportedExtractorsClass ec: extractors) {
+            try {
+                Class<Extractor> extractorClass = (Class<Extractor>) Class.forName("it.bologna.ausl.estrattore." + ec.name());
+                Constructor<Extractor> constructor = extractorClass.getConstructor(File.class);
+                Extractor extractor = constructor.newInstance((Object) null);
+                MediaType[] mediaTypesSupported = extractor.getMediaTypesSupported();
+                if (Arrays.stream(mediaTypesSupported).anyMatch(m -> m.compareTo(MediaType.parse(mimeType)) == 0)) {
+                    return true;
+                }
+            } catch (Exception ex) {
+                throw ex;
+            }
+        }
+        return false;
     }
 
     public ArrayList<ExtractorResult> extractAll(File outputDir) throws ExtractorException {

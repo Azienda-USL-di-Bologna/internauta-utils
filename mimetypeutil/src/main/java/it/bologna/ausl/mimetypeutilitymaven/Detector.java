@@ -55,6 +55,7 @@ public class Detector {
     public static final MediaType MEDIA_TYPE_MESSAGE_RFC822 = MediaType.parse("message/rfc822");
     public static final MediaType MEDIA_TYPE_APPLICATION_MBOX = MediaType.application("mbox");
     public static final MediaType MEDIA_TYPE_APPLICATION_ZIP = MediaType.application("zip");
+    public static final MediaType MEDIA_TYPE_APPLICATION_ZIP_COMPRESSED = MediaType.application("x-zip-compressed");
     public static final MediaType MEDIA_TYPE_APPLICATION_JSON = MediaType.application("json");
     public static final MediaType MEDIA_TYPE_APPLICATION_MSG = MediaType.application("vnd.ms-outlook");
     public static final MediaType MEDIA_TYPE_APPLICATION_7ZIP = MediaType.application("x-7z-compressed");

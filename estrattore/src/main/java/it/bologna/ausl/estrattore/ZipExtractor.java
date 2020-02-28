@@ -16,7 +16,7 @@ import org.apache.tika.mime.MediaType;
  */
 public class ZipExtractor extends Extractor {
 
-    private final MediaType[] mediaTypes = {Detector.MEDIA_TYPE_APPLICATION_ZIP};
+    private final MediaType[] mediaTypes = {Detector.MEDIA_TYPE_APPLICATION_ZIP, Detector.MEDIA_TYPE_APPLICATION_ZIP_COMPRESSED};
 
     public ZipExtractor(File file) {
         super(file);
