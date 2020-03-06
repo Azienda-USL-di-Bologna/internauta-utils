@@ -73,19 +73,28 @@ public class EmlHandlerUtils {
         return Session.getInstance(props);
     }
 
-    public static String getText(Part p) throws MessagingException, IOException {
+    public static String getText(Part p) throws MessagingException, IOException, EmlHandlerException {
         return getTextPart(p, "text/plain");
     }
 
-    public static String getHtml(Part p) throws MessagingException, IOException {
+    public static String getHtml(Part p) throws MessagingException, IOException, EmlHandlerException {
         return getTextPart(p, "text/html");
     }
 
-    private static String getTextPart(Part p, String mime) throws MessagingException, IOException {
-        String text = null;
+    private static String getTextPart(Part p, String mime) throws MessagingException, IOException, EmlHandlerException {
+        String text;
         if (p.isMimeType(mime)) {
-
-            return (String) p.getContent();
+            if (String.class.isAssignableFrom(p.getContent().getClass())) {
+                return (String) p.getContent();
+            } else if (InputStream.class.isAssignableFrom(p.getContent().getClass())) {
+                InputStream is = (InputStream)p.getContent();
+                int n = is.available();
+                byte[] bytes = new byte[n];
+                is.read(bytes, 0, n);
+                return new String(bytes);
+            } else {
+                throw new EmlHandlerException(String.format("la parte %s è del tipo %s che non è gestito", mime, p.getClass().getName()));
+            }
         }
 
         if (p.isMimeType("multipart/alternative")) {
@@ -249,7 +258,8 @@ public class EmlHandlerUtils {
                 /* Correggiamo i casi dove dopo il primo punto e virgola del mimetype ci sono altri caratteri prima
                  * di name="...", dopo invece correggiamo i casi in cui nel name ci sono virgolette duplicate */
                 String contentType = part.getContentType().replaceAll("^(.*?);(.*)(name=.*$)", "$1; $3");
-                a.setMimeType(contentType.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\""));
+                // Modificata espressione per considerare il caso del charset
+                a.setMimeType(contentType.replaceAll("^(.*)\\s*;\\s*name=\"?(.*?)\"?\\s*(;?\\s*charset\\s*=\\s*\"?([^\"]+?)\"?)?\\s*$", "$1; name=\\\"$2\\\"$3;"));            
                 a.setId(i);
                 contentId = part.getHeader("Content-Id");
                 if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
