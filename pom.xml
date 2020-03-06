@@ -16,6 +16,8 @@
         <module>jpa-tools</module>
         <module>repository-wrapper</module>
         <module>rubrica-client</module>
+        <module>mimetypeutil</module>
+        <module>estrattore</module>   
     </modules>
     <name>internauta-utils</name>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->

@@ -188,6 +188,10 @@ public class EmlHandlerUtils {
     }
 
     private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes) throws MessagingException, IOException {
+         return getEmlAttachment(p, saveBytes, false, null);
+    }
+    
+    private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes, Boolean saveFile, File dirPath) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
         String mime = p.getContentType();
         String fname = p.getFileName();
@@ -209,12 +213,20 @@ public class EmlHandlerUtils {
             if (saveBytes) {
                 a.setFileBytes(getBytesFromInputStream(p.getInputStream()));
             }
+            if (saveFile) {
+                File attachemntFile = saveFile(fname, dirPath, p.getInputStream());
+                a.setFilePath(attachemntFile.getAbsolutePath());
+            }
             res.add(a);
         }
         return res;
     }
 
-    private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
+     private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
+         return getEmlAttachments(p, idAttachments, saveBytes, false, null);
+     }
+    
+    private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes, Boolean saveFile, File dirPath) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
         ArrayList<Part> parts = getAllParts(p);
         if (idAttachments != null && idAttachments.length > 0) {
@@ -268,21 +280,35 @@ public class EmlHandlerUtils {
                 if (saveBytes) {
                     a.setFileBytes(getBytesFromInputStream(part.getInputStream()));
                 }
+                if (saveFile) {
+                    File attachemntFile = saveFile(filename, dirPath, part.getInputStream());
+                    a.setFilePath(attachemntFile.getAbsolutePath());
+                }
                 res.add(a);
             }
             i++;
         }
         return res;
     }
-
+ 
     public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
+        return getAttachments(p, dirPath, false);
+    }
+
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean saveAttachments) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
 
         if (!p.isMimeType("multipart/*")) {
-            res = getEmlAttachment(p, Boolean.FALSE);
+            if (saveAttachments)
+                res = getEmlAttachment(p, false, true, dirPath);
+            else
+                res = getEmlAttachment(p, false);
             return res.toArray(new EmlHandlerAttachment[res.size()]);
         }
-        res = getEmlAttachments(p, null, Boolean.FALSE);
+        if (saveAttachments)            
+            res = getEmlAttachments(p, null, false, true, dirPath);
+        else
+            res = getEmlAttachments(p, null, false);
         return res.toArray(new EmlHandlerAttachment[res.size()]);
     }
 
