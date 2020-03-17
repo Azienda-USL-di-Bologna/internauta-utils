@@ -5,3 +5,5 @@ jpa-tools/target/
 repository-wrapper/target/
 nb-configuration.xml
 rubrica-client/target/
+estrattore/target
+mimetypeutil/target
