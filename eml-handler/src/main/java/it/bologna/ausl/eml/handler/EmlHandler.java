@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import javax.mail.Address;
-
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -34,11 +33,13 @@ public class EmlHandler {
     private String rawMessage;
     private File workingDir;
 
-    public EmlHandler() {
+    public EmlHandler() 
+    {
 
     }
 
-    public void setParameters(String message, String dir) {
+    public void setParameters(String message, String dir) 
+    {
         rawMessage = message;
         if (dir != null) {
             workingDir = new File(dir);
@@ -47,7 +48,8 @@ public class EmlHandler {
         }
     }
 
-    public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException {
+    public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException 
+    {
         return handleRawEml(rawMessage, workingDir);
     }
 
@@ -84,7 +86,8 @@ public class EmlHandler {
          return handleEml(filePath, workingDir, false);
     }
 
-    public static EmlHandlerResult handleEml(String filePath, String workingDir, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
+    public static EmlHandlerResult handleEml(String filePath, String workingDir, Boolean saveAttachments) 
+            throws EmlHandlerException, UnsupportedEncodingException {
 
         FileInputStream is = null;
         MimeMessage m = null;

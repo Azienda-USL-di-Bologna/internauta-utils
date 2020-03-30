@@ -209,9 +209,9 @@ public class EmlHandlerUtils {
                 fname = "allegato_senza_nome";
             }
             fname = fname.replaceAll("[^a-zA-Z0-9\\.\\-_\\+ ]", "_");
-            a.setSize(size);
             a.setFileName(fname);
             a.setMimeType(mime);
+            a.setSize(size);
             a.setId(0);
             if (saveBytes) {
                 a.setFileBytes(getBytesFromInputStream(p.getInputStream()));
