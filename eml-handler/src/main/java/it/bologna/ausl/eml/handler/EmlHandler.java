@@ -74,7 +74,7 @@ public class EmlHandler {
             try {
                 is.close();
             } catch (IOException e) {
-
+                
             }
         }
 
@@ -195,7 +195,7 @@ public class EmlHandler {
             e.printStackTrace();
         }
         try {
-            res.setMessageId(m.getMessageID());
+            res.setMessageId(m.getMessageID());            
         } catch (MessagingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

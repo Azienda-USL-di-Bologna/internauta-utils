@@ -27,11 +27,18 @@ public class EmlHandlerResult implements Serializable {
     private Integer realAttachmentNumber;
 
     public String getMessageId() {
+        if (messageId==null){
+            return null;
+        }
         return messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
     }
 
     public void setMessageId(String messageId) {
-        this.messageId = messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+        if (messageId==null){
+            this.messageId = null;
+        }else{
+            this.messageId = messageId.replaceAll("(?<messageid>^<.*>)(?<other>.*)", "${messageid}");
+        }
     }
 
     public String getSubject() {

@@ -87,7 +87,7 @@ public class EmlHandlerUtils {
             if (String.class.isAssignableFrom(p.getContent().getClass())) {
                 return (String) p.getContent();
             } else if (InputStream.class.isAssignableFrom(p.getContent().getClass())) {
-                InputStream is = (InputStream)p.getContent();
+                InputStream is = (InputStream) p.getContent();
                 int n = is.available();
                 byte[] bytes = new byte[n];
                 is.read(bytes, 0, n);
@@ -188,17 +188,20 @@ public class EmlHandlerUtils {
     }
 
     private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes) throws MessagingException, IOException {
-         return getEmlAttachment(p, saveBytes, false, null);
+        return getEmlAttachment(p, saveBytes, false, null);
     }
-    
+
     private static ArrayList<EmlHandlerAttachment> getEmlAttachment(Part p, Boolean saveBytes, Boolean saveFile, File dirPath) throws MessagingException, IOException {
+
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+
         String mime = p.getContentType();
         String fname = p.getFileName();
         Integer size = p.getSize();
         try {
             fname = MimeUtility.decodeText(fname);
         } catch (Exception e) {
+            //boh 
         }
         if (fname != null || (!mime.startsWith("text/html") && !mime.startsWith("text/plain"))) {
             EmlHandlerAttachment a = new EmlHandlerAttachment();
@@ -222,13 +225,16 @@ public class EmlHandlerUtils {
         return res;
     }
 
-     private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
-         return getEmlAttachments(p, idAttachments, saveBytes, false, null);
-     }
-    
+    private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes) throws MessagingException, IOException {
+        return getEmlAttachments(p, idAttachments, saveBytes, false, null);
+    }
+
     private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes, Boolean saveFile, File dirPath) throws MessagingException, IOException {
+
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+
         ArrayList<Part> parts = getAllParts(p);
+
         if (idAttachments != null && idAttachments.length > 0) {
             ArrayList<Part> tempParts = new ArrayList<>();
             for (Integer j : idAttachments) {
@@ -236,8 +242,10 @@ public class EmlHandlerUtils {
             }
             parts = tempParts;
         }
+
         Integer i = 0;
         String[] contentId = null;
+
         for (Part part : parts) {
             //Part part = mp.getBodyPart(i);
             String disposition = null;
@@ -252,8 +260,8 @@ public class EmlHandlerUtils {
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
             }
-
-            if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)) || (disposition.equals(Part.INLINE)))) || (part.getFileName() != null)) {
+//tolto                                                                           ||(disposition.equals(Part.INLINE))
+            if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)))) || (part.getFileName() != null)) {
                 EmlHandlerAttachment a = new EmlHandlerAttachment();
                 String filename = part.getFileName();
                 Integer size = part.getSize();
@@ -271,7 +279,7 @@ public class EmlHandlerUtils {
                  * di name="...", dopo invece correggiamo i casi in cui nel name ci sono virgolette duplicate */
                 String contentType = part.getContentType().replaceAll("^(.*?);(.*)(name=.*$)", "$1; $3");
                 // Modificata espressione per considerare il caso del charset
-                a.setMimeType(contentType.replaceAll("^(.*)\\s*;\\s*name=\"?(.*?)\"?\\s*(;?\\s*charset\\s*=\\s*\"?([^\"]+?)\"?)?\\s*$", "$1; name=\\\"$2\\\"$3;"));            
+                a.setMimeType(contentType.replaceAll("^(.*)\\s*;\\s*name=\"?(.*?)\"?\\s*(;?\\s*charset\\s*=\\s*\"?([^\"]+?)\"?)?\\s*$", "$1; name=\\\"$2\\\"$3;"));
                 a.setId(i);
                 contentId = part.getHeader("Content-Id");
                 if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
@@ -290,25 +298,27 @@ public class EmlHandlerUtils {
         }
         return res;
     }
- 
+
     public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
         return getAttachments(p, dirPath, false);
     }
 
     public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean saveAttachments) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
-
+//forse qui 
         if (!p.isMimeType("multipart/*")) {
-            if (saveAttachments)
+            if (saveAttachments) {
                 res = getEmlAttachment(p, false, true, dirPath);
-            else
+            } else {
                 res = getEmlAttachment(p, false);
+            }
             return res.toArray(new EmlHandlerAttachment[res.size()]);
         }
-        if (saveAttachments)            
+        if (saveAttachments) {
             res = getEmlAttachments(p, null, false, true, dirPath);
-        else
+        } else {
             res = getEmlAttachments(p, null, false);
+        }
         return res.toArray(new EmlHandlerAttachment[res.size()]);
     }
 
@@ -334,7 +344,7 @@ public class EmlHandlerUtils {
     }
 
     private static byte[] getBytesFromInputStream(InputStream is) throws IOException {
-        try ( ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
             int nRead;
             byte[] data = new byte[1024];
             while ((nRead = is.read(data, 0, data.length)) != -1) {
