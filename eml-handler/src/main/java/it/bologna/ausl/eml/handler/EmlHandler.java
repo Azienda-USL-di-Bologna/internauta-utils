@@ -213,15 +213,7 @@ public class EmlHandler {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        try {
-            res.setHtmlText(EmlHandlerUtils.getHtml(m));
-        } catch (MessagingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        
         try {
             if (dir != null) {
                 res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, saveAttachments));
@@ -233,6 +225,17 @@ public class EmlHandler {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        
+        try {
+            res.setHtmlText(EmlHandlerUtils.getHtml(m));
+        } catch (MessagingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
         try {
             if (res.getHtmlText() != null) {
                 res.setHtmlTextImgEmbedded(EmlHandlerUtils.getHtmlWithImg(m, res));

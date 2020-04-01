@@ -201,8 +201,8 @@ public class EmlHandlerUtils {
         try {
             fname = MimeUtility.decodeText(fname);
         } catch (Exception e) {
-            //boh 
         }
+        
         if (fname != null || (!mime.startsWith("text/html") && !mime.startsWith("text/plain"))) {
             EmlHandlerAttachment a = new EmlHandlerAttachment();
             if (fname == null) {
