@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.bds.types;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -41,15 +42,6 @@ public class PermessoStoredProcedure implements Serializable {
         this.dataInserimentoRiga = dataInserimentoRiga;
     }
     
-//    public PermessoStoredProcedure(String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, String originePermesso, Integer idPermessoBloccato) {
-//        this.predicato = predicato;
-//        this.propagaSoggetto = propagaSoggetto;
-//        this.propagaOggetto = propagaOggetto;
-//        this.originePermesso = originePermesso;
-//        this.idPermessoBloccato = idPermessoBloccato;
-//    }
-//    
-    
     public PermessoStoredProcedure(String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, String originePermesso, Integer idPermessoBloccato, LocalDateTime attivoDal, LocalDateTime attivoAl) {
         this.predicato = predicato;
         this.propagaSoggetto = propagaSoggetto;
@@ -59,13 +51,6 @@ public class PermessoStoredProcedure implements Serializable {
         this.attivoDal = attivoDal;
         this.attivoAl = attivoAl;
     }
-//    public Integer getId() {
-//        return id;
-//    }
-//
-//    public void setId(Integer id) {
-//        this.id = id;
-//    }
 
     public String getPredicato() {
         return predicato;
@@ -80,6 +65,7 @@ public class PermessoStoredProcedure implements Serializable {
         return propagaSoggetto;
     }
 
+    // @JsonAlias("propaga_soggetto")
     @JsonProperty("propaga_soggetto")
     public void setPropagaSoggetto(Boolean propagaSoggetto) {
         this.propagaSoggetto = propagaSoggetto;
@@ -103,10 +89,12 @@ public class PermessoStoredProcedure implements Serializable {
         this.virtuale = virtuale;
     }
 
+    @JsonProperty("data_inserimento_riga")
     public LocalDateTime getDataInserimentoRiga() {
         return dataInserimentoRiga;
     }
-
+    
+    @JsonProperty("data_inserimento_riga")
     public void setDataInserimentoRiga(LocalDateTime dataInserimentoRiga) {
         this.dataInserimentoRiga = dataInserimentoRiga;
     }
