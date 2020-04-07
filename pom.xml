@@ -18,14 +18,15 @@
         <module>rubrica-client</module>
         <module>mimetypeutil</module>
         <module>estrattore</module>   
+        <module>middelmine</module>
     </modules>
     <name>internauta-utils</name>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
     <dependencies>
-<dependency>
-    <groupId>org.apache.commons</groupId>
-    <artifactId>commons-lang3</artifactId>
-    <version>3.8.1</version>
-</dependency>
-</dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.8.1</version>
+        </dependency>
+    </dependencies>
 </project>
