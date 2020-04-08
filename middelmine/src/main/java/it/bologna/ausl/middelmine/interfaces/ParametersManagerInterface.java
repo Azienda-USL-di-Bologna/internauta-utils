@@ -16,9 +16,13 @@ public interface ParametersManagerInterface {
 
     String getGetCustomFieldPath();
 
+    String getGetTrackersFieldPath();
+
     String getIssueInfoPath();
 
     String getPrivateApiKey();
+
+    String getAdminApiKey();
 
     String getRedmineApiKeyHeader();
 

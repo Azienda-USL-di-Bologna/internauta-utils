@@ -8,10 +8,10 @@ import org.springframework.context.annotation.Configuration;
  *
  * @author Salo
  */
-@Configuration
+//@Configuration
 public class ParametersManager implements ParametersManagerInterface {
 
-    @Value("${test-mode}")
+    @Value("${redmine-test-mode}")
     private boolean testMode;
 
     @Value("${redmine-base-url}")
@@ -26,11 +26,17 @@ public class ParametersManager implements ParametersManagerInterface {
     @Value("${get-custom-fields-path}")
     private String getCustomFieldPath;
 
+    @Value("${get-trackers-path}")
+    private String getTrackersPath;
+
     @Value("${issue-info-path}")
     private String issueInfoPath;
 
     @Value("${api-key}")
     private String privateApiKey;
+
+    @Value("${admin-api-key}")
+    private String adminApiKey;
 
     @Value("${x-redmine-api-key-header}")
     private String redmineApiKeyHeader;
@@ -79,6 +85,11 @@ public class ParametersManager implements ParametersManagerInterface {
     }
 
     @Override
+    public String getAdminApiKey() {
+        return adminApiKey;
+    }
+
+    @Override
     public String getRedmineApiKeyHeader() {
         return redmineApiKeyHeader;
     }
@@ -101,6 +112,11 @@ public class ParametersManager implements ParametersManagerInterface {
     @Override
     public String getIssueInfoPath() {
         return issueInfoPath;
+    }
+
+    @Override
+    public String getGetTrackersFieldPath() {
+        return getTrackersPath;
     }
 
 }

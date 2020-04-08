@@ -26,9 +26,13 @@ public class LoadableParametersManager implements ParametersManagerInterface {
 
     private String getCustomFieldPath;
 
+    private String getTrackersPath;
+
     private String issueInfoPath;
 
     private String privateApiKey;
+
+    private String adminApiKey;
 
     private String redmineApiKeyHeader;
 
@@ -64,8 +68,18 @@ public class LoadableParametersManager implements ParametersManagerInterface {
     }
 
     @Override
+    public String getGetTrackersFieldPath() {
+        return getTrackersPath;
+    }
+
+    @Override
     public String getPrivateApiKey() {
         return privateApiKey;
+    }
+
+    @Override
+    public String getAdminApiKey() {
+        return adminApiKey;
     }
 
     @Override
@@ -113,8 +127,16 @@ public class LoadableParametersManager implements ParametersManagerInterface {
         this.getCustomFieldPath = getCustomFieldPath;
     }
 
+    public void setGetTrackersPath(String getTrackersPath) {
+        this.getTrackersPath = getTrackersPath;
+    }
+
     public void setPrivateApiKey(String privateApiKey) {
         this.privateApiKey = privateApiKey;
+    }
+
+    public void setAdminApiKey(String adminApiKey) {
+        this.adminApiKey = adminApiKey;
     }
 
     public void setRedmineApiKeyHeader(String redmineApiKeyHeader) {

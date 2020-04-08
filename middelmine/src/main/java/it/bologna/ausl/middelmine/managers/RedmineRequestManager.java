@@ -14,12 +14,12 @@ import org.springframework.stereotype.Component;
  *
  * @author Salo
  */
-@Component
+//@Component
 public abstract class RedmineRequestManager implements RequestManagerInterface {
 
     protected ParametersManagerInterface pm;
 
-    @Autowired
+    //@Autowired
     protected RedMineCaller rmc;
 
     protected BuilderFactory builderFactory;
@@ -46,6 +46,13 @@ public abstract class RedmineRequestManager implements RequestManagerInterface {
     protected Map<String, String> getRequestDefaultHeaders() {
         Map<String, String> headers = new HashMap<>();
         headers.put(pm.getRedmineApiKeyHeader(), pm.getPrivateApiKey());
+        headers.put(pm.getContentTypeHeader(), pm.getApplicationJsonHeaderValue());
+        return headers;
+    }
+
+    protected Map<String, String> getRequestAdminDefaultHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put(pm.getRedmineApiKeyHeader(), pm.getAdminApiKey());
         headers.put(pm.getContentTypeHeader(), pm.getApplicationJsonHeaderValue());
         return headers;
     }

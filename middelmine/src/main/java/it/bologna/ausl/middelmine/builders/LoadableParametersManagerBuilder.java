@@ -17,21 +17,27 @@ import java.util.Properties;
  */
 public class LoadableParametersManagerBuilder {
 
-    public static void buildParams(LoadableParametersManager pm) throws IOException {
-        ApplicationParamsReader apr = new ApplicationParamsReader();
-        Properties propValues = apr.getPropValues();
-        System.out.println(propValues.toString());
-        pm.setTestMode(Boolean.parseBoolean(propValues.getProperty("test-mode")));
-        pm.setRedmineBaseUrl((String) propValues.get("redmine-base-url"));
-        pm.setPrivateApiKey((String) propValues.get("api-key"));
-        pm.setNewIssuePaht((String) propValues.get("new-issue-path"));
-        pm.setNewAttachmentPath((String) propValues.get("new-attachment-path"));
-        pm.setGetCustomFieldPath((String) propValues.get("get-custom-fields-path"));
-        pm.setIssueInfoPath((String) propValues.get("issue-info-path"));
-        pm.setRedmineApiKeyHeader((String) propValues.get("x-redmine-api-key-header"));
-        pm.setContentTypeHeader((String) propValues.get("content-type-header"));
-        pm.setApplicationJsonHeaderValue((String) propValues.get("application-json-header-value"));
-        pm.setApplicationOctetHeaderValue((String) propValues.get("application-octet-stream-header-value"));
+    public static void buildParams(LoadableParametersManager pm) throws Exception {
+        try {
+            ApplicationParamsReader apr = new ApplicationParamsReader();
+            Properties propValues = apr.getPropValues();
+            System.out.println(propValues.toString());
+            pm.setTestMode(Boolean.parseBoolean(propValues.getProperty("redmine-test-mode")));
+            pm.setRedmineBaseUrl((String) propValues.get("redmine-base-url"));
+            pm.setPrivateApiKey((String) propValues.get("api-key"));
+            pm.setAdminApiKey((String) propValues.get("admin-api-key"));
+            pm.setNewIssuePaht((String) propValues.get("new-issue-path"));
+            pm.setNewAttachmentPath((String) propValues.get("new-attachment-path"));
+            pm.setGetCustomFieldPath((String) propValues.get("get-custom-fields-path"));
+            pm.setGetTrackersPath((String) propValues.get("get-trackers-path"));
+            pm.setIssueInfoPath((String) propValues.get("issue-info-path"));
+            pm.setRedmineApiKeyHeader((String) propValues.get("x-redmine-api-key-header"));
+            pm.setContentTypeHeader((String) propValues.get("content-type-header"));
+            pm.setApplicationJsonHeaderValue((String) propValues.get("application-json-header-value"));
+            pm.setApplicationOctetHeaderValue((String) propValues.get("application-octet-stream-header-value"));
+        } catch (Exception ex) {
+            throw new Exception("Errore nel build dei parametri: " + ex.getMessage(), ex);
+        }
     }
 
 }
