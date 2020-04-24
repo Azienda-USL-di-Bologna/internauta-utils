@@ -358,7 +358,7 @@ public class EmlHandler {
     * @throws MessagingException
     */
     public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc, 
-            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException, IOException {
         return EmlHandlerUtils.buildDraftMessage(message, subject, from, to, cc, attachments, props);
     }
 }
