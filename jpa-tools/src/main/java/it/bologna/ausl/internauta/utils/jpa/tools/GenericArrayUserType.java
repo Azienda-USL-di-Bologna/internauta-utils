@@ -61,13 +61,18 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
 
         if (resultSet.getArray(names[0]) == null) {
             Object res = null;
-            switch (parameters.getProperty("elements-type")) {
-                case INTEGER_ELEMENT_TYPE:
-                    res = java.lang.reflect.Array.newInstance(Integer.class, 0);
-                    break;
-                case TEXT_ELEMENT_TYPE:
-                    res = java.lang.reflect.Array.newInstance(String.class, 0);
-                    break;
+            
+            String property = parameters.getProperty("elements-type");
+
+            if (property != null) {
+                switch (property) {
+                    case INTEGER_ELEMENT_TYPE:
+                        res = java.lang.reflect.Array.newInstance(Integer.class, 0);
+                        break;
+                    case TEXT_ELEMENT_TYPE:
+                        res = java.lang.reflect.Array.newInstance(String.class, 0);
+                        break;
+                }
             }
             return res;
         }
