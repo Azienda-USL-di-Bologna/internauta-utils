@@ -69,6 +69,7 @@ public class EmlHandlerUtils {
     public static Session getGenericSmtpSession() {
         Properties props = new Properties();
         props.setProperty("mail.transport.protocol", "smtp");
+//        props.setProperty("mail.mime.base64.ignoreerrors", "true");
         //return  Session.getDefaultInstance(props, null);
         return Session.getInstance(props);
     }
@@ -214,7 +215,8 @@ public class EmlHandlerUtils {
             a.setSize(size);
             a.setId(0);
             if (saveBytes) {
-                a.setFileBytes(getBytesFromInputStream(p.getInputStream()));
+                a.setInputStream(p.getInputStream());
+//                    a.setFileBytes(getBytesFromInputStream(p.getInputStream()));
             }
             if (saveFile) {
                 File attachemntFile = saveFile(fname, dirPath, p.getInputStream());
@@ -231,7 +233,7 @@ public class EmlHandlerUtils {
 
     private static ArrayList<EmlHandlerAttachment> getEmlAttachments(Part p, Integer[] idAttachments, Boolean saveBytes, Boolean saveFile, File dirPath) throws MessagingException, IOException {
 
-        ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+        ArrayList<EmlHandlerAttachment> res = new ArrayList();
 
         ArrayList<Part> parts = getAllParts(p);
 
@@ -286,7 +288,8 @@ public class EmlHandlerUtils {
                     a.setContentId(part.getHeader("Content-Id")[0].replaceAll("[<>]", ""));
                 }
                 if (saveBytes) {
-                    a.setFileBytes(getBytesFromInputStream(part.getInputStream()));
+//                    a.setFileBytes(getBytesFromInputStream(part.getInputStream()));
+                    a.setInputStream(part.getInputStream());
                 }
                 if (saveFile) {
                     File attachemntFile = saveFile(filename, dirPath, part.getInputStream());
@@ -477,7 +480,7 @@ public class EmlHandlerUtils {
     }
 
     public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc,
-            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException {
+            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException, IOException {
 
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
@@ -514,10 +517,14 @@ public class EmlHandlerUtils {
             // Part two is attachment
             for (EmlHandlerAttachment attachment : attachments) {
                 messageBodyPart = new MimeBodyPart();
-                byte[] fileBytes = attachment.getFileBytes();
+//                byte[] fileBytes = attachment.getFileBytes();
                 String attachmentName = attachment.getFileName();
-                ByteArrayDataSource source
-                        = new ByteArrayDataSource(fileBytes, attachment.getMimeType());
+                ByteArrayDataSource source;
+                if (attachment.getInputStream() != null) {
+                    source = new ByteArrayDataSource(attachment.getInputStream(), attachment.getMimeType());
+                } else {
+                    source = new ByteArrayDataSource(attachment.getFileBytes(), attachment.getMimeType());
+                }
                 messageBodyPart.setDataHandler(
                         new DataHandler(source));
                 messageBodyPart.setFileName(attachmentName);

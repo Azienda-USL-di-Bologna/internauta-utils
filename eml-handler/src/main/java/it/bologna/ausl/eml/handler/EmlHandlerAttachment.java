@@ -1,5 +1,6 @@
 package it.bologna.ausl.eml.handler;
 
+import java.io.InputStream;
 import java.io.Serializable;
 
 /**
@@ -24,6 +25,7 @@ public class EmlHandlerAttachment  implements Serializable {
     private Integer size;
     private Boolean forHtmlAttribute = false;
     private byte[] fileBytes;
+    private InputStream inputStream;
 
     public Integer getId() {
         return id;
@@ -87,6 +89,14 @@ public class EmlHandlerAttachment  implements Serializable {
 
     public void setFileBytes(byte[] fileBytes) {
         this.fileBytes = fileBytes;
+    }
+
+    public InputStream getInputStream() {
+        return inputStream;
+    }
+
+    public void setInputStream(InputStream inputStream) {
+        this.inputStream = inputStream;
     }
     
     public String toString() {
