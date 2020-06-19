@@ -48,6 +48,7 @@ public class Detector {
     public static final MediaType MEDIA_TYPE_APPLICATION_MSG = MediaType.application("vnd.ms-outlook");
     public static final MediaType MEDIA_TYPE_APPLICATION_7ZIP = MediaType.application("x-7z-compressed");
     public static final MediaType MEDIA_TYPE_APPLICATION_XDBF = MediaType.application("x-dbf");
+    public static final MediaType MEDIA_TYPE_APPLICATION_ZIP_COMPRESSED = MediaType.application("x-zip-compressed");
 
     private final int PKCS_7_TYPE_DETACHED = 0;
     private final int PKCS_7_TYPE_NOT_DETACHED = 1;
