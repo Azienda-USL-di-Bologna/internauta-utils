@@ -9,7 +9,10 @@ import org.apache.tika.mime.MediaType;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.CMSSignedDataParser;
+import org.bouncycastle.mime.encoding.Base64InputStream;
 import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.bouncycastle.tsp.cms.CMSTimeStampedDataParser;
 
 /**
@@ -70,10 +73,20 @@ public class P7mExtractor extends Extractor {
                     byte[] bytes = pemParser.readPemObject().getContent();
                     fis = new ByteArrayInputStream(bytes);
                 } catch (Exception subEx) {
-                    IOUtils.closeQuietly(fis);
-                    newFis = new FileInputStream(file);
-                    CMSTimeStampedDataParser tsd = new CMSTimeStampedDataParser(newFis);
-                    fis = tsd.getContent();
+                    try {
+                        IOUtils.closeQuietly(fis);
+                        newFis = new FileInputStream(file);
+    //                    CMSTimeStampedDataParser tsd = new CMSTimeStampedDataParser(newFis);
+                        CMSSignedDataParser tsd = new CMSSignedDataParser(new BcDigestCalculatorProvider(), newFis);
+                        fis = tsd.getSignedContent().getContentStream();
+                    }
+                    catch (Exception subSubEx) {
+                        IOUtils.closeQuietly(newFis);
+                        newFis = new FileInputStream(file);
+                        fis = new Base64InputStream(newFis);
+//                        asn1 = new ASN1InputStream(streambase64);
+//                        cms = new CMSSignedData(asn1);
+                    }
                 }
                 asn1 = new ASN1InputStream(fis);
                 cms = new CMSSignedData(asn1);
