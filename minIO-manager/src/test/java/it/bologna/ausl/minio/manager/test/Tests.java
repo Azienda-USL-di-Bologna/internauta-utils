@@ -176,43 +176,70 @@ public class Tests {
         testDeleteByFileId(minIOWrapper, fileInfoUpload.getFileId(), fileInfoUpload.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfoUpload.getFileId());
     }
-    
-    public  void testRenameByFileId1() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
-        
-        minIOWrapper.renameByFileId(fileId, "/asfas/asfasf/", "abc.ped");
-    }
-    
-    public  void testRenameByPathAndFileName1() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        String path = "/gdm/";
-        String fileName = "ffff.pef";
-        
-        minIOWrapper.renameByPathAndFileName(path, fileName, "/aqaaa/vsdf/gdm/", "ff2ff.pef");
-    }
 
-    
-    public  void testGetFileInfoByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
+    @Test
+    public void testGetFilesInPath() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        String path = "/gdm/123/hsdfh/";
-        String fileName = "aaaf.pdf";
+        boolean overwrite = false;
+        String path1 = "/path/di/test";
+        String fileName1 = "test1.txt";
+        Map<String, Object> metadata1 = new HashMap();
+        metadata1.put("key1", "val11");
+        metadata1.put("key2", 12);
+        String path2 = "/path/di";
+        String fileName2 = "test2.txt";
+        Map<String, Object> metadata2 = new HashMap();
+        metadata2.put("key1", "val12");
+        metadata2.put("key2", 22);
+        String path3 = "/path/di/test";
+        String fileName3 = "test3.txt";
+        Map<String, Object> metadata3 = new HashMap();
+        metadata3.put("key1", "val13");
+        metadata3.put("key2", 23);
         
-        MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, 105);
-        System.out.println("fileInfo: " + fileInfo.toString());
-    }
-    
-    
-    
-    public  void testDownloadByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        String path = "/gdm/";
-        String fileName = "aaa.pdf";
+        String pathToCheck = "/path";
         
-        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, 105);) {
-              File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
-              java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
+        MinIOWrapperFileInfo fileInfoUpload1 = upload(minIOWrapper, path1, fileName1, null, overwrite);
+        MinIOWrapperFileInfo fileInfoUpload2 = upload(minIOWrapper, path2, fileName2, null, overwrite);
+        MinIOWrapperFileInfo fileInfoUpload3 = upload(minIOWrapper, path3, fileName3, null, overwrite);
+        Assertions.assertAll("tutti i file devono essere stati caricati",
+                () -> Assertions.assertNotNull(fileInfoUpload1),
+                () -> Assertions.assertNotNull(fileInfoUpload2),
+                () -> Assertions.assertNotNull(fileInfoUpload3)
+        );
+        
+        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(pathToCheck);
+        Assertions.assertAll("deve aver trovato 3 risultati",
+                () ->  Assertions.assertNotNull(filesInPath),
+                () -> Assertions.assertEquals(3, filesInPath.size())
+        );
+        MinIOWrapperFileInfo fileInfo1 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload1.getFileId())).findFirst().get();
+        Assertions.assertAll("il file 1 è stato trovato e i campi sono corretti",
+                () -> Assertions.assertNotNull(fileInfo1),
+                () -> Assertions.assertEquals(fileInfo1.getPath(), path1),
+                () -> Assertions.assertEquals(fileInfo1.getFileName(), fileName1)
+        );
+        
+        MinIOWrapperFileInfo fileInfo2 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload2.getFileId())).findFirst().get();
+        Assertions.assertAll("il file 2 è stato trovato e i campi sono corretti",
+                () -> Assertions.assertNotNull(fileInfo2),
+                () -> Assertions.assertEquals(fileInfo2.getPath(), path2),
+                () -> Assertions.assertEquals(fileInfo2.getFileName(), fileName2)
+        );
+        
+        MinIOWrapperFileInfo fileInfo3 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload3.getFileId())).findFirst().get();
+        Assertions.assertAll("il file 3 è stato trovato e i campi sono corretti",
+                () -> Assertions.assertNotNull(fileInfo3),
+                () -> Assertions.assertEquals(fileInfo3.getPath(), path3),
+                () -> Assertions.assertEquals(fileInfo3.getFileName(), fileName3)
+        );
+        
+        testDeleteByFileId(minIOWrapper, fileInfo1.getFileId(), fileInfo1.getMd5());
+        testRemoveByFileId(minIOWrapper, fileInfo1.getFileId());
+        testDeleteByFileId(minIOWrapper, fileInfo2.getFileId(), fileInfo2.getMd5());
+        testRemoveByFileId(minIOWrapper, fileInfo2.getFileId());
+        testDeleteByFileId(minIOWrapper, fileInfo3.getFileId(), fileInfo2.getMd5());
+        testRemoveByFileId(minIOWrapper, fileInfo3.getFileId());
     }
     
 
