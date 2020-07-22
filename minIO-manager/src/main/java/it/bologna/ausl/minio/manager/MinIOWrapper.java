@@ -830,28 +830,63 @@ public class MinIOWrapper {
     }
     
     /**
-     * TODO: controllare il filename del file che si sta ripristinando, non deve esistere un file con lo stesso path, lo stesso nome, nella stessa azienda, se esista, cambiare il nome.
+     * Ripristina un file cancellato logicamente
      * @param fileId
      * @throws MinIOWrapperException 
      */
     public void restoreByFileId(String fileId) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
-            PgArray keyPgArray = (PgArray) conn.createQuery(
-                    "update repo.files set deleted = false, delete_date = null, bucket = codice_azienda " +
-                    "where file_id = :file_id and deleted = true returning array[server_id::text, bucket]", true)
+            List<Map<String, Object>> pathAndAzienda = conn.createQuery(
+                    "select \"path\", filename, codice_azienda, bucket, server_id " +
+                    "from repo.files " +
+                    "where file_id = :file_id")
                     .addParameter("file_id", fileId)
-                    .executeUpdate().getKey();
-            // ((org.postgresql.jdbc.PgArray)executeUpdate.getKey()).getArray()[2]
-            if (keyPgArray != null) {
-                Object[] array = (Object[]) keyPgArray.getArray();
-                Integer serverId = Integer.parseInt((String) array[0]);
-                //String fileName = (String) array[1];
-                String bucket = (String) array[1];
-                restoreFromTrash(fileId, bucket, serverId);
+                    .executeAndFetchTable().asList();
+            
+            // prendo in lock basato sul path, il nuovo nome e il codice azienda
+            String path = (String) pathAndAzienda.get(0).get("path");
+            String fileName = (String) pathAndAzienda.get(0).get("filename");
+            Integer codiceAzienda = (Integer) pathAndAzienda.get(0).get("codice_azienda");
+//            String bucket = (String) pathAndAzienda.get(0).get("bucket");
+            Integer serverId = (Integer) pathAndAzienda.get(0).get("server_id");
+            int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
+            System.out.println("lockingMD5: " + lockingHash);
+            conn.createQuery(
+                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
+                    .addParameter("locking_md5", lockingHash)
+                    .executeAndFetchTable();
+            
+            // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
+            List<Map<String, Object>> res = conn.createQuery(
+                    "select 1 " +
+                    "from repo.files " + 
+                    "where \"path\" = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false ")
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
+                    .executeAndFetchTable().asList();
+            String fileIdUpdated;
+            if (!res.isEmpty()) {
+                // per non avere un file con lo stesso nome di un file già presente (nello stesso path per lo stesso codice_azienda, cambio il nome
+                Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
+                .executeAndFetchFirst(Integer.class);
+                fileName = StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
+            }
+            
+            fileIdUpdated = conn.createQuery(
+                    "update repo.files set filename = :filename, deleted = false, delete_date = null, bucket = codice_azienda " +
+                    "where file_id = :file_id and deleted = true returning file_id", true)
+                    .addParameter("file_id", fileId)
+                    .addParameter("filename", fileName)
+                    .executeUpdate().getKey(String.class);
+            
+            if (StringUtils.hasText(fileIdUpdated)) {
+                // se ho effettivamente trovato il file da riprostinare, lo ripristino
+                restoreFromTrash(fileId, codiceAzienda.toString(), serverId);
                 conn.commit();
             }
         } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nella cancellazione", ex);
+            throw new MinIOWrapperException("errore nel ripristino", ex);
         }
     }
     

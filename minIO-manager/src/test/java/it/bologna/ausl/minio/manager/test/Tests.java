@@ -29,7 +29,9 @@ public class Tests {
     
     public static void main(String[] args) throws MinIOWrapperException, IOException, FileNotFoundException, NoSuchAlgorithmException {
         Tests t = new Tests();
-        t.uploadFile();
+//        t.uploadFile();
+//        t.deleteFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
+//        t.restoreFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
 //        t.testUploadDownloadGetFileInfoAndDeleteByFileId();
 //    t.testGetByPathAndFileName();
 //        String fileId = "59/5c/bf/51/595cbf51-791e-4679-b143-67784c615a5d/test.txt";
@@ -47,6 +49,16 @@ public class Tests {
         boolean overwrite = false;
         MinIOWrapperFileInfo res = upload(minIOWrapper, "/path/di/test/", "test.txt", metadata, overwrite);
         System.out.println("res: " + res.toString());
+    }
+    
+    public void deleteFile(String fileId) throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        minIOWrapper.deleteByFileId(fileId);
+    }
+    
+    public void restoreFile(String fileId) throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        minIOWrapper.restoreByFileId(fileId);
     }
     
     @Test
