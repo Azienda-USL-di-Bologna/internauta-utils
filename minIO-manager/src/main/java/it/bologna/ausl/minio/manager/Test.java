@@ -17,11 +17,16 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 import org.sql2o.tools.IOUtils;
 
@@ -31,7 +36,25 @@ import org.sql2o.tools.IOUtils;
  */
 public class Test {
 
-    public static void main(String[] args) throws IllegalArgumentException, IOException, ErrorResponseException, InsufficientDataException, FileNotFoundException, MinIOWrapperException {
+    public static void main(String[] args) throws IllegalArgumentException, IOException, ErrorResponseException, InsufficientDataException, FileNotFoundException, MinIOWrapperException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("MD2");
+        byte[] hashbytes1 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
+        System.out.println(new BigInteger(1, hashbytes1));
+        byte[] hashbytes2 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
+        System.out.println(new BigInteger(1, hashbytes2));
+        byte[] hashbytes3 = digest.digest("ciao gdm2".getBytes(StandardCharsets.UTF_8));
+        System.out.println(new BigInteger(1, hashbytes3));
+        BigInteger bigInteger1 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
+        BigInteger bigInteger2 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
+        BigInteger bigInteger3 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm2".getBytes()));
+        System.out.println(bigInteger1);
+        System.out.println(bigInteger2);
+        System.out.println(bigInteger3);
+        System.out.println("ciao gdm1".hashCode());
+        System.out.println("ciao gdm1".hashCode());
+        System.out.println("ciao gdm2".hashCode());
+        System.out.println("ciao gdm2".hashCode());
+        System.out.println("gdm ciao".hashCode());
 //        genericTest();
 //        testUpload();
 //        testDownloadByFileId();
@@ -44,18 +67,13 @@ public class Test {
 //        testDeleteByPathAndFileName();
 //        testRestoreByFileId();
 //        testGetFilesInPath();
-        testDirectRemoveFromMinIO();
+//        testDirectRemoveFromMinIO();
     }
     
     public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "38/31/61/12/38316112-5c0e-4790-872b-6bc652a13911/test.txt";
         minIOWrapper.remove(fileId, "trash", 1);
-    }
-    
-    public static void genericTest() {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        minIOWrapper.test();
     }
     
     public static void testGetFilesInPath() throws MinIOWrapperException {

@@ -29,7 +29,7 @@ public class Tests {
     
     public static void main(String[] args) throws MinIOWrapperException, IOException, FileNotFoundException, NoSuchAlgorithmException {
         Tests t = new Tests();
-        t.testRenameByPathAndFileName();
+        t.uploadFile();
 //        t.testUploadDownloadGetFileInfoAndDeleteByFileId();
 //    t.testGetByPathAndFileName();
 //        String fileId = "59/5c/bf/51/595cbf51-791e-4679-b143-67784c615a5d/test.txt";
@@ -39,13 +39,23 @@ public class Tests {
 //        t.testRemoveByFileId(minIOWrapper, fileId);
     }
     
+    public void uploadFile() throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        Map<String, Object> metadata = new HashMap();
+        metadata.put("key1", "val1");
+        metadata.put("key2", 2);
+        boolean overwrite = false;
+        MinIOWrapperFileInfo res = upload(minIOWrapper, "/path/di/test/", "test.txt", metadata, overwrite);
+        System.out.println("res: " + res.toString());
+    }
+    
     @Test
     public void testUploadDownloadGetFileInfoDeleteAndRemoveByFileId() throws FileNotFoundException, MinIOWrapperException, IOException, NoSuchAlgorithmException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
-        boolean overwrite = true;
+        boolean overwrite = false;
         MinIOWrapperFileInfo res = upload(minIOWrapper, "/path/di/test/", "test.txt", metadata, overwrite);
         Assertions.assertNotNull(res);
         testDownloadByFileId(minIOWrapper, res.getFileId(), res.getMd5());
