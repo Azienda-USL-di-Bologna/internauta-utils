@@ -21,6 +21,7 @@
         <module>mimetypeutil</module>
         <module>estrattore</module>   
         <module>middelmine</module>
+        <module>minIO-manager</module>
     </modules>
     <name>internauta-utils</name>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
