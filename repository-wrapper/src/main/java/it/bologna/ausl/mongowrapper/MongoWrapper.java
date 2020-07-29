@@ -1,5 +1,6 @@
 package it.bologna.ausl.mongowrapper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -72,6 +73,14 @@ public class MongoWrapper {
     private static final String TRASH_DIR = "/TRASH_DIR";
     private static final String IS_TEMP_COLLECTION_NAME = "isTemp";
 
+    public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+        if (useMinIO) {
+            return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
+        } else {
+            return new MongoWrapper(mongoUri);
+        }
+    }
+    
     /**
      * istanzia la classe collegandosi a mongo
      *
@@ -187,7 +196,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException 
      */
-    public String put(InputStream is, String filename, String dirname, boolean overwrite) throws IOException {
+    public String put(InputStream is, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(null, is, null, filename, dirname, null, null, overwrite);
     }
 
@@ -203,7 +212,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(File f, String filename, String dirname, boolean overwrite) throws IOException {
+    public String put(File f, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(f, null, null, filename, dirname, null, null, overwrite);
     }
 
@@ -220,7 +229,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(InputStream is, String uuid, String filename, String dirname, boolean overwrite) throws IOException {
+    public String put(InputStream is, String uuid, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(null, is, uuid, filename, dirname, null, null, overwrite);
     }
 
@@ -237,7 +246,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(File f, String uuid, String filename, String dirname, boolean overwrite) throws IOException {
+    public String put(File f, String uuid, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(f, null, uuid, filename, dirname, null, null, overwrite);
     }
 
@@ -255,7 +264,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(InputStream is, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException {
+    public String put(InputStream is, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(null, is, null, filename, dirname, creator, category, overwrite);
     }
 
@@ -273,7 +282,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(File f, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException {
+    public String put(File f, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(f, null, null, filename, dirname, creator, category, overwrite);
     }
 
@@ -292,7 +301,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(InputStream is, String uuid, String filename, String creator, String category, String dirname, boolean overwrite) throws IOException {
+    public String put(InputStream is, String uuid, String filename, String creator, String category, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(null, is, uuid, filename, dirname, creator, category, overwrite);
     }
 
@@ -311,7 +320,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    public String put(File f, String uuid, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException {
+    public String put(File f, String uuid, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(f, null, uuid, filename, dirname, creator, category, overwrite);
     }
 
@@ -331,7 +340,7 @@ public class MongoWrapper {
      * @return l'uuid del file creato
      * @throws IOException IOException
      */
-    private String _put(File f, InputStream is, String uuid, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException {
+    private String _put(File f, InputStream is, String uuid, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
         GridFSInputFile inf;
         String path = dirname + '/' + filename;
         log.info("putting " + filename + " in: " + dirname + (overwrite ? " overwriting..." : "..."));
@@ -377,7 +386,7 @@ public class MongoWrapper {
      * @param uuid uuid del file da scaricare
      * @return l'InputStream del file identificato dall'uuid passato
      */
-    public InputStream get(String uuid) {
+    public InputStream get(String uuid) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFile(uuid);
@@ -397,7 +406,7 @@ public class MongoWrapper {
      * @param filepath su mongo del file da scaricare
      * @return l'InputStream del file identificato dall'uuid passato
      */
-    public InputStream getByPath(String filepath) {
+    public InputStream getByPath(String filepath) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFileByPath(filepath);
@@ -416,7 +425,7 @@ public class MongoWrapper {
      * @param uuid uuid del file
      * @return MD5 del file passato come parametro
      */
-    public String getMD5ByUuid(String uuid) {
+    public String getMD5ByUuid(String uuid) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFile(uuid);
@@ -435,7 +444,7 @@ public class MongoWrapper {
      * @param filepath il filepath su mongo del file
      * @return l'uuid del file passato per filepath
      */
-    public String getFidByPath(String filepath) {
+    public String getFidByPath(String filepath) throws MongoWrapperException {
 //        DBCollection c = db.getCollection("fs.files");
 //        DBObject dbo = new BasicDBObject("filename", filepath);
 //        DBObject res = c.findOne(dbo);
@@ -462,7 +471,7 @@ public class MongoWrapper {
      * @param filepath
      * @return MD5 del file passato per filepath
      */
-    public String getMD5ByPath(String filepath) {
+    public String getMD5ByPath(String filepath) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFileByPath(filepath);
@@ -483,7 +492,7 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions se
      * il file è stato eliminato logicamente
      */
-    public GridFSDBFile getGridFSFileByPath(String filepath) throws FileDeletedExceptions {
+    public GridFSDBFile getGridFSFileByPath(String filepath) throws FileDeletedExceptions, MongoWrapperException {
         List<GridFSDBFile> files = getGridFSFileByPath(filepath, false);
         if (files != null) {
             return files.get(0);
@@ -502,7 +511,7 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions se
      * includeDeleted = false e il file è stato eliminato logicamente
      */
-    private List<GridFSDBFile> getGridFSFileByPath(String filepath, boolean includeDeleted) throws FileDeletedExceptions {
+    private List<GridFSDBFile> getGridFSFileByPath(String filepath, boolean includeDeleted) throws MongoWrapperException, FileDeletedExceptions {
         DBObject query = QueryBuilder.start("filename").is(filepath).get();
         if (includeDeleted) {
             query = QueryBuilder.start().
@@ -539,7 +548,7 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions se
      * il file è stato eliminato logicamente
      */
-    public GridFSDBFile getGridFSFile(String uuid) throws FileDeletedExceptions {
+    public GridFSDBFile getGridFSFile(String uuid) throws MongoWrapperException, FileDeletedExceptions {
         return getGridFSFile(uuid, false);
     }
 
@@ -553,7 +562,7 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions se
      * includeDeleted = false e il file è stato eliminato logicamente
      */
-    private GridFSDBFile getGridFSFile(String uuid, boolean includeDeleted) throws FileDeletedExceptions {
+    private GridFSDBFile getGridFSFile(String uuid, boolean includeDeleted) throws MongoWrapperException, FileDeletedExceptions {
         BasicDBObject id = null;
         ObjectId oid = null;
         try {
@@ -705,7 +714,7 @@ public class MongoWrapper {
      * @param dirname nome della directory
      * @return un ArrayList contente l'elenco dei file nella directory passata
      */
-    public List<String> getDirFiles(String dirname) {
+    public List<String> getDirFiles(String dirname) throws MongoWrapperException {
         if (!dirname.endsWith("/")) {
             dirname += "/";
         }
@@ -718,8 +727,9 @@ public class MongoWrapper {
      *
      * @param dirname nome della directory
      * @return un ArrayList contente l'elenco dei file nella directory passata
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public List<String> getDirFilesAndFolders(String dirname) {
+    public List<String> getDirFilesAndFolders(String dirname) throws MongoWrapperException {
         if (!dirname.endsWith("/")) {
             //NON TOCCARE se no non stiamo piu' partendo da una directory
             dirname += "/";
@@ -771,8 +781,9 @@ public class MongoWrapper {
      * filepath)
      *
      * @param uuid l'uuid del file da eliminare logicamente
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public void delete(String uuid) {
+    public void delete(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
             f = getGridFSFile(uuid);
@@ -791,8 +802,9 @@ public class MongoWrapper {
      * filepath)
      *
      * @param filepath il filepath del file da eliminare logicamente
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public void deleteByPath(String filepath) {
+    public void deleteByPath(String filepath) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
             f = getGridFSFileByPath(filepath);
@@ -828,8 +840,9 @@ public class MongoWrapper {
      * elimina definitivamente da mongo il file identificato dall'uuid passato
      *
      * @param uuid l'uuid del file da eliminare definitivamente
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public void erase(String uuid) {
+    public void erase(String uuid) throws MongoWrapperException {
         BasicDBObject id = null;
         ObjectId oid = null;
         try {
@@ -937,7 +950,7 @@ public class MongoWrapper {
      * @return l'elenco degli uuid dei file eliminati logicamente fino alla data
      * passata
      */
-    public List<String> getDeletedLessThan(long timeInMillis) {
+    public List<String> getDeletedLessThan(long timeInMillis) throws MongoWrapperException {
         DBObject query = QueryBuilder.start("metadata.deleteDate").lessThanEquals(timeInMillis).get();
         return getFilesId(getFiles(query, true));
     }
@@ -947,7 +960,7 @@ public class MongoWrapper {
      *
      * @return l'elenco degli uuid di tutti i file eliminati logicamente
      */
-    public List<String> getDeleted() {
+    public List<String> getDeleted() throws MongoWrapperException {
         DBObject query = QueryBuilder.start("metadata.deleteDate").exists("metadata.deleteDate").get();
         return getFilesId(getFiles(query, true));
     }
@@ -958,7 +971,7 @@ public class MongoWrapper {
      * @param gridFSFiles gridFSFiles
      * @return l'elenco degli uuid dei GridFSDBFile passati
      */
-    private List<String> getFilesId(List<GridFSDBFile> gridFSFiles) {
+    private List<String> getFilesId(List<GridFSDBFile> gridFSFiles) throws MongoWrapperException {
         List<String> res = new ArrayList<>();
         gridFSFiles.stream().forEach((f) -> {
             res.add(f.get("_id").toString());
@@ -975,25 +988,27 @@ public class MongoWrapper {
             } catch (FileDeletedExceptions ex) {
                 throw new MongoWrapperException("this shouldn't happen", ex);
             }
-            String deleteDateString = "none";
-            if (f.getMetaData() != null && f.getMetaData().get("deleteDate") != null) {
-                DateFormat df1 = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-                deleteDateString = df1.format(new Date((long) f.getMetaData().get("deleteDate")));
+            if (f != null) {
+                String deleteDateString = "none";
+                if (f.getMetaData() != null && f.getMetaData().get("deleteDate") != null) {
+                    DateFormat df1 = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                    deleteDateString = df1.format(new Date((long) f.getMetaData().get("deleteDate")));
+                }
+                String deleteDateMillis = "none";
+                if (f.getMetaData() != null && f.getMetaData().get("deleteDate") != null) {
+                    deleteDateMillis = Long.toString((long) f.getMetaData().get("deleteDate"));
+                }
+                String oldPath = "none";
+                if (f.getMetaData() != null && f.getMetaData().get("oldPath") != null) {
+                    oldPath = (String) f.getMetaData().get("oldPath");
+                }
+                res.add(" -uuid: " + uuid
+                        + "\n - filepath: " + f.getFilename()
+                        + "\n - deleteDate: " + deleteDateString
+                        + "\n - deleteDate: " + deleteDateMillis
+                        + "\n - oldPath: " + oldPath
+                        + "\n");
             }
-            String deleteDateMillis = "none";
-            if (f.getMetaData() != null && f.getMetaData().get("deleteDate") != null) {
-                deleteDateMillis = Long.toString((long) f.getMetaData().get("deleteDate"));
-            }
-            String oldPath = "none";
-            if (f.getMetaData() != null && f.getMetaData().get("oldPath") != null) {
-                oldPath = (String) f.getMetaData().get("oldPath");
-            }
-            res.add(" -uuid: " + uuid
-                    + "\n - filepath: " + f.getFilename()
-                    + "\n - deleteDate: " + deleteDateString
-                    + "\n - deleteDate: " + deleteDateMillis
-                    + "\n - oldPath: " + oldPath
-                    + "\n");
         }
         return res;
     }
@@ -1002,12 +1017,14 @@ public class MongoWrapper {
      * elimina i file nella directory passata, ma non nelle sottodirectory
      *
      * @param dirname nome della directory
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public void delDirFiles(String dirname) {
+    public void delDirFiles(String dirname) throws MongoWrapperException {
         log.info("deleting dir: " + dirname + "...");
-        getDirFiles(dirname).stream().forEach((f) -> {
-            this.delete(f);
-        });
+        List<String> dirFiles = getDirFiles(dirname);
+        for (String file : dirFiles) {
+            this.delete(file);
+        }
         log.info("deleted dir: " + dirname);
     }
 
@@ -1027,9 +1044,12 @@ public class MongoWrapper {
 
     public void delDirFilesAndFoldersNoSafe(String dirname) throws MongoWrapperException {
         log.info("deleting deep dir: " + dirname + "...");
-        getDirFilesAndFolders(dirname).stream().forEach((f) -> {
-            this.delete(f);
-        });
+        List<String> dirFilesAndFolders = getDirFilesAndFolders(dirname);
+        if (dirFilesAndFolders != null) {
+            for (String file : dirFilesAndFolders) {
+                this.delete(file);
+            }
+        }
         log.info("deleted deep dir: " + dirname);
     }
 
@@ -1087,14 +1107,13 @@ public class MongoWrapper {
     }
 
     /**
-     * sposta il file identificato dall'uuid passato nel nuovo filepath passato.
-     * Se esiste già un file nello stesso path al nuovo nome sarà agggiunto il
-     * suffisso "_1", "_2", ecc.
+     * sposta il file identificato dall'uuid passato nel nuovo filepath passato.Se esiste già un file nello stesso path al nuovo nome sarà agggiunto il suffisso "_1", "_2", ecc.
      *
      * @param uuid uuid del file da spostare
      * @param newFilepath nuovo filepath
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public void move(String uuid, String newFilepath) {
+    public void move(String uuid, String newFilepath) throws MongoWrapperException {
 //        BasicDBObject id = null;
 //        ObjectId oid = null;
 //        try {
@@ -1165,7 +1184,7 @@ public class MongoWrapper {
      * @param filepath il path del file
      * @return true se esiste un fil filepath passato, false altrimenti
      */
-    public Boolean existsObjectbyPath(String filepath) {
+    public Boolean existsObjectbyPath(String filepath) throws MongoWrapperException {
         String originalFilePath = filepath;
         GridFSDBFile f = null;
         try {
@@ -1195,7 +1214,7 @@ public class MongoWrapper {
      * @return true se esiste un file identificato dall'uuid passato, false
      * altrimenti
      */
-    public Boolean existsObjectbyUUID(String uuid) {
+    public Boolean existsObjectbyUUID(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
             f = getGridFSFile(uuid);
@@ -1214,7 +1233,7 @@ public class MongoWrapper {
      * @param uuid uuid del file
      * @return il filename del file identificato dall'uuid passato
      */
-    public String getFileName(String uuid) {
+    public String getFileName(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
             f = getGridFSFile(uuid);
@@ -1249,7 +1268,7 @@ public class MongoWrapper {
      * @param uuid uuid del file
      * @return il filepath del file identificato dall'uuid passato
      */
-    public String getFilePathByUuid(String uuid) {
+    public String getFilePathByUuid(String uuid) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFile(uuid);
@@ -1268,7 +1287,7 @@ public class MongoWrapper {
      * @param filepath il path del file
      * @return la dimensione in bytes del file identificato dal path passato
      */
-    public Long getSizeByPath(String filepath) {
+    public Long getSizeByPath(String filepath) throws MongoWrapperException {
         GridFSDBFile tmp = null;
         try {
             tmp = getGridFSFileByPath(filepath);
@@ -1287,7 +1306,7 @@ public class MongoWrapper {
      * @param uuid uuid del file
      * @return la dimensione in bytes del file identificato dall'uuid passato
      */
-    public Long getSizeByUuid(String uuid) {
+    public Long getSizeByUuid(String uuid) throws MongoWrapperException {
         GridFSDBFile file = null;
         try {
             file = getGridFSFile(uuid);
@@ -1305,8 +1324,9 @@ public class MongoWrapper {
      *
      * @param uuid uuid del file
      * @return la data di upload del file identificato dall'uuid passato
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public Calendar getUploadDateByUuid(String uuid) {
+    public Calendar getUploadDateByUuid(String uuid) throws MongoWrapperException {
         GridFSDBFile file = null;
         try {
             file = getGridFSFile(uuid);
@@ -1327,8 +1347,9 @@ public class MongoWrapper {
      *
      * @param filePath il path del file
      * @return la data di upload del file identificato dal path passato
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
-    public Calendar getUploadDateByPath(String filePath) {
+    public Calendar getUploadDateByPath(String filePath) throws MongoWrapperException {
         GridFSDBFile file = null;
         try {
             file = getGridFSFileByPath(filePath);
@@ -1358,7 +1379,7 @@ public class MongoWrapper {
      * mette il campo oldPath nei metadati ai file eliminati logicament eche non
      * ce l'hanno
      */
-    public void fixDeleted() {
+    public void fixDeleted() throws MongoWrapperException {
         List<String> deleted = getDeleted();
         for (String uuid : deleted) {
             try {

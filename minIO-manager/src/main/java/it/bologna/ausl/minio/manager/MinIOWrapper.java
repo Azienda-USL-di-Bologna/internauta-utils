@@ -1,5 +1,6 @@
 package it.bologna.ausl.minio.manager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
@@ -38,6 +39,7 @@ import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.springframework.util.StringUtils;
 import org.sql2o.Connection;
+import org.sql2o.Query;
 import org.sql2o.Sql2o;
 import org.sql2o.data.Table;
 
@@ -167,7 +169,7 @@ public class MinIOWrapper {
         String[] prefixPath = uuid.split("-", 2)[0].split("(?<=\\G..)");
         return StringUtils.arrayToDelimitedString(prefixPath, "/") + "/" + uuid + "/" + fileName;
     }
-
+    
     /**
      * Carica un file sul repository
      * @param file il file da cariare sul repository
@@ -181,9 +183,44 @@ public class MinIOWrapper {
      */
     public MinIOWrapperFileInfo put(File file, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
-            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite);
+            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, null);
             return res;
         }
+    }
+    
+    /**
+     * Carica un file sul repository
+     * @param file il file da cariare sul repository
+     * @param codiceAzienda es. 105, 902, 908, ecc.
+     * @param path il path che il file dovrà avere (path logico, quello fisico sul repository verrà generato random)
+     * @param fileName il nome che il file dovrà avere (NB: in caso overwrite=false e path logico e nome file già esistente, questo verrà cambiato aggiungendo un numero alla fine)
+     * @param metadata eventuali metadati da inserite, se non si vogliono inserire passare null
+     * @param overWrite se esiste già un file con lo stesso path logico e nome file e overwrite=true, questo viene sovrascritto, se overwrite=false, viene cambiato il nome file aggiungendo un numero alla fine e inserito come nuovo file
+     * @param mongoUuid l'uuid di mongo, viene usato dal mongowrapper per retrocompatibilità
+     * @return un oggetto contenente tutte le informazioni sul file caricato
+     * @throws MinIOWrapperException
+     * @throws java.io.FileNotFoundException
+     */
+    public MinIOWrapperFileInfo put(File file, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException, FileNotFoundException, IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, mongoUuid);
+            return res;
+        }
+    }
+
+    /**
+     * Carica un file sul repository
+     * @param obj il file da cariare sul repository
+     * @param codiceAzienda es. 105, 902, 908, ecc.
+     * @param path il path che il file dovrà avere (path logico, quello fisico sul repository verrà generato random)
+     * @param fileName il nome che il file dovrà avere (NB: in caso overwrite=false e path logico e nome file già esistente, questo verrà cambiato aggiungendo un numero alla fine)
+     * @param metadata eventuali metadati da inserite, se non si vogliono inserire passare null
+     * @param overWrite se esiste già un file con lo stesso path logico e nome file e overwrite=true, questo viene sovrascritto, se overwrite=false, viene cambiato il nome file aggiungendo un numero alla fine e inserito come nuovo file
+     * @return un oggetto contenente tutte le informazioni sul file caricato
+     * @throws MinIOWrapperException
+     */    
+    public MinIOWrapperFileInfo put(InputStream obj, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException {
+        return put(obj, codiceAzienda, path, fileName, metadata, overWrite, null);
     }
 
     /**
@@ -194,10 +231,11 @@ public class MinIOWrapper {
      * @param fileName il nome che il file dovrà avere (NB: in caso overwrite=false e path logico e nome file già esistente, questo verrà cambiato aggiungendo un numero alla fine)
      * @param metadata eventuali metadati da inserite, se non si vogliono inserire passare null
      * @param overWrite se esiste già un file con lo stesso path logico e nome file e overwrite=true, questo viene sovrascritto, se overwrite=false, viene cambiato il nome file aggiungendo un numero alla fine e inserito come nuovo file
+     * @param mongoUuid l'uuid di mongo, viene usato dal mongowrapper per retrocompatibilità
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
-    public MinIOWrapperFileInfo put(InputStream obj, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo put(InputStream obj, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException {
         try {
             // wrappo lo stream dentro uno DigestInputStream per poter calcolare md5
             DigestInputStream digestInputStream = new DigestInputStream(obj, MessageDigest.getInstance("MD5"));
@@ -235,7 +273,6 @@ public class MinIOWrapper {
             // NB: essendo un hash può essere che scatti il lock anche per uan stringa che non sia quella voluta, nel caso quel caricamento si metterà in coda anche se non deve, ma non è un problema
             try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
                 int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
-                System.out.println("lockingMD5: " + lockingHash);
                 conn.createQuery(
                         "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                         .addParameter("locking_md5", lockingHash)
@@ -287,13 +324,13 @@ public class MinIOWrapper {
                     case INSERT: // se devo inserire, faccio l'insert
                         String insertQuery
                                 = "INSERT INTO repo.files "
-                                + "(file_id, uuid, bucket, metadata, \"path\", filename, codice_azienda, server_id, \"size\", upload_date, deleted, md5) "
-                                + "VALUES(:file_id, :uuid, :bucket, :metadata::jsonb, :path, :filename, :codice_azienda, :server_id, :size, :upload_date, false, :md5)";
+                                + "(file_id, uuid, bucket, metadata, \"path\", filename, codice_azienda, server_id, \"size\", upload_date, deleted, md5, mongo_uuid) "
+                                + "VALUES(:file_id, :uuid, :bucket, :metadata::jsonb, :path, :filename, :codice_azienda, :server_id, :size, :upload_date, false, :md5, :mongo_uuid)";
                         fileTableId = conn.createQuery(insertQuery, true)
                                 .addParameter("file_id", physicalPath)
                                 .addParameter("uuid", uuid)
                                 .addParameter("bucket", bucketName)
-                                .addParameter("metadata", objectMapper.writeValueAsString(metadata))
+                                .addParameter("metadata", metadataToStringNullSafe(metadata))
                                 .addParameter("path", path)
                                 .addParameter("filename", fileName)
                                 .addParameter("codice_azienda", codiceAzienda)
@@ -301,6 +338,7 @@ public class MinIOWrapper {
                                 .addParameter("upload_date", Timestamp.valueOf(uploadDate.toLocalDateTime()))
                                 .addParameter("size", size)
                                 .addParameter("md5", md5)
+                                .addParameter("mongo_uuid", mongoUuid)
                                 .executeUpdate().getKey(Integer.class);
                         break;
 
@@ -308,15 +346,16 @@ public class MinIOWrapper {
                         // faccio l'update (solo in caso di overwrite), di quello che può essere cambiato: filename, metadata, server_id, size, modified_date, md5
                         String updateQuery
                                 = "UPDATE repo.files "
-                                + "SET metadata=:metadata, server_id=:server_id, size=:size, modified_date=:modified_date , md5=:md5 "
+                                + "SET metadata=:metadata, server_id=:server_id, size=:size, modified_date=:modified_date , md5=:md5, mongo_uuid = :mongo_uuid "
                                 + "where id = :id and deleted=false";
                         conn.createQuery(updateQuery, true)
                                 //.addParameter("filename", fileName)
-                                .addParameter("metadata", objectMapper.writeValueAsString(metadata))
+                                .addParameter("metadata", metadataToStringNullSafe(metadata))
                                 .addParameter("server_id", minIOServerAziendaMap.get(codiceAzienda))
                                 .addParameter("size", size)
                                 .addParameter("modified_date", Timestamp.valueOf(modifiedDate.toLocalDateTime()))
                                 .addParameter("md5", md5)
+                                .addParameter("mongo_uuid", mongoUuid)
                                 .addParameter("id", fileTableId)
                                 .executeUpdate();
                         break;
@@ -329,6 +368,7 @@ public class MinIOWrapper {
                 MinIOWrapperFileInfo uploadRes = new MinIOWrapperFileInfo(
                         fileTableId,
                         physicalPath,
+                        mongoUuid,
                         path,
                         fileName,
                         Math.toIntExact(size),
@@ -347,6 +387,14 @@ public class MinIOWrapper {
             }
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nell'upload del file", ex);
+        }
+    }
+    
+    private String metadataToStringNullSafe(Map<String, Object> metadata) throws JsonProcessingException {
+        if (metadata != null) {
+            return objectMapper.writeValueAsString(metadata);
+        } else {
+            return null;
         }
     }
 
@@ -369,6 +417,32 @@ public class MinIOWrapper {
      */
     public InputStream getByFileId(String fileId, boolean includeDeleted) throws MinIOWrapperException {
         MinIOWrapperFileInfo fileInfo = getFileInfoByFileId(fileId, includeDeleted);
+        if (fileInfo != null) {
+            return directGetFromMinIO(fileInfo.getFileId(), fileInfo.getServerId(), fileInfo.getBucketName());
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * Torna il file identificato dall'uuid di mongo passato (da usare per retrocompatibilità, nel caso il file proveniva da mongo)
+     * @param mongoUuid
+     * @return il file identificato dall'uuid di mongo passato
+     * @throws MinIOWrapperException 
+     */
+    public InputStream getByUuid(String mongoUuid) throws MinIOWrapperException {
+        return getByUuid(mongoUuid, false);
+    }
+    
+    /**
+     * Torna il file identificato dall'uuid di mongo passato (da usare per retrocompatibilità, nel caso il file proveniva da mongo)
+     * @param mongoUuid
+     * @param includeDeleted se true il file verrà cercato anche all'interno del cestino
+     * @return il file identificato dall'uuid di mongo passato
+     * @throws MinIOWrapperException 
+     */
+    public InputStream getByUuid(String mongoUuid, boolean includeDeleted) throws MinIOWrapperException {
+        MinIOWrapperFileInfo fileInfo = getFileInfoByUuid(mongoUuid, includeDeleted);
         if (fileInfo != null) {
             return directGetFromMinIO(fileInfo.getFileId(), fileInfo.getServerId(), fileInfo.getBucketName());
         } else {
@@ -416,6 +490,10 @@ public class MinIOWrapper {
         return getFileInfoByFileId(fileId, false);
     }
     
+    public MinIOWrapperFileInfo getFileInfoByFileId(String fileId, boolean includeDeleted) throws MinIOWrapperException {
+        return getFileInfo(fileId, null, null, null, null, includeDeleted);
+    }
+    
     /**
      * Torna le informazioni relative al file identificato dal fileId passato
      * @param fileId
@@ -423,25 +501,45 @@ public class MinIOWrapper {
      * @return le informazioni relative al file identificato dal fileId passato
      * @throws MinIOWrapperException 
      */
-    public MinIOWrapperFileInfo getFileInfoByFileId(String fileId, boolean includeDeleted) throws MinIOWrapperException {
-        
-        // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
+    private MinIOWrapperFileInfo getFileInfo(String fileId, String mongoUuid, String path, String fileName, Integer codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
+
         try (Connection conn = (Connection) sql2oConnection.open()) {
-            List<Map<String, Object>> res = conn.createQuery(
-                    "select id, path, filename, size, md5, server_id, codice_azienda, uuid, bucket, metadata, deleted, upload_date, modified_date, delete_date " +
-                    "from repo.files where file_id = :file_id" + (!includeDeleted? " and deleted = false": ""))
-                    .addParameter("file_id", fileId)
-                    .executeAndFetchTable().asList();
+            Query query = null;
+            String queryString = "select id, file_id, mongo_uuid, path, filename, size, md5, server_id, codice_azienda, uuid, bucket, metadata, deleted, upload_date, modified_date, delete_date from repo.files [WHERE]" + (!includeDeleted? " and deleted = false": "");
+            if (fileId != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
+                queryString = queryString.replace("[WHERE]", "where file_id = :file_id");
+                query = conn.createQuery(queryString)
+                        .addParameter("file_id", fileId);
+            } else if (mongoUuid != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
+                queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid");
+                query = conn.createQuery(queryString)
+                        .addParameter("mongo_uuid", mongoUuid);
+            }
+            else if (path != null && fileName != null && codiceAzienda != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
+                path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
+                queryString = queryString.replace("[WHERE]", "where path = :path and filename = :filename and codice_azienda = :codice_azienda");
+                query = conn.createQuery(queryString)
+                        .addParameter("path", path)
+                        .addParameter("filename", fileName)
+                        .addParameter("codice_azienda", codiceAzienda);
+            }
+            
+            List<Map<String, Object>> res = query.executeAndFetchTable().asList();
             if (!res.isEmpty()) {
                 Map<String, Object> foundFile = res.get(0);
                 Integer fileTableId = (Integer) foundFile.get("id");
-                String path = (String) foundFile.get("path");
-                String fileName = (String) foundFile.get("filename");
+                String fileIdFound = (String) foundFile.get("file_id");
+                String mongoUuidFound = (String) foundFile.get("mongo_uuid");
+                String pathFound = (String) foundFile.get("path");
+                String fileNameFound = (String) foundFile.get("filename");
                 Integer size = (Integer) foundFile.get("size");
                 String md5 = (String) foundFile.get("md5");
                 Integer serverId = (Integer) foundFile.get("server_id");
-                Integer codiceAzienda = (Integer) foundFile.get("codice_azienda");
-                String uuid = (String) foundFile.get("uuid");
+                Integer codiceAziendaFound = (Integer) foundFile.get("codice_azienda");
+                String uuidFound = (String) foundFile.get("uuid");
                 String bucket = (String) foundFile.get("bucket");
                 Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
                 Boolean deleted = (Boolean) foundFile.get("deleted");
@@ -451,14 +549,15 @@ public class MinIOWrapper {
 
                 MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
                         fileTableId,
-                        fileId,
-                        path,
-                        fileName,
+                        fileIdFound,
+                        mongoUuidFound,
+                        pathFound,
+                        fileNameFound,
                         size,
                         md5,
                         serverId,
-                        uuid,
-                        codiceAzienda,
+                        uuidFound,
+                        codiceAziendaFound,
                         bucket,
                         metadata,
                         deleted,
@@ -495,55 +594,28 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException 
      */
     public MinIOWrapperFileInfo getFileInfoByPathAndFileName(String path, String fileName, Integer codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
-        // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
-        try (Connection conn = (Connection) sql2oConnection.open()) {
-            path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
-            List<Map<String, Object>> res = conn.createQuery(
-                    "select id, file_id, size, md5, metadata, server_id, uuid, bucket, deleted, upload_date, modified_date, delete_date " +
-                    "from repo.files " +
-                    "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted? " and deleted = false": ""))
-                    .addParameter("path", path)
-                    .addParameter("filename", fileName)
-                    .addParameter("codice_azienda", codiceAzienda)
-                    .executeAndFetchTable().asList();
-            if (!res.isEmpty()) {
-                Map<String, Object> foundFile = res.get(0);
-                Integer fileTableId = (Integer) foundFile.get("id");
-                String fileId = (String) foundFile.get("file_id");
-                Integer size = (Integer) foundFile.get("size");
-                String md5 = (String) foundFile.get("md5");
-                Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
-                Integer serverId = (Integer) foundFile.get("server_id");
-                String uuid = (String) foundFile.get("uuid");
-                String bucket = (String) foundFile.get("bucket");
-                Boolean deleted = (Boolean) foundFile.get("deleted");
-                ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
-                ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
-                ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
-
-                MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                        fileTableId,
-                        fileId,
-                        path,
-                        fileName,
-                        size,
-                        md5,
-                        serverId,
-                        uuid,
-                        codiceAzienda,
-                        bucket,
-                        metadata,
-                        deleted,
-                        uploadDate,
-                        modifiedDate,
-                        deleteDate
-                );
-                return fileInfo;
-            }
-        } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nel reperimento dell informazioni sul file", ex);
-        }
-        return null;
+       return getFileInfo(null, null, path, fileName, codiceAzienda, includeDeleted);
+    }
+    
+    /**
+     * Torna le informazioni relative al file identificato dall'uuid di mongo passato (da usare per retrocompatibilità, nel caso il file proveniva da mongo)
+     * @param mongoUuid
+     * @return le informazioni relative al file identificato dall'uuid di mongo passato
+     * @throws MinIOWrapperException 
+     */
+    public MinIOWrapperFileInfo getFileInfoByUuid(String mongoUuid) throws MinIOWrapperException {
+       return getFileInfo(null, mongoUuid, null, null, null, false);
+    }
+    
+    /**
+     * Torna le informazioni relative al file identificato dall'uuid di mongo passato (da usare per retrocompatibilità, nel caso il file proveniva da mongo)
+     * @param mongoUuid
+     * @param includeDeleted se true il file verrà cercato anche all'interno del cestino
+     * @return le informazioni relative al file identificato dall'uuid di mongo passato
+     * @throws MinIOWrapperException 
+     */
+    public MinIOWrapperFileInfo getFileInfoByUuid(String mongoUuid, boolean includeDeleted) throws MinIOWrapperException {
+       return getFileInfo(null, mongoUuid, null, null, null, includeDeleted);
     }
 
     /**
@@ -577,7 +649,6 @@ public class MinIOWrapper {
                     .executeAndFetchTable().asList();
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
-            System.out.println("lockingMD5: " + lockingHash);
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                     .addParameter("locking_md5", lockingHash)
@@ -626,7 +697,6 @@ public class MinIOWrapper {
             
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
-//            System.out.println("lockingMD5: " + lockingHash);
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                     .addParameter("locking_md5", lockingHash)
@@ -679,7 +749,6 @@ public class MinIOWrapper {
             
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
-            System.out.println("lockingMD5: " + lockingHash);
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                     .addParameter("locking_md5", lockingHash)
@@ -732,7 +801,6 @@ public class MinIOWrapper {
             
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
-            System.out.println("lockingMD5: " + lockingHash);
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                     .addParameter("locking_md5", lockingHash)
@@ -766,32 +834,21 @@ public class MinIOWrapper {
     /**
      * Elimina tramite cancellazione logica un file identificato dal fileId passato.
      * Il file viene settato a deleted su DB e spostato nel bucket di TRASH
+     * @param mongoUuid
+     * @throws MinIOWrapperException 
+     */
+    public void deleteByFileUuid(String mongoUuid) throws MinIOWrapperException {
+        delete(null, mongoUuid, null, null, null);
+    }
+    
+    /**
+     * Elimina tramite cancellazione logica un file identificato dal fileId passato.
+     * Il file viene settato a deleted su DB e spostato nel bucket di TRASH
      * @param fileId
      * @throws MinIOWrapperException 
      */
     public void deleteByFileId(String fileId) throws MinIOWrapperException {
-        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
-            PgArray keyPgArray = (PgArray) conn.createQuery(
-                    "update repo.files " +
-                    "set deleted = true, delete_date = now(), bucket = :bucket " +
-                    "where file_id = :file_id and deleted = false " +
-                    "returning (select array[server_id::text, bucket] from repo.files where file_id = :file_id and deleted = false)", true)
-                    .addParameter("file_id", fileId)
-                    .addParameter("bucket", TRASH_BUCKET)
-                    .executeUpdate().getKey();
-            // ((org.postgresql.jdbc.PgArray)executeUpdate.getKey()).getArray()[2]
-            if (keyPgArray != null) {
-                Object[] array = (Object[]) keyPgArray.getArray();
-                Integer serverId = Integer.parseInt((String) array[0]);
-                //String fileName = (String) array[1];
-                String bucket = (String) array[1];
-                moveToTrash(fileId, bucket, serverId);
-                conn.commit();
-            }
-            
-        } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nella cancellazione", ex);
-        }
+        delete(fileId, null, null, null, null);
     }
     
     /**
@@ -803,25 +860,47 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException 
      */
     public void deleteByPathAndFileName(String path, String fileName, Integer codiceAzienda) throws MinIOWrapperException {
-        path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
-        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
-           PgArray keyPgArray = (PgArray) conn.createQuery(
-                    "update repo.files " +
+        delete(null, null, path, fileName, codiceAzienda);
+    }
+    
+    private void delete(String fileId, String mongoUuid, String path, String fileName, Integer codiceAzienda) throws MinIOWrapperException {
+        String queryString = 
+                    "update repo.files f " +
                     "set deleted = true,  delete_date = now(), bucket = :bucket " +
-                    "where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false " +
-                    "returning (select array[server_id::text, bucket, file_id] from repo.files where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false)", true)
-                   
+                    "[WHERE] " +
+                    "returning (select array[server_id::text, bucket, file_id] from repo.files where id = f.id)";
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+            Query query = null;
+            if (fileId != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
+                queryString = queryString.replace("[WHERE]", "where file_id = :file_id and deleted = false");
+                query = conn.createQuery(queryString, true)
+                        .addParameter("file_id", fileId)
+                        .addParameter("bucket", TRASH_BUCKET);
+            } else if (mongoUuid != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
+                queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid and deleted = false");
+                query = conn.createQuery(queryString, true)
+                        .addParameter("mongo_uuid", mongoUuid)
+                        .addParameter("bucket", TRASH_BUCKET);
+            }
+            else if (path != null && fileName != null && codiceAzienda != null) {
+                // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
+                path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
+                queryString = queryString.replace("[WHERE]", "where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false");
+                query = conn.createQuery(queryString, true)
                     .addParameter("path", path)
                     .addParameter("filename", fileName)
                     .addParameter("codice_azienda", codiceAzienda)
-                    .addParameter("bucket", TRASH_BUCKET)
-                    .executeUpdate().getKey();
+                    .addParameter("bucket", TRASH_BUCKET);
+            }
+            PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
             if (keyPgArray != null) {
                 Object[] array = (Object[]) keyPgArray.getArray();
                 Integer serverId = Integer.parseInt((String) array[0]);
                 String bucket = (String) array[1];
-                String fileId = (String) array[2];
-                moveToTrash(fileId, bucket, serverId);
+                String fileIdReturned = (String) array[2];
+                moveToTrash(fileIdReturned, bucket, serverId);
                 conn.commit();
             }
         } catch (Exception ex) {
@@ -850,7 +929,6 @@ public class MinIOWrapper {
 //            String bucket = (String) pathAndAzienda.get(0).get("bucket");
             Integer serverId = (Integer) pathAndAzienda.get(0).get("server_id");
             int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
-            System.out.println("lockingMD5: " + lockingHash);
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
                     .addParameter("locking_md5", lockingHash)
@@ -986,17 +1064,18 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException 
      */
     public List<MinIOWrapperFileInfo> getFilesInPath(String path) throws MinIOWrapperException {
-        return getFilesInPath(path, false);
+        return getFilesInPath(path, false, true);
     }
     
     /**
      * Torna tutti i files nel path indicato, inclusi i file nei sotto-path
      * @param path
      * @param includeDeleted se "true" torna anche i file cancellati logicamente
+     * @param includeSubDir
      * @return
      * @throws MinIOWrapperException 
      */
-    public List<MinIOWrapperFileInfo> getFilesInPath(String path, boolean includeDeleted) throws MinIOWrapperException {
+    public List<MinIOWrapperFileInfo> getFilesInPath(String path, boolean includeDeleted, boolean includeSubDir) throws MinIOWrapperException {
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
@@ -1006,14 +1085,22 @@ public class MinIOWrapper {
             // avendo quindi un array si pùò convertire path passato in array, allo stesso modo del path sul DB e prendere tutte le righe in cui l'array è contenuto
             // es. path_cercato_array <@ paths. Una volta trovati gli elementi si affina la ricerca con path like 'path_cercato%'
             // postgres farà prima la ricerca sugli array, dato che c'è un indice.
-            String query = 
-                        "select id, file_id, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date " +
+            Query query;
+            String queryString = 
+                        "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date " +
                         "from repo.files " +
-                        "where :path_array::text[] <@ paths_array and path like :path || '%'" + (!includeDeleted? " and deleted = false": "");
-            List<Map<String, Object>> queryRes = conn.createQuery(query)
+                        "[WHERE]" + (!includeDeleted? " and deleted = false": "");
+            if (includeSubDir) {
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'");
+                query = conn.createQuery(queryString)
                     .addParameter("path_array", pathsArray)
-                    .addParameter("path", path)
-                    .executeAndFetchTable().asList();
+                    .addParameter("path", path);
+            } else {
+                queryString = queryString.replace("[WHERE]", "where path = :path");
+                query = conn.createQuery(queryString)
+                    .addParameter("path", path);
+            }
+            List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             List<MinIOWrapperFileInfo> res = null;
              if (!queryRes.isEmpty()) {
                 res = new ArrayList<>();
@@ -1021,6 +1108,7 @@ public class MinIOWrapper {
                     Integer fileTableId = (Integer) foundFile.get("id");
                     String fileId = (String) foundFile.get("file_id");
                     String uuid = (String) foundFile.get("uuid");
+                    String mongoUuid = (String) foundFile.get("mongo_uuid");
                     String bucket = (String) foundFile.get("bucket");
                     Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
                     String filePath = (String) foundFile.get("path");
@@ -1037,6 +1125,7 @@ public class MinIOWrapper {
                     MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
                             fileTableId,
                             fileId,
+                            mongoUuid,
                             filePath,
                             fileName,
                             size,
@@ -1059,10 +1148,160 @@ public class MinIOWrapper {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
     }
+
+    /**
+     * cancella logicamente tutti i files nel path indicato, inclusi i file nei sotto-path
+     * @param path
+     * @throws MinIOWrapperException 
+     */
+    public void delFilesInPath(String path) throws MinIOWrapperException {
+        delFilesInPath(path, true);
+    }
+    
+    /**
+     * cancella logicamente tutti i files nel path indicato
+     * @param path
+     * @param includeSubDir se true cancella anche i file nelle sotto-directory
+     * @throws MinIOWrapperException 
+     */
+    public void delFilesInPath(String path, boolean includeSubDir) throws MinIOWrapperException {
+        path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
+        
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            Query query;
+            Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
+            String queryString = 
+                        "update repo.files f " +
+                        "set deleted = true, delete_date = now(), bucket = :bucket " +
+                        "[WHERE] " +
+                        "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
+            if (includeSubDir) {
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false");
+                query = conn.createQuery(queryString, true)
+                        .addParameter("bucket", TRASH_BUCKET)
+                        .addParameter("path_array", pathsArray)
+                        .addParameter("path", path);
+            } else {
+                queryString = queryString.replace("[WHERE]", "where path = :path");
+                query = conn.createQuery(queryString, true)
+                        .addParameter("bucket", TRASH_BUCKET)
+                        .addParameter("path", path);
+            }
+
+            // tramite questa query si riescono a prendere tutte le righe nel path e nei sotto-path.
+            // ogni path, al momento dell'iserimento della riga viene convertito in array(viene creato facendo split sulla "/") da un trigger
+            // avendo quindi un array si pùò convertire path passato in array, allo stesso modo del path sul DB e prendere tutte le righe in cui l'array è contenuto
+            // es. path_cercato_array <@ paths. Una volta trovati gli elementi si affina la ricerca con path like 'path_cercato%'
+            // postgres farà prima la ricerca sugli array, dato che c'è un indice.
+            Object[] deletedFiles = query.executeUpdate().getKeys();
+            if (deletedFiles != null) {
+                for (Object deletedFile : deletedFiles) {
+                    if (deletedFile != null) {
+                        String[] deletedFileArray = (String[])((PgArray) deletedFile).getArray();
+                        moveToTrash(deletedFileArray[0], deletedFileArray[1], Integer.parseInt(deletedFileArray[2]));
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new MinIOWrapperException("errore nella cancellazione logica dei files", ex);
+        }
+    }
+    
+    /**
+     * Torna l'elenco dei file cancellati logicamente di tutte le aziende
+     * @return l'elenco dei file cancellati logicamente di tutte le aziende
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getDeleted() throws MinIOWrapperException {
+        return getDeleted(null, null);
+    }
+    
+    /**
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata
+     * @param codiceAzienda se "null" torna quelli di tutte le aziende 
+     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna tutti quelli eliminati fino a quella data (compresa)
+     * @return l'elenco dei file cancellati logicamente per l'azienda passata
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getDeleted(Integer codiceAzienda, ZonedDateTime lessThan) throws MinIOWrapperException {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            Query query;
+            String queryString = 
+                        "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date " +
+                        "from repo.files " +
+                        "[WHERE] [DATE]";
+            if (lessThan != null) {
+                queryString = queryString.replace("[DATE]", "and delete_date <= :dalete_date");
+            } else {
+                queryString = queryString.replace("[DATE]", "");
+            }
+            if (codiceAzienda == null) {
+                queryString = queryString.replace("[WHERE]", "where deleted = true");
+                query = conn.createQuery(queryString);
+            } else {
+                queryString = queryString.replace("[WHERE]", "where deleted = true and codice_azienda = :codice_azienda");
+                query = conn.createQuery(queryString)
+                .addParameter("codice_azienda", codiceAzienda);
+            }
+            if (lessThan != null) {
+                query.addParameter("dalete_date", Timestamp.valueOf(lessThan.toLocalDateTime()));
+            }
+            List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
+            List<MinIOWrapperFileInfo> res = null;
+             if (!queryRes.isEmpty()) {
+                res = new ArrayList<>();
+                for (Map<String, Object> foundFile : queryRes) {
+                    Integer fileTableId = (Integer) foundFile.get("id");
+                    String fileId = (String) foundFile.get("file_id");
+                    String uuid = (String) foundFile.get("uuid");
+                    String mongoUuid = (String) foundFile.get("mongo_uuid");
+                    String bucket = (String) foundFile.get("bucket");
+                    Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
+                    String filePath = (String) foundFile.get("path");
+                    String fileName = (String) foundFile.get("filename");
+                    Integer codiceAziendaFound = (Integer) foundFile.get("codice_azienda");
+                    Integer serverId = (Integer) foundFile.get("server_id");
+                    Integer size = (Integer) foundFile.get("size");
+                    String md5 = (String) foundFile.get("md5");
+                    Boolean deleted = (Boolean) foundFile.get("deleted");
+                    ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
+                    ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
+                    ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
+
+                    MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
+                            fileTableId,
+                            fileId,
+                            mongoUuid,
+                            filePath,
+                            fileName,
+                            size,
+                            md5,
+                            serverId,
+                            uuid,
+                            codiceAziendaFound,
+                            bucket,
+                            metadata,
+                            deleted,
+                            uploadDate,
+                            modifiedDate,
+                            deleteDate
+                    );
+                    res.add(fileInfo);
+                }
+            }
+            return res;
+        } catch (Exception ex) {
+            throw new MinIOWrapperException("errore nella cancellazione logica dei files", ex);
+        }
+    }
     
     private <T> T getJsonField(Object field, TypeReference<T> type) throws MinIOWrapperException {
         try {
-            return objectMapper.readValue(((PGobject) field).getValue(), type);
+            if (field != null) {
+                return objectMapper.readValue(((PGobject) field).getValue(), type);
+            } else {
+                return null;
+            }
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei metadati", ex);
         }

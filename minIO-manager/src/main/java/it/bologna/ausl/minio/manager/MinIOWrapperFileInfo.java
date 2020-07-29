@@ -11,6 +11,7 @@ import java.util.Map;
 public class MinIOWrapperFileInfo {
     private Integer tableId;
     private String fileId;
+    private String mongoUuid;
     private String path;
     private String fileName;
     private Integer size;
@@ -28,9 +29,10 @@ public class MinIOWrapperFileInfo {
     public MinIOWrapperFileInfo() {
     }
 
-    public MinIOWrapperFileInfo(Integer tableId, String fileId, String path, String fileName, Integer size, String md5, Integer serverId, String generatedUuid, Integer codiceAzienda, String bucketName, Map<String, Object> metadata, Boolean deleted, ZonedDateTime uploadDate, ZonedDateTime modifiedDate, ZonedDateTime deleteDate) {
+    public MinIOWrapperFileInfo(Integer tableId, String fileId, String mongoUuid, String path, String fileName, Integer size, String md5, Integer serverId, String generatedUuid, Integer codiceAzienda, String bucketName, Map<String, Object> metadata, Boolean deleted, ZonedDateTime uploadDate, ZonedDateTime modifiedDate, ZonedDateTime deleteDate) {
         this.tableId = tableId;
         this.fileId = fileId;
+        this.mongoUuid = mongoUuid;
         this.path = path;
         this.fileName = fileName;
         this.size = size;
@@ -46,6 +48,14 @@ public class MinIOWrapperFileInfo {
         this.modifiedDate = modifiedDate;
     }
 
+    public Integer getTableId() {
+        return tableId;
+    }
+
+    public void setTableId(Integer tableId) {
+        this.tableId = tableId;
+    }
+    
     public String getFileId() {
         return fileId;
     }
@@ -54,12 +64,12 @@ public class MinIOWrapperFileInfo {
         this.fileId = fileId;
     }
 
-    public Integer getTableId() {
-        return tableId;
+    public String getMongoUuid() {
+        return mongoUuid;
     }
 
-    public void setTableId(Integer tableId) {
-        this.tableId = tableId;
+    public void setMongoUuid(String mongoUuid) {
+        this.mongoUuid = mongoUuid;
     }
 
     public String getPath() {
