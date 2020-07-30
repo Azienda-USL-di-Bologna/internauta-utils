@@ -2,8 +2,6 @@ package it.bologna.ausl.mongowrapper.test;
 
 
 import com.mongodb.MongoException;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
-import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.MongoWrapperMinIO;
@@ -18,7 +16,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.core.annotation.Order;
 
 /**
  *
@@ -48,8 +45,8 @@ public class Tests {
         System.out.println("test with upload in minIO");
         MongoWrapper wrapper = MongoWrapperMinIO.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        InputStream is = classloader.getResourceAsStream("test.txt");
-        String uuid = wrapper.put(is, "test.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test", false);
+        InputStream is = classloader.getResourceAsStream("test_1.txt");
+        String uuid = wrapper.put(is, "test_1.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test", false);
         testDownloadDeleteErase(wrapper, uuid);
     }
     
@@ -59,9 +56,55 @@ public class Tests {
         MongoWrapper wrapper = MongoWrapperMinIO.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
         MongoWrapper mongoWrapper = MongoWrapperMinIO.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, 105, null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        InputStream is = classloader.getResourceAsStream("test.txt");
-        String uuidMongo = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", true);
+        InputStream is = classloader.getResourceAsStream("test_1.txt");
+        String uuidMongo = mongoWrapper.put(is, "test_1.txt", "/" + getClass().getCanonicalName() + "/path/di/test", true);
         testDownloadDeleteErase(wrapper, uuidMongo);
+    }
+    
+    @Test
+    public void testGetFilesInPath() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+        System.out.println("test with upload in minIO");
+        MongoWrapper mongoWrapper = MongoWrapperMinIO.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, 105, null);
+        MongoWrapper wrapper = MongoWrapperMinIO.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream isMongo1 = classloader.getResourceAsStream("test_1.txt");
+        String uuidMongo1 = mongoWrapper.put(isMongo1, "test_1_Mongo.txt", "/" + getClass().getCanonicalName() + "/path/di/test", true);
+        InputStream isMongo2 = classloader.getResourceAsStream("test_2.txt");
+        String uuidMongo2 = mongoWrapper.put(isMongo2, "test_2_Mongo.txt", "/" + getClass().getCanonicalName() + "/path/di/test/sotto", true);
+        
+        InputStream isMinIO1 = classloader.getResourceAsStream("test_1.txt");
+        String uuidMinIO1 = wrapper.put(isMinIO1, "test_1_MinIO.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test", false);
+        InputStream isMinIO2 = classloader.getResourceAsStream("test_2.txt");
+        String uuidMinIO2 = wrapper.put(isMinIO2, "test_2_MinIO.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test/sotto", false);
+     
+        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo1);
+        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo2);
+        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMinIO1);
+        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMinIO2);
+        
+        List<String> dirFiles = wrapper.getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test");
+        Assert.assertTrue("devo trovare 2 elementi", dirFiles != null && dirFiles.size() == 2);
+        Assert.assertEquals("devo trovare l'elemento con uuidMongo1", 1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMongo1)).count());
+        Assert.assertEquals("devo trovare l'elemento con uuidMinIO1", 1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count());
+        
+        List<String> dirFilesAndFolders = wrapper.getDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
+        Assert.assertTrue("devo trovare 4 elementi", dirFilesAndFolders != null && dirFilesAndFolders.size() == 4);
+        Assert.assertEquals("devo trovare l'elemento con uuidMongo1", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo1)).count());
+        Assert.assertEquals("devo trovare l'elemento con uuidMongo2", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo2)).count());
+        Assert.assertEquals("devo trovare l'elemento con uuidMinIO1", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count());
+        Assert.assertEquals("devo trovare l'elemento con uuidMinIO2", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO2)).count());
+        
+        wrapper.delDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
+        dirFilesAndFolders = wrapper.getDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
+        Assert.assertTrue("devo trovare 0 elementi perché gli ho cancellati", dirFilesAndFolders == null || dirFilesAndFolders.isEmpty());
+        dirFilesAndFolders = ((MongoWrapperMinIO) wrapper).getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test", true, true);
+        Assert.assertTrue("devo trovare 2 elementi perché sto cercando anche nei cancellati (quelli su mongo non me li da comunque)", dirFilesAndFolders != null && dirFilesAndFolders.size() == 2);
+        wrapper.erase(uuidMongo1);
+        wrapper.erase(uuidMongo2);
+        wrapper.erase(uuidMinIO1);
+        wrapper.erase(uuidMinIO2);
+        dirFilesAndFolders = ((MongoWrapperMinIO) wrapper).getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test", true, true);
+        Assert.assertTrue("devo trovare 0 elementi anche cercando nei cancellati perché gli ho eliminati definitivamente", dirFilesAndFolders == null || dirFilesAndFolders.isEmpty());
     }
     
     private void testDownloadDeleteErase(MongoWrapper wrapper, String uuid) throws MongoWrapperException {

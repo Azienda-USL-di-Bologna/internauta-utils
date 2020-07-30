@@ -348,7 +348,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public void erase(String uuid) throws MongoWrapperException {
         try {            
-            MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid);
+            MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid, true);
             if (fileInfo != null) {
                 minIOWrapper.removeByFileId(fileInfo.getFileId(), false);
             } else {
@@ -400,8 +400,13 @@ public class MongoWrapperMinIO extends MongoWrapper {
     
     public List<String> getDirFiles(String dirname, boolean includeDeleted, boolean includeSubDir) throws MongoWrapperException {
         try {
-            List<String> filesFromMinIO = collectionToStreamNullSafe(minIOWrapper.getFilesInPath(dirname, includeDeleted, includeSubDir)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
-            List<String> filesFromMongo = super.getDirFilesAndFolders(dirname);
+            List<String> filesFromMinIO = collectionToStreamNullSafe(minIOWrapper.getFilesInPath(dirname, includeDeleted, includeSubDir)).map(fileInfo -> fileInfo.getMongoUuid()).collect(Collectors.toList());
+            List<String> filesFromMongo;
+            if (includeSubDir) {
+                filesFromMongo = super.getDirFilesAndFolders(dirname);
+            } else {
+                filesFromMongo = super.getDirFiles(dirname);
+            }
             if (filesFromMongo != null) {
                 filesFromMinIO.addAll(filesFromMongo);
             }
