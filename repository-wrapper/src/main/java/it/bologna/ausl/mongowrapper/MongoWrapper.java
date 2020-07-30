@@ -45,7 +45,7 @@ import org.bson.types.ObjectId;
  */
 public class MongoWrapper {
 
-    static {
+//    static {
 //        Properties env = System.getProperties();
 //        Set<Object> keySet = env.keySet();
 //        Iterator<Object> iterator = keySet.iterator();
@@ -61,7 +61,7 @@ public class MongoWrapper {
 //     configuro il logger per la console
 //        BasicConfigurator.configure();
 //        System.setProperty("log4j.configurationFile", Thread.currentThread().getContextClassLoader().getResource("it/bologna/ausl/mongowrapper/conf/log4j2.xml").getFile());
-    }
+//    }
 
 //    private static final Logger log = LogManager.getLogger(MongoWrapper.class);
     private static final Logger log = LogManager.getLogger(MongoWrapper.class);
@@ -391,7 +391,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getInputStream();
@@ -411,7 +411,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getInputStream();
@@ -430,7 +430,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getMD5();
@@ -457,7 +457,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.get("_id").toString();
@@ -476,7 +476,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getMD5();
@@ -788,7 +788,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            // log.warn(ex);
         }
         if (f != null) {
             delete(f);
@@ -809,7 +809,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (f != null) {
             delete(f);
@@ -1093,7 +1093,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (f != null) {
             if (existsObjectbyPath(newName)) {
@@ -1164,7 +1164,7 @@ public class MongoWrapper {
                 try {
                     f = getGridFSFile(uuid);
                 } catch (FileDeletedExceptions ex) {
-                    log.warn(ex);
+                    //log.warn(ex);
                 }
                 if (f != null) {
                     f.put("filename", newFilepath);
@@ -1190,7 +1190,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (f != null) {
             return true;
@@ -1219,7 +1219,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (f != null) {
             return true;
@@ -1238,7 +1238,7 @@ public class MongoWrapper {
         try {
             f = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
 
         if (f != null) {
@@ -1273,7 +1273,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getFilename();
@@ -1292,7 +1292,7 @@ public class MongoWrapper {
         try {
             tmp = getGridFSFileByPath(filepath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (tmp != null) {
             return tmp.getLength();
@@ -1311,7 +1311,7 @@ public class MongoWrapper {
         try {
             file = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (file != null) {
             return file.getLength();
@@ -1331,7 +1331,7 @@ public class MongoWrapper {
         try {
             file = getGridFSFile(uuid);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (file != null) {
             Calendar cal = Calendar.getInstance();
@@ -1354,7 +1354,7 @@ public class MongoWrapper {
         try {
             file = getGridFSFileByPath(filePath);
         } catch (FileDeletedExceptions ex) {
-            log.warn(ex);
+            //log.warn(ex);
         }
         if (file != null) {
             Calendar cal = Calendar.getInstance();
