@@ -274,8 +274,8 @@ public class MinIOWrapper {
             try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
                 int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
                 conn.createQuery(
-                        "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                        .addParameter("locking_md5", lockingHash)
+                        "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                        .addParameter("locking_hash", lockingHash)
                         .executeAndFetchTable();
                 
                 List<Map<String, Object>> res = conn.createQuery(
@@ -302,9 +302,7 @@ public class MinIOWrapper {
                     } else {
                         // non lo devo sovrascrivere per cui sarà un normale upload con la differenza che al nome del file aggiungo un numero preso da una sequenza sul db.
                         // non vogliamo avere più file con lo stesso path (path + nomefile) logico.
-                        Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
-                                .executeAndFetchFirst(Integer.class);
-                        fileName = StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
+                        fileName = getFileNameForNotOverwrite(conn, fileName);
                         
                         // dato che il nome del file è cambiato, cambio anche il nome del file sul path fisico
                         physicalPath = physicalPath.replace(StringUtils.getFilename(physicalPath), fileName);
@@ -388,6 +386,18 @@ public class MinIOWrapper {
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nell'upload del file", ex);
         }
+    }
+    
+    public String getFileNameForNotOverwrite(String fileName) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            return getFileNameForNotOverwrite(conn, fileName);
+        }
+    }
+    
+    public String getFileNameForNotOverwrite(Connection conn, String fileName) {
+        Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
+                                .executeAndFetchFirst(Integer.class);
+        return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
     }
     
     private String metadataToStringNullSafe(Map<String, Object> metadata) throws JsonProcessingException {
@@ -650,8 +660,8 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                    .addParameter("locking_md5", lockingHash)
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
                     .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
@@ -698,8 +708,8 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                    .addParameter("locking_md5", lockingHash)
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
                     .executeAndFetchTable();
             
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
@@ -750,8 +760,8 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                    .addParameter("locking_md5", lockingHash)
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
                     .executeAndFetchTable();
             
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
@@ -802,8 +812,8 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                    .addParameter("locking_md5", lockingHash)
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
                     .executeAndFetchTable();
             
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
@@ -930,8 +940,8 @@ public class MinIOWrapper {
             Integer serverId = (Integer) pathAndAzienda.get(0).get("server_id");
             int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_md5::bigint)")
-                    .addParameter("locking_md5", lockingHash)
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
                     .executeAndFetchTable();
             
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione

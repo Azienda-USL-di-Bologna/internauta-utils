@@ -515,28 +515,30 @@ public class MongoWrapperMinIO extends MongoWrapper {
      */
     @Override
     public String put(File f, String uuid, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
-        Map<String, Object> metadata = null;
-        try {
-            if (creator != null || category != null) {
-                metadata = new HashMap<>();
-            }
-            if (creator != null) {
-                metadata.put("creator", creator);
-            }
-            if (category != null) {
-                metadata.put("category", category);
-            }
-            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
-            return fileInfo.getMongoUuid();
-        } catch (Exception ex) {
-            throw new MongoWrapperException("errore", ex);
-        }
+        return put(f, null, uuid, filename, creator, category, dirname, overwrite);
     }
 
+    /**
+     * Carica il file su minIO e torna il fileId caricato
+     * @param is
+     * @param uuid
+     * @param filename
+     * @param creator
+     * @param category
+     * @param dirname
+     * @param overwrite
+     * @return
+     * @throws IOException
+     * @throws MongoWrapperException 
+     */
     @Override
     public String put(InputStream is, String uuid, String filename, String creator, String category, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
-        Map<String, Object> metadata = null;
+        return put(null, is, uuid, filename, creator, category, dirname, overwrite);
+    }
+    
+    private String put(File f, InputStream is, String uuid, String filename, String creator, String category, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         try {
+            Map<String, Object> metadata = null;
             if (creator != null || category != null) {
                 metadata = new HashMap<>();
             }
@@ -546,7 +548,21 @@ public class MongoWrapperMinIO extends MongoWrapper {
             if (category != null) {
                 metadata.put("category", category);
             }
-            MinIOWrapperFileInfo fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+            String mongoUuid = super.getFidByPath(StringUtils.trimTrailingCharacter(StringUtils.cleanPath(dirname), '/') + "/" + filename);
+            if (StringUtils.hasText(mongoUuid)) {
+                if (!overwrite) {
+                    filename = minIOWrapper.getFileNameForNotOverwrite(filename);
+                }
+            }
+            MinIOWrapperFileInfo fileInfo;
+            if (f != null) {
+                fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+            } else {
+                fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+            }
+            if (overwrite) {
+                super.delete(mongoUuid);
+            }
             return fileInfo.getMongoUuid();
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -562,7 +578,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public String put(InputStream is, String filename, String dirname, String creator, String category, boolean overwrite) throws IOException, MongoWrapperException {
         String uuid = UUID.randomUUID().toString();
-        return put(is, uuid, filename, dirname, creator, category, overwrite);
+        return put(is, uuid, filename, creator, category, dirname, overwrite);
     }
 
     @Override
@@ -572,7 +588,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
 
     @Override
     public String put(InputStream is, String uuid, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
-        return put(is, uuid, filename, dirname, null, null, overwrite); 
+        return put(is, uuid, filename, null, null, dirname, overwrite); 
     }
 
     @Override
@@ -584,7 +600,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public String put(InputStream is, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         String uuid = UUID.randomUUID().toString();
-        return put(is, uuid, filename, dirname, null, null, overwrite); 
+        return put(is, uuid, filename, null, null, dirname, overwrite); 
     }
 
     private <T extends Object> Stream<T> collectionToStreamNullSafe(Collection<T> collection) {

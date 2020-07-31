@@ -41,6 +41,46 @@ public class Tests {
     }
     
     @Test
+    public void testMixedUploadWithOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+        MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, 105, null);
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream is = classloader.getResourceAsStream("test_1.txt");
+        String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        InputStream mongoIsBefore = wrapper.get(mongoUuid);
+        IOUtils.closeQuietly(mongoIsBefore);
+        Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        InputStream minIOIs = wrapper.get(minIOUUid);
+        IOUtils.closeQuietly(minIOIs);
+        Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
+        InputStream mongoIsAfter = wrapper.get(mongoUuid);
+        IOUtils.closeQuietly(mongoIsAfter);
+        Assert.assertNull("il file appena caricato su mongo non deve più esistere perchè è stato sovrascritto", mongoIsAfter);
+    }
+    
+    @Test
+    public void testMixedUploadWithoutOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+        MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, 105, null);
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream is = classloader.getResourceAsStream("test_1.txt");
+        String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        InputStream mongoIsBefore = wrapper.get(mongoUuid);
+        IOUtils.closeQuietly(mongoIsBefore);
+        Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, false);
+        InputStream minIOIs = wrapper.get(minIOUUid);
+        IOUtils.closeQuietly(minIOIs);
+        Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
+        String fileName = wrapper.getFileName(minIOUUid);
+        Assert.assertTrue("al nome del file deve essere stato aggiunto \"_numero\"", fileName != null && fileName.matches(".*_\\d+\\..*"));
+        InputStream mongoIsAfter = wrapper.get(mongoUuid);
+        IOUtils.closeQuietly(mongoIsAfter);
+        Assert.assertNotNull("il file appena caricato su mongo deve esistere ancora perchè non è stato sovrascritto", mongoIsAfter);
+    }
+    
+    @Test
     public void uploadMinIODownloadDeleteErase() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in minIO");
         MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 105, null);
@@ -73,9 +113,9 @@ public class Tests {
         String uuidMongo2 = mongoWrapper.put(isMongo2, "test_2_Mongo.txt", "/" + getClass().getCanonicalName() + "/path/di/test/sotto", true);
         
         InputStream isMinIO1 = classloader.getResourceAsStream("test_1.txt");
-        String uuidMinIO1 = wrapper.put(isMinIO1, "test_1_MinIO.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test", false);
+        String uuidMinIO1 = wrapper.put(isMinIO1, "test_1_MinIO.txt",  "/" + getClass().getCanonicalName() + "/path/di/test", "Tests", getClass().getCanonicalName(), false);
         InputStream isMinIO2 = classloader.getResourceAsStream("test_2.txt");
-        String uuidMinIO2 = wrapper.put(isMinIO2, "test_2_MinIO.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test/sotto", false);
+        String uuidMinIO2 = wrapper.put(isMinIO2, "test_2_MinIO.txt",  "/" + getClass().getCanonicalName() + "/path/di/test/sotto", "Tests", getClass().getCanonicalName(), false);
      
         Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo1);
         Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo2);
