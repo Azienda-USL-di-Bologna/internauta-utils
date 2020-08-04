@@ -55,18 +55,19 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>3.4.2</version>
-            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.sql2o</groupId>
             <artifactId>sql2o</artifactId>
             <version>1.6.0</version>
-            <type>jar</type>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.sql2o.extensions</groupId>
             <artifactId>sql2o-postgres</artifactId>
             <version>1.6.0</version>
+            <scope>provided</scope>
         </dependency>
         
         <!-- junit 5, unit test -->
