@@ -32,9 +32,10 @@ import org.sql2o.quirks.parameterparsing.SqlParameterParsingStrategy;
  * </pre>
  *
  * @param <T>
- * @see https://github.com/aaberg/sql2o/issues/199
+ * https://github.com/aaberg/sql2o/issues/199
  *
  * @author Thilo Planz
+ * editet by gdm
  */
 public class ArrayConverter<T> implements Converter<T[]> {
 
