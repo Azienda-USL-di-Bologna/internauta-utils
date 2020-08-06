@@ -271,6 +271,7 @@ public class MinIOWrapper {
             // prima di fare l'uload verifico se per caso esiste già un file con lo stesso nome e lo stesso path
             // prendo un advisory lock sull'hash della tringa formata dall'unione del path, filename e codice_azienda in modo che sono sicuro che non ne verrà eventualmente caricato uno nel frattempo
             // NB: essendo un hash può essere che scatti il lock anche per uan stringa che non sia quella voluta, nel caso quel caricamento si metterà in coda anche se non deve, ma non è un problema
+            // TODO: provare a usare la pg_advisory_xact_lock con 2 parametri
             try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
                 int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
                 conn.createQuery(
