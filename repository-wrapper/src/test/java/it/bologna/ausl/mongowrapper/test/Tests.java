@@ -47,10 +47,13 @@ public class Tests {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        IOUtils.closeQuietly(is);
         InputStream mongoIsBefore = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsBefore);
         Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        is = classloader.getResourceAsStream("test_1.txt");
         String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        IOUtils.closeQuietly(is);
         InputStream minIOIs = wrapper.get(minIOUUid);
         IOUtils.closeQuietly(minIOIs);
         Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
@@ -66,10 +69,13 @@ public class Tests {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+        IOUtils.closeQuietly(is);
         InputStream mongoIsBefore = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsBefore);
         Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        is = classloader.getResourceAsStream("test_1.txt");
         String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, false);
+        IOUtils.closeQuietly(is);
         InputStream minIOIs = wrapper.get(minIOUUid);
         IOUtils.closeQuietly(minIOIs);
         Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
