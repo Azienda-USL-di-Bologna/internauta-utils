@@ -14,6 +14,7 @@ public class PermessoEntitaStoredProcedure implements Serializable {
     private EntitaStoredProcedure soggetto;
     private EntitaStoredProcedure oggetto;
     private List<CategoriaPermessiStoredProcedure> categorie;
+    private List<PermessoEntitaStoredProcedure> derivati;
 
     public PermessoEntitaStoredProcedure() {
     }
@@ -46,5 +47,13 @@ public class PermessoEntitaStoredProcedure implements Serializable {
 
     public void setCategorie(List<CategoriaPermessiStoredProcedure> categorie) {
         this.categorie = categorie;
+    }
+
+    public List<PermessoEntitaStoredProcedure> getDerivati() {
+        return derivati;
+    }
+
+    public void setDerivati(List<PermessoEntitaStoredProcedure> derivati) {
+        this.derivati = derivati;
     }
 }
