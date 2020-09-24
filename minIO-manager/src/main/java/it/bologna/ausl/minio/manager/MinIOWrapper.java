@@ -64,7 +64,7 @@ public class MinIOWrapper {
     private static final Map<Integer, MinioClient> minIOServerClientMap = new HashMap<>();
     
     // mappo anche il serverId di ogni azienda (serve solo per l'upload, per il resto prendo il serverId presente in tabella repo.files)
-    private static final Map<Integer, Integer> minIOServerAziendaMap = new HashMap<>();
+    private static final Map<String, Integer> minIOServerAziendaMap = new HashMap<>();
     
     // connection al Db con Connection Pool
     private static Sql2o sql2oConnection = null;
@@ -137,7 +137,7 @@ public class MinIOWrapper {
                     .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
                 Integer serverId = (Integer) row.get("server_id");
-                Integer codiceAzienda = (Integer) row.get("codice_azienda");
+                String codiceAzienda = (String) row.get("codice_azienda");
                 minIOServerAziendaMap.put(codiceAzienda, serverId);
                 if (minIOServerClientMap.get(serverId) == null) {
                     String endPointUrl = (String) row.get("urls");
@@ -150,7 +150,7 @@ public class MinIOWrapper {
         }
     }
 
-    private MinioClient getMinIOClientFromCodiceAzienda(Integer codiceAzienda) {
+    private MinioClient getMinIOClientFromCodiceAzienda(String codiceAzienda) {
         Integer serverId = minIOServerAziendaMap.get(codiceAzienda);
         return minIOServerClientMap.get(serverId);
     }
@@ -181,7 +181,7 @@ public class MinIOWrapper {
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
-    public MinIOWrapperFileInfo put(File file, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
+    public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
             MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, null);
             return res;
@@ -201,7 +201,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      * @throws java.io.FileNotFoundException
      */
-    public MinIOWrapperFileInfo put(File file, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException, FileNotFoundException, IOException {
+    public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException, FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
             MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, mongoUuid);
             return res;
@@ -219,7 +219,7 @@ public class MinIOWrapper {
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */    
-    public MinIOWrapperFileInfo put(InputStream obj, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException {
         return put(obj, codiceAzienda, path, fileName, metadata, overWrite, null);
     }
 
@@ -235,7 +235,7 @@ public class MinIOWrapper {
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
-    public MinIOWrapperFileInfo put(InputStream obj, Integer codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException {
         try {
             // wrappo lo stream dentro uno DigestInputStream per poter calcolare md5
             DigestInputStream digestInputStream = new DigestInputStream(obj, MessageDigest.getInstance("MD5"));
@@ -254,7 +254,7 @@ public class MinIOWrapper {
             String physicalPath = generatePhysicalPath(fileName, uuid);
             
             // il nome del bucket sul quale andrà fatto l'upload del file (è il codiceAzienda)
-            String bucketName = codiceAzienda.toString();
+            String bucketName = codiceAzienda;
 
             // se il buvket ancora non esiste lo crea
             boolean bucketExists = minIOClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
@@ -469,7 +469,7 @@ public class MinIOWrapper {
      * @return il file identificato dal path e fileName passati sull'azienda passata
      * @throws MinIOWrapperException 
      */
-    public InputStream getByPathAndFileName(String path, String fileName, Integer codiceAzienza) throws MinIOWrapperException {
+    public InputStream getByPathAndFileName(String path, String fileName, String codiceAzienza) throws MinIOWrapperException {
         return getByPathAndFileName(path, fileName, codiceAzienza, false);
     }
 
@@ -482,7 +482,7 @@ public class MinIOWrapper {
      * @return il file identificato dal path e fileName passati sull'azienda passata
      * @throws MinIOWrapperException 
      */
-    public InputStream getByPathAndFileName(String path, String fileName, Integer codiceAzienza, boolean includeDeleted) throws MinIOWrapperException {
+    public InputStream getByPathAndFileName(String path, String fileName, String codiceAzienza, boolean includeDeleted) throws MinIOWrapperException {
         MinIOWrapperFileInfo fileInfo = getFileInfoByPathAndFileName(path, fileName, codiceAzienza, includeDeleted);
         if (fileInfo != null) {
             return directGetFromMinIO(fileInfo.getFileId(), fileInfo.getServerId(), fileInfo.getBucketName());
@@ -512,7 +512,7 @@ public class MinIOWrapper {
      * @return le informazioni relative al file identificato dal fileId passato
      * @throws MinIOWrapperException 
      */
-    private MinIOWrapperFileInfo getFileInfo(String fileId, String mongoUuid, String path, String fileName, Integer codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
+    private MinIOWrapperFileInfo getFileInfo(String fileId, String mongoUuid, String path, String fileName, String codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
 
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query = null;
@@ -549,7 +549,7 @@ public class MinIOWrapper {
                 Integer size = (Integer) foundFile.get("size");
                 String md5 = (String) foundFile.get("md5");
                 Integer serverId = (Integer) foundFile.get("server_id");
-                Integer codiceAziendaFound = (Integer) foundFile.get("codice_azienda");
+                String codiceAziendaFound = (String) foundFile.get("codice_azienda");
                 String uuidFound = (String) foundFile.get("uuid");
                 String bucket = (String) foundFile.get("bucket");
                 Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
@@ -591,7 +591,7 @@ public class MinIOWrapper {
      * @return le informazioni relative al file identificato dal path e fileName passati sull'azienda passata
      * @throws MinIOWrapperException 
      */
-    public MinIOWrapperFileInfo getFileInfoByPathAndFileName(String path, String fileName, Integer codiceAzienda) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo getFileInfoByPathAndFileName(String path, String fileName, String codiceAzienda) throws MinIOWrapperException {
         return getFileInfoByPathAndFileName(path, fileName, codiceAzienda, false);
     }
     
@@ -604,7 +604,7 @@ public class MinIOWrapper {
      * @return le informazioni relative al file identificato dal path e fileName passati sull'azienda passata
      * @throws MinIOWrapperException 
      */
-    public MinIOWrapperFileInfo getFileInfoByPathAndFileName(String path, String fileName, Integer codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo getFileInfoByPathAndFileName(String path, String fileName, String codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
        return getFileInfo(null, null, path, fileName, codiceAzienda, includeDeleted);
     }
     
@@ -870,11 +870,11 @@ public class MinIOWrapper {
      * @param codiceAzienda
      * @throws MinIOWrapperException 
      */
-    public void deleteByPathAndFileName(String path, String fileName, Integer codiceAzienda) throws MinIOWrapperException {
+    public void deleteByPathAndFileName(String path, String fileName, String codiceAzienda) throws MinIOWrapperException {
         delete(null, null, path, fileName, codiceAzienda);
     }
     
-    private void delete(String fileId, String mongoUuid, String path, String fileName, Integer codiceAzienda) throws MinIOWrapperException {
+    private void delete(String fileId, String mongoUuid, String path, String fileName, String codiceAzienda) throws MinIOWrapperException {
         String queryString = 
                     "update repo.files f " +
                     "set deleted = true,  delete_date = now(), bucket = :bucket " +
@@ -936,7 +936,7 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             String path = (String) pathAndAzienda.get(0).get("path");
             String fileName = (String) pathAndAzienda.get(0).get("filename");
-            Integer codiceAzienda = (Integer) pathAndAzienda.get(0).get("codice_azienda");
+            String codiceAzienda = (String) pathAndAzienda.get(0).get("codice_azienda");
 //            String bucket = (String) pathAndAzienda.get(0).get("bucket");
             Integer serverId = (Integer) pathAndAzienda.get(0).get("server_id");
             int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
@@ -971,7 +971,7 @@ public class MinIOWrapper {
             
             if (StringUtils.hasText(fileIdUpdated)) {
                 // se ho effettivamente trovato il file da riprostinare, lo ripristino
-                restoreFromTrash(fileId, codiceAzienda.toString(), serverId);
+                restoreFromTrash(fileId, codiceAzienda, serverId);
                 conn.commit();
             }
         } catch (Exception ex) {
@@ -1124,7 +1124,7 @@ public class MinIOWrapper {
                     Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
                     String filePath = (String) foundFile.get("path");
                     String fileName = (String) foundFile.get("filename");
-                    Integer codiceAzienda = (Integer) foundFile.get("codice_azienda");
+                    String codiceAzienda = (String) foundFile.get("codice_azienda");
                     Integer serverId = (Integer) foundFile.get("server_id");
                     Integer size = (Integer) foundFile.get("size");
                     String md5 = (String) foundFile.get("md5");
@@ -1234,7 +1234,7 @@ public class MinIOWrapper {
      * @return l'elenco dei file cancellati logicamente per l'azienda passata
      * @throws MinIOWrapperException 
      */
-    public List<MinIOWrapperFileInfo> getDeleted(Integer codiceAzienda, ZonedDateTime lessThan) throws MinIOWrapperException {
+    public List<MinIOWrapperFileInfo> getDeleted(String codiceAzienda, ZonedDateTime lessThan) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query;
             String queryString = 
@@ -1270,7 +1270,7 @@ public class MinIOWrapper {
                     Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
                     String filePath = (String) foundFile.get("path");
                     String fileName = (String) foundFile.get("filename");
-                    Integer codiceAziendaFound = (Integer) foundFile.get("codice_azienda");
+                    String codiceAziendaFound = (String) foundFile.get("codice_azienda");
                     Integer serverId = (Integer) foundFile.get("server_id");
                     Integer size = (Integer) foundFile.get("size");
                     String md5 = (String) foundFile.get("md5");

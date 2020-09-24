@@ -18,7 +18,7 @@ public class MinIOWrapperFileInfo {
     private String md5;
     private Integer serverId;
     private String generatedUuid;
-    private Integer codiceAzienda;
+    private String codiceAzienda;
     private String bucketName;
     private Map<String, Object> metadata;
     private Boolean deleted;
@@ -29,7 +29,7 @@ public class MinIOWrapperFileInfo {
     public MinIOWrapperFileInfo() {
     }
 
-    public MinIOWrapperFileInfo(Integer tableId, String fileId, String mongoUuid, String path, String fileName, Integer size, String md5, Integer serverId, String generatedUuid, Integer codiceAzienda, String bucketName, Map<String, Object> metadata, Boolean deleted, ZonedDateTime uploadDate, ZonedDateTime modifiedDate, ZonedDateTime deleteDate) {
+    public MinIOWrapperFileInfo(Integer tableId, String fileId, String mongoUuid, String path, String fileName, Integer size, String md5, Integer serverId, String generatedUuid, String codiceAzienda, String bucketName, Map<String, Object> metadata, Boolean deleted, ZonedDateTime uploadDate, ZonedDateTime modifiedDate, ZonedDateTime deleteDate) {
         this.tableId = tableId;
         this.fileId = fileId;
         this.mongoUuid = mongoUuid;
@@ -120,11 +120,11 @@ public class MinIOWrapperFileInfo {
         this.generatedUuid = generatedUuid;
     }
 
-    public Integer getCodiceAzienda() {
+    public String getCodiceAzienda() {
         return codiceAzienda;
     }
 
-    public void setCodiceAzienda(Integer codiceAzienda) {
+    public void setCodiceAzienda(String codiceAzienda) {
         this.codiceAzienda = codiceAzienda;
     }
 

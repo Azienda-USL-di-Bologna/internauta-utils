@@ -101,7 +101,7 @@ public class Tests {
 //        path = "/" + getClass().getCanonicalName() + path;
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test.txt");
-        MinIOWrapperFileInfo res = minIOWrapper.put(is, 105, path, fileName, metadata, overwrite);
+        MinIOWrapperFileInfo res = minIOWrapper.put(is, "105t", path, fileName, metadata, overwrite);
         return res;
     }
     
@@ -157,16 +157,16 @@ public class Tests {
         String fileName = "test.txt";
         MinIOWrapperFileInfo fileInfoUpload = upload(minIOWrapper, path, fileName, metadata, overwrite);
         Assertions.assertNotNull(fileInfoUpload);
-        MinIOWrapperFileInfo fileInfoByPathAndFileName = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, 105, false);
+        MinIOWrapperFileInfo fileInfoByPathAndFileName = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, "105t", false);
         Assertions.assertNotNull(fileInfoByPathAndFileName);
         Assertions.assertEquals(fileInfoUpload.getMd5(), fileInfoByPathAndFileName.getMd5());
         Assertions.assertEquals(fileInfoUpload.getBucketName(), fileInfoByPathAndFileName.getBucketName());
         Assertions.assertEquals(fileInfoUpload.getFileId(), fileInfoByPathAndFileName.getFileId());
-        InputStream file = minIOWrapper.getByPathAndFileName(path, fileName, 105);
+        InputStream file = minIOWrapper.getByPathAndFileName(path, fileName, "105t");
         String md5 = DigestUtils.md5DigestAsHex(file);
         Assertions.assertEquals(md5, fileInfoUpload.getMd5());
-        minIOWrapper.deleteByPathAndFileName(path, fileName, 105);
-        MinIOWrapperFileInfo fileInfoDeleted = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, 105, true);
+        minIOWrapper.deleteByPathAndFileName(path, fileName, "105t");
+        MinIOWrapperFileInfo fileInfoDeleted = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, "105t", true);
         Assertions.assertNotNull(fileInfoDeleted);
         Assertions.assertEquals(fileInfoUpload.getMd5(), fileInfoDeleted.getMd5());
         Assertions.assertEquals(fileInfoUpload.getFileId(), fileInfoDeleted.getFileId());

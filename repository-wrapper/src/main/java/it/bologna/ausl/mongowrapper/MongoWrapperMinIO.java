@@ -36,9 +36,9 @@ import org.springframework.util.StringUtils;
 public class MongoWrapperMinIO extends MongoWrapper {
     
     private final MinIOWrapper minIOWrapper;
-    private Integer codiceAzienda;
+    private String codiceAzienda;
     
-    public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+    public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
         this.codiceAzienda = codiceAzienda;
         if (objectMapper != null) {
