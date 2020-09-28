@@ -73,7 +73,7 @@ public class MongoWrapper {
     private static final String TRASH_DIR = "/TRASH_DIR";
     private static final String IS_TEMP_COLLECTION_NAME = "isTemp";
 
-    public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+    public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         if (useMinIO) {
             return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
         } else {

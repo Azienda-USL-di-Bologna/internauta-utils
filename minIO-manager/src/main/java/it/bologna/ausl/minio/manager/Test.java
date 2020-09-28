@@ -95,7 +95,7 @@ public class Test {
     
     public static void testGetDeleted() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        List<MinIOWrapperFileInfo> deleted = minIOWrapper.getDeleted(105, ZonedDateTime.parse("2020-07-28T10:15:30+01:00[Europe/Rome]"));
+        List<MinIOWrapperFileInfo> deleted = minIOWrapper.getDeleted("105", ZonedDateTime.parse("2020-07-28T10:15:30+01:00[Europe/Rome]"));
         List<String> collect = collectionToStreamNullSafe(deleted).map(file -> file.getFileId()).collect(Collectors.toList());
         //List<String> collect = deleted.stream().map(file -> file.getFileId()).collect(Collectors.toList());
         for (String string : collect) {
@@ -146,7 +146,7 @@ public class Test {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
          String path = "/gdm/fshdfsh/hsdfh";
         String fileName = "aaaf.pdf";
-        minIOWrapper.deleteByPathAndFileName(path, fileName, 105);
+        minIOWrapper.deleteByPathAndFileName(path, fileName, "105");
     }
     
     public static void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
@@ -194,7 +194,7 @@ public class Test {
         String path = "/gdm/123/hsdfh/";
         String fileName = "aaaf.pdf";
         
-        MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, 105);
+        MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, "105");
         System.out.println("fileInfo: " + fileInfo.toString());
     }
     
@@ -213,7 +213,7 @@ public class Test {
         String path = "/gdm/";
         String fileName = "aaa.pdf";
         
-        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, 105);) {
+        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, "105");) {
               File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
               java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
@@ -225,7 +225,7 @@ public class Test {
         metadata.put("key1", "val1");
         metadata.put("key2", 4);
         boolean overwrite = false;
-        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("d:/tmp/20200416 - Babel_ErroreNotifichePEC.pdf"), 105, "/gdm/123/hsdfh/", "aaaf.pdf", metadata, overwrite, "123");
+        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("d:/tmp/20200416 - Babel_ErroreNotifichePEC.pdf"), "105", "/gdm/123/hsdfh/", "aaaf.pdf", metadata, overwrite, "123");
         System.out.println("res: " + res.toString());
     }
     
