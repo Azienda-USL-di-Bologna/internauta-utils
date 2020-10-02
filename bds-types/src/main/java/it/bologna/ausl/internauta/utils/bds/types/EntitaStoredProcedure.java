@@ -15,6 +15,8 @@ public class EntitaStoredProcedure implements Serializable {
     private String schema;
     private String table;
     private String descrizione;
+    private String additionalData;
+    
 
     public EntitaStoredProcedure() {
     }
@@ -63,4 +65,11 @@ public class EntitaStoredProcedure implements Serializable {
         this.descrizione = descrizione;
     }
 
+    public String getAdditionalData() {
+        return additionalData;
+    }
+
+    public void setAdditionalData(String additionalData) {
+        this.additionalData = additionalData;
+    }
 }
