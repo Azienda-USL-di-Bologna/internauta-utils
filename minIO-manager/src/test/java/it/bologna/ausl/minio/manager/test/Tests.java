@@ -30,6 +30,7 @@ import org.sql2o.tools.IOUtils;
  */
 public class Tests {
     
+    private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
     public static void main(String[] args) throws MinIOWrapperException, IOException, FileNotFoundException, NoSuchAlgorithmException {
         Tests t = new Tests();
         t.uploadFile();
@@ -38,14 +39,14 @@ public class Tests {
 //        t.testUploadDownloadGetFileInfoAndDeleteByFileId();
 //    t.testGetByPathAndFileName();
 //        String fileId = "59/5c/bf/51/595cbf51-791e-4679-b143-67784c615a5d/test.txt";
-//        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+//        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
 //        minIOWrapper.removeByFileId(fileId, true);
 
 //        t.testRemoveByFileId(minIOWrapper, fileId);
     }
     
     public void uploadFile() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         Map<String, Object> metadata = null;
         metadata = new HashMap();
         metadata.put("key1", "val1");
@@ -56,12 +57,12 @@ public class Tests {
     }
     
     public void deleteFile(String fileId) throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         minIOWrapper.deleteByFileId(fileId);
     }
     
     public void restoreFile(String fileId) throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         minIOWrapper.restoreByFileId(fileId);
     }
     
@@ -69,7 +70,7 @@ public class Tests {
     @AfterAll
     public static void clearAllGarbage() throws MinIOWrapperException {
         System.out.println("clear all gatbage...");
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         List<MinIOWrapperFileInfo> files = minIOWrapper.getFilesInPath("/" + Tests.class.getCanonicalName(), true, true);
         if (files != null) {
             for (MinIOWrapperFileInfo file : files) {
@@ -81,7 +82,7 @@ public class Tests {
     @Test
     @Order(2)
     public void testUploadDownloadGetFileInfoDeleteAndRemoveByFileId() throws FileNotFoundException, MinIOWrapperException, IOException, NoSuchAlgorithmException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
@@ -148,7 +149,7 @@ public class Tests {
     @Test
     @Order(3)
     public  void testGetAndDeleteByPathAndFileName() throws MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
@@ -174,7 +175,7 @@ public class Tests {
     }
     
     public  void testRestoreByFileId() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.restoreByFileId(fileId);
     }
@@ -182,7 +183,7 @@ public class Tests {
     @Test
     @Order(4)
     public  void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         boolean overwrite = false;
         String path = "/" + getClass().getCanonicalName() + "/path/di/test";
         String newPath = "/" + getClass().getCanonicalName() + "/newpath/di/test";
@@ -205,7 +206,7 @@ public class Tests {
     @Test
     @Order(5)
     public void testRenameByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         boolean overwrite = false;
         String path = "/" + getClass().getCanonicalName() + "/path/di/test";
         String fileName = "test.txt";
@@ -228,7 +229,7 @@ public class Tests {
     @Test
     @Order(6)
     public void testGetFilesInPath() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         boolean overwrite = false;
         String path1 = "/" + getClass().getCanonicalName() + "/path/di/test";
         String fileName1 = "test1.txt";
