@@ -22,10 +22,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 import org.sql2o.tools.IOUtils;
@@ -37,26 +43,28 @@ import org.sql2o.tools.IOUtils;
 public class Test {
 
     public static void main(String[] args) throws IllegalArgumentException, IOException, ErrorResponseException, InsufficientDataException, FileNotFoundException, MinIOWrapperException, NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("MD2");
-        byte[] hashbytes1 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
-        System.out.println(new BigInteger(1, hashbytes1));
-        byte[] hashbytes2 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
-        System.out.println(new BigInteger(1, hashbytes2));
-        byte[] hashbytes3 = digest.digest("ciao gdm2".getBytes(StandardCharsets.UTF_8));
-        System.out.println(new BigInteger(1, hashbytes3));
-        BigInteger bigInteger1 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
-        BigInteger bigInteger2 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
-        BigInteger bigInteger3 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm2".getBytes()));
-        System.out.println(bigInteger1);
-        System.out.println(bigInteger2);
-        System.out.println(bigInteger3);
-        System.out.println("ciao gdm1".hashCode());
-        System.out.println("ciao gdm1".hashCode());
-        System.out.println("ciao gdm2".hashCode());
-        System.out.println("ciao gdm2".hashCode());
-        System.out.println("gdm ciao".hashCode());
-//        genericTest();
+//        MessageDigest digest = MessageDigest.getInstance("MD2");
+//        byte[] hashbytes1 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
+//        System.out.println(new BigInteger(1, hashbytes1));
+//        byte[] hashbytes2 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
+//        System.out.println(new BigInteger(1, hashbytes2));
+//        byte[] hashbytes3 = digest.digest("ciao gdm2".getBytes(StandardCharsets.UTF_8));
+//        System.out.println(new BigInteger(1, hashbytes3));
+//        BigInteger bigInteger1 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
+//        BigInteger bigInteger2 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm1".getBytes()));
+//        BigInteger bigInteger3 = new BigInteger(1, DigestUtils.md5Digest("ciao gdm2".getBytes()));
+//        System.out.println(bigInteger1);
+//        System.out.println(bigInteger2);
+//        System.out.println(bigInteger3);
+//        System.out.println("ciao gdm1".hashCode());
+//        System.out.println("ciao gdm1".hashCode());
+//        System.out.println("ciao gdm2".hashCode());
+//        System.out.println("ciao gdm2".hashCode());
+//        System.out.println("gdm ciao".hashCode());
+        genericTest();
 //        testUpload();
+//        testDelFilesInPath();
+//            testGetDeleted();
 //        testDownloadByFileId();
 //        testDownloadByPathAndFileName();
 //        testGetFileInfoByFileId();
@@ -70,6 +78,41 @@ public class Test {
 //        testDirectRemoveFromMinIO();
     }
     
+    public static void genericTest() throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+//        minIOWrapper.restoreByFileId("2d/ab/5d/8c/2dab5d8c-cd83-4b67-aabf-a5780d9bafbc/aaaf_68.pdf");
+//        minIOWrapper.restoreByFileId("b9/61/6f/c9/b9616fc9-3e9d-48b3-99ae-8cf4599c4b7d/aaaf_69.pdf");
+        //5b8937cc-e4b0-70b0-8419-9fb8
+        //d2857b0e-4122-4354-bd6b-4bac7e0c83c0
+        System.out.println(UUID.randomUUID().toString());
+    }
+    
+    private static <T extends Object> Stream<T> collectionToStreamNullSafe(Collection<T> collection) {
+    return Optional.ofNullable(collection)
+            .map(Collection::stream)
+            .orElseGet(Stream::empty);
+    }
+    
+    public static void testGetDeleted() throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        List<MinIOWrapperFileInfo> deleted = minIOWrapper.getDeleted("105", ZonedDateTime.parse("2020-07-28T10:15:30+01:00[Europe/Rome]"));
+        List<String> collect = collectionToStreamNullSafe(deleted).map(file -> file.getFileId()).collect(Collectors.toList());
+        //List<String> collect = deleted.stream().map(file -> file.getFileId()).collect(Collectors.toList());
+        for (String string : collect) {
+            System.out.println(string);
+        }
+//        for (MinIOWrapperFileInfo file : deleted) {
+//            System.out.println(file);
+//        }
+    }
+    
+    
+    public static void testDelFilesInPath() throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        String path = "/gdm";
+        minIOWrapper.delFilesInPath(path, true);
+    }
+    
     public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "38/31/61/12/38316112-5c0e-4790-872b-6bc652a13911/test.txt";
@@ -80,7 +123,7 @@ public class Test {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm";
 //        String path = "/gdm/fshdfsh";
-        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true);
+        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true, true);
         System.out.println("filesInPath:");
         if (filesInPath != null) {
             filesInPath.stream().forEach(f -> {System.out.println(f.toString());});
@@ -103,7 +146,7 @@ public class Test {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
          String path = "/gdm/fshdfsh/hsdfh";
         String fileName = "aaaf.pdf";
-        minIOWrapper.deleteByPathAndFileName(path, fileName, 105);
+        minIOWrapper.deleteByPathAndFileName(path, fileName, "105");
     }
     
     public static void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
@@ -151,7 +194,7 @@ public class Test {
         String path = "/gdm/123/hsdfh/";
         String fileName = "aaaf.pdf";
         
-        MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, 105);
+        MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, "105");
         System.out.println("fileInfo: " + fileInfo.toString());
     }
     
@@ -170,7 +213,7 @@ public class Test {
         String path = "/gdm/";
         String fileName = "aaa.pdf";
         
-        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, 105);) {
+        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, "105");) {
               File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
               java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
@@ -182,7 +225,7 @@ public class Test {
         metadata.put("key1", "val1");
         metadata.put("key2", 4);
         boolean overwrite = false;
-        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("d:/tmp/20200416 - Babel_ErroreNotifichePEC.pdf"), 105, "/gdm/123/hsdfh/", "aaaf.pdf", metadata, overwrite);
+        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("d:/tmp/20200416 - Babel_ErroreNotifichePEC.pdf"), "105", "/gdm/123/hsdfh/", "aaaf.pdf", metadata, overwrite, "123");
         System.out.println("res: " + res.toString());
     }
     
