@@ -24,9 +24,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.util.StringUtils;
 
 /**
@@ -37,6 +38,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     
     private final MinIOWrapper minIOWrapper;
     private String codiceAzienda;
+    private static final Logger log = LogManager.getLogger(MongoWrapperMinIO.class);
     
     public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
@@ -331,6 +333,16 @@ public class MongoWrapperMinIO extends MongoWrapper {
     }
 
     @Override
+    public List<String> getFilesLessThan(ZonedDateTime time) throws MongoWrapperException {
+        try {
+            List<String> files = collectionToStreamNullSafe(minIOWrapper.getFilesLessThan(time, true)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
+            return files;
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
+    }
+
+    @Override
     public void unDelete(String uuid) throws MongoWrapperException {
         try {            
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid, true);
@@ -347,15 +359,19 @@ public class MongoWrapperMinIO extends MongoWrapper {
 
     @Override
     public void erase(String uuid) throws MongoWrapperException {
-        try {            
+        try {
+            log.info("erase " + uuid);
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid, true);
             if (fileInfo != null) {
+                log.info("fileInfo uuid: " + fileInfo.toString());
                 minIOWrapper.removeByFileId(fileInfo.getFileId(), false);
             } else {
-                fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
+                fileInfo = minIOWrapper.getFileInfoByFileId(uuid, true);
                 if (fileInfo != null) {
+                    log.info("fileInfo file_id: " + fileInfo.toString());
                     minIOWrapper.removeByFileId(fileInfo.getFileId(), false);                    
                 } else {
+                    log.info("fileInfo not found");
                     super.erase(uuid);
                 }
             }
@@ -386,6 +402,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
+    }
+
+    @Override
+    public boolean isTemp() {
+        return codiceAzienda.toLowerCase().endsWith("t");
     }
     
     @Override

@@ -1,7 +1,13 @@
 package it.bologna.ausl.mongowrapper.test;
 
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
+import com.mongodb.gridfs.GridFSDBFile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.MongoWrapperMinIO;
@@ -9,7 +15,10 @@ import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.junit.After;
@@ -30,6 +39,7 @@ public class Tests {
     
     public static void main(String[] args) throws MongoException, MongoWrapperException, IOException {
         Tests t = new Tests();
+        t.testGetFilesLessThan();
     }
     
     @Before
@@ -42,6 +52,37 @@ public class Tests {
             for (String uuid : uuids) {
                 wrapper.erase(uuid);
             }
+        }
+    }
+    
+    public void testGetFilesLessThan() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+        MongoWrapper wrapper =  MongoWrapperMinIO.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
+//        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+//        InputStream is = classloader.getResourceAsStream("test_1.txt");
+//        String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+//        System.out.println("uploaded mongoUuid: " + mongoUuid);
+        
+//        DB db = mongoWrapper.getDB();
+//        DBCollection files = db.getCollection("fs.files");
+
+        long toEpochMilli = ZonedDateTime.now().toInstant().toEpochMilli()
+//        c.add(Calendar.HOUR_OF_DAY, - 1 * intervalHour);
+;
+
+//        DBObject filter = new BasicDBObject("uploadDate", new BasicDBObject("$lte", new Date(toEpochMilli)));
+//        GridFSDBFile gridFSFile = mongoWrapper.getGridFSFile(mongoUuid);
+//        try (DBCursor results = files.find(filter)) {
+//            while (results.hasNext()) {
+//                DBObject next = results.next();
+//                System.out.println("found: " + next.toString());
+//            }
+//        }
+//        System.out.println("found: " + gridFSFile.getUploadDate().toString());
+        List<String> filesLessThan = wrapper.getFilesLessThan(ZonedDateTime.now());
+        System.out.println("files: ");
+        for (String file: filesLessThan) {
+            Calendar uploadDateByUuid = wrapper.getUploadDateByUuid(file);
+            System.out.println("found: " + uploadDateByUuid.toString());
         }
     }
     
