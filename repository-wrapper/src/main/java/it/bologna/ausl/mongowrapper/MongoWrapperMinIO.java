@@ -42,6 +42,9 @@ public class MongoWrapperMinIO extends MongoWrapper {
     
     public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
+        if (codiceAzienda == null) {
+            throw new MongoWrapperException("il codiceAzienda è obbligatorio!");
+        }
         this.codiceAzienda = codiceAzienda;
         if (objectMapper != null) {
             minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, objectMapper);
@@ -50,22 +53,22 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
     }
     
-    public static void main(String[] args) {
-        test();
-    }
+//    public static void main(String[] args) {
+//        test();
+//    }
+//    
+//    public static void test() {
+//        String[] splitPath1 = splitPath("/gdm/dg/asdfgasfa/asfasd/filename.etx");
+//        String[] splitPath2 = splitPath("/gdm/dg/asdfgasfa/filename");
+//        String[] splitPath3 = splitPath("/gdm/dg/asdfgasfa/asfasd/");
+//        String[] splitPath4 = splitPath("/gdm/dg/asdfgasfa/asfasd");
+//        System.out.println(Arrays.toString(splitPath1));
+//        System.out.println(Arrays.toString(splitPath2));
+//        System.out.println(Arrays.toString(splitPath3));
+//        System.out.println(Arrays.toString(splitPath4));
+//    }
     
-    public static void test() {
-        String[] splitPath1 = splitPath("/gdm/dg/asdfgasfa/asfasd/filename.etx");
-        String[] splitPath2 = splitPath("/gdm/dg/asdfgasfa/filename");
-        String[] splitPath3 = splitPath("/gdm/dg/asdfgasfa/asfasd/");
-        String[] splitPath4 = splitPath("/gdm/dg/asdfgasfa/asfasd");
-        System.out.println(Arrays.toString(splitPath1));
-        System.out.println(Arrays.toString(splitPath2));
-        System.out.println(Arrays.toString(splitPath3));
-        System.out.println(Arrays.toString(splitPath4));
-    }
-    
-    private static String[] splitPath(String pathWithFileName) {
+    private String[] splitPath(String pathWithFileName) {
         pathWithFileName = StringUtils.cleanPath(pathWithFileName);
         String filename = StringUtils.getFilename(pathWithFileName);
         String path = StringUtils.trimTrailingCharacter(pathWithFileName.substring(0, pathWithFileName.length() - filename.length()), '/');
@@ -268,6 +271,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
             minIOWrapper.delFilesInPath(dirname, false);
             super.delDirFiles(dirname);
         } catch (Exception ex) {
+            log.error("errore", ex);
             throw new MongoWrapperException("errore", ex);
         }
     }
@@ -335,7 +339,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public List<String> getFilesLessThan(ZonedDateTime time) throws MongoWrapperException {
         try {
-            List<String> files = collectionToStreamNullSafe(minIOWrapper.getFilesLessThan(time, true)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
+            List<String> files = collectionToStreamNullSafe(minIOWrapper.getFilesLessThan(codiceAzienda, time, true)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
+            List<String> filesFromMongo = super.getFilesLessThan(time);
+            if (filesFromMongo != null) {
+                files.addAll(filesFromMongo);
+            }
             return files;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);

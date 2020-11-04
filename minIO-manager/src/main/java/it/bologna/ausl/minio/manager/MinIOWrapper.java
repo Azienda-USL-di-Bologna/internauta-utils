@@ -1177,20 +1177,22 @@ public class MinIOWrapper {
 
     /**
      * Torna tutti i file con data inferiore alla data passata (la data passata è inclusa)
+     * @param codiceAzienda
      * @param time
      * @param includeDeleted
      * @return
      * @throws MinIOWrapperException 
      */
-    public List<MinIOWrapperFileInfo> getFilesLessThan(ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
+    public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString = 
                         "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date " +
                         "from repo.files " +
-                        "where upload_date <= :upload_date" + (!includeDeleted? " and deleted = false": "");
+                        "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted? " and deleted = false": "");
 
             Query query = conn.createQuery(queryString)
-                .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()));
+                .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
+                .addParameter("codice_azienda", codiceAzienda);
             
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             List<MinIOWrapperFileInfo> res = null;
@@ -1205,7 +1207,7 @@ public class MinIOWrapper {
                     Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
                     String filePath = (String) foundFile.get("path");
                     String fileName = (String) foundFile.get("filename");
-                    String codiceAzienda = (String) foundFile.get("codice_azienda");
+                    String codiceAziendaFound = (String) foundFile.get("codice_azienda");
                     Integer serverId = (Integer) foundFile.get("server_id");
                     Integer size = (Integer) foundFile.get("size");
                     String md5 = (String) foundFile.get("md5");
@@ -1224,7 +1226,7 @@ public class MinIOWrapper {
                             md5,
                             serverId,
                             uuid,
-                            codiceAzienda,
+                            codiceAziendaFound,
                             bucket,
                             metadata,
                             deleted,
@@ -1265,7 +1267,7 @@ public class MinIOWrapper {
             String queryString = 
                         "update repo.files f " +
                         "set deleted = true, delete_date = now(), bucket = :bucket " +
-                        "[WHERE] " +
+                        "[WHERE] and deleted = false " +
                         "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
             if (includeSubDir) {
                 queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false");

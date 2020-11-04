@@ -299,10 +299,10 @@ public class Tests {
         String fileName = "test.txt";
         MinIOWrapperFileInfo fileInfoUpload = upload(minIOWrapper, path, fileName, metadata, overwrite);
         Assertions.assertNotNull(fileInfoUpload);
-        List<MinIOWrapperFileInfo> filesLessThanNow = minIOWrapper.getFilesLessThan(ZonedDateTime.now(), false);
+        List<MinIOWrapperFileInfo> filesLessThanNow = minIOWrapper.getFilesLessThan("105t", ZonedDateTime.now(), false);
         Assertions.assertNotNull(filesLessThanNow);
         Assertions.assertTrue(filesLessThanNow.stream().anyMatch(f -> f.getFileId().equals(fileInfoUpload.getFileId())));
-        List<MinIOWrapperFileInfo> filesLessThanHoursAgo = minIOWrapper.getFilesLessThan(nowBefore, false);
+        List<MinIOWrapperFileInfo> filesLessThanHoursAgo = minIOWrapper.getFilesLessThan("105t", nowBefore, false);
         if (filesLessThanHoursAgo != null) {
             Assertions.assertFalse(filesLessThanHoursAgo.stream().anyMatch(f -> f.getFileId().equals(fileInfoUpload.getFileId())));
         }
