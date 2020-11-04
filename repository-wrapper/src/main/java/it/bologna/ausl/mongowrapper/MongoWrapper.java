@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -949,9 +950,21 @@ public class MongoWrapper {
      * @param timeInMillis data passata
      * @return l'elenco degli uuid dei file eliminati logicamente fino alla data
      * passata
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
     public List<String> getDeletedLessThan(long timeInMillis) throws MongoWrapperException {
         DBObject query = QueryBuilder.start("metadata.deleteDate").lessThanEquals(timeInMillis).get();
+        return getFilesId(getFiles(query, true));
+    }
+
+    /**
+     * Torna l'elenco degli uuid dei file caricati prima della data passata (la data passata è inclusa)
+     * @param time la data
+     * @return  l'elenco degli uuid dei file caricati prima della data passata (la data passata è inclusa)
+     * @throws MongoWrapperException 
+     */
+    public List<String> getFilesLessThan(ZonedDateTime time) throws MongoWrapperException {
+        DBObject query = QueryBuilder.start("uploadDate").lessThanEquals(new Date(time.toInstant().toEpochMilli())).get();
         return getFilesId(getFiles(query, true));
     }
 
