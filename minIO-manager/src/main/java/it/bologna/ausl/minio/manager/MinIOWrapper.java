@@ -917,6 +917,7 @@ public class MinIOWrapper {
                     .addParameter("codice_azienda", codiceAzienda)
                     .addParameter("bucket", TRASH_BUCKET);
             }
+            logger.info("query eliminazione: " + query.toString());
             PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
             if (keyPgArray != null) {
                 Object[] array = (Object[]) keyPgArray.getArray();
@@ -926,8 +927,9 @@ public class MinIOWrapper {
                 moveToTrash(fileIdReturned, bucket, serverId);
                 conn.commit();
             }
-        } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nella cancellazione", ex);
+        } catch (Throwable ex) {
+            logger.error("errore eliminazione file da minIO: ", ex);
+            throw new MinIOWrapperException("errore eliminazione file da minIO", ex);
         }
     }
     

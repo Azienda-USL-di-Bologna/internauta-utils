@@ -407,8 +407,9 @@ public class MongoWrapperMinIO extends MongoWrapper {
             minIOWrapper.deleteByFileUuid(uuid);
             minIOWrapper.deleteByFileId(uuid);
             super.delete(uuid); 
-        } catch (Exception ex) {
-            throw new MongoWrapperException("errore", ex);
+        } catch (Throwable ex) {
+            log.error("errore eliminazione file: ", ex);
+            throw new MongoWrapperException("errore eliminazione file: ", ex);
         }
     }
 
