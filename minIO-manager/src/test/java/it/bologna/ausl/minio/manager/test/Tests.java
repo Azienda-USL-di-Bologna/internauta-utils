@@ -3,16 +3,11 @@ package it.bologna.ausl.minio.manager.test;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.StandardCopyOption;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +17,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.DigestUtils;
-import org.sql2o.tools.IOUtils;
 
 /**
  *
@@ -292,5 +286,28 @@ public class Tests {
         testRemoveByFileId(minIOWrapper, fileInfo3.getFileId());
     }
     
-
+    @Test
+    @Order(7)
+    public void testGetFilesLessThan() throws MinIOWrapperException, IOException {
+        ZonedDateTime nowBefore = ZonedDateTime.now();
+        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        Map<String, Object> metadata = new HashMap();
+        metadata.put("key1", "val1");
+        metadata.put("key2", 2);
+        boolean overwrite = true;
+        String path = "/" + getClass().getCanonicalName() + "/path/di/test/";
+        String fileName = "test.txt";
+        MinIOWrapperFileInfo fileInfoUpload = upload(minIOWrapper, path, fileName, metadata, overwrite);
+        Assertions.assertNotNull(fileInfoUpload);
+        List<MinIOWrapperFileInfo> filesLessThanNow = minIOWrapper.getFilesLessThan("105t", ZonedDateTime.now(), false);
+        Assertions.assertNotNull(filesLessThanNow);
+        Assertions.assertTrue(filesLessThanNow.stream().anyMatch(f -> f.getFileId().equals(fileInfoUpload.getFileId())));
+        List<MinIOWrapperFileInfo> filesLessThanHoursAgo = minIOWrapper.getFilesLessThan("105t", nowBefore, false);
+        if (filesLessThanHoursAgo != null) {
+            Assertions.assertFalse(filesLessThanHoursAgo.stream().anyMatch(f -> f.getFileId().equals(fileInfoUpload.getFileId())));
+        }
+        testDeleteByFileId(minIOWrapper, fileInfoUpload.getFileId(), fileInfoUpload.getMd5());
+        testRemoveByFileId(minIOWrapper, fileInfoUpload.getFileId());
+    }
+    
 }

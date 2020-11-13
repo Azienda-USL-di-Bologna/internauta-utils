@@ -37,11 +37,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
-import org.sql2o.data.Table;
 
 /**
  *
@@ -53,6 +54,8 @@ import org.sql2o.data.Table;
  */
 public class MinIOWrapper {
 
+    private static final Logger logger = LoggerFactory.getLogger(MinIOWrapper.class);
+    
     public enum FileTableOperations {
         INSERT, UPDATE, DELETE
     }
@@ -509,6 +512,7 @@ public class MinIOWrapper {
      * Torna le informazioni relative al file identificato dal fileId passato
      * @param fileId
      * @param includeDeleted se true il file verrà cercato anche all'interno del cestino
+     * @param lessThan se passato prende solo i file con data di caricamento inferiore alla data passata (la data passata è compresa)
      * @return le informazioni relative al file identificato dal fileId passato
      * @throws MinIOWrapperException 
      */
@@ -522,20 +526,28 @@ public class MinIOWrapper {
                 queryString = queryString.replace("[WHERE]", "where file_id = :file_id");
                 query = conn.createQuery(queryString)
                         .addParameter("file_id", fileId);
+                
+                
             } else if (mongoUuid != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
                 queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid");
+                
                 query = conn.createQuery(queryString)
                         .addParameter("mongo_uuid", mongoUuid);
+                
             }
             else if (path != null && fileName != null && codiceAzienda != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
                 path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
                 queryString = queryString.replace("[WHERE]", "where path = :path and filename = :filename and codice_azienda = :codice_azienda");
+                
                 query = conn.createQuery(queryString)
                         .addParameter("path", path)
                         .addParameter("filename", fileName)
                         .addParameter("codice_azienda", codiceAzienda);
+                
+            } else {
+                throw new MinIOWrapperException("non è stata passata nessuan clausula di filtro");
             }
             
             List<Map<String, Object>> res = query.executeAndFetchTable().asList();
@@ -905,6 +917,7 @@ public class MinIOWrapper {
                     .addParameter("codice_azienda", codiceAzienda)
                     .addParameter("bucket", TRASH_BUCKET);
             }
+            logger.info("query eliminazione: " + query.toString());
             PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
             if (keyPgArray != null) {
                 Object[] array = (Object[]) keyPgArray.getArray();
@@ -914,8 +927,9 @@ public class MinIOWrapper {
                 moveToTrash(fileIdReturned, bucket, serverId);
                 conn.commit();
             }
-        } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nella cancellazione", ex);
+        } catch (Throwable ex) {
+            logger.error("errore eliminazione file da minIO: ", ex);
+            throw new MinIOWrapperException("errore eliminazione file da minIO", ex);
         }
     }
     
@@ -1033,14 +1047,17 @@ public class MinIOWrapper {
      */
     public void removeByFileId(String fileId, boolean onlyDeleted) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
-            String query =
+            String queryString =
                     "delete " +
                     "from repo.files " +
                     "where file_id = :file_id" + (onlyDeleted? " and deleted = true ": " ") +
                     "returning array[server_id::text, bucket]";
-            PgArray keyPgArray = (PgArray) conn.createQuery(query, true)
-                    .addParameter("file_id", fileId)
-                    .executeUpdate().getKey();
+            Query query = conn.createQuery(queryString, true)
+                .addParameter("file_id", fileId);
+            
+            // logger.info("eseguo la query:" + query.toString());
+                    
+            PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
             if (keyPgArray != null) {
                 Object[] array = (Object[]) keyPgArray.getArray();
                 Integer serverId = Integer.parseInt((String) array[0]);
@@ -1161,6 +1178,74 @@ public class MinIOWrapper {
     }
 
     /**
+     * Torna tutti i file con data inferiore alla data passata (la data passata è inclusa)
+     * @param codiceAzienda
+     * @param time
+     * @param includeDeleted
+     * @return
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            String queryString = 
+                        "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date " +
+                        "from repo.files " +
+                        "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted? " and deleted = false": "");
+
+            Query query = conn.createQuery(queryString)
+                .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
+                .addParameter("codice_azienda", codiceAzienda);
+            
+            List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
+            List<MinIOWrapperFileInfo> res = null;
+            if (!queryRes.isEmpty()) {
+                res = new ArrayList<>();
+                for (Map<String, Object> foundFile : queryRes) {
+                    Integer fileTableId = (Integer) foundFile.get("id");
+                    String fileId = (String) foundFile.get("file_id");
+                    String uuid = (String) foundFile.get("uuid");
+                    String mongoUuid = (String) foundFile.get("mongo_uuid");
+                    String bucket = (String) foundFile.get("bucket");
+                    Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {});
+                    String filePath = (String) foundFile.get("path");
+                    String fileName = (String) foundFile.get("filename");
+                    String codiceAziendaFound = (String) foundFile.get("codice_azienda");
+                    Integer serverId = (Integer) foundFile.get("server_id");
+                    Integer size = (Integer) foundFile.get("size");
+                    String md5 = (String) foundFile.get("md5");
+                    Boolean deleted = (Boolean) foundFile.get("deleted");
+                    ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
+                    ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
+                    ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
+
+                    MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
+                            fileTableId,
+                            fileId,
+                            mongoUuid,
+                            filePath,
+                            fileName,
+                            size,
+                            md5,
+                            serverId,
+                            uuid,
+                            codiceAziendaFound,
+                            bucket,
+                            metadata,
+                            deleted,
+                            uploadDate,
+                            modifiedDate,
+                            deleteDate
+                    );
+                    res.add(fileInfo);
+                }
+            }
+            return res;
+        } catch (Exception ex) {
+            throw new MinIOWrapperException("errore nel reperimento dei files", ex);
+        }
+    }
+
+    /**
      * cancella logicamente tutti i files nel path indicato, inclusi i file nei sotto-path
      * @param path
      * @throws MinIOWrapperException 
@@ -1184,7 +1269,7 @@ public class MinIOWrapper {
             String queryString = 
                         "update repo.files f " +
                         "set deleted = true, delete_date = now(), bucket = :bucket " +
-                        "[WHERE] " +
+                        "[WHERE] and deleted = false " +
                         "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
             if (includeSubDir) {
                 queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false");
@@ -1242,7 +1327,7 @@ public class MinIOWrapper {
                         "from repo.files " +
                         "[WHERE] [DATE]";
             if (lessThan != null) {
-                queryString = queryString.replace("[DATE]", "and delete_date <= :dalete_date");
+                queryString = queryString.replace("[DATE]", "and delete_date <= :delete_date");
             } else {
                 queryString = queryString.replace("[DATE]", "");
             }
@@ -1255,7 +1340,7 @@ public class MinIOWrapper {
                 .addParameter("codice_azienda", codiceAzienda);
             }
             if (lessThan != null) {
-                query.addParameter("dalete_date", Timestamp.valueOf(lessThan.toLocalDateTime()));
+                query.addParameter("delete_date", Timestamp.valueOf(lessThan.toLocalDateTime()));
             }
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             List<MinIOWrapperFileInfo> res = null;
