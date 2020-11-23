@@ -1,7 +1,13 @@
 package it.bologna.ausl.mongowrapper.test;
 
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
+import com.mongodb.gridfs.GridFSDBFile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.MongoWrapperMinIO;
@@ -9,7 +15,10 @@ import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.junit.After;
@@ -23,15 +32,21 @@ import org.junit.Test;
  */
 public class Tests {
     
+    private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
+    //private static String minIODBUrl = "jdbc:postgresql://arena.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
+    private static String mongoUrl = "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true";
+    //private static String mongoUrl = "mongodb://argo:siamofreschi@arena/arena?safe=true";
+    
     public static void main(String[] args) throws MongoException, MongoWrapperException, IOException {
         Tests t = new Tests();
+        t.testGetFilesLessThan();
     }
     
     @Before
     @After
     public void clearAllGarbage() throws MinIOWrapperException, MongoWrapperException, UnknownHostException {
         System.out.println("clear all gatbage...");
-        MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapperMinIO.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
+        MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapperMinIO.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
         List<String> uuids = wrapper.getDirFiles("/" + getClass().getCanonicalName(), true, true);
         if (uuids != null) {
             for (String uuid : uuids) {
@@ -40,10 +55,41 @@ public class Tests {
         }
     }
     
+    public void testGetFilesLessThan() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+        MongoWrapper wrapper =  MongoWrapperMinIO.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
+//        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+//        InputStream is = classloader.getResourceAsStream("test_1.txt");
+//        String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
+//        System.out.println("uploaded mongoUuid: " + mongoUuid);
+        
+//        DB db = mongoWrapper.getDB();
+//        DBCollection files = db.getCollection("fs.files");
+
+        long toEpochMilli = ZonedDateTime.now().toInstant().toEpochMilli()
+//        c.add(Calendar.HOUR_OF_DAY, - 1 * intervalHour);
+;
+
+//        DBObject filter = new BasicDBObject("uploadDate", new BasicDBObject("$lte", new Date(toEpochMilli)));
+//        GridFSDBFile gridFSFile = mongoWrapper.getGridFSFile(mongoUuid);
+//        try (DBCursor results = files.find(filter)) {
+//            while (results.hasNext()) {
+//                DBObject next = results.next();
+//                System.out.println("found: " + next.toString());
+//            }
+//        }
+//        System.out.println("found: " + gridFSFile.getUploadDate().toString());
+        List<String> filesLessThan = wrapper.getFilesLessThan(ZonedDateTime.now());
+        System.out.println("files: ");
+        for (String file: filesLessThan) {
+            Calendar uploadDateByUuid = wrapper.getUploadDateByUuid(file);
+            System.out.println("found: " + uploadDateByUuid.toString());
+        }
+    }
+    
     @Test
     public void testMixedUploadWithOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
-        MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
-        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, "105t", null);
+        MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
@@ -64,8 +110,8 @@ public class Tests {
     
     @Test
     public void testMixedUploadWithoutOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
-        MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
-        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, "105t", null);
+        MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String mongoUuid = mongoWrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
@@ -89,7 +135,7 @@ public class Tests {
     @Test
     public void uploadMinIODownloadDeleteErase() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in minIO");
-        MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
+        MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String uuid = wrapper.put(is, "test_1.txt", getClass().getCanonicalName(), "Tests", "/" + getClass().getCanonicalName() + "/path/di/test", false);
@@ -99,8 +145,8 @@ public class Tests {
     @Test
     public void uploadMongoDownloadDeleteErase() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in mongo");
-        MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
-        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, "105t", null);
+        MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test_1.txt");
         String uuidMongo = mongoWrapper.put(is, "test_1.txt", "/" + getClass().getCanonicalName() + "/path/di/test", true);
@@ -110,8 +156,8 @@ public class Tests {
     @Test
     public void testGetFilesInPath() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in minIO");
-        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", null, null, null, null, "105t", null);
-        MongoWrapper wrapper = MongoWrapper.getWrapper(true, "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true", "org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", "105t", null);
+        MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
+        MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream isMongo1 = classloader.getResourceAsStream("test_1.txt");
         String uuidMongo1 = mongoWrapper.put(isMongo1, "test_1_Mongo.txt", "/" + getClass().getCanonicalName() + "/path/di/test", true);
