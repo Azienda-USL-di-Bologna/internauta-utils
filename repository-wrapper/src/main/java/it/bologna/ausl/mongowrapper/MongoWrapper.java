@@ -63,7 +63,6 @@ public class MongoWrapper {
 //        BasicConfigurator.configure();
 //        System.setProperty("log4j.configurationFile", Thread.currentThread().getContextClassLoader().getResource("it/bologna/ausl/mongowrapper/conf/log4j2.xml").getFile());
 //    }
-
 //    private static final Logger log = LogManager.getLogger(MongoWrapper.class);
     private static final Logger log = LogManager.getLogger(MongoWrapper.class);
     private Mongo m = null;
@@ -74,14 +73,18 @@ public class MongoWrapper {
     private static final String TRASH_DIR = "/TRASH_DIR";
     private static final String IS_TEMP_COLLECTION_NAME = "isTemp";
 
+    private static final String NO_MONGO = "DONTUSEMONGO";
+
     public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
-        if (useMinIO) {
+        if (mongoUri == NO_MONGO) {
+            return new WrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
+        } else if (useMinIO) {
             return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
         } else {
             return new MongoWrapper(mongoUri);
         }
     }
-    
+
     /**
      * istanzia la classe collegandosi a mongo
      *
@@ -99,24 +102,25 @@ public class MongoWrapper {
     }
 
     private void mongoWrapperInit(String mongoUri) throws UnknownHostException, MongoException, MongoWrapperException {
-        MongoURI u = new MongoURI(mongoUri);
+        if (mongoUri != null && !mongoUri.equals("") && mongoUri != NO_MONGO) {
+            MongoURI u = new MongoURI(mongoUri);
 
-        log.debug("connecting on: " + mongoUri + "...");
-        m = holder.connect(u);
-        log.debug("connected to: " + mongoUri);
-        this.db = m.getDB(u.getDatabase());
-        log.debug("authenticating to: " + mongoUri + "...");
-        if (!this.db.isAuthenticated()) {
-            if (u.getUsername() != null) {
-                boolean auth = this.db.authenticate(u.getUsername(), u.getPassword());
-                if (auth != true) {
-                    throw new MongoWrapperException("Auth failed");
+            log.debug("connecting on: " + mongoUri + "...");
+            m = holder.connect(u);
+            log.debug("connected to: " + mongoUri);
+            this.db = m.getDB(u.getDatabase());
+            log.debug("authenticating to: " + mongoUri + "...");
+            if (!this.db.isAuthenticated()) {
+                if (u.getUsername() != null) {
+                    boolean auth = this.db.authenticate(u.getUsername(), u.getPassword());
+                    if (auth != true) {
+                        throw new MongoWrapperException("Auth failed");
+                    }
                 }
             }
+            log.debug("authenticated to: " + mongoUri);
+            gfs = new GridFS(this.db);
         }
-        log.debug("authenticated to: " + mongoUri);
-        gfs = new GridFS(this.db);
-
     }
 
     public DB getDB() {
@@ -195,7 +199,7 @@ public class MongoWrapper {
      * nella stessa direcory, sarà sovrascritto; se false al file corrente sarà
      * aggiunto un suffisso "_1", oppure "_2", ecc.
      * @return l'uuid del file creato
-     * @throws IOException IOException 
+     * @throws IOException IOException
      */
     public String put(InputStream is, String filename, String dirname, boolean overwrite) throws IOException, MongoWrapperException {
         return _put(null, is, null, filename, dirname, null, null, overwrite);
@@ -866,8 +870,8 @@ public class MongoWrapper {
      * passato (rimuove l'attributo deleteDate dai metadati)
      *
      * @param uuid l'uuid del file da ripristinare
-     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException file 
-     * non presente oppure se esiste già il file da ripristinare
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
+     * file non presente oppure se esiste già il file da ripristinare
      */
     public void unDelete(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
@@ -897,7 +901,8 @@ public class MongoWrapper {
      * filepath passato (rimuove l'attributo deleteDate dai metadati)
      *
      * @param filepath il filepath del file da ripristinare
-     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException MongoWrapperException
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
+     * MongoWrapperException
      */
     @Deprecated
     public void unDeleteByPath(String filepath) throws MongoWrapperException {
@@ -958,10 +963,13 @@ public class MongoWrapper {
     }
 
     /**
-     * Torna l'elenco degli uuid dei file caricati prima della data passata (la data passata è inclusa)
+     * Torna l'elenco degli uuid dei file caricati prima della data passata (la
+     * data passata è inclusa)
+     *
      * @param time la data
-     * @return  l'elenco degli uuid dei file caricati prima della data passata (la data passata è inclusa)
-     * @throws MongoWrapperException 
+     * @return l'elenco degli uuid dei file caricati prima della data passata
+     * (la data passata è inclusa)
+     * @throws MongoWrapperException
      */
     public List<String> getFilesLessThan(ZonedDateTime time) throws MongoWrapperException {
         DBObject query = QueryBuilder.start("uploadDate").lessThanEquals(new Date(time.toInstant().toEpochMilli())).get();
@@ -1045,7 +1053,8 @@ public class MongoWrapper {
      * elimina i file nella direcotory passata e in tutte le sottodirectory
      *
      * @param dirname nome della directory
-     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException MongoWrapperException
+     * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
+     * MongoWrapperException
      */
     public void delDirFilesAndFolders(String dirname) throws MongoWrapperException {
         //Safety check non facciamo cancella path troppo corti
@@ -1120,7 +1129,9 @@ public class MongoWrapper {
     }
 
     /**
-     * sposta il file identificato dall'uuid passato nel nuovo filepath passato.Se esiste già un file nello stesso path al nuovo nome sarà agggiunto il suffisso "_1", "_2", ecc.
+     * sposta il file identificato dall'uuid passato nel nuovo filepath
+     * passato.Se esiste già un file nello stesso path al nuovo nome sarà
+     * agggiunto il suffisso "_1", "_2", ecc.
      *
      * @param uuid uuid del file da spostare
      * @param newFilepath nuovo filepath
@@ -1416,7 +1427,7 @@ public class MongoWrapper {
             }
         }
     }
-    
+
     public boolean isTemp() {
         return this.db.collectionExists(IS_TEMP_COLLECTION_NAME);
     }

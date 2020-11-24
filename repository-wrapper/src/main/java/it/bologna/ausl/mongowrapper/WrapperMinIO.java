@@ -1,10 +1,13 @@
 package it.bologna.ausl.mongowrapper;
 
+/**
+ *
+ * @author spritz
+ */
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
-import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +17,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
@@ -23,24 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.StringUtils;
 
-/**
- *
- * @author gdm
- */
-public class MongoWrapperMinIO extends MongoWrapper {
+public class WrapperMinIO extends MongoWrapper {
 
     private final MinIOWrapper minIOWrapper;
     private String codiceAzienda;
-    private static final Logger log = LogManager.getLogger(MongoWrapperMinIO.class);
+    private static final Logger log = LogManager.getLogger(WrapperMinIO.class);
 
-    public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+    public WrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
         if (codiceAzienda == null) {
             throw new MongoWrapperException("il codiceAzienda è obbligatorio!");
@@ -53,20 +50,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
     }
 
-//    public static void main(String[] args) {
-//        test();
-//    }
-//
-//    public static void test() {
-//        String[] splitPath1 = splitPath("/gdm/dg/asdfgasfa/asfasd/filename.etx");
-//        String[] splitPath2 = splitPath("/gdm/dg/asdfgasfa/filename");
-//        String[] splitPath3 = splitPath("/gdm/dg/asdfgasfa/asfasd/");
-//        String[] splitPath4 = splitPath("/gdm/dg/asdfgasfa/asfasd");
-//        System.out.println(Arrays.toString(splitPath1));
-//        System.out.println(Arrays.toString(splitPath2));
-//        System.out.println(Arrays.toString(splitPath3));
-//        System.out.println(Arrays.toString(splitPath4));
-//    }
     private String[] splitPath(String pathWithFileName) {
         pathWithFileName = StringUtils.cleanPath(pathWithFileName);
         String filename = StringUtils.getFilename(pathWithFileName);
@@ -81,12 +64,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
             if (fileInfo != null) {
                 return GregorianCalendar.from(fileInfo.getUploadDate());
-            } else {
-                return super.getUploadDateByPath(filePath);
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
+        return null;
     }
 
     @Override
@@ -99,9 +81,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     return GregorianCalendar.from(fileInfo.getUploadDate());
-                } else {
-                    return super.getUploadDateByUuid(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -118,9 +99,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     return fileInfo.getSize().longValue();
-                } else {
-                    return super.getSizeByUuid(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -134,9 +114,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
             if (fileInfo != null) {
                 return fileInfo.getSize().longValue();
-            } else {
-                return super.getSizeByPath(filepath);
             }
+            return null;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -152,9 +131,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     return fileInfo.getPath() + "/" + fileInfo.getFileName();
-                } else {
-                    return super.getFilePathByUuid(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -171,9 +149,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     return fileInfo.getFileName();
-                } else {
-                    return super.getFileName(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -188,11 +165,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 return true;
             } else {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
-                if (fileInfo != null) {
-                    return true;
-                } else {
-                    return super.existsObjectbyUUID(uuid);
-                }
+                return (fileInfo != null);
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -204,11 +177,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             String[] splittedPath = splitPath(filepath);
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
-            if (fileInfo != null) {
-                return true;
-            } else {
-                return super.existsObjectbyPath(filepath);
-            }
+            return (fileInfo != null);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -225,8 +194,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     minIOWrapper.renameByFileId(fileInfo.getFileId(), splittedPath[0], splittedPath[1]);
-                } else {
-                    super.move(uuid, newFilepath);
                 }
             }
         } catch (Exception ex) {
@@ -244,8 +211,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     minIOWrapper.renameByFileId(fileInfo.getFileId(), newName);
-                } else {
-                    super.rename(uuid, newName);
                 }
             }
         } catch (Exception ex) {
@@ -258,7 +223,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             // non sapendo se sono stati spostati tutti i  file della cartella, cancello da entrambe le parti
             minIOWrapper.delFilesInPath(dirname, true);
-            super.delDirFilesAndFolders(dirname);
+            //super.delDirFilesAndFolders(dirname);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -269,7 +234,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             // non sapendo se sono stati spostati tutti i  file della cartella, cancello da entrambe le parti
             minIOWrapper.delFilesInPath(dirname, false);
-            super.delDirFiles(dirname);
+            //super.delDirFiles(dirname);
         } catch (Exception ex) {
             log.error("errore", ex);
             throw new MongoWrapperException("errore", ex);
@@ -280,7 +245,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public List<String> getFilesInfo(List<String> uuids, boolean includeDeleted) throws MongoWrapperException {
         try {
             List<String> res = new ArrayList();
-            List<String> notFoundInMinIO = new ArrayList();
             for (String uuid : uuids) {
                 MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid, includeDeleted);
                 if (fileInfo != null) {
@@ -289,15 +253,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
                     fileInfo = minIOWrapper.getFileInfoByFileId(uuid, includeDeleted);
                     if (fileInfo != null) {
                         res.add(fileInfo.toString());
-                    } else {
-                        notFoundInMinIO.add(uuid);
                     }
-                }
-            }
-            if (!notFoundInMinIO.isEmpty()) {
-                List<String> filesInfo = super.getFilesInfo(notFoundInMinIO, includeDeleted);
-                if (filesInfo != null) {
-                    res.addAll(filesInfo);
                 }
             }
             return res;
@@ -309,12 +265,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public List<String> getDeleted() throws MongoWrapperException {
         try {
-//            List<String> deletedFromMinIO = minIOWrapper.getDeleted(codiceAzienda, null).stream().map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
             List<String> deletedFromMinIO = collectionToStreamNullSafe(minIOWrapper.getDeleted(codiceAzienda, null)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
-            List<String> deletedFromMongo = super.getDeleted();
-            if (deletedFromMongo != null) {
-                deletedFromMinIO.addAll(deletedFromMongo);
-            }
             return deletedFromMinIO;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -326,10 +277,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             ZonedDateTime lessThanZdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), ZoneId.systemDefault());
             List<String> deletedFromMinIO = collectionToStreamNullSafe(minIOWrapper.getDeleted(codiceAzienda, lessThanZdt)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
-            List<String> deletedFromMongo = super.getDeletedLessThan(timeInMillis);
-            if (deletedFromMongo != null) {
-                deletedFromMinIO.addAll(deletedFromMongo);
-            }
             return deletedFromMinIO;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -340,10 +287,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public List<String> getFilesLessThan(ZonedDateTime time) throws MongoWrapperException {
         try {
             List<String> files = collectionToStreamNullSafe(minIOWrapper.getFilesLessThan(codiceAzienda, time, true)).map(fileInfo -> fileInfo.getFileId()).collect(Collectors.toList());
-            List<String> filesFromMongo = super.getFilesLessThan(time);
-            if (filesFromMongo != null) {
-                files.addAll(filesFromMongo);
-            }
             return files;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -354,11 +297,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public void unDelete(String uuid) throws MongoWrapperException {
         try {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid, true);
-
             if (fileInfo != null) {
                 minIOWrapper.restoreByFileId(fileInfo.getFileId());
-            } else {
-                super.unDelete(uuid);
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -378,9 +318,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 if (fileInfo != null) {
                     log.info("fileInfo file_id: " + fileInfo.toString());
                     minIOWrapper.removeByFileId(fileInfo.getFileId(), false);
-                } else {
-                    log.info("fileInfo not found");
-                    super.erase(uuid);
                 }
             }
         } catch (Exception ex) {
@@ -393,7 +330,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             String[] splittedPath = splitPath(filepath);
             minIOWrapper.deleteByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
-            super.deleteByPath(filepath);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -402,11 +338,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
     @Override
     public void delete(String uuid) throws MongoWrapperException {
         try {
-            // siccome non so se il file è su minio o su mongo e se l'uuid passato è l'uuid di mongo oppure il fileId(nel caso è stato caricato direttamente su minIO),
-            // provo a cancellare da tutte le parti
             minIOWrapper.deleteByFileUuid(uuid);
             minIOWrapper.deleteByFileId(uuid);
-            super.delete(uuid);
         } catch (Throwable ex) {
             log.error("errore eliminazione file: ", ex);
             throw new MongoWrapperException("errore eliminazione file: ", ex);
@@ -431,15 +364,6 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public List<String> getDirFiles(String dirname, boolean includeDeleted, boolean includeSubDir) throws MongoWrapperException {
         try {
             List<String> filesFromMinIO = collectionToStreamNullSafe(minIOWrapper.getFilesInPath(dirname, includeDeleted, includeSubDir)).map(fileInfo -> fileInfo.getMongoUuid()).collect(Collectors.toList());
-            List<String> filesFromMongo;
-            if (includeSubDir) {
-                filesFromMongo = super.getDirFilesAndFolders(dirname);
-            } else {
-                filesFromMongo = super.getDirFiles(dirname);
-            }
-            if (filesFromMongo != null) {
-                filesFromMinIO.addAll(filesFromMongo);
-            }
             return filesFromMinIO;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -453,9 +377,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
             if (fileInfo != null) {
                 return fileInfo.getMd5();
-            } else {
-                return super.getMD5ByPath(filepath);
             }
+            return null;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -468,9 +391,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
             if (fileInfo != null) {
                 return fileInfo.getMongoUuid();
-            } else {
-                return super.getFidByPath(filepath);
             }
+            return null;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -486,9 +408,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
                     return fileInfo.getFileId();
-                } else {
-                    return super.getMD5ByUuid(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -502,9 +423,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
             InputStream file = minIOWrapper.getByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
             if (file != null) {
                 return file;
-            } else {
-                return super.getByPath(filepath);
             }
+            return file;
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }
@@ -520,9 +440,8 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 file = minIOWrapper.getByFileId(uuid);
                 if (file != null) {
                     return file;
-                } else {
-                    return super.get(uuid);
                 }
+                return null;
             }
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -579,21 +498,21 @@ public class MongoWrapperMinIO extends MongoWrapper {
             if (category != null) {
                 metadata.put("category", category);
             }
-            String mongoUuid = super.getFidByPath(StringUtils.trimTrailingCharacter(StringUtils.cleanPath(dirname), '/') + "/" + filename);
-            if (StringUtils.hasText(mongoUuid)) {
-                if (!overwrite) {
-                    filename = minIOWrapper.getFileNameForNotOverwrite(filename);
-                }
-            }
+//            String mongoUuid = super.getFidByPath(StringUtils.trimTrailingCharacter(StringUtils.cleanPath(dirname), '/') + "/" + filename);
+//            if (StringUtils.hasText(mongoUuid)) {
+//                if (!overwrite) {
+//                    filename = minIOWrapper.getFileNameForNotOverwrite(filename);
+//                }
+//            }
             MinIOWrapperFileInfo fileInfo;
             if (f != null) {
                 fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
             } else {
                 fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
             }
-            if (overwrite) {
-                super.delete(mongoUuid);
-            }
+//            if (overwrite) {
+//                super.delete(mongoUuid);
+//            }
             return fileInfo.getMongoUuid();
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -639,5 +558,4 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 .map(Collection::stream)
                 .orElseGet(Stream::empty);
     }
-
 }
