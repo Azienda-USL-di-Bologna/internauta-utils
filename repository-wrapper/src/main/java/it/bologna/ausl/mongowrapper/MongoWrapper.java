@@ -76,7 +76,7 @@ public class MongoWrapper {
     private static final String NO_MONGO = "DONTUSEMONGO";
 
     public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
-        if (mongoUri == NO_MONGO) {
+        if (mongoUri.equals(NO_MONGO)) {
             return new WrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
         } else if (useMinIO) {
             return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
@@ -102,7 +102,7 @@ public class MongoWrapper {
     }
 
     private void mongoWrapperInit(String mongoUri) throws UnknownHostException, MongoException, MongoWrapperException {
-        if (mongoUri != null && !mongoUri.equals("") && mongoUri != NO_MONGO) {
+        if (mongoUri != null && !mongoUri.equals("") && !mongoUri.equals(NO_MONGO)) {
             MongoURI u = new MongoURI(mongoUri);
 
             log.debug("connecting on: " + mongoUri + "...");
@@ -1434,7 +1434,10 @@ public class MongoWrapper {
 
     @Override
     public String toString() {
-        return m.toString();
+        if (m != null) {
+            return m.toString();
+        }
+        return null;
     }
 
     public ArrayList<String> test(String dirname) {
