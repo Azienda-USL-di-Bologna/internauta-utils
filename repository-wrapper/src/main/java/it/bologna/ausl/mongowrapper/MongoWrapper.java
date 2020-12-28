@@ -28,6 +28,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -1430,6 +1431,34 @@ public class MongoWrapper {
 
     public boolean isTemp() {
         return this.db.collectionExists(IS_TEMP_COLLECTION_NAME);
+    }
+    
+    public Map<String, Object> getMetadataByUuid(String uuid) throws MongoWrapperException {
+        GridFSDBFile gridFSFile = null;
+        try {
+            gridFSFile = getGridFSFile(uuid);
+        } catch (FileDeletedExceptions ex) {
+        }
+        if (gridFSFile != null) {
+            DBObject metadata = gridFSFile.getMetaData();
+            return metadata.toMap();
+        } else {
+            return null;
+        }
+    }
+    
+    public Map<String, Object> getMetadataByPath(String path) throws MongoWrapperException {
+        GridFSDBFile gridFSFile = null;
+        try {
+            gridFSFile = getGridFSFileByPath(path);
+        } catch (FileDeletedExceptions ex) {
+        }
+        if (gridFSFile != null) {
+            DBObject metadata = gridFSFile.getMetaData();
+            return metadata.toMap();
+        } else {
+            return null;
+        }
     }
 
     @Override
