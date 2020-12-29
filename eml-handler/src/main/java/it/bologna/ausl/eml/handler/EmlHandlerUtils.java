@@ -30,6 +30,7 @@ import org.jsoup.select.Elements;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
+import com.sun.mail.util.QPDecoderStream;
 import java.io.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -139,8 +140,15 @@ public class EmlHandlerUtils {
                             break;
                         }
                         Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
-                        BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
-                        String imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        String imageBase64 = null;
+                        try {
+                            BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                            imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        }
+                        catch(ClassCastException e) {
+                            QPDecoderStream b64ds = (QPDecoderStream) attachmentContent;
+                            imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
+                        }
                         doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);
                         a.setForHtmlAttribute(true);
                         break;
