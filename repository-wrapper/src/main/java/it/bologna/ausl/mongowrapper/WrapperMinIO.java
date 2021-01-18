@@ -552,6 +552,40 @@ public class WrapperMinIO extends MongoWrapper {
         String uuid = UUID.randomUUID().toString();
         return put(is, uuid, filename, null, null, dirname, overwrite);
     }
+    
+        @Override
+    public Map<String, Object> getMetadataByUuid(String uuid) throws MongoWrapperException {
+        try {
+            MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid);
+            if (fileInfo != null) {
+                return fileInfo.getMetadata();
+            } else {
+                fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
+                if (fileInfo != null) {
+                    return fileInfo.getMetadata();
+                } else {
+                    return null;
+                }
+            }
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getMetadataByPath(String path) throws MongoWrapperException {
+        String[] splittedPath = splitPath(path);
+        try {
+            MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
+            if (fileInfo != null) {
+                return fileInfo.getMetadata();
+            } else {
+                return null;
+            }
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
+    }
 
     private <T extends Object> Stream<T> collectionToStreamNullSafe(Collection<T> collection) {
         return Optional.ofNullable(collection)
