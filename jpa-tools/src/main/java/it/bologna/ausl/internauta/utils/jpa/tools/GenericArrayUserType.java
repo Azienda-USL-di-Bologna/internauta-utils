@@ -8,6 +8,7 @@ import org.hibernate.usertype.UserType;
 
 import java.io.Serializable;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Properties;
 import org.hibernate.usertype.ParameterizedType;
 
@@ -47,8 +48,11 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
     public boolean equals(Object x, Object y) throws HibernateException {
         if (x == null) {
             return y == null;
+        } else if (y == null) {
+            return false;
+        } else {
+            return Arrays.equals((Object[])x, (Object[])y);
         }
-        return x.equals(y);
     }
 
     @Override
