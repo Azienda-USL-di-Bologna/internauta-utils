@@ -12,16 +12,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.util.DigestUtils;
 
 /**
  *
  * @author gdm
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
     
     private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
@@ -61,8 +64,8 @@ public class Tests {
     }
     
     @BeforeAll
-    @AfterAll
-    public static void clearAllGarbage() throws MinIOWrapperException {
+    @AfterEach
+    public void clearAllGarbage() throws MinIOWrapperException {
         System.out.println("clear all gatbage...");
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
         List<MinIOWrapperFileInfo> files = minIOWrapper.getFilesInPath("/" + Tests.class.getCanonicalName(), true, true);
