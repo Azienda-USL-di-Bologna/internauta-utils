@@ -61,8 +61,8 @@ public class Test {
 //        System.out.println("ciao gdm2".hashCode());
 //        System.out.println("ciao gdm2".hashCode());
 //        System.out.println("gdm ciao".hashCode());
-        genericTest();
-//        testUpload();
+//        genericTest();
+        testUpload();
 //        testDelFilesInPath();
 //            testGetDeleted();
 //        testDownloadByFileId();
@@ -224,8 +224,8 @@ public class Test {
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 4);
-        boolean overwrite = false;
-        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("d:/tmp/20200416 - Babel_ErroreNotifichePEC.pdf"), "105", "/gdm/123/hsdfh/", "aaaf.pdf", metadata, overwrite, "123");
+        boolean overwrite = true;
+        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("D:\\tmp\\tmp\\mail_grossa.eml"), "105", "/gdm/123/1/", "aaaf.pdf", metadata, overwrite, "1");
         System.out.println("res: " + res.toString());
     }
     
