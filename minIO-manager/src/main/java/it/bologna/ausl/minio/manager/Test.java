@@ -77,7 +77,7 @@ public class Test {
 //        testGetFilesInPath();
 //        testDirectRemoveFromMinIO();
     }
-    
+
     public static void genericTest() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
 //        minIOWrapper.restoreByFileId("2d/ab/5d/8c/2dab5d8c-cd83-4b67-aabf-a5780d9bafbc/aaaf_68.pdf");
@@ -86,13 +86,13 @@ public class Test {
         //d2857b0e-4122-4354-bd6b-4bac7e0c83c0
         System.out.println(UUID.randomUUID().toString());
     }
-    
+
     private static <T extends Object> Stream<T> collectionToStreamNullSafe(Collection<T> collection) {
-    return Optional.ofNullable(collection)
-            .map(Collection::stream)
-            .orElseGet(Stream::empty);
+        return Optional.ofNullable(collection)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty);
     }
-    
+
     public static void testGetDeleted() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         List<MinIOWrapperFileInfo> deleted = minIOWrapper.getDeleted("105", ZonedDateTime.parse("2020-07-28T10:15:30+01:00[Europe/Rome]"));
@@ -105,20 +105,18 @@ public class Test {
 //            System.out.println(file);
 //        }
     }
-    
-    
+
     public static void testDelFilesInPath() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm";
         minIOWrapper.delFilesInPath(path, true);
     }
-    
-    public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-        String fileId = "38/31/61/12/38316112-5c0e-4790-872b-6bc652a13911/test.txt";
-        minIOWrapper.remove(fileId, "trash", 1);
-    }
-    
+
+//    public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
+//        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+//        String fileId = "38/31/61/12/38316112-5c0e-4790-872b-6bc652a13911/test.txt";
+//        minIOWrapper.remove(fileId, "trash", 1);
+//    }
     public static void testGetFilesInPath() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm";
@@ -126,99 +124,102 @@ public class Test {
         List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true, true);
         System.out.println("filesInPath:");
         if (filesInPath != null) {
-            filesInPath.stream().forEach(f -> {System.out.println(f.toString());});
+            filesInPath.stream().forEach(f -> {
+                System.out.println(f.toString());
+            });
         }
     }
-    
+
     public static void testRestoreByFileId() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.restoreByFileId(fileId);
     }
-    
+
     public static void testDeleteByFileId() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.deleteByFileId(fileId);
     }
-    
+
     public static void testDeleteByPathAndFileName() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
-         String path = "/gdm/fshdfsh/hsdfh";
+        String path = "/gdm/fshdfsh/hsdfh";
         String fileName = "aaaf.pdf";
         minIOWrapper.deleteByPathAndFileName(path, fileName, "105");
     }
-    
+
     public static void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
-        
+
         minIOWrapper.renameByFileId(fileId, "a2bc.ped");
     }
-    
+
     public static void testRenameByFileId1() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
-        
+
         minIOWrapper.renameByFileId(fileId, "/asfas/asfasf/", "abc.ped");
     }
-    
+
     public static void testRenameByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm/";
         String fileName = "aaa_10.pdf";
-        
+
         minIOWrapper.renameByPathAndFileName(path, fileName, "ffff.pef");
     }
-    
+
     public static void testRenameByPathAndFileName1() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm/";
         String fileName = "ffff.pef";
-        
+
         minIOWrapper.renameByPathAndFileName(path, fileName, "/aqaaa/vsdf/gdm/", "ff2ff.pef");
     }
-    
+
     public static void testGetFileInfoByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
 //        String fileId = "b5/3e/32/76/b53e3276-0c0d-497f-a747-565676616763/aaaf.pdf";
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
-        
+
         MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByFileId(fileId, true);
-        if (fileInfo != null)
+        if (fileInfo != null) {
             System.out.println("fileInfo: " + fileInfo.toString());
+        }
     }
-    
+
     public static void testGetFileInfoByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm/123/hsdfh/";
         String fileName = "aaaf.pdf";
-        
+
         MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByPathAndFileName(path, fileName, "105");
         System.out.println("fileInfo: " + fileInfo.toString());
     }
-    
+
     public static void testDownloadByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
-        
+
         try (InputStream res = minIOWrapper.getByFileId(fileId);) {
-              File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
-              java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
+            java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
-    
+
     public static void testDownloadByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm/";
         String fileName = "aaa.pdf";
-        
+
         try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, "105");) {
-              File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
-              java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
+            java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
-    
+
     public static void testUpload() throws FileNotFoundException, MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         Map<String, Object> metadata = new HashMap();
@@ -228,7 +229,7 @@ public class Test {
         MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("D:\\tmp\\tmp\\mail_grossa.eml"), "105", "/gdm/123/1/", "aaaf.pdf", metadata, overwrite, "1");
         System.out.println("res: " + res.toString());
     }
-    
+
     public static void testUploadStatico() {
         try {
             // Create a minioClient with the MinIO Server name, Port, Access key and Secret key.
@@ -241,7 +242,7 @@ public class Test {
                 System.out.println("Bucket already exists.");
             }
 
-            try {                
+            try {
                 ObjectStat statObject = minioClient.statObject(StatObjectArgs.builder().bucket("105").object("caretella27/cartella34/aaaa.pdf").build());
                 System.out.println("statObject: " + statObject.toString());
             } catch (ErrorResponseException e) {
