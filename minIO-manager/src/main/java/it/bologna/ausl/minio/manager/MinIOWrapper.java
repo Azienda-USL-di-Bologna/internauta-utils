@@ -1541,6 +1541,10 @@ public class MinIOWrapper {
         }
     }
 
+    public static Sql2o getSql2oConnection() {
+        return sql2oConnection;
+    }
+
     private long getSize(String fileId, Integer serverId, String bucket) throws MinIOWrapperException {
         MinioClient minIOClient = minIOServerClientMap.get(serverId);
         try {
