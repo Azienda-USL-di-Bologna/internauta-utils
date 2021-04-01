@@ -1,5 +1,10 @@
 package it.bologna.ausl.documentgenerator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.MongoException;
 import it.bologna.ausl.documentgenerator.exceptions.Http400ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Http403ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Http500ResponseException;
@@ -11,24 +16,29 @@ import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedArchiveTy
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedMimeTypes;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
+import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
+import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 /**
  *
@@ -44,21 +55,22 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class GeneratePE {
 
-    @Autowired
-    BabelUtils babelUtils;
+    private BabelUtils babelUtils;
 
-    @Autowired
     AziendaParamsManager aziendaParamsManager;
 
     @Autowired
     GeneratorUtils generatorUtils;
+
+    @Autowired
+    ObjectMapper objectMapper;
 
     @Value("${babel-suite.webapi.genera-protocollo-url}")
     private String generaProtocolloUrl;
 
     private static final Logger log = LoggerFactory.getLogger(GeneratePE.class);
 
-    private JSONObject jSONparametri;
+    private Map<String, Object> parametriMap;
     private MultipartFile documentoPrincipale;
     private Optional<List<MultipartFile>> allegati;
     private String applicazioneChiamante;
@@ -69,27 +81,37 @@ public class GeneratePE {
     private String codiceAzienda;
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
-    private JSONParser jSONParser;
+    private Map<String, Object> mapParams;
 
     public GeneratePE() {
     }
 
-    public void init(String cfUser, String properties, MultipartFile documentoPrincipale, Optional<List<MultipartFile>> allegati) throws HttpInternautaResponseException {
-        this.jSONParser = new JSONParser();
+    public void init(String cfUser,
+            String jsonParams,
+            MultipartFile documentoPrincipale,
+            Optional<List<MultipartFile>> allegati,
+            Map<String, AziendaParametriJson> aziendeParams,
+            Map<String, Object> minIOConfig) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
+
+        this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOConfig);
+        this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
+
+        this.mapParams = null;
 
         try {
-            this.jSONparametri = (JSONObject) jSONParser.parse(properties);
-        } catch (ParseException ex) {
+            this.mapParams = objectMapper.readValue(jsonParams, new TypeReference<Map<String, Object>>() {
+            });
+        } catch (JsonProcessingException ex) {
             log.error("properties passate non hanno il formato JSON corretto");
             throw new Http400ResponseException("400", "i parametri passati non hanno il formato JSON corretto");
         }
 
-        this.applicazioneChiamante = (String) jSONparametri.get("applicazione_chiamante");
+        this.applicazioneChiamante = (String) parametriMap.get("applicazione_chiamante");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
         }
 
-        String azienda = (String) jSONparametri.get("azienda");
+        String azienda = (String) parametriMap.get("azienda");
         if (azienda == null) {
             throw new Http400ResponseException("400", "il parametro del body azienda è obbligatorio");
         }
@@ -99,25 +121,25 @@ public class GeneratePE {
             throw new Http400ResponseException("400", "storage non trovato");
         }
 
-        this.numeroDocumentoOrigine = (String) jSONparametri.get("numero_documento_origine");
-        if (numeroDocumentoOrigine == null) {
-            throw new Http400ResponseException("400", "il parametro del body numero_documento_origine è obbligatorio");
+//        this.numeroDocumentoOrigine = (String) parametriMap.get("numero_documento_origine");
+//        if (numeroDocumentoOrigine == null) {
+//            throw new Http400ResponseException("400", "il parametro del body numero_documento_origine è obbligatorio");
+//        }
+//        Object annoDocumentoOrigine = parametriMap.get("anno_documento_origine");
+//
+//        if (annoDocumentoOrigine == null) {
+//            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine è obbligatorio");
+//        }
+//        this.annoDocumentoOrigineString = annoDocumentoOrigine.toString();
+//
+//        try {
+//            annoDocumentoOrigineInt = Integer.parseInt(annoDocumentoOrigineString);
+//        } catch (Exception ex) {
+//            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine non è un intero");
+//        }
+        if (parametriMap != null && !parametriMap.isEmpty() && parametriMap.containsKey("responsabile_procedimento")) {
+            this.responsabileProcedimento = parametriMap.get("responsabile_procedimento").toString();
         }
-
-        Object annoDocumentoOrigine = jSONparametri.get("anno_documento_origine");
-
-        if (annoDocumentoOrigine == null) {
-            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine è obbligatorio");
-        }
-        this.annoDocumentoOrigineString = annoDocumentoOrigine.toString();
-
-        try {
-            annoDocumentoOrigineInt = Integer.parseInt(annoDocumentoOrigineString);
-        } catch (Exception ex) {
-            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine non è un intero");
-        }
-
-        this.responsabileProcedimento = (String) jSONparametri.get("responsabile_procedimento");
         if (this.responsabileProcedimento == null) {
             this.responsabileProcedimento = cfUser;
         }
@@ -132,12 +154,15 @@ public class GeneratePE {
         }
     }
 
-    public String create() throws Throwable {
+    public String create(String idChiamata) throws Throwable {
         // restituiamo n_protocollo_generato/anno_protocollo_generato di babel
         String result = "";
-
-        // TODO: passare ID_CHIAMATA come parametro e se è NULL usare UUID random
-        String ID_CHIAMATA = UUID.randomUUID().toString() + "_";
+        String ID_CHIAMATA;
+        if (idChiamata != null) {
+            ID_CHIAMATA = idChiamata;
+        } else {
+            ID_CHIAMATA = UUID.randomUUID().toString() + "_";
+        }
         log.info("ID_CHIAMATA" + ID_CHIAMATA);
 
         try {
@@ -148,11 +173,11 @@ public class GeneratePE {
                 throw new Http500ResponseException("500", message);
             }
 
-            JSONArray jsonAllegati = new JSONArray();
+            List<Map<String, Object>> mapAllegati = new ArrayList();
             // trasformo MultipartFile in InputStream
             InputStream inputStreamPrincipale = new BufferedInputStream(documentoPrincipale.getInputStream());
             //aggiungo al json
-            jsonAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamPrincipale, documentoPrincipale.getOriginalFilename(), true, documentoPrincipale.getContentType(), generatorUtils.isPdf(documentoPrincipale)));
+            mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamPrincipale, documentoPrincipale.getOriginalFilename(), true, documentoPrincipale.getContentType(), generatorUtils.isPdf(documentoPrincipale)));
 
             List<MultipartFile> allegatiList = allegati.orElse(Collections.emptyList());
             log.info("Allegati: " + allegatiList.size());
@@ -200,9 +225,9 @@ public class GeneratePE {
                                 Boolean ispdf = er.getMimeType().equals(SupportedMimeTypes.PDF.toString());
                                 //file caricabili sul DB
                                 if (SupportedArchiveTypes.contains(er.getMimeType())) {
-                                    jsonAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
+                                    mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
                                 } else if (SupportedMimeTypes.contains(er.getMimeType())) {
-                                    jsonAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
+                                    mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
                                 } else if (!ExtractorCreator.isSupportedMimyType(er.getMimeType())) {
                                     throw new Http400ResponseException("400", "Attenzione: il file '" + er.getAntenati() + "\\" + er.getFileName() + " non ha un minetype accettablie.");
                                 }
@@ -231,27 +256,27 @@ public class GeneratePE {
                     Boolean principale = false;
                     String allegatoContentType = allegato.getContentType();
                     // così creiamo il json da aggiungere alla lista degli allegati e carichiamo su mongo il file
-                    JSONObject jsonAllegato = generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamAllegato, allegatoFileName, principale, allegatoContentType, !generatorUtils.isPdf(allegato));
-                    jsonAllegati.add(jsonAllegato);
+                    Map<String, Object> jsonAllegato = generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamAllegato, allegatoFileName, principale, allegatoContentType, !generatorUtils.isPdf(allegato));
+                    mapAllegati.add(jsonAllegato);
                     uuidAllegati.add((String) jsonAllegato.get("uuid_file"));
                 }
                 generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
             }
-            log.info(jsonAllegati.toJSONString());
-            jSONparametri.put("allegati", jsonAllegati);
+            //log.info(mapAllegati.toJSONString());
+            parametriMap.put("allegati", mapAllegati);
 
-            jSONparametri.put("ID_CHIAMATA", ID_CHIAMATA);
+            parametriMap.put("ID_CHIAMATA", ID_CHIAMATA);
             // chiamo la web-api su Pico
             String urlChiamata = "";
 
-            //urlChiamata = "http://localhost:8080/Procton/GeneraProtocolloDaExt"; // local
-            // usare questo per i casi reali (non test in locale)
             urlChiamata = aziendaParamsManager.getAziendaParam(codiceAzienda).getBabelSuiteWebApiUrl() + generaProtocolloUrl;  // altri ambienti
+            // decommentare questo per i test in locale
+            urlChiamata = "http://localhost:8081/Procton/GeneraProtocolloDaExt"; // local
 
             JSONObject o = new JSONObject();
             o.put("idapplicazione", "internauta_bridge");
             o.put("tokenapplicazione", "siamobrigidi");
-            o.put("parametri", jSONparametri.toString());
+            o.put("parametri", parametriMap.toString());
 
             log.info("JSON = " + o.toString());
 
@@ -276,10 +301,11 @@ public class GeneratePE {
             if (!responseg.isSuccessful()) {
                 throw new Http500ResponseException("500", "Errore nella chiamata alla Web-api");
             }
-            JSONObject myResponse = new JSONObject();
+            Map<String, Object> myResponse = new HashMap();
             try {
-                myResponse = (JSONObject) jSONParser.parse(responseg.body().string());
-            } catch (ParseException ex) {
+                myResponse = objectMapper.readValue(responseg.body().string(), new TypeReference<Map<String, Object>>() {
+                });
+            } catch (Exception ex) {
                 throw new Http500ResponseException("500", "Errore nel parsing della risposta");
             }
 

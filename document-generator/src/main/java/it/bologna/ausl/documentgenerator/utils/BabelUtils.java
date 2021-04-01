@@ -26,16 +26,18 @@ import org.sql2o.data.Row;
  *
  * @author guido
  */
-@Service
 public class BabelUtils {
 
-    @Autowired
     AziendaParamsManager aziendaParamsManager;
 
-    @Autowired
     ObjectMapper objectMapper;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BabelUtils.class);
+
+    public BabelUtils(AziendaParamsManager aziendaParamsManager, ObjectMapper objectMapper) {
+        this.aziendaParamsManager = aziendaParamsManager;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      *

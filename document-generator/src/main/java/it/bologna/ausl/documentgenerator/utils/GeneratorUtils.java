@@ -3,6 +3,8 @@ package it.bologna.ausl.documentgenerator.utils;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import java.io.File;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -142,25 +144,25 @@ public class GeneratorUtils {
         return allegato.getContentType().equals(SupportedMimeTypes.PDF.toString());
     }
 
-    public JSONObject uploadMongoISandJsonAllegato(MongoWrapper mongo, InputStream inputStreamAllegato, String allegatoFileName, Boolean principale, String allegatoContentType, Boolean isPDF) throws Exception {
-        JSONObject jsonAllegato = new JSONObject();
+    public Map<String, Object> uploadMongoISandJsonAllegato(MongoWrapper mongo, InputStream inputStreamAllegato, String allegatoFileName, Boolean principale, String allegatoContentType, Boolean isPDF) throws Exception {
+        Map<String, Object> mapAllegato = new HashMap();
         try {
             log.info("sto per caricare su mongo il file --> " + allegatoFileName);
             String uuidAllegato = mongo.put(inputStreamAllegato, allegatoFileName, "/temp/generazione_documenti_da_ext/" + UUID.randomUUID(), false);
             log.info("ho caricato il file UIID ritornato --> " + uuidAllegato);
 
-            jsonAllegato.put("nome_file", allegatoFileName);
-            jsonAllegato.put("uuid_file", uuidAllegato);
-            jsonAllegato.put("principale", principale);
-            jsonAllegato.put("mime_type", allegatoContentType);
-            jsonAllegato.put("da_convertire", isPDF);
+            mapAllegato.put("nome_file", allegatoFileName);
+            mapAllegato.put("uuid_file", uuidAllegato);
+            mapAllegato.put("principale", principale);
+            mapAllegato.put("mime_type", allegatoContentType);
+            mapAllegato.put("da_convertire", isPDF);
         } catch (Exception ex) {
             log.error("Errore nel caricamento su mongo", ex);
             ex.printStackTrace();
             throw new Exception("Errore caricamento su mongo");
         }
 
-        return jsonAllegato;
+        return mapAllegato;
     }
 
     public void svuotaCartella(String dirDaSvuotareAbsolutePath) {
