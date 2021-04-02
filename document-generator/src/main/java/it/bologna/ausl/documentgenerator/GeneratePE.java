@@ -70,7 +70,6 @@ public class GeneratePE {
 
     private static final Logger log = LoggerFactory.getLogger(GeneratePE.class);
 
-    private Map<String, Object> parametriMap;
     private MultipartFile documentoPrincipale;
     private Optional<List<MultipartFile>> allegati;
     private String applicazioneChiamante;
@@ -81,37 +80,29 @@ public class GeneratePE {
     private String codiceAzienda;
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
-    private Map<String, Object> mapParams;
+    private Map<String, Object> params;
 
     public GeneratePE() {
     }
 
     public void init(String cfUser,
-            String jsonParams,
+            Map<String, Object> params,
             MultipartFile documentoPrincipale,
             Optional<List<MultipartFile>> allegati,
             Map<String, AziendaParametriJson> aziendeParams,
+            Boolean minIOActive,
             Map<String, Object> minIOConfig) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
 
-        this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOConfig);
+        this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOActive, minIOConfig);
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
+        this.params = params;
 
-        this.mapParams = null;
-
-        try {
-            this.mapParams = objectMapper.readValue(jsonParams, new TypeReference<Map<String, Object>>() {
-            });
-        } catch (JsonProcessingException ex) {
-            log.error("properties passate non hanno il formato JSON corretto");
-            throw new Http400ResponseException("400", "i parametri passati non hanno il formato JSON corretto");
-        }
-
-        this.applicazioneChiamante = (String) parametriMap.get("applicazione_chiamante");
+        this.applicazioneChiamante = (String) params.get("applicazione_chiamante");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
         }
 
-        String azienda = (String) parametriMap.get("azienda");
+        String azienda = (String) params.get("azienda");
         if (azienda == null) {
             throw new Http400ResponseException("400", "il parametro del body azienda è obbligatorio");
         }
@@ -121,11 +112,11 @@ public class GeneratePE {
             throw new Http400ResponseException("400", "storage non trovato");
         }
 
-//        this.numeroDocumentoOrigine = (String) parametriMap.get("numero_documento_origine");
+//        this.numeroDocumentoOrigine = (String) jsonParams.get("numero_documento_origine");
 //        if (numeroDocumentoOrigine == null) {
 //            throw new Http400ResponseException("400", "il parametro del body numero_documento_origine è obbligatorio");
 //        }
-//        Object annoDocumentoOrigine = parametriMap.get("anno_documento_origine");
+//        Object annoDocumentoOrigine = jsonParams.get("anno_documento_origine");
 //
 //        if (annoDocumentoOrigine == null) {
 //            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine è obbligatorio");
@@ -137,8 +128,8 @@ public class GeneratePE {
 //        } catch (Exception ex) {
 //            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine non è un intero");
 //        }
-        if (parametriMap != null && !parametriMap.isEmpty() && parametriMap.containsKey("responsabile_procedimento")) {
-            this.responsabileProcedimento = parametriMap.get("responsabile_procedimento").toString();
+        if (params != null && !params.isEmpty() && params.containsKey("responsabile_procedimento")) {
+            this.responsabileProcedimento = params.get("responsabile_procedimento").toString();
         }
         if (this.responsabileProcedimento == null) {
             this.responsabileProcedimento = cfUser;
@@ -263,9 +254,9 @@ public class GeneratePE {
                 generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
             }
             //log.info(mapAllegati.toJSONString());
-            parametriMap.put("allegati", mapAllegati);
+            params.put("allegati", mapAllegati);
 
-            parametriMap.put("ID_CHIAMATA", ID_CHIAMATA);
+            params.put("ID_CHIAMATA", ID_CHIAMATA);
             // chiamo la web-api su Pico
             String urlChiamata = "";
 
@@ -276,7 +267,7 @@ public class GeneratePE {
             JSONObject o = new JSONObject();
             o.put("idapplicazione", "internauta_bridge");
             o.put("tokenapplicazione", "siamobrigidi");
-            o.put("parametri", parametriMap.toString());
+            o.put("parametri", params.toString());
 
             log.info("JSON = " + o.toString());
 

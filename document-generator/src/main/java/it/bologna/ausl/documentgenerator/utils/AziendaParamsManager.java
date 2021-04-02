@@ -42,6 +42,7 @@ public final class AziendaParamsManager {
     public AziendaParamsManager(
             ObjectMapper objectMapper,
             Map<String, AziendaParametriJson> aziendeParams,
+            Boolean minIOActive,
             Map<String, Object> minIOConfig) throws IOException, UnknownHostException, MongoException, MongoWrapperException {
 
         // carico i parametri dalle aziende
@@ -81,8 +82,6 @@ public final class AziendaParamsManager {
             dbConnectionMap.put(codiceAzienda, sql2o);
 
 //            Map<String, Object> minIOConfig = aziendaConnParams.getMinIOConfigMap(objectMapper);
-//            Boolean minIOActive = (Boolean) minIOConfig.get("active");
-            Boolean minIOActive = true;
             String minIODBDriver = (String) minIOConfig.get("DBDriver");
             String minIODBUrl = (String) minIOConfig.get("DBUrl");
             String minIODBUsername = (String) minIOConfig.get("DBUsername");
