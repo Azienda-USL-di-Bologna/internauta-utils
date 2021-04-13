@@ -85,18 +85,18 @@ public class GeneratePE {
     public GeneratePE() {
     }
 
-    public void init(String cfUser,
+    public void init(
+            String cfUser,
             Map<String, Object> params,
             MultipartFile documentoPrincipale,
             Optional<List<MultipartFile>> allegati,
             Map<String, AziendaParametriJson> aziendeParams,
             Boolean minIOActive,
             Map<String, Object> minIOConfig) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
-
+        this.allegati = allegati;
         this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOActive, minIOConfig);
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
         this.params = params;
-
         this.applicazioneChiamante = (String) params.get("applicazione_chiamante");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
@@ -134,7 +134,7 @@ public class GeneratePE {
         if (this.responsabileProcedimento == null) {
             this.responsabileProcedimento = cfUser;
         }
-
+        
         this.documentoPrincipale = documentoPrincipale;
 
         //il principale allegato non può essere di tipo estraibile
@@ -264,15 +264,15 @@ public class GeneratePE {
             // decommentare questo per i test in locale
             urlChiamata = "http://localhost:8081/Procton/GeneraProtocolloDaExt"; // local
 
-            JSONObject o = new JSONObject();
+            Map <String,String> o = new HashMap();
             o.put("idapplicazione", "internauta_bridge");
             o.put("tokenapplicazione", "siamobrigidi");
-            o.put("parametri", params.toString());
-
-            log.info("JSON = " + o.toString());
+            o.put("parametri", objectMapper.writeValueAsString(params));
+            String bodyParam = objectMapper.writeValueAsString(o);
+            log.info("JSON = " + bodyParam);
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    o.toString().getBytes("UTF-8"));
+                    bodyParam.getBytes("UTF-8"));
 
             log.info(urlChiamata);
 
@@ -302,6 +302,7 @@ public class GeneratePE {
 
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
+                
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
                     throw new Http500ResponseException("500", (String) myResponse.get("error_message"));
@@ -311,8 +312,8 @@ public class GeneratePE {
                     throw new Http403ResponseException("403", (String) myResponse.get("error_message"));
                 }
             }
-            log.info(ID_CHIAMATA + String.format("L'utente %s ha generato il protocollo %s nell'azienda %s. applicazione_chiamante = %s, numero_documento_origine = %s, anno_documento_origine = %s",
-                    responsabileProcedimento, result, codiceAzienda, applicazioneChiamante, numeroDocumentoOrigine, annoDocumentoOrigineString));
+            log.info(ID_CHIAMATA + String.format("L'utente %s ha generato il protocollo %s nell'azienda %s. applicazione_chiamante = %s",
+                    responsabileProcedimento, result, codiceAzienda, applicazioneChiamante));
             return result;
         } catch (HttpInternautaResponseException ex) {
             log.error(ex.getMessage());
