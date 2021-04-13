@@ -168,8 +168,10 @@ public class GeneratorUtils {
     public void svuotaCartella(String dirDaSvuotareAbsolutePath) {
         File directory = new File(dirDaSvuotareAbsolutePath);
         File[] files = directory.listFiles();
-        for (File f : files) {
-            f.delete();
+        if (files != null && files.length > 0) {
+            for (File f : files) {
+                f.delete();
+            }
         }
     }
 }
