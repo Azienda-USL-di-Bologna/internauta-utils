@@ -77,25 +77,33 @@ public class MongoWrapperMinIO extends MongoWrapper {
     }
     
     private boolean lock(String mongoUuid, String mongoPath, String mongoDir) {
+        if (true) return false;
         conn = (Connection) MinIOWrapper.getSql2oConnection().beginTransaction();
-            String query;
-            String id;
-            if (mongoUuid != null) {
-                query = "select id from repo.trasferimenti where mongo_uuid = :id for update";
-                id = mongoUuid;
-            } else if (mongoPath != null) {
-                query = "select id from repo.trasferimenti where mongo_path = :id for update";
-                id = mongoPath;
-            } else {
-                id = mongoDir;
-                query = "select id from repo.trasferimenti where mongo_path like :id||'%' for update";
-            }
+        log.info("opening connection " + conn.toString() + " ...");
+        log.info("mongoUuid " + mongoUuid);
+        log.info("mongoPath " + mongoPath);
+        log.info("mongoDir " + mongoDir);
+        String query;
+        String id;
+        if (mongoUuid != null) {
+            query = "select id from repo.trasferimenti where mongo_uuid = :id for update";
+            id = mongoUuid;
+        } else if (mongoPath != null) {
+            query = "select id from repo.trasferimenti where mongo_path = :id for update";
+            id = mongoPath;
+        } else {
+            id = mongoDir;
+            query = "select id from repo.trasferimenti where mongo_path like :id || '%' for update";
+        }
         List<Map<String, Object>> res = conn.createQuery(query).addParameter("id", id).executeAndFetchTable().asList();
         return res != null && !res.isEmpty();
     }
     
     private void unlock() {
+        if (true) return;
         if (conn != null) {
+            log.info("closing connection " + conn.toString() + " with rollback ...");
+            conn.rollback();
             conn.close();
             conn = null;
         }
