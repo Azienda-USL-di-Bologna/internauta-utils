@@ -354,7 +354,7 @@ public class MongoWrapper {
             deleteByPath(path);
         } else {
             int i = 1;
-            while (existsObjectbyPath(path)) {
+            while (existsObjectByPathNoOverride(path)) {
                 path = dirname + '/' + removeExtensionFromFileName(filename) + "_" + i + "." + getExtensionFromFileName(filename);
                 i++;
             }
@@ -727,6 +727,20 @@ public class MongoWrapper {
         BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + dirname + "([^/])+$"));
         return getFilesId(getFiles(query));
     }
+    
+    /**
+     * torna l'elenco dei file di una directory, ma non nelle sottodirectory
+     *
+     * @param dirname nome della directory
+     * @return un ArrayList contente l'elenco dei file nella directory passata
+     */
+    private List<String> getDirFilesNoOverride(String dirname) throws MongoWrapperException {
+        if (!dirname.endsWith("/")) {
+            dirname += "/";
+        }
+        BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + dirname + "([^/])+$"));
+        return getFilesId(getFiles(query));
+    }
 
     /**
      * torna l'elenco dei file di una directory, e nelle sottodirectory
@@ -736,6 +750,15 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
     public List<String> getDirFilesAndFolders(String dirname) throws MongoWrapperException {
+        if (!dirname.endsWith("/")) {
+            //NON TOCCARE se no non stiamo piu' partendo da una directory
+            dirname += "/";
+        }
+        BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + dirname + ".*$"));
+        return getFilesId(getFiles(query));
+    }
+    
+    private List<String> getDirFilesAndFoldersNoOverride(String dirname) throws MongoWrapperException {
         if (!dirname.endsWith("/")) {
             //NON TOCCARE se no non stiamo piu' partendo da una directory
             dirname += "/";
@@ -790,6 +813,18 @@ public class MongoWrapper {
      * @throws it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException
      */
     public void delete(String uuid) throws MongoWrapperException {
+        GridFSDBFile f = null;
+        try {
+            f = getGridFSFile(uuid);
+        } catch (FileDeletedExceptions ex) {
+            // log.warn(ex);
+        }
+        if (f != null) {
+            delete(f);
+        }
+    }
+    
+    private void deleteNoOverride(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
             f = getGridFSFile(uuid);
@@ -884,7 +919,7 @@ public class MongoWrapper {
 
         if (f != null && f.getMetaData() != null && f.getMetaData().containsField("deleteDate")) {
             String filePath = (String) f.getMetaData().get("oldPath");
-            if (filePath != null && existsObjectbyPath(filePath)) {
+            if (filePath != null && existsObjectByPathNoOverride(filePath)) {
                 throw new MongoWrapperException("filepath: " + filePath + " already exists, delete it first");
             }
             unDelete(f);
@@ -907,7 +942,7 @@ public class MongoWrapper {
      */
     @Deprecated
     public void unDeleteByPath(String filepath) throws MongoWrapperException {
-        if (existsObjectbyPath(filepath)) {
+        if (existsObjectByPathNoOverride(filepath)) {
             throw new MongoWrapperException("filepath already exist, delete it first");
         }
         List<GridFSDBFile> files = null;
@@ -1043,9 +1078,9 @@ public class MongoWrapper {
      */
     public void delDirFiles(String dirname) throws MongoWrapperException {
         log.info("deleting dir: " + dirname + "...");
-        List<String> dirFiles = getDirFiles(dirname);
+        List<String> dirFiles = getDirFilesNoOverride(dirname);
         for (String file : dirFiles) {
-            this.delete(file);
+            this.deleteNoOverride(file);
         }
         log.info("deleted dir: " + dirname);
     }
@@ -1067,10 +1102,10 @@ public class MongoWrapper {
 
     public void delDirFilesAndFoldersNoSafe(String dirname) throws MongoWrapperException {
         log.info("deleting deep dir: " + dirname + "...");
-        List<String> dirFilesAndFolders = getDirFilesAndFolders(dirname);
+        List<String> dirFilesAndFolders = getDirFilesAndFoldersNoOverride(dirname);
         if (dirFilesAndFolders != null) {
             for (String file : dirFilesAndFolders) {
-                this.delete(file);
+                this.deleteNoOverride(file);
             }
         }
         log.info("deleted deep dir: " + dirname);
@@ -1119,7 +1154,7 @@ public class MongoWrapper {
             //log.warn(ex);
         }
         if (f != null) {
-            if (existsObjectbyPath(newName)) {
+            if (existsObjectByPathNoOverride(newName)) {
                 throw new MongoWrapperException("esiste già il file: " + newName);
             }
             newName = getDname(f.get("filename").toString()) + "/" + newName;
@@ -1179,7 +1214,7 @@ public class MongoWrapper {
                 int i = 1;
                 String dirName = getDname(newFilepath);
                 String fileName = getFname(newFilepath);
-                while (existsObjectbyPath(newFilepath)) {
+                while (existsObjectByPathNoOverride(newFilepath)) {
                     newFilepath = dirName + '/' + removeExtensionFromFileName(fileName) + "_" + i + "." + getExtensionFromFileName(fileName);
                     i++;
                 }
@@ -1210,6 +1245,28 @@ public class MongoWrapper {
      * @return true se esiste un fil filepath passato, false altrimenti
      */
     public Boolean existsObjectbyPath(String filepath) throws MongoWrapperException {
+        String originalFilePath = filepath;
+        GridFSDBFile f = null;
+        try {
+            f = getGridFSFileByPath(filepath);
+        } catch (FileDeletedExceptions ex) {
+            //log.warn(ex);
+        }
+        if (f != null) {
+            return true;
+        }
+        if (!filepath.endsWith("/")) {
+            filepath += "/";
+        }
+        BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + filepath + "([^/])+$"));
+        if (getGridFSFile(query) != null) {
+            return true;
+        }
+        return false;
+
+    }
+    
+        public Boolean existsObjectByPathNoOverride(String filepath) throws MongoWrapperException {
         String originalFilePath = filepath;
         GridFSDBFile f = null;
         try {

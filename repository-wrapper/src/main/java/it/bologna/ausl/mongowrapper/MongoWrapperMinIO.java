@@ -40,7 +40,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
 
     private final MinIOWrapper minIOWrapper;
     private String codiceAzienda;
-    private Connection conn;
+    private ThreadLocal<Connection> conn = new ThreadLocal<>();
     private static final Logger log = LogManager.getLogger(MongoWrapperMinIO.class);
 
     public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
@@ -56,11 +56,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
     }
     
-    private boolean lockByUuid(String mongoUuid) {
+    private boolean lockByUuid(String mongoUuid) throws MongoWrapperException {
         return lock(mongoUuid, null, null);
     }
     
-    private boolean lockByPath(String mongoPath) {
+    private boolean lockByPath(String mongoPath) throws MongoWrapperException {
         String pathWithSlash = mongoPath;
         if (!mongoPath.startsWith("/")) {
             pathWithSlash = "/" + pathWithSlash;
@@ -68,7 +68,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         return lock(null, pathWithSlash, null);
     }
     
-    private boolean lockByDir(String mongoDir) {
+    private boolean lockByDir(String mongoDir) throws MongoWrapperException {
         String dirNameWithSlash = mongoDir;
         if (!mongoDir.startsWith("/")) {
             dirNameWithSlash = "/" + dirNameWithSlash;
@@ -76,9 +76,12 @@ public class MongoWrapperMinIO extends MongoWrapper {
         return lock(null, null, dirNameWithSlash);
     }
     
-    private boolean lock(String mongoUuid, String mongoPath, String mongoDir) {
-        if (true) return false;
-        conn = (Connection) MinIOWrapper.getSql2oConnection().beginTransaction();
+    private boolean lock(String mongoUuid, String mongoPath, String mongoDir) throws MongoWrapperException {
+//        if (true) return false;
+        if (conn.get() != null) {
+            throw new MongoWrapperException("oggetto conn non è null, ma dovrebbe esserlo");
+        }
+        conn.set((Connection) MinIOWrapper.getSql2oConnection().beginTransaction());
         log.info("opening connection " + conn.toString() + " ...");
         log.info("mongoUuid " + mongoUuid);
         log.info("mongoPath " + mongoPath);
@@ -95,17 +98,17 @@ public class MongoWrapperMinIO extends MongoWrapper {
             id = mongoDir;
             query = "select id from repo.trasferimenti where mongo_path like :id || '%' for update";
         }
-        List<Map<String, Object>> res = conn.createQuery(query).addParameter("id", id).executeAndFetchTable().asList();
+        List<Map<String, Object>> res = conn.get().createQuery(query).addParameter("id", id).executeAndFetchTable().asList();
         return res != null && !res.isEmpty();
     }
     
     private void unlock() {
-        if (true) return;
-        if (conn != null) {
-            log.info("closing connection " + conn.toString() + " with rollback ...");
-            conn.rollback();
-            conn.close();
-            conn = null;
+//        if (true) return;
+//        System.out.println("conn: " + conn.get());
+        if (conn.get() != null) {
+            log.info("closing connection " + conn.get().toString() + " with rollback ...");
+            conn.get().close();
+            conn.set(null);
         }
     }
     
