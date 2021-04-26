@@ -839,11 +839,11 @@ public class MinIOWrapper {
         }
     }
 
-    public void renameByPathAndFileName(String path, String fileName, String newPath, String newFileName) throws MinIOWrapperException {
-        renameByPathAndFileName(path, fileName, newPath, newFileName, false);
+    public void renameByPathAndFileName(String path, String fileName, String newPath, String newFileName, String codiceAzienda) throws MinIOWrapperException {
+        renameByPathAndFileName(path, fileName, newPath, newFileName, false, codiceAzienda);
     }
 
-    public void renameByPathAndFileName(String path, String fileName, String newPath, String newFileName, boolean includeDeleted) throws MinIOWrapperException {
+    public void renameByPathAndFileName(String path, String fileName, String newPath, String newFileName, boolean includeDeleted, String codiceAzienda) throws MinIOWrapperException {
         // ripulisco i path e elimino l'eventuale "/" alla fine
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
         newPath = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(newPath), '/');
@@ -852,16 +852,9 @@ public class MinIOWrapper {
         // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
         // recupero il codice_azienda del file da rinominare
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
-            List<Map<String, Object>> pathAndAzienda = conn.createQuery(
-                    "select codice_azienda "
-                    + "from repo.files "
-                    + "where path = :path and filename = :filename ")
-                    .addParameter("path", path)
-                    .addParameter("filename", fileName)
-                    .executeAndFetchTable().asList();
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
-            int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
+            int lockingHash = String.format("%s_%s_%s", newPath, newFileName, codiceAzienda).hashCode();
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
                     .addParameter("locking_hash", lockingHash)
@@ -871,18 +864,20 @@ public class MinIOWrapper {
             List<Map<String, Object>> res = conn.createQuery(
                     "select 1 "
                     + "from repo.files "
-                    + "where \"path\" = :newPath and filename = :new_filename" + (!includeDeleted ? " and deleted = false" : ""))
+                    + "where \"path\" = :newPath and filename = :new_filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
                     .addParameter("newPath", newPath)
                     .addParameter("new_filename", newFileName)
+                    .addParameter("codice_azienda", codiceAzienda)
                     .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
                         "update repo.files set path = :new_path, filename = :new_filename, modified_date = now() "
-                        + "where path = :path and filename = :filename" + (!includeDeleted ? " and deleted = false" : ""))
+                        + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
                         .addParameter("new_path", newPath)
                         .addParameter("new_filename", newFileName)
                         .addParameter("path", path)
                         .addParameter("filename", fileName)
+                        .addParameter("codice_azienda", codiceAzienda)
                         .executeUpdate();
                 conn.commit();
             } else {
@@ -891,11 +886,11 @@ public class MinIOWrapper {
         }
     }
 
-    public void renameByPathAndFileName(String path, String fileName, String newFileName) throws MinIOWrapperException {
-        renameByPathAndFileName(path, fileName, newFileName, false);
+    public void renameByPathAndFileName(String path, String fileName, String newFileName, String codiceAzienda) throws MinIOWrapperException {
+        renameByPathAndFileName(path, fileName, newFileName, false, codiceAzienda);
     }
 
-    public void renameByPathAndFileName(String path, String fileName, String newFileName, boolean includeDeleted) throws MinIOWrapperException {
+    public void renameByPathAndFileName(String path, String fileName, String newFileName, boolean includeDeleted, String codiceAzienda) throws MinIOWrapperException {
         // ripulisco il path e elimino la "/" finale
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
 
@@ -903,16 +898,17 @@ public class MinIOWrapper {
         // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
         // recupero il path e il codice_azienda del file da rinominare
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
-            List<Map<String, Object>> pathAndAzienda = conn.createQuery(
-                    "select \"path\", codice_azienda "
+            List<Map<String, Object>> pathFromDB = conn.createQuery(
+                    "select \"path\" "
                     + "from repo.files "
-                    + "where path = :path and filename = :filename ")
+                    + "where path = :path and filename = :filename and codice_azienda = :codice_azienda")
                     .addParameter("path", path)
                     .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
                     .executeAndFetchTable().asList();
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
-            int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
+            int lockingHash = String.format("%s_%s_%s", pathFromDB.get(0).get("path"), newFileName, codiceAzienda).hashCode();
             conn.createQuery(
                     "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
                     .addParameter("locking_hash", lockingHash)
@@ -923,18 +919,20 @@ public class MinIOWrapper {
                     "select 1 "
                     + "from repo.files f1 join repo.files f2 on f1.\"path\" = f2.\"path\" and f1.codice_azienda = f2.codice_azienda "
                     + "where f2.\"path\" = :path and f2.filename = :filename "
-                    + "and f1.filename = :new_filename" + (!includeDeleted ? " and f1.deleted = false" : ""))
+                    + "and f1.filename = :new_filename and f1.codice_azienda = :codice_azienda" + (!includeDeleted ? " and f1.deleted = false" : ""))
                     .addParameter("path", path)
                     .addParameter("filename", fileName)
                     .addParameter("new_filename", newFileName)
+                    .addParameter("codice_azienda", codiceAzienda)
                     .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
                         "update repo.files set filename = :new_filename, modified_date = now() "
-                        + "where path = :path and filename = :filename" + (!includeDeleted ? " and deleted = false" : ""))
+                        + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
                         .addParameter("new_filename", newFileName)
                         .addParameter("path", path)
                         .addParameter("filename", fileName)
+                        .addParameter("codice_azienda", codiceAzienda)
                         .executeUpdate();
                 conn.commit();
             } else {
@@ -1189,11 +1187,12 @@ public class MinIOWrapper {
      * sotto-path
      *
      * @param path
+     * @param codiceAzienda
      * @return
      * @throws MinIOWrapperException
      */
-    public List<MinIOWrapperFileInfo> getFilesInPath(String path) throws MinIOWrapperException {
-        return getFilesInPath(path, false, true);
+    public List<MinIOWrapperFileInfo> getFilesInPath(String path, String codiceAzienda) throws MinIOWrapperException {
+        return getFilesInPath(path, false, true, codiceAzienda);
     }
 
     /**
@@ -1202,10 +1201,11 @@ public class MinIOWrapper {
      * @param path
      * @param includeDeleted se "true" torna anche i file cancellati logicamente
      * @param includeSubDir
+     * @param codiceAzienda
      * @return
      * @throws MinIOWrapperException
      */
-    public List<MinIOWrapperFileInfo> getFilesInPath(String path, boolean includeDeleted, boolean includeSubDir) throws MinIOWrapperException {
+    public List<MinIOWrapperFileInfo> getFilesInPath(String path, boolean includeDeleted, boolean includeSubDir, String codiceAzienda) throws MinIOWrapperException {
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
@@ -1221,14 +1221,16 @@ public class MinIOWrapper {
                     + "from repo.files "
                     + "[WHERE]" + (!includeDeleted ? " and deleted = false" : "");
             if (includeSubDir) {
-                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'");
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
                 query = conn.createQuery(queryString)
                         .addParameter("path_array", pathsArray)
-                        .addParameter("path", path);
+                        .addParameter("path", path)
+                        .addParameter("codice_azienda", codiceAzienda);
             } else {
-                queryString = queryString.replace("[WHERE]", "where path = :path");
+                queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
                 query = conn.createQuery(queryString)
-                        .addParameter("path", path);
+                        .addParameter("path", path)
+                        .addParameter("codice_azienda", codiceAzienda);
             }
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             List<MinIOWrapperFileInfo> res = null;
@@ -1244,7 +1246,7 @@ public class MinIOWrapper {
                     });
                     String filePath = (String) foundFile.get("path");
                     String fileName = (String) foundFile.get("filename");
-                    String codiceAzienda = (String) foundFile.get("codice_azienda");
+                    String codiceAziendaLetto = (String) foundFile.get("codice_azienda");
                     Integer serverId = (Integer) foundFile.get("server_id");
                     Integer size = (Integer) foundFile.get("size");
                     String md5 = (String) foundFile.get("md5");
@@ -1263,7 +1265,7 @@ public class MinIOWrapper {
                             md5,
                             serverId,
                             uuid,
-                            codiceAzienda,
+                            codiceAziendaLetto,
                             bucket,
                             metadata,
                             deleted,
@@ -1356,10 +1358,11 @@ public class MinIOWrapper {
      * sotto-path
      *
      * @param path
+     * @param codiceAzienda
      * @throws MinIOWrapperException
      */
-    public void delFilesInPath(String path) throws MinIOWrapperException {
-        delFilesInPath(path, true);
+    public void delFilesInPath(String path, String codiceAzienda) throws MinIOWrapperException {
+        delFilesInPath(path, true, codiceAzienda);
     }
 
     /**
@@ -1367,9 +1370,10 @@ public class MinIOWrapper {
      *
      * @param path
      * @param includeSubDir se true cancella anche i file nelle sotto-directory
+     * @param codiceAzienda
      * @throws MinIOWrapperException
      */
-    public void delFilesInPath(String path, boolean includeSubDir) throws MinIOWrapperException {
+    public void delFilesInPath(String path, boolean includeSubDir, String codiceAzienda) throws MinIOWrapperException {
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
 
         try (Connection conn = (Connection) sql2oConnection.open()) {
@@ -1381,16 +1385,18 @@ public class MinIOWrapper {
                     + "[WHERE] and deleted = false "
                     + "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
             if (includeSubDir) {
-                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false");
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
                         .addParameter("bucket", TRASH_BUCKET)
                         .addParameter("path_array", pathsArray)
-                        .addParameter("path", path);
+                        .addParameter("path", path)
+                        .addParameter("codice_azienda", codiceAzienda);
             } else {
-                queryString = queryString.replace("[WHERE]", "where path = :path");
+                queryString = queryString.replace("[WHERE]", "where path = :path and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
                         .addParameter("bucket", TRASH_BUCKET)
-                        .addParameter("path", path);
+                        .addParameter("path", path)
+                        .addParameter("codice_azienda", codiceAzienda);
             }
 
             // tramite questa query si riescono a prendere tutte le righe nel path e nei sotto-path.
@@ -1407,7 +1413,8 @@ public class MinIOWrapper {
                     }
                 }
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
+            ex.printStackTrace();
             throw new MinIOWrapperException("errore nella cancellazione logica dei files", ex);
         }
     }

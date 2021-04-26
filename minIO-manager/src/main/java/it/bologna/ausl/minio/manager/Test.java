@@ -109,7 +109,7 @@ public class Test {
     public static void testDelFilesInPath() throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm";
-        minIOWrapper.delFilesInPath(path, true);
+        minIOWrapper.delFilesInPath(path, true, "105");
     }
 
 //    public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
@@ -121,7 +121,7 @@ public class Test {
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
         String path = "/gdm";
 //        String path = "/gdm/fshdfsh";
-        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true, true);
+        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true, true, "105");
         System.out.println("filesInPath:");
         if (filesInPath != null) {
             filesInPath.stream().forEach(f -> {
@@ -168,7 +168,7 @@ public class Test {
         String path = "/gdm/";
         String fileName = "aaa_10.pdf";
 
-        minIOWrapper.renameByPathAndFileName(path, fileName, "ffff.pef");
+        minIOWrapper.renameByPathAndFileName(path, fileName, "ffff.pef", "105");
     }
 
     public static void testRenameByPathAndFileName1() throws FileNotFoundException, MinIOWrapperException, IOException {
@@ -176,7 +176,7 @@ public class Test {
         String path = "/gdm/";
         String fileName = "ffff.pef";
 
-        minIOWrapper.renameByPathAndFileName(path, fileName, "/aqaaa/vsdf/gdm/", "ff2ff.pef");
+        minIOWrapper.renameByPathAndFileName(path, fileName, "/aqaaa/vsdf/gdm/", "ff2ff.pef", "105");
     }
 
     public static void testGetFileInfoByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
