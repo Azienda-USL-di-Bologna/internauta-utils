@@ -309,7 +309,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             lockByDir(dirname);
             // non sapendo se sono stati spostati tutti i  file della cartella, cancello da entrambe le parti
-            minIOWrapper.delFilesInPath(dirname, true);
+            minIOWrapper.delFilesInPath(dirname, true, codiceAzienda);
             super.delDirFilesAndFolders(dirname);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
@@ -323,9 +323,10 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             lockByDir(dirname);
             // non sapendo se sono stati spostati tutti i  file della cartella, cancello da entrambe le parti
-            minIOWrapper.delFilesInPath(dirname, false);
+            minIOWrapper.delFilesInPath(dirname, false, codiceAzienda);
             super.delDirFiles(dirname);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
+            ex.printStackTrace();
             log.error("errore", ex);
             throw new MongoWrapperException("errore", ex);
         } finally {
@@ -500,7 +501,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public List<String> getDirFiles(String dirname, boolean includeDeleted, boolean includeSubDir) throws MongoWrapperException {
         try {
             lockByDir(dirname);
-            List<String> filesFromMinIO = collectionToStreamNullSafe(minIOWrapper.getFilesInPath(dirname, includeDeleted, includeSubDir)).map(fileInfo -> fileInfo.getMongoUuid()).collect(Collectors.toList());
+            List<String> filesFromMinIO = collectionToStreamNullSafe(minIOWrapper.getFilesInPath(dirname, includeDeleted, includeSubDir, codiceAzienda)).map(fileInfo -> fileInfo.getMongoUuid()).collect(Collectors.toList());
             List<String> filesFromMongo;
             if (includeSubDir) {
                 filesFromMongo = super.getDirFilesAndFolders(dirname);

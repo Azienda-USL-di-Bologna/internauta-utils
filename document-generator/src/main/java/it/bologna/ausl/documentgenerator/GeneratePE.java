@@ -70,7 +70,6 @@ public class GeneratePE {
 
     private static final Logger log = LoggerFactory.getLogger(GeneratePE.class);
 
-    private Map<String, Object> parametriMap;
     private MultipartFile documentoPrincipale;
     private Optional<List<MultipartFile>> allegati;
     private String applicazioneChiamante;
@@ -81,37 +80,29 @@ public class GeneratePE {
     private String codiceAzienda;
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
-    private Map<String, Object> mapParams;
+    private Map<String, Object> params;
 
     public GeneratePE() {
     }
 
-    public void init(String cfUser,
-            String jsonParams,
+    public void init(
+            String cfUser,
+            Map<String, Object> params,
             MultipartFile documentoPrincipale,
             Optional<List<MultipartFile>> allegati,
             Map<String, AziendaParametriJson> aziendeParams,
+            Boolean minIOActive,
             Map<String, Object> minIOConfig) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
-
-        this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOConfig);
+        this.allegati = allegati;
+        this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOActive, minIOConfig);
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
-
-        this.mapParams = null;
-
-        try {
-            this.mapParams = objectMapper.readValue(jsonParams, new TypeReference<Map<String, Object>>() {
-            });
-        } catch (JsonProcessingException ex) {
-            log.error("properties passate non hanno il formato JSON corretto");
-            throw new Http400ResponseException("400", "i parametri passati non hanno il formato JSON corretto");
-        }
-
-        this.applicazioneChiamante = (String) parametriMap.get("applicazione_chiamante");
+        this.params = params;
+        this.applicazioneChiamante = (String) params.get("applicazione_chiamante");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
         }
 
-        String azienda = (String) parametriMap.get("azienda");
+        String azienda = (String) params.get("azienda");
         if (azienda == null) {
             throw new Http400ResponseException("400", "il parametro del body azienda è obbligatorio");
         }
@@ -121,11 +112,11 @@ public class GeneratePE {
             throw new Http400ResponseException("400", "storage non trovato");
         }
 
-//        this.numeroDocumentoOrigine = (String) parametriMap.get("numero_documento_origine");
+//        this.numeroDocumentoOrigine = (String) jsonParams.get("numero_documento_origine");
 //        if (numeroDocumentoOrigine == null) {
 //            throw new Http400ResponseException("400", "il parametro del body numero_documento_origine è obbligatorio");
 //        }
-//        Object annoDocumentoOrigine = parametriMap.get("anno_documento_origine");
+//        Object annoDocumentoOrigine = jsonParams.get("anno_documento_origine");
 //
 //        if (annoDocumentoOrigine == null) {
 //            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine è obbligatorio");
@@ -137,13 +128,13 @@ public class GeneratePE {
 //        } catch (Exception ex) {
 //            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine non è un intero");
 //        }
-        if (parametriMap != null && !parametriMap.isEmpty() && parametriMap.containsKey("responsabile_procedimento")) {
-            this.responsabileProcedimento = parametriMap.get("responsabile_procedimento").toString();
+        if (params != null && !params.isEmpty() && params.containsKey("responsabile_procedimento")) {
+            this.responsabileProcedimento = params.get("responsabile_procedimento").toString();
         }
         if (this.responsabileProcedimento == null) {
             this.responsabileProcedimento = cfUser;
         }
-
+        
         this.documentoPrincipale = documentoPrincipale;
 
         //il principale allegato non può essere di tipo estraibile
@@ -263,9 +254,9 @@ public class GeneratePE {
                 generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
             }
             //log.info(mapAllegati.toJSONString());
-            parametriMap.put("allegati", mapAllegati);
+            params.put("allegati", mapAllegati);
 
-            parametriMap.put("ID_CHIAMATA", ID_CHIAMATA);
+            params.put("ID_CHIAMATA", ID_CHIAMATA);
             // chiamo la web-api su Pico
             String urlChiamata = "";
 
@@ -273,15 +264,15 @@ public class GeneratePE {
             // decommentare questo per i test in locale
             urlChiamata = "http://localhost:8081/Procton/GeneraProtocolloDaExt"; // local
 
-            JSONObject o = new JSONObject();
+            Map <String,String> o = new HashMap();
             o.put("idapplicazione", "internauta_bridge");
             o.put("tokenapplicazione", "siamobrigidi");
-            o.put("parametri", parametriMap.toString());
-
-            log.info("JSON = " + o.toString());
+            o.put("parametri", objectMapper.writeValueAsString(params));
+            String bodyParam = objectMapper.writeValueAsString(o);
+            log.info("JSON = " + bodyParam);
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    o.toString().getBytes("UTF-8"));
+                    bodyParam.getBytes("UTF-8"));
 
             log.info(urlChiamata);
 
@@ -311,6 +302,7 @@ public class GeneratePE {
 
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
+                
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
                     throw new Http500ResponseException("500", (String) myResponse.get("error_message"));
@@ -320,8 +312,8 @@ public class GeneratePE {
                     throw new Http403ResponseException("403", (String) myResponse.get("error_message"));
                 }
             }
-            log.info(ID_CHIAMATA + String.format("L'utente %s ha generato il protocollo %s nell'azienda %s. applicazione_chiamante = %s, numero_documento_origine = %s, anno_documento_origine = %s",
-                    responsabileProcedimento, result, codiceAzienda, applicazioneChiamante, numeroDocumentoOrigine, annoDocumentoOrigineString));
+            log.info(ID_CHIAMATA + String.format("L'utente %s ha generato il protocollo %s nell'azienda %s. applicazione_chiamante = %s",
+                    responsabileProcedimento, result, codiceAzienda, applicazioneChiamante));
             return result;
         } catch (HttpInternautaResponseException ex) {
             log.error(ex.getMessage());
