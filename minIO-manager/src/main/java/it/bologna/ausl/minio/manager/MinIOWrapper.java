@@ -8,7 +8,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.minio.BucketExistsArgs;
 import io.minio.CopyObjectArgs;
 import io.minio.CopySource;
-import io.minio.ErrorCode;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -35,6 +34,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import okhttp3.ConnectionPool;
+import okhttp3.OkHttpClient;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -158,9 +160,29 @@ public class MinIOWrapper {
                 minIOServerAziendaMap.put(codiceAzienda, serverId);
                 if (minIOServerClientMap.get(serverId) == null) {
                     String endPointUrl = (String) row.get("urls");
+//                    endPointUrl = "http://babelminioprod02.avec.emr.it:9000";
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
-                    MinioClient minioClient = MinioClient.builder().endpoint(endPointUrl).credentials(accessKey, secretKey).build();
+//                    System.out.println("aaaaaaaaaa");
+                    
+                    ConnectionPool p = new ConnectionPool(10, 10, TimeUnit.MINUTES);
+                    OkHttpClient httpClient = new OkHttpClient.Builder()
+                    .connectTimeout(1, TimeUnit.HOURS)
+                    .readTimeout(1, TimeUnit.HOURS)
+                    .writeTimeout(1, TimeUnit.HOURS)
+                    .callTimeout(1, TimeUnit.HOURS)
+//                    .connectionPool(p)
+                    .build();
+                    
+//                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
+                    
+                    MinioClient minioClient = MinioClient.builder()
+                            .httpClient(httpClient)
+                            .endpoint(endPointUrl)
+                            .credentials(accessKey, secretKey)
+                            .build();
+                    minioClient.setTimeout(0, 0, 0);
+                    //minioClient.setTimeout(TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200));
                     minIOServerClientMap.put(serverId, minioClient);
                 }
             }
@@ -1538,7 +1560,7 @@ public class MinIOWrapper {
         try {
             return minIOClient.getObject(GetObjectArgs.builder().bucket(bucket).object(fileId).build());
         } catch (ErrorResponseException ex) {
-            if (ex.errorResponse().errorCode() == ErrorCode.NO_SUCH_OBJECT) {
+            if (ex.errorResponse().code().equals("NoSuchKey")) {
                 return null;
             } else {
                 throw new MinIOWrapperException("errore nel reperimento del file", ex);
@@ -1551,11 +1573,15 @@ public class MinIOWrapper {
     public static Sql2o getSql2oConnection() {
         return sql2oConnection;
     }
+    
+    public static MinioClient getMinIOClient(Integer serverId) {
+        return minIOServerClientMap.get(serverId);
+    }
 
     private long getSize(String fileId, Integer serverId, String bucket) throws MinIOWrapperException {
         MinioClient minIOClient = minIOServerClientMap.get(serverId);
         try {
-            return minIOClient.statObject(io.minio.StatObjectArgs.builder().bucket(bucket).object(fileId).build()).length();
+            return minIOClient.statObject(io.minio.StatObjectArgs.builder().bucket(bucket).object(fileId).build()).size();
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento della dimesione del file", ex);
         }
