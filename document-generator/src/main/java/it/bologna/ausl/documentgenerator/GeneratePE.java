@@ -134,7 +134,7 @@ public class GeneratePE {
         if (this.responsabileProcedimento == null) {
             this.responsabileProcedimento = cfUser;
         }
-        
+
         this.documentoPrincipale = documentoPrincipale;
 
         //il principale allegato non può essere di tipo estraibile
@@ -262,9 +262,9 @@ public class GeneratePE {
 
             urlChiamata = aziendaParamsManager.getAziendaParam(codiceAzienda).getBabelSuiteWebApiUrl() + generaProtocolloUrl;  // altri ambienti
             // decommentare questo per i test in locale
-            urlChiamata = "http://localhost:8081/Procton/GeneraProtocolloDaExt"; // local
+//            urlChiamata = "http://localhost:8080/Procton/GeneraProtocolloDaExt"; // local
 
-            Map <String,String> o = new HashMap();
+            Map<String, String> o = new HashMap();
             o.put("idapplicazione", "internauta_bridge");
             o.put("tokenapplicazione", "siamobrigidi");
             o.put("parametri", objectMapper.writeValueAsString(params));
@@ -302,7 +302,7 @@ public class GeneratePE {
 
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
-                
+
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
                     throw new Http500ResponseException("500", (String) myResponse.get("error_message"));
