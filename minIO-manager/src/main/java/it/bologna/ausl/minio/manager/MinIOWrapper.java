@@ -161,17 +161,18 @@ public class MinIOWrapper {
                 if (minIOServerClientMap.get(serverId) == null) {
                     String endPointUrl = (String) row.get("urls");
 //                    endPointUrl = "http://babelminioprod02.avec.emr.it:9000";
+//                    endPointUrl = "http://babelminiotest01-auslbo.avec.emr.it:9001";
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
                     
-                    ConnectionPool p = new ConnectionPool(10, 10, TimeUnit.MINUTES);
+                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
                     OkHttpClient httpClient = new OkHttpClient.Builder()
                     .connectTimeout(1, TimeUnit.HOURS)
                     .readTimeout(1, TimeUnit.HOURS)
                     .writeTimeout(1, TimeUnit.HOURS)
                     .callTimeout(1, TimeUnit.HOURS)
-//                    .connectionPool(p)
+                    .connectionPool(p)
                     .build();
                     
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
@@ -181,7 +182,7 @@ public class MinIOWrapper {
                             .endpoint(endPointUrl)
                             .credentials(accessKey, secretKey)
                             .build();
-                    minioClient.setTimeout(0, 0, 0);
+                    //minioClient.setTimeout(0, 0, 0);
                     //minioClient.setTimeout(TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200));
                     minIOServerClientMap.put(serverId, minioClient);
                 }
