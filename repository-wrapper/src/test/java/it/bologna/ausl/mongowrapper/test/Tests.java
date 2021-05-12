@@ -1,13 +1,7 @@
 package it.bologna.ausl.mongowrapper.test;
 
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.gridfs.GridFSDBFile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.MongoWrapperMinIO;
@@ -18,18 +12,20 @@ import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 /**
  *
  * @author gdm
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
     
     private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
@@ -42,8 +38,8 @@ public class Tests {
         t.testGetFilesLessThan();
     }
     
-    @Before
-    @After
+    @BeforeAll
+    @AfterEach
     public void clearAllGarbage() throws MinIOWrapperException, MongoWrapperException, UnknownHostException {
         System.out.println("clear all gatbage...");
         MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapperMinIO.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
@@ -96,16 +92,16 @@ public class Tests {
         IOUtils.closeQuietly(is);
         InputStream mongoIsBefore = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsBefore);
-        Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        Assertions.assertNotNull(mongoIsBefore, "il file appena caricato su mongo deve esistere");
         is = classloader.getResourceAsStream("test_1.txt");
         String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, true);
         IOUtils.closeQuietly(is);
         InputStream minIOIs = wrapper.get(minIOUUid);
         IOUtils.closeQuietly(minIOIs);
-        Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
+        Assertions.assertNotNull(minIOIs, "il file appena caricato su minIO deve esistere");
         InputStream mongoIsAfter = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsAfter);
-        Assert.assertNull("il file appena caricato su mongo non deve più esistere perchè è stato sovrascritto", mongoIsAfter);
+        Assertions.assertNull(mongoIsAfter, "il file appena caricato su mongo non deve più esistere perchè è stato sovrascritto");
     }
     
     @Test
@@ -118,18 +114,18 @@ public class Tests {
         IOUtils.closeQuietly(is);
         InputStream mongoIsBefore = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsBefore);
-        Assert.assertNotNull("il file appena caricato su mongo deve esistere", mongoIsBefore);
+        Assertions.assertNotNull(mongoIsBefore, "il file appena caricato su mongo deve esistere");
         is = classloader.getResourceAsStream("test_1.txt");
         String minIOUUid = wrapper.put(is, "test.txt", "/" + getClass().getCanonicalName() + "/path/di/test", null, null, false);
         IOUtils.closeQuietly(is);
         InputStream minIOIs = wrapper.get(minIOUUid);
         IOUtils.closeQuietly(minIOIs);
-        Assert.assertNotNull("il file appena caricato su minIO deve esistere", minIOIs);
+        Assertions.assertNotNull(minIOIs, "il file appena caricato su minIO deve esistere");
         String fileName = wrapper.getFileName(minIOUUid);
-        Assert.assertTrue("al nome del file deve essere stato aggiunto \"_numero\"", fileName != null && fileName.matches(".*_\\d+\\..*"));
+        Assertions.assertTrue(fileName != null && fileName.matches(".*_\\d+\\..*"), "al nome del file deve essere stato aggiunto \"_numero\"");
         InputStream mongoIsAfter = wrapper.get(mongoUuid);
         IOUtils.closeQuietly(mongoIsAfter);
-        Assert.assertNotNull("il file appena caricato su mongo deve esistere ancora perchè non è stato sovrascritto", mongoIsAfter);
+        Assertions.assertNotNull(mongoIsAfter, "il file appena caricato su mongo deve esistere ancora perchè non è stato sovrascritto");
     }
     
     @Test
@@ -169,63 +165,63 @@ public class Tests {
         InputStream isMinIO2 = classloader.getResourceAsStream("test_2.txt");
         String uuidMinIO2 = wrapper.put(isMinIO2, "test_2_MinIO.txt",  "/" + getClass().getCanonicalName() + "/path/di/test/sotto", "Tests", getClass().getCanonicalName(), false);
      
-        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo1);
-        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMongo2);
-        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMinIO1);
-        Assert.assertNotNull("gli uuid non devono essere nulli", uuidMinIO2);
+        Assertions.assertNotNull(uuidMongo1, "gli uuid non devono essere nulli");
+        Assertions.assertNotNull(uuidMongo2, "gli uuid non devono essere nulli");
+        Assertions.assertNotNull(uuidMinIO1, "gli uuid non devono essere nulli");
+        Assertions.assertNotNull(uuidMinIO2, "gli uuid non devono essere nulli");
         
         List<String> dirFiles = wrapper.getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test");
-        Assert.assertTrue("devo trovare 2 elementi", dirFiles != null && dirFiles.size() == 2);
-        Assert.assertEquals("devo trovare l'elemento con uuidMongo1", 1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMongo1)).count());
-        Assert.assertEquals("devo trovare l'elemento con uuidMinIO1", 1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count());
+        Assertions.assertTrue((dirFiles != null && dirFiles.size() == 2), "devo trovare 2 elementi");
+        Assertions.assertEquals(1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMongo1)).count(), "devo trovare l'elemento con uuidMongo1");
+        Assertions.assertEquals(1, dirFiles.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count(), "devo trovare l'elemento con uuidMinIO1");
         
         List<String> dirFilesAndFolders = wrapper.getDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
-        Assert.assertTrue("devo trovare 4 elementi", dirFilesAndFolders != null && dirFilesAndFolders.size() == 4);
-        Assert.assertEquals("devo trovare l'elemento con uuidMongo1", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo1)).count());
-        Assert.assertEquals("devo trovare l'elemento con uuidMongo2", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo2)).count());
-        Assert.assertEquals("devo trovare l'elemento con uuidMinIO1", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count());
-        Assert.assertEquals("devo trovare l'elemento con uuidMinIO2", 1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO2)).count());
+        Assertions.assertTrue(dirFilesAndFolders != null && dirFilesAndFolders.size() == 4, "devo trovare 4 elementi");
+        Assertions.assertEquals(1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo1)).count(), "devo trovare l'elemento con uuidMongo1");
+        Assertions.assertEquals(1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMongo2)).count(), "devo trovare l'elemento con uuidMongo2");
+        Assertions.assertEquals(1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO1)).count(), "devo trovare l'elemento con uuidMinIO1");
+        Assertions.assertEquals(1, dirFilesAndFolders.stream().filter(uuid -> uuid.equals(uuidMinIO2)).count(), "devo trovare l'elemento con uuidMinIO2");
         
         wrapper.delDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
         dirFilesAndFolders = wrapper.getDirFilesAndFolders("/" + getClass().getCanonicalName() + "/path/di/test");
-        Assert.assertTrue("devo trovare 0 elementi perché gli ho cancellati", dirFilesAndFolders == null || dirFilesAndFolders.isEmpty());
+        Assertions.assertTrue(dirFilesAndFolders == null || dirFilesAndFolders.isEmpty(), "devo trovare 0 elementi perché gli ho cancellati");
         dirFilesAndFolders = ((MongoWrapperMinIO) wrapper).getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test", true, true);
-        Assert.assertTrue("devo trovare 2 elementi perché sto cercando anche nei cancellati (quelli su mongo non me li da comunque)", dirFilesAndFolders != null && dirFilesAndFolders.size() == 2);
+        Assertions.assertTrue(dirFilesAndFolders != null && dirFilesAndFolders.size() == 2, "devo trovare 2 elementi perché sto cercando anche nei cancellati (quelli su mongo non me li da comunque)");
         wrapper.erase(uuidMongo1);
         wrapper.erase(uuidMongo2);
         wrapper.erase(uuidMinIO1);
         wrapper.erase(uuidMinIO2);
         dirFilesAndFolders = ((MongoWrapperMinIO) wrapper).getDirFiles("/" + getClass().getCanonicalName() + "/path/di/test", true, true);
-        Assert.assertTrue("devo trovare 0 elementi anche cercando nei cancellati perché gli ho eliminati definitivamente", dirFilesAndFolders == null || dirFilesAndFolders.isEmpty());
+        Assertions.assertTrue(dirFilesAndFolders == null || dirFilesAndFolders.isEmpty(), "devo trovare 0 elementi anche cercando nei cancellati perché gli ho eliminati definitivamente");
     }
     
     private void testDownloadDeleteErase(MongoWrapper wrapper, String uuid) throws MongoWrapperException {
         InputStream file = wrapper.get(uuid);
         IOUtils.closeQuietly(file);
-        Assert.assertNotNull("il file caricato è nullo", file);
+        Assertions.assertNotNull(file, "il file caricato è nullo");
         String filePath = wrapper.getFilePathByUuid(uuid);
-        Assert.assertNotNull("devo trovare un path", filePath);
+        Assertions.assertNotNull(filePath, "devo trovare un path");
         InputStream fileByPath = wrapper.getByPath(filePath);
         IOUtils.closeQuietly(fileByPath);
-        Assert.assertNotNull("devo trovare il file cercando per il suo path", fileByPath);
+        Assertions.assertNotNull(fileByPath, "devo trovare il file cercando per il suo path");
         String fidByPath = wrapper.getFidByPath(filePath);
-        Assert.assertEquals("l'uuid del file carcato per path non è uguale all'uuid restituito in fase di caricamento", fidByPath, uuid);
+        Assertions.assertEquals(fidByPath, uuid, "l'uuid del file carcato per path non è uguale all'uuid restituito in fase di caricamento");
         wrapper.delete(uuid);
         InputStream getByUuid = wrapper.get(uuid);
         IOUtils.closeQuietly(getByUuid);
-        Assert.assertNull("non devo trovare il file cercando per il suo uuid perché è stato eliminato", getByUuid);
+        Assertions.assertNull(getByUuid, "non devo trovare il file cercando per il suo uuid perché è stato eliminato");
         InputStream getByPath = wrapper.getByPath(filePath);
         IOUtils.closeQuietly(getByPath);
-        Assert.assertNull("non devo trovare il file cercando per il suo path perché è stato eliminato", getByPath);
+        Assertions.assertNull(getByPath, "non devo trovare il file cercando per il suo path perché è stato eliminato");
         List<String> filesInfo = wrapper.getFilesInfo(Arrays.asList(new String[] {uuid}), true);
-        Assert.assertNotNull("devo trovare le informazioni del file cercando anche i cancellati", filesInfo);
-        Assert.assertFalse("devo trovare le informazioni del file cercando anche i cancellati", filesInfo.isEmpty());
+        Assertions.assertNotNull(filesInfo, "devo trovare le informazioni del file cercando anche i cancellati");
+        Assertions.assertFalse(filesInfo.isEmpty(), "devo trovare le informazioni del file cercando anche i cancellati");
         wrapper.unDelete(uuid);
         InputStream getByUuidUndelete = wrapper.get(uuid);
         IOUtils.closeQuietly(getByUuidUndelete);
-        Assert.assertNotNull("devo trovare il file cercando per il suo uuid perché è stato ripristinato", getByUuidUndelete);
+        Assertions.assertNotNull(getByUuidUndelete, "devo trovare il file cercando per il suo uuid perché è stato ripristinato");
         wrapper.erase(uuid);
         filesInfo = wrapper.getFilesInfo(Arrays.asList(new String[] {uuid}), true);
-        Assert.assertTrue("non devo trovare le informazioni del file cercando anche i cancellati perché è stato eliminato definitivamente", filesInfo == null || filesInfo.isEmpty());
+        Assertions.assertTrue(filesInfo == null || filesInfo.isEmpty(), "non devo trovare le informazioni del file cercando anche i cancellati perché è stato eliminato definitivamente");
     }
 }

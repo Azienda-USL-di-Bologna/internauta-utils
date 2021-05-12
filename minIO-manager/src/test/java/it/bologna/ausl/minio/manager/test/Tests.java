@@ -12,16 +12,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.util.DigestUtils;
 
 /**
  *
  * @author gdm
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
     
     private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
@@ -61,11 +64,11 @@ public class Tests {
     }
     
     @BeforeAll
-    @AfterAll
-    public static void clearAllGarbage() throws MinIOWrapperException {
+    @AfterEach
+    public void clearAllGarbage() throws MinIOWrapperException {
         System.out.println("clear all gatbage...");
         MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
-        List<MinIOWrapperFileInfo> files = minIOWrapper.getFilesInPath("/" + Tests.class.getCanonicalName(), true, true);
+        List<MinIOWrapperFileInfo> files = minIOWrapper.getFilesInPath("/" + Tests.class.getCanonicalName(), true, true, "105t");
         if (files != null) {
             for (MinIOWrapperFileInfo file : files) {
                 minIOWrapper.removeByFileId(file.getFileId(), false);
@@ -207,10 +210,10 @@ public class Tests {
         String newPath = "/" + getClass().getCanonicalName() + "/newpath/di/test";
         String newFileName = "new_name.txt";
         MinIOWrapperFileInfo fileInfoUpload = upload(minIOWrapper, path, fileName, null, overwrite);
-        minIOWrapper.renameByPathAndFileName(path, fileName, newFileName);
+        minIOWrapper.renameByPathAndFileName(path, fileName, newFileName, "105t");
         MinIOWrapperFileInfo fileInfoRenamed = minIOWrapper.getFileInfoByFileId(fileInfoUpload.getFileId());
         Assertions.assertEquals(fileInfoRenamed.getFileName(), newFileName);
-        minIOWrapper.renameByPathAndFileName(path, newFileName, newPath, fileName);
+        minIOWrapper.renameByPathAndFileName(path, newFileName, newPath, fileName, "105t");
         MinIOWrapperFileInfo fileInfoRenamed2 = minIOWrapper.getFileInfoByFileId(fileInfoUpload.getFileId());
         Assertions.assertAll(
                 () -> Assertions.assertEquals(fileInfoRenamed2.getFileName(), fileName),
@@ -252,7 +255,7 @@ public class Tests {
                 () -> Assertions.assertNotNull(fileInfoUpload3)
         );
         
-        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(pathToCheck);
+        List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(pathToCheck, "105t");
         Assertions.assertAll("deve aver trovato 3 risultati",
                 () ->  Assertions.assertNotNull(filesInPath),
                 () -> Assertions.assertEquals(3, filesInPath.size())
