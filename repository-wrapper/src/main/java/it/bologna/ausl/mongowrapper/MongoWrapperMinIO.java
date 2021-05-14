@@ -112,6 +112,10 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
     }
     
+    public MinIOWrapper getMinIOWrapper() {
+        return minIOWrapper;
+    }
+    
     private String[] splitPath(String pathWithFileName) {
         pathWithFileName = StringUtils.cleanPath(pathWithFileName);
         String filename = StringUtils.getFilename(pathWithFileName);
