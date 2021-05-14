@@ -33,7 +33,6 @@ import com.sun.mail.util.BASE64DecoderStream;
 import com.sun.mail.util.QPDecoderStream;
 import java.io.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class EmlHandlerUtils {
