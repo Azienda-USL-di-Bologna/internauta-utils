@@ -166,24 +166,24 @@ public class MinIOWrapper {
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
                     
-                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
-                    OkHttpClient httpClient = new OkHttpClient.Builder()
-                    .connectTimeout(1, TimeUnit.HOURS)
-                    .readTimeout(1, TimeUnit.HOURS)
-                    .writeTimeout(1, TimeUnit.HOURS)
-                    .callTimeout(1, TimeUnit.HOURS)
-                    .connectionPool(p)
-                    .build();
+//                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
+//                    OkHttpClient httpClient = new OkHttpClient.Builder()
+//                    .connectTimeout(1, TimeUnit.HOURS)
+//                    .readTimeout(1, TimeUnit.HOURS)
+//                    .writeTimeout(1, TimeUnit.HOURS)
+//                    .callTimeout(1, TimeUnit.HOURS)
+//                    .connectionPool(p)
+//                    .build();
                     
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
                     
                     MinioClient minioClient = MinioClient.builder()
-                            .httpClient(httpClient)
+//                            .httpClient(httpClient)
                             .endpoint(endPointUrl)
                             .credentials(accessKey, secretKey)
                             .build();
-                    //minioClient.setTimeout(0, 0, 0);
-                    //minioClient.setTimeout(TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200), TimeUnit.SECONDS.toMillis(1200));
+                    minioClient.setTimeout(0, 0, 0);
+                    minioClient.setTimeout(TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1));
                     minIOServerClientMap.put(serverId, minioClient);
                 }
             }
