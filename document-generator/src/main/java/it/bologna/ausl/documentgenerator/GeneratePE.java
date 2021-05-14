@@ -9,6 +9,7 @@ import it.bologna.ausl.documentgenerator.exceptions.Http400ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Http403ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Http500ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.HttpInternautaResponseException;
+import it.bologna.ausl.documentgenerator.exceptions.Sql2oSelectException;
 import it.bologna.ausl.documentgenerator.utils.AziendaParamsManager;
 import it.bologna.ausl.documentgenerator.utils.BabelUtils;
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils;
@@ -16,6 +17,7 @@ import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedArchiveTy
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedMimeTypes;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
+import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
@@ -81,6 +83,7 @@ public class GeneratePE {
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
     private Map<String, Object> params;
+    private boolean skipRecursiveExtraction = false;
 
     public GeneratePE() {
     }
@@ -92,7 +95,8 @@ public class GeneratePE {
             Optional<List<MultipartFile>> allegati,
             Map<String, AziendaParametriJson> aziendeParams,
             Boolean minIOActive,
-            Map<String, Object> minIOConfig) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
+            Map<String, Object> minIOConfig,
+            boolean skipRecursiveExtraction) throws HttpInternautaResponseException, IOException, UnknownHostException, MongoException, MongoWrapperException {
         this.allegati = allegati;
         this.aziendaParamsManager = new AziendaParamsManager(objectMapper, aziendeParams, minIOActive, minIOConfig);
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
@@ -112,22 +116,6 @@ public class GeneratePE {
             throw new Http400ResponseException("400", "storage non trovato");
         }
 
-//        this.numeroDocumentoOrigine = (String) jsonParams.get("numero_documento_origine");
-//        if (numeroDocumentoOrigine == null) {
-//            throw new Http400ResponseException("400", "il parametro del body numero_documento_origine è obbligatorio");
-//        }
-//        Object annoDocumentoOrigine = jsonParams.get("anno_documento_origine");
-//
-//        if (annoDocumentoOrigine == null) {
-//            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine è obbligatorio");
-//        }
-//        this.annoDocumentoOrigineString = annoDocumentoOrigine.toString();
-//
-//        try {
-//            annoDocumentoOrigineInt = Integer.parseInt(annoDocumentoOrigineString);
-//        } catch (Exception ex) {
-//            throw new Http400ResponseException("400", "il parametro del body anno_documento_origine non è un intero");
-//        }
         if (params != null && !params.isEmpty() && params.containsKey("responsabile_procedimento")) {
             this.responsabileProcedimento = params.get("responsabile_procedimento").toString();
         }
@@ -143,116 +131,145 @@ public class GeneratePE {
             throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName()
                     + "' ha un mime-type non supportato dal sistema");
         }
+        this.skipRecursiveExtraction = skipRecursiveExtraction;
+    }
+
+    private void recursiveExtractAndUpload(MultipartFile allegato,
+            List<Map<String, Object>> mapAllegati,
+            File folderToSave)
+            throws IOException, ExtractorException, ExtractorException,
+            ExtractorException, Throwable {
+        String nome = allegato.getOriginalFilename();
+        File tmp = new File(folderToSave.getAbsolutePath()
+                + System.getProperty("file.separator")
+                + nome);
+
+        log.info("nome path nuovo " + folderToSave.getAbsolutePath() + System.getProperty("file.separator"));
+        log.info("allegato.getOriginalFilename " + allegato.getOriginalFilename());
+
+        FileUtils.copyInputStreamToFile(allegato.getInputStream(), tmp);
+
+        ExtractorCreator ec = new ExtractorCreator(tmp);
+        if (ec.isExtractable()) {
+            log.info("chiamo la extractAll su -->" + folderToSave.getAbsolutePath() + System.getProperty("file.separator") + allegato.getOriginalFilename());
+            /* creo i file contenuti dagli archivi nella cartella temporanea 
+            del sistema new File(folderToSave+allegato.getOriginalFilename()) 
+            NB: ec.extractAll() è ricorsiva */
+            ArrayList<ExtractorResult> ecAll = ec.extractAll(folderToSave);
+
+            for (ExtractorResult er : ecAll) {
+                log.info(er.toString());
+                try {
+                    File file = new File(er.getPath());
+                    InputStream fileDaPassare = new FileInputStream(file);
+                    log.info("upload del file? " + (SupportedArchiveTypes.contains(er.getMimeType())
+                            || SupportedMimeTypes.contains(er.getMimeType())));
+                    log.info("fileName: " + er.getFileName());
+                    log.info("getMimeType: " + er.getMimeType());
+
+                    // è di tipo accettato per il salvataggio sul db il contenuto del db?
+                    Boolean ispdf = er.getMimeType().equals(SupportedMimeTypes.PDF.toString());
+                    //file caricabili sul DB
+                    if (SupportedArchiveTypes.contains(er.getMimeType())) {
+                        mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
+                    } else if (SupportedMimeTypes.contains(er.getMimeType())) {
+                        mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
+                    } else if (!ExtractorCreator.isSupportedMimyType(er.getMimeType())) {
+                        throw new Http400ResponseException("400", "Attenzione: il file '" + er.getAntenati() + "\\" + er.getFileName() + " non ha un minetype accettablie.");
+                    }
+                } catch (Http400ResponseException q) {
+                    generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
+                    log.error("Il file non è di tipo accettato: " + er.getFileName(), q);
+                    throw q;
+                } catch (Exception e) {
+                    generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
+                    log.error("Errore nel caricamento su mongo  del file " + er.getFileName(), e);
+                    throw new Http400ResponseException("400", "Attenzione: errore nel caricamento su mongo dell'allegato '" + er.getFileName() + ".");
+                }
+            }
+        }
+    }
+
+    private List<Map<String, Object>> uploadAllegatiAndGetMap() throws IOException, Exception, Throwable {
+        List<Map<String, Object>> mapAllegati = new ArrayList();
+        // trasformo MultipartFile in InputStream
+        InputStream inputStreamPrincipale = new BufferedInputStream(documentoPrincipale.getInputStream());
+        //aggiungo al json
+        mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamPrincipale, documentoPrincipale.getOriginalFilename(), true, documentoPrincipale.getContentType(), generatorUtils.isPdf(documentoPrincipale)));
+
+        List<MultipartFile> allegatiList = allegati.orElse(Collections.emptyList());
+        log.info("Allegati: " + allegatiList.size());
+
+        File folderToSave = new File(System.getProperty("java.io.tmpdir") + "EstrazioneTemp" + System.getProperty("file.separator"));
+        for (MultipartFile allegato : allegatiList) {
+            log.info("Allegato = " + allegato.getName());
+
+            // in questo punto verifico se posso estrarre i file da dentro ad alcuni tipo di file che ne possono contenenre altri
+            //se il file singature non è accettato allora errore altrimenti continuo e setto il minetype perche non voglio che ci siano altri errori più avanti
+            Boolean entra = false;
+            if (allegato.getContentType().equals("application/octet-stream")) {
+                byte[] bytes = allegato.getBytes();
+                if (generatorUtils.signatureFileAccepted(bytes)) {
+                    entra = true;
+                }
+            }
+
+            if (!this.skipRecursiveExtraction && ExtractorCreator.isSupportedMimyType(allegato.getContentType())
+                    || entra) {
+                log.info("è estraibile: " + allegato.getName());
+                recursiveExtractAndUpload(allegato, mapAllegati, folderToSave);
+
+                // è un tipo di allegato accettabile?
+            } else if (!generatorUtils.isAcceptedMimeType(allegato)) {
+                log.error("allegato con formato non supportato: " + allegato.getName());
+                throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
+                        + "' ha un mime-type non supportato dal sistema");
+            } else {
+                // ci sono solo se il tipo di file non è estraibile ed è accettabile
+                log.info("file da uploadare, normale file " + allegato.getContentType());
+                log.info(allegato.getName());
+                InputStream inputStreamAllegato = new BufferedInputStream(allegato.getInputStream());
+                String allegatoFileName = allegato.getOriginalFilename();
+                Boolean principale = false;
+                String allegatoContentType = allegato.getContentType();
+                // così creiamo il json da aggiungere alla lista degli allegati e carichiamo su mongo il file
+                Map<String, Object> jsonAllegato = generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamAllegato, allegatoFileName, principale, allegatoContentType, !generatorUtils.isPdf(allegato));
+                mapAllegati.add(jsonAllegato);
+                uuidAllegati.add((String) jsonAllegato.get("uuid_file"));
+            }
+            generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
+        }
+        return mapAllegati;
+    }
+
+    private String generateRandomUUIDString() {
+        return UUID.randomUUID().toString();
+    }
+
+    private boolean isDocumentoGiaPresente() throws Sql2oSelectException {
+        return babelUtils.isDocumentoGiaPresente(codiceAzienda,
+                applicazioneChiamante,
+                numeroDocumentoOrigine,
+                annoDocumentoOrigineInt);
     }
 
     public String create(String idChiamata) throws Throwable {
         // restituiamo n_protocollo_generato/anno_protocollo_generato di babel
         String result = "";
-        String ID_CHIAMATA;
-        if (idChiamata != null) {
-            ID_CHIAMATA = idChiamata;
-        } else {
-            ID_CHIAMATA = UUID.randomUUID().toString() + "_";
-        }
+        String ID_CHIAMATA = idChiamata != null
+                ? idChiamata : generateRandomUUIDString() + "_";
         log.info("ID_CHIAMATA" + ID_CHIAMATA);
 
         try {
             // verifichiamo che il doc non sia già protocollato
-            if (babelUtils.isDocumentoGiaPresente(codiceAzienda, applicazioneChiamante, numeroDocumentoOrigine, annoDocumentoOrigineInt)) {
+            if (isDocumentoGiaPresente()) {
                 String message = String.format("E' già presente un documento con anno_documento_origine = %s e numero_documento_origine = %s"
                         + " e applicazione_chiamante = %s", this.annoDocumentoOrigineString, numeroDocumentoOrigine, applicazioneChiamante);
                 throw new Http500ResponseException("500", message);
             }
 
-            List<Map<String, Object>> mapAllegati = new ArrayList();
-            // trasformo MultipartFile in InputStream
-            InputStream inputStreamPrincipale = new BufferedInputStream(documentoPrincipale.getInputStream());
-            //aggiungo al json
-            mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamPrincipale, documentoPrincipale.getOriginalFilename(), true, documentoPrincipale.getContentType(), generatorUtils.isPdf(documentoPrincipale)));
+            List<Map<String, Object>> mapAllegati = uploadAllegatiAndGetMap();
 
-            List<MultipartFile> allegatiList = allegati.orElse(Collections.emptyList());
-            log.info("Allegati: " + allegatiList.size());
-
-            File folderToSave = new File(System.getProperty("java.io.tmpdir") + "EstrazioneTemp" + System.getProperty("file.separator"));
-            for (MultipartFile allegato : allegatiList) {
-                log.info("Allegato = " + allegato.getName());
-
-                // in questo punto verifico se posso estrarre i file da dentro ad alcuni tipo di file che ne possono contenenre altri
-                //se il file singature non è accettato allora errore altrimenti continuo e setto il minetype perche non voglio che ci siano altri errori più avanti
-                Boolean entra = false;
-                if (allegato.getContentType().equals("application/octet-stream")) {
-                    byte[] bytes = allegato.getBytes();
-                    if (generatorUtils.signatureFileAccepted(bytes)) {
-                        entra = true;
-                    }
-                }
-
-                if (ExtractorCreator.isSupportedMimyType(allegato.getContentType()) || entra) {
-                    log.info("è estraibile: " + allegato.getName());
-                    String nome = allegato.getOriginalFilename();
-                    File tmp = new File(folderToSave.getAbsolutePath() + System.getProperty("file.separator") + nome);
-
-                    log.info("nome path nuovo " + folderToSave.getAbsolutePath() + System.getProperty("file.separator"));
-                    log.info("allegato.getOriginalFilename " + allegato.getOriginalFilename());
-
-                    FileUtils.copyInputStreamToFile(allegato.getInputStream(), tmp);
-
-                    ExtractorCreator ec = new ExtractorCreator(tmp);
-                    if (ec.isExtractable()) {
-                        log.info("chiamo la extractAll su -->" + folderToSave.getAbsolutePath() + System.getProperty("file.separator") + allegato.getOriginalFilename());
-                        ArrayList<ExtractorResult> ecAll = ec.extractAll(folderToSave); // creo i file contenuti dagli archivi nella cartella temporanea del sistema new File(folderToSave+allegato.getOriginalFilename())
-
-                        for (ExtractorResult er : ecAll) {
-                            log.info(er.toString());
-                            try {
-                                File file = new File(er.getPath());
-                                InputStream fileDaPassare = new FileInputStream(file);
-                                log.info("upload del file? " + (SupportedArchiveTypes.contains(er.getMimeType())
-                                        || SupportedMimeTypes.contains(er.getMimeType())));
-                                log.info("fileName: " + er.getFileName());
-                                log.info("getMimeType: " + er.getMimeType());
-
-                                // è di tipo accettato per il salvataggio sul db il contenuto del db?
-                                Boolean ispdf = er.getMimeType().equals(SupportedMimeTypes.PDF.toString());
-                                //file caricabili sul DB
-                                if (SupportedArchiveTypes.contains(er.getMimeType())) {
-                                    mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
-                                } else if (SupportedMimeTypes.contains(er.getMimeType())) {
-                                    mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
-                                } else if (!ExtractorCreator.isSupportedMimyType(er.getMimeType())) {
-                                    throw new Http400ResponseException("400", "Attenzione: il file '" + er.getAntenati() + "\\" + er.getFileName() + " non ha un minetype accettablie.");
-                                }
-                            } catch (Http400ResponseException q) {
-                                generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
-                                log.error("Il file non è di tipo accettato: " + er.getFileName(), q);
-                                throw q;
-                            } catch (Exception e) {
-                                generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
-                                log.error("Errore nel caricamento su mongo  del file " + er.getFileName(), e);
-                                throw new Http400ResponseException("400", "Attenzione: errore nel caricamento su mongo dell'allegato '" + er.getFileName() + ".");
-                            }
-                        }
-                    }
-                    // è un tipo di allegato accettabile?
-                } else if (!generatorUtils.isAcceptedMimeType(allegato)) {
-                    log.error("allegato con formato non supportato: " + allegato.getName());
-                    throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
-                            + "' ha un mime-type non supportato dal sistema");
-                } else {
-                    // ci sono solo se il tipo di file non è estraibile ed è accettabile
-                    log.info("file da uploadare, normale file " + allegato.getContentType());
-                    log.info(allegato.getName());
-                    InputStream inputStreamAllegato = new BufferedInputStream(allegato.getInputStream());
-                    String allegatoFileName = allegato.getOriginalFilename();
-                    Boolean principale = false;
-                    String allegatoContentType = allegato.getContentType();
-                    // così creiamo il json da aggiungere alla lista degli allegati e carichiamo su mongo il file
-                    Map<String, Object> jsonAllegato = generatorUtils.uploadMongoISandJsonAllegato(mongo, inputStreamAllegato, allegatoFileName, principale, allegatoContentType, !generatorUtils.isPdf(allegato));
-                    mapAllegati.add(jsonAllegato);
-                    uuidAllegati.add((String) jsonAllegato.get("uuid_file"));
-                }
-                generatorUtils.svuotaCartella(folderToSave.getAbsolutePath());
-            }
             //log.info(mapAllegati.toJSONString());
             params.put("allegati", mapAllegati);
 

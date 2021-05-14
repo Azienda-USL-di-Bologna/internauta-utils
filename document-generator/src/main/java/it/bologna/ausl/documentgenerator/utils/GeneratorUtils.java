@@ -66,6 +66,7 @@ public class GeneratorUtils {
         BMP("image/x-ms-bmp"),
         DOC("application/msword"),
         DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        EML("message/rfc822"),
         GIF("image/gif"),
         JPG("image/jpeg"),
         PDF("application/pdf"),

@@ -5,6 +5,8 @@
  */
 
 import com.mongodb.MongoException;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.File;
@@ -22,7 +24,7 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
  */
 public class TestClass {
 
-    public static void main(String[] args) throws UnknownHostException, MongoException, MongoWrapperException, IOException {
+    public static void main(String[] args) throws UnknownHostException, MongoException, MongoWrapperException, IOException, MinIOWrapperException {
 
         String	minIODBDriver= "org.postgresql.Driver";
 	String minIODBUrl = "jdbc:postgresql://babel-big-auslbo.avec.emr.it:5432/minirepo?stringtype=unspecified";
@@ -35,25 +37,28 @@ public class TestClass {
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true");
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/downloadgdml?safe=true");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo:siamocaldi@babelmongo1,babelmongo2/prod?safe=true&replicaSet=prod0");
-        // MongoWrapper m = new MongoWrapper("mongodb://argo102:e37jTcIeTp0w@babel102mongo.avec.emr.it/doc102?safe=true");
+//         MongoWrapper m = new MongoWrapper("mongodb://argo102:e37jTcIeTp0w@babel102mongo.avec.emr.it/doc102?safe=true");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo106:Ushaez4ajei2@babel106mongo1.avec.emr.it,babel106mongo2.avec.emr.it/doc106?safe=true&replicaSet=avec0");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo109:xJSE3Sxvy7Dr@babel109mongo1.avec.emr.it,babel109mongo2.avec.emr.it/doc109?safe=true&replicaSet=avec0");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo908:mPw8DApKLaPR@babel908mongo1.avec.emr.it,babel908mongo2.avec.emr.it/doc908?safe=true&replicaSet=avec0");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo908:mPw8DApKLaPR@babel908mongo1.avec.emr.it/doc908?safe=true");
         //  MongoWrapper m = new MongoWrapper("mongodb://argo909:BIKJBnwosLs7@babel909mongo.avec.emr.it/doc909?safe=true");
 //          String mongoUri = "mongodb://argo960:Fj0pdiENBdNU@babel960mongo1.avec.emr.it,babel960mongo2.avec.emr.it/doc960?safe=true&replicaSet=avec0";
-          String mongoUri = "mongodb://argo106:Ushaez4ajei2@babel106mongo1.avec.emr.it,babel106mongo2.avec.emr.it/doc106?safe=true&replicaSet=avec0";
-           MongoWrapper m = MongoWrapper.getWrapper(true, mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, "106", null);
+//          String mongoUri = "mongodb://argo106:Ushaez4ajei2@babel106mongo1.avec.emr.it,babel106mongo2.avec.emr.it/doc106?safe=true&replicaSet=avec0";
+          String mongoUri = "mongodb://argo102:e37jTcIeTp0w@babel102mongo.avec.emr.it/doc102?safe=true";
+           MongoWrapper m = MongoWrapper.getWrapper(true, mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, "102", null);
+           
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamocaldi@babelmongo1,babelmongo2/prod?safe=true&replicaSet=prod0");
 //        m.getDirFiles(path).stream().forEach(uuid -> {System.out.println(uuid + ": " + m.getFileName(uuid));});
-
-
-    String toUndelete = "aecebc45-167d-453b-aee0-c94da0fe12a4,6a3b85e4-16bf-467d-a006-92f92aedb073,a9b72503-6104-40d2-9bc4-78d8a4344cdb,724e66f6-eafa-434b-876e-17a4ce5ecee2,6efec02f-8e61-430f-9811-24d261d526b6,bdb15418-609b-4b20-8c83-f4557a15cb9e,09300e1c-db18-44a4-9bec-49ff780a0fe2,865ff177-ace4-4b89-9114-e86fef915819,e863bc89-c444-4deb-9933-ad75a2204942";
-    for (String uuid : toUndelete.split(",")) {
-        m.unDelete(uuid);
-           String fileName = m.getFileName(uuid);
-           System.out.println("filename: " + fileName);
-    }
+        MinIOWrapper minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+    String toUndelete = "e4/16/c3/99/e416c399-7a4b-42ec-a2ad-b4afb22dcc3f/2021-32695_Allegato2.pdf";
+    //minIOWrapper.renameByFileId(toUndelete, "PG0029996_2021_Allegato1.pdf", true);
+    minIOWrapper.restoreByFileId(toUndelete);
+//    for (String uuid : toUndelete.split(",")) {
+//        m.unDelete(uuid);
+//           String fileName = m.getFileName(uuid);
+//           System.out.println("filename: " + fileName);
+//    }
 //        System.out.println("aaaa: " + fileName);
         System.exit(0);
         //upload frontespizio
