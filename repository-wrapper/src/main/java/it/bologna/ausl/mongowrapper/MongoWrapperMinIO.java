@@ -55,11 +55,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
             minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
         }
     }
-    
+
     private boolean lockByUuid(String mongoUuid) throws MongoWrapperException {
         return lock(mongoUuid, null, null);
     }
-    
+
     private boolean lockByPath(String mongoPath) throws MongoWrapperException {
         String pathWithSlash = mongoPath;
         if (!mongoPath.startsWith("/")) {
@@ -67,7 +67,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
         return lock(null, pathWithSlash, null);
     }
-    
+
     private boolean lockByDir(String mongoDir) throws MongoWrapperException {
         String dirNameWithSlash = mongoDir;
         if (!mongoDir.startsWith("/")) {
@@ -75,7 +75,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         }
         return lock(null, null, dirNameWithSlash);
     }
-    
+
     private boolean lock(String mongoUuid, String mongoPath, String mongoDir) throws MongoWrapperException {
 //        if (true) return false;
         if (conn.get() != null) {
@@ -101,7 +101,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
         List<Map<String, Object>> res = conn.get().createQuery(query).addParameter("id", id).executeAndFetchTable().asList();
         return res != null && !res.isEmpty();
     }
-    
+
     private void unlock() {
 //        if (true) return;
 //        System.out.println("conn: " + conn.get());
@@ -111,7 +111,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
             conn.set(null);
         }
     }
-    
+
     public MinIOWrapper getMinIOWrapper() {
         return minIOWrapper;
     }
@@ -462,7 +462,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
             lockByPath(filepath);
             String[] splittedPath = splitPath(filepath);
             minIOWrapper.deleteByPathAndFileName(splittedPath[0], splittedPath[1], codiceAzienda);
-             super.deleteByPath(filepath);
+            super.deleteByPath(filepath);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         } finally {
@@ -559,11 +559,11 @@ public class MongoWrapperMinIO extends MongoWrapper {
         try {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid);
             if (fileInfo != null) {
-                return fileInfo.getFileId();
+                return fileInfo.getMd5();
             } else {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
-                    return fileInfo.getFileId();
+                    return fileInfo.getMd5();
                 } else {
                     return super.getMD5ByUuid(uuid);
                 }
