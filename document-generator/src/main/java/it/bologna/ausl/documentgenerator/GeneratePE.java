@@ -74,6 +74,7 @@ public class GeneratePE {
     private Integer annoDocumentoOrigineInt = null;
     private String responsabileProcedimento;
     private String codiceAzienda;
+    private Integer idDocEsterno;
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
     private Map<String, Object> params;
@@ -96,6 +97,7 @@ public class GeneratePE {
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
         this.params = params;
         this.applicazioneChiamante = (String) params.get("applicazione_chiamante");
+        this.idDocEsterno = (Integer) params.get("id_doc_esterno");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
         }
@@ -241,10 +243,16 @@ public class GeneratePE {
     }
 
     private boolean isDocumentoGiaPresente() throws Sql2oSelectException {
-        return babelUtils.isDocumentoGiaPresente(codiceAzienda,
-                applicazioneChiamante,
-                numeroDocumentoOrigine,
-                annoDocumentoOrigineInt);
+        switch (applicazioneChiamante) {
+            case "SIRER":
+                return babelUtils.isDocumentoGiaPresenteByDocumentoEsterno(codiceAzienda,
+                    applicazioneChiamante,
+                    numeroDocumentoOrigine,
+                    annoDocumentoOrigineInt);
+            default:
+                return babelUtils.isDocumentoGiaPresenteByIdDocEsterno(codiceAzienda,idDocEsterno);
+        }
+        
     }
 
     public String create(String idChiamata) throws Throwable {
@@ -258,8 +266,8 @@ public class GeneratePE {
         try {
             // verifichiamo che il doc non sia già protocollato
             if (isDocumentoGiaPresente()) {
-                String message = String.format("E' già presente un documento con anno_documento_origine = %s e numero_documento_origine = %s"
-                        + " e applicazione_chiamante = %s", this.annoDocumentoOrigineString, numeroDocumentoOrigine, applicazioneChiamante);
+                String message = String.format("E' già presente un documento con id_doc_esterno = %s"
+                       ,  idDocEsterno);
                 throw new Http500ResponseException("500", message);
             }
 

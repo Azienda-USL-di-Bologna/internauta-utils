@@ -215,7 +215,28 @@ public class BabelUtils {
         return giaPrensente;
     }
 
-    public Boolean isDocumentoGiaPresente(String codiceAzienda, String applicazioneChiamante, String numeroDocumentoOrigine, Integer annoDocumentoOrigine) throws Sql2oSelectException {
+    public Boolean isDocumentoGiaPresenteByIdDocEsterno(String codiceAzienda, Integer idDoc) throws Sql2oSelectException {
+        Boolean giaPrensente = false;
+
+        String query = "select count(id_documento) from procton.documenti_extras where "
+                + "id_doc_esterno = :id_doc_esterno";
+
+        Integer count = null;
+
+        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+            count = conn.createQuery(query)
+                    .addParameter("id_doc_esterno", idDoc)
+                    .executeAndFetchFirst(Integer.class);
+        } catch (Exception e) {
+            throw new Sql2oSelectException("Errore nel reperimento del documento per verificare se è già presente", e);
+        }
+        if (count > 0) {
+            giaPrensente = true;
+        }
+        return giaPrensente;
+    }
+    
+    public Boolean isDocumentoGiaPresenteByDocumentoEsterno(String codiceAzienda, String applicazioneChiamante, String numeroDocumentoOrigine, Integer annoDocumentoOrigine) throws Sql2oSelectException {
         Boolean giaPrensente = false;
         String query = "select count(id_documento) from procton.documenti where "
                 + "anno_documento_origine = :anno_documento_origine and protocollo_esterno = :protocollo_esterno "
