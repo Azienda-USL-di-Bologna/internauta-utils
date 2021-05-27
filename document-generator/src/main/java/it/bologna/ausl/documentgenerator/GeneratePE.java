@@ -1,8 +1,6 @@
 package it.bologna.ausl.documentgenerator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.documentgenerator.exceptions.Http400ResponseException;
@@ -34,14 +32,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.io.FileUtils;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +74,7 @@ public class GeneratePE {
     private Integer annoDocumentoOrigineInt = null;
     private String responsabileProcedimento;
     private String codiceAzienda;
+    private Integer idDocEsterno;
     private String numeroDocumentoOrigine;
     private String annoDocumentoOrigineString;
     private Map<String, Object> params;
@@ -102,6 +97,7 @@ public class GeneratePE {
         this.babelUtils = new BabelUtils(aziendaParamsManager, objectMapper);
         this.params = params;
         this.applicazioneChiamante = (String) params.get("applicazione_chiamante");
+        this.idDocEsterno = (Integer) params.get("id_doc_esterno");
         if (applicazioneChiamante == null) {
             throw new Http400ResponseException("400", "il parametro del body applicazione_chiamante è obbligatorio");
         }
@@ -247,15 +243,22 @@ public class GeneratePE {
     }
 
     private boolean isDocumentoGiaPresente() throws Sql2oSelectException {
-        return babelUtils.isDocumentoGiaPresente(codiceAzienda,
-                applicazioneChiamante,
-                numeroDocumentoOrigine,
-                annoDocumentoOrigineInt);
+        switch (applicazioneChiamante) {
+            case "SIRER":
+                return babelUtils.isDocumentoGiaPresenteByDocumentoEsterno(codiceAzienda,
+                    applicazioneChiamante,
+                    numeroDocumentoOrigine,
+                    annoDocumentoOrigineInt);
+            default:
+                return babelUtils.isDocumentoGiaPresenteByIdDocEsterno(codiceAzienda,idDocEsterno);
+        }
+        
     }
 
     public String create(String idChiamata) throws Throwable {
         // restituiamo n_protocollo_generato/anno_protocollo_generato di babel
         String result = "";
+        String resultJson = "";
         String ID_CHIAMATA = idChiamata != null
                 ? idChiamata : generateRandomUUIDString() + "_";
         log.info("ID_CHIAMATA" + ID_CHIAMATA);
@@ -263,8 +266,8 @@ public class GeneratePE {
         try {
             // verifichiamo che il doc non sia già protocollato
             if (isDocumentoGiaPresente()) {
-                String message = String.format("E' già presente un documento con anno_documento_origine = %s e numero_documento_origine = %s"
-                        + " e applicazione_chiamante = %s", this.annoDocumentoOrigineString, numeroDocumentoOrigine, applicazioneChiamante);
+                String message = String.format("E' già presente un documento con id_doc_esterno = %s"
+                       ,  idDocEsterno);
                 throw new Http500ResponseException("500", message);
             }
 
@@ -319,6 +322,7 @@ public class GeneratePE {
 
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
+                resultJson = (String) myResponse.get("resultJson");
 
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
@@ -331,7 +335,7 @@ public class GeneratePE {
             }
             log.info(ID_CHIAMATA + String.format("L'utente %s ha generato il protocollo %s nell'azienda %s. applicazione_chiamante = %s",
                     responsabileProcedimento, result, codiceAzienda, applicazioneChiamante));
-            return result;
+            return resultJson;
         } catch (HttpInternautaResponseException ex) {
             log.error(ex.getMessage());
             // qualsiasi errore viene dato, devo cancellare gli allegati
