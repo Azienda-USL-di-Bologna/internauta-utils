@@ -403,11 +403,11 @@ public class WrapperMinIO extends MongoWrapper {
         try {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid);
             if (fileInfo != null) {
-                return fileInfo.getFileId();
+                return fileInfo.getMd5();
             } else {
                 fileInfo = minIOWrapper.getFileInfoByFileId(uuid);
                 if (fileInfo != null) {
-                    return fileInfo.getFileId();
+                    return fileInfo.getMd5();
                 }
                 return null;
             }
@@ -552,8 +552,8 @@ public class WrapperMinIO extends MongoWrapper {
         String uuid = UUID.randomUUID().toString();
         return put(is, uuid, filename, null, null, dirname, overwrite);
     }
-    
-        @Override
+
+    @Override
     public Map<String, Object> getMetadataByUuid(String uuid) throws MongoWrapperException {
         try {
             MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByUuid(uuid);

@@ -2,10 +2,10 @@ package it.bologna.ausl.minio.manager;
 
 import io.minio.BucketExistsArgs;
 import io.minio.MinioClient;
-import io.minio.ObjectStat;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.MinioException;
@@ -242,7 +242,7 @@ public class Test {
             }
 
             try {                
-                ObjectStat statObject = minioClient.statObject(StatObjectArgs.builder().bucket("105").object("caretella27/cartella34/aaaa.pdf").build());
+                StatObjectResponse statObject = minioClient.statObject(StatObjectArgs.builder().bucket("105").object("caretella27/cartella34/aaaa.pdf").build());
                 System.out.println("statObject: " + statObject.toString());
             } catch (ErrorResponseException e) {
                 e.printStackTrace();
