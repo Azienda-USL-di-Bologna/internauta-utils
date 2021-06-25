@@ -116,7 +116,7 @@ public class ExtractorCreator {
                     ArrayList<ExtractorResult> res = extractor.extract(outputDir, nameForCreatedFile);
                     for (ExtractorResult er : res) {
                         File fileToExtract = new File(er.getPath());
-                        if (antenati != null && antenati != "null" && antenati != ""){
+                        if (antenati != null && !antenati.isEmpty() && !antenati.equals("null")){
                             antenati = antenati + "\\";
                         }
                         else
