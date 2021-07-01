@@ -478,8 +478,8 @@ public class Detector {
 //        System.out.println(whatP7m(a));
         Detector detector = new Detector();
 //        System.out.println(detector.getMimeType(a));
-        File file1 = new File("C:\\Users\\Top\\Downloads\\Contatore PEC.doc.p7m");
-//        File file2 = new File("C:/ciao.txt");
+//        File file1 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
+        File file2 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
 //        File file3 = new File("c:/tmp/gdm/NSI_AS400.mdb");
 //        File file4 = new File("c:/tmp/gdm/gdm.7z");
 //        File file5 = new File("c:/tmp/gdm/PROSA.MDB");
@@ -489,9 +489,9 @@ public class Detector {
 //                System.exit(0);
 //        System.out.println(file1.getName() + " - " + detector.getMimeType(file1.getAbsolutePath()));
 //        System.out.println(file1.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file1)));
-        System.out.println(file1.getName() + " - " + detector.getMimeType(file1.getAbsolutePath()));
+        System.out.println(file2.getName() + " - " + detector.getMimeType(file2.getAbsolutePath()));
         
-        System.out.println(file1.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file1)));
+        System.out.println(file2.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file2)));
 
         
        
