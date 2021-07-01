@@ -37,6 +37,7 @@ public class GeneratorUtils {
         MSG("vnd.ms-outlook"),
         PKCS_7_SIGNATURE("pkcs7-signature"),
         PKCS_7_MIME("pkcs7-mime"),
+        PKCS_7_APPLICATION_MIME("application/pkcs7-mime"),
         MBOX("mbox"),
         PDF("application/pdf");
 
@@ -75,7 +76,8 @@ public class GeneratorUtils {
         TXT("text/plain"),
         HTML("text/html"),
         XLS("application/vnd.ms-excel"),
-        XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        P7M_APPLICATION_MIME("application/pkcs7-mime");
 
         private String mimeType;
 
