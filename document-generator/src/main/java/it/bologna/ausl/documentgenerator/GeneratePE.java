@@ -124,8 +124,8 @@ public class GeneratePE {
         //il principale allegato non può essere di tipo estraibile
         if (!generatorUtils.isAcceptedMimeType(documentoPrincipale)) {
 
-            throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName()
-                    + "' ha un mime-type non supportato dal sistema");
+            throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName() 
+                    + "' ha un mime-type non supportato dal sistema" + documentoPrincipale.getContentType());
         }
         this.skipRecursiveExtraction = skipRecursiveExtraction;
     }
@@ -219,7 +219,7 @@ public class GeneratePE {
             } else if (!generatorUtils.isAcceptedMimeType(allegato)) {
                 log.error("allegato con formato non supportato: " + allegato.getName());
                 throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
-                        + "' ha un mime-type non supportato dal sistema");
+                        + "' ha un mime-type non supportato dal sistema" + allegato.getContentType());
             } else {
                 // ci sono solo se il tipo di file non è estraibile ed è accettabile
                 log.info("file da uploadare, normale file " + allegato.getContentType());
