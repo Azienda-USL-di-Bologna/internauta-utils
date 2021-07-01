@@ -77,6 +77,7 @@ public class GeneratorUtils {
         HTML("text/html"),
         XLS("application/vnd.ms-excel"),
         XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        ZIP("application/zip"),
         P7M_APPLICATION_MIME("application/pkcs7-mime");
 
         private String mimeType;
