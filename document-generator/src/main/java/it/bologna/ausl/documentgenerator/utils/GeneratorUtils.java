@@ -78,6 +78,8 @@ public class GeneratorUtils {
         XLS("application/vnd.ms-excel"),
         XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         ZIP("application/zip"),
+        XML("application/xml"),
+        
         P7M_APPLICATION_MIME("application/pkcs7-mime");
 
         private String mimeType;
