@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.UnknownHostException;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -23,7 +22,7 @@ import java.util.stream.Stream;
  *
  * @author Top
  */
-public class MongoSpostaPico {
+public class SpostaPicoMongo {
     public static void main(String[] args) throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         String	minIODBDriver= "org.postgresql.Driver";
 	String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
@@ -39,7 +38,7 @@ public class MongoSpostaPico {
             try {
                 m.erase(uuid);
             } catch (MongoWrapperException ex) {
-                Logger.getLogger(MongoSpostaPico.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(SpostaPicoMongo.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
     

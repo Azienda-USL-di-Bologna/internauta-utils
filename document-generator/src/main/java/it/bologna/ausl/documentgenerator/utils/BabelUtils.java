@@ -16,8 +16,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.data.Row;
@@ -63,7 +61,7 @@ public class BabelUtils {
 
         List<Row> rows = null;
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             rows = conn.createQuery(query)
                     .addParameter("cf", codiceFiscale)
                     .executeAndFetchTable().rows();
@@ -104,7 +102,7 @@ public class BabelUtils {
 
         List<Row> rows = null;
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             rows = conn.createQuery(query)
                     .addParameter("classificazione", classificazione)
                     .executeAndFetchTable().rows();
@@ -126,7 +124,7 @@ public class BabelUtils {
 
     public Integer getIdTipoFascicoloDescrizione(String codiceAzienda, String descrizione) throws Sql2oSelectException {
         Integer idTipoFascicolo = null;
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             String query = "select id_tipo_fascicolo from gd.tipi_fascicolo where tipo_fascicolo ilike :tipo_fascicolo";
 
             idTipoFascicolo = conn.createQuery(query)
@@ -152,7 +150,7 @@ public class BabelUtils {
         String queryIndeIdUrl = "SELECT val_parametro from bds_tools.parametri_pubblici "
                 + "WHERE nome_parametro = :nome_parametro";
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             urlChiamata = conn.createQuery(queryIndeIdUrl)
                     .addParameter("nome_parametro", "getIndeUrlServiceUri")
                     .executeAndFetchFirst(String.class);
@@ -199,7 +197,7 @@ public class BabelUtils {
 
         Integer count = null;
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             count = conn.createQuery(query)
                     .addParameter("id_fascicolo_app_origine", idFascicoloOrigine)
                     .addParameter("servizio_creazione", applicazioneChiamante)
@@ -223,7 +221,7 @@ public class BabelUtils {
 
         Integer count = null;
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             count = conn.createQuery(query)
                     .addParameter("id_doc_esterno", idDoc)
                     .executeAndFetchFirst(Integer.class);
@@ -235,7 +233,7 @@ public class BabelUtils {
         }
         return giaPrensente;
     }
-    
+
     public Boolean isDocumentoGiaPresenteByDocumentoEsterno(String codiceAzienda, String applicazioneChiamante, String numeroDocumentoOrigine, Integer annoDocumentoOrigine) throws Sql2oSelectException {
         Boolean giaPrensente = false;
         String query = "select count(id_documento) from procton.documenti where "
@@ -244,7 +242,7 @@ public class BabelUtils {
 
         Integer count = null;
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             count = conn.createQuery(query)
                     .addParameter("anno_documento_origine", annoDocumentoOrigine)
                     .addParameter("protocollo_esterno", numeroDocumentoOrigine)
@@ -268,7 +266,7 @@ public class BabelUtils {
                 + (idFascicoloOrigine != null ? " and id_fascicolo_app_origine = :id_fascicolo_app_origine" : "")
                 + (applicazione != null ? " and servizio_creazione = :applicazione_origine" : "");
 
-        try (Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             Query q = conn.createQuery(query);
             if (numerazioneGerarchica != null) {
                 q = q.addParameter("numerazione_gerarchica", numerazioneGerarchica);
@@ -300,6 +298,31 @@ public class BabelUtils {
         String query = "update gd.fascicoligd where id_fascicolo = ";
 
         return query;
+    }
+
+    public boolean isSupportedMimeType(String codiceAzienda, String mimetype) {
+
+        boolean result = false;
+
+        String query = "SELECT mime_type "
+                + "FROM bds_tools.file_supportati "
+                + "WHERE mime_type = :mimetype";
+
+        List<Row> rows = null;
+
+        try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
+            rows = conn.createQuery(query)
+                    .addParameter("mimetype", mimetype)
+                    .addColumnMapping("mime_type", "mimetype")
+                    .addColumnMapping("convertibile_pdf", "convertibilePDF")
+                    .addColumnMapping("estensione", "estensione")
+                    .executeAndFetchTable().rows();
+
+            if (rows.size() > 1) {
+                result = true;
+            }
+        }
+        return result;
     }
 
 }

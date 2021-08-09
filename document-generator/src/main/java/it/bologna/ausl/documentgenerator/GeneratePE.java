@@ -12,7 +12,6 @@ import it.bologna.ausl.documentgenerator.utils.AziendaParamsManager;
 import it.bologna.ausl.documentgenerator.utils.BabelUtils;
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils;
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedArchiveTypes;
-import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedMimeTypes;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
 import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
@@ -83,6 +82,22 @@ public class GeneratePE {
     public GeneratePE() {
     }
 
+    /**
+     * setting dei parametri passati e controlli associati, prima di create il protocollo
+     * @param cfUser
+     * @param params
+     * @param documentoPrincipale
+     * @param allegati
+     * @param aziendeParams
+     * @param minIOActive
+     * @param minIOConfig
+     * @param skipRecursiveExtraction
+     * @throws HttpInternautaResponseException
+     * @throws IOException
+     * @throws UnknownHostException
+     * @throws MongoException
+     * @throws MongoWrapperException
+     */
     public void init(
             String cfUser,
             Map<String, Object> params,
@@ -125,7 +140,7 @@ public class GeneratePE {
         if (!generatorUtils.isAcceptedMimeType(documentoPrincipale)) {
 
             throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName()
-                    + "' ha un mime-type non supportato dal sistema");
+                    + "' ha un mime-type non supportato dal sistema" + documentoPrincipale.getContentType());
         }
         this.skipRecursiveExtraction = skipRecursiveExtraction;
     }
@@ -148,8 +163,8 @@ public class GeneratePE {
         ExtractorCreator ec = new ExtractorCreator(tmp);
         if (ec.isExtractable()) {
             log.info("chiamo la extractAll su -->" + folderToSave.getAbsolutePath() + System.getProperty("file.separator") + allegato.getOriginalFilename());
-            /* creo i file contenuti dagli archivi nella cartella temporanea 
-            del sistema new File(folderToSave+allegato.getOriginalFilename()) 
+            /* creo i file contenuti dagli archivi nella cartella temporanea
+            del sistema new File(folderToSave+allegato.getOriginalFilename())
             NB: ec.extractAll() è ricorsiva */
             ArrayList<ExtractorResult> ecAll = ec.extractAll(folderToSave);
 
@@ -158,17 +173,19 @@ public class GeneratePE {
                 try {
                     File file = new File(er.getPath());
                     InputStream fileDaPassare = new FileInputStream(file);
+//                    log.info("upload del file? " + (SupportedArchiveTypes.contains(er.getMimeType())
+//                            || SupportedMimeTypes.contains(er.getMimeType())));
                     log.info("upload del file? " + (SupportedArchiveTypes.contains(er.getMimeType())
-                            || SupportedMimeTypes.contains(er.getMimeType())));
+                            || babelUtils.isSupportedMimeType(codiceAzienda, er.getMimeType())));
                     log.info("fileName: " + er.getFileName());
                     log.info("getMimeType: " + er.getMimeType());
 
                     // è di tipo accettato per il salvataggio sul db il contenuto del db?
-                    Boolean ispdf = er.getMimeType().equals(SupportedMimeTypes.PDF.toString());
+                    Boolean ispdf = er.getMimeType().equals("application/pdf");
                     //file caricabili sul DB
                     if (SupportedArchiveTypes.contains(er.getMimeType())) {
                         mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
-                    } else if (SupportedMimeTypes.contains(er.getMimeType())) {
+                    } else if (babelUtils.isSupportedMimeType(codiceAzienda, er.getMimeType())) {
                         mapAllegati.add(generatorUtils.uploadMongoISandJsonAllegato(mongo, fileDaPassare, er.getFileName(), false, er.getMimeType(), !ispdf));
                     } else if (!ExtractorCreator.isSupportedMimyType(er.getMimeType())) {
                         throw new Http400ResponseException("400", "Attenzione: il file '" + er.getAntenati() + "\\" + er.getFileName() + " non ha un minetype accettablie.");
@@ -219,7 +236,7 @@ public class GeneratePE {
             } else if (!generatorUtils.isAcceptedMimeType(allegato)) {
                 log.error("allegato con formato non supportato: " + allegato.getName());
                 throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
-                        + "' ha un mime-type non supportato dal sistema");
+                        + "' ha un mime-type non supportato dal sistema" + allegato.getContentType());
             } else {
                 // ci sono solo se il tipo di file non è estraibile ed è accettabile
                 log.info("file da uploadare, normale file " + allegato.getContentType());
@@ -252,9 +269,15 @@ public class GeneratePE {
             default:
                 return babelUtils.isDocumentoGiaPresenteByIdDocEsterno(codiceAzienda,idDocEsterno);
         }
-        
+
     }
 
+    /**
+     * creazione di un protocollo in entrata
+     * @param idChiamata
+     * @return n_protocollo_generato/anno_protocollo_generato di babel
+     * @throws Throwable
+     */
     public String create(String idChiamata) throws Throwable {
         // restituiamo n_protocollo_generato/anno_protocollo_generato di babel
         String result = "";

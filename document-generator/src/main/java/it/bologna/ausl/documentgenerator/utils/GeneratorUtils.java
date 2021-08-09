@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -38,6 +37,7 @@ public class GeneratorUtils {
         MSG("vnd.ms-outlook"),
         PKCS_7_SIGNATURE("pkcs7-signature"),
         PKCS_7_MIME("pkcs7-mime"),
+        PKCS_7_APPLICATION_MIME("application/pkcs7-mime"),
         MBOX("mbox"),
         PDF("application/pdf");
 
@@ -76,7 +76,11 @@ public class GeneratorUtils {
         TXT("text/plain"),
         HTML("text/html"),
         XLS("application/vnd.ms-excel"),
-        XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        ZIP("application/zip"),
+        XML("application/xml"),
+        
+        P7M_APPLICATION_MIME("application/pkcs7-mime");
 
         private String mimeType;
 

@@ -478,20 +478,20 @@ public class Detector {
 //        System.out.println(whatP7m(a));
         Detector detector = new Detector();
 //        System.out.println(detector.getMimeType(a));
-        File file1 = new File("c:/prova.xml");
-        File file2 = new File("C:/ciao.txt");
-        File file3 = new File("c:/tmp/gdm/NSI_AS400.mdb");
-        File file4 = new File("c:/tmp/gdm/gdm.7z");
-        File file5 = new File("c:/tmp/gdm/PROSA.MDB");
-        File file6 = new File("C:/downloads/doc2.eml");
-        File file7 = new File("c:/tmp/Convocazione IV CdS VIA Montieco S r l -_Anzola_dell_Emilia _BO_.pdf.p7m");
+//        File file1 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
+        File file2 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
+//        File file3 = new File("c:/tmp/gdm/NSI_AS400.mdb");
+//        File file4 = new File("c:/tmp/gdm/gdm.7z");
+//        File file5 = new File("c:/tmp/gdm/PROSA.MDB");
+//        File file6 = new File("C:/downloads/doc2.eml");
+//        File file7 = new File("c:/tmp/Convocazione IV CdS VIA Montieco S r l -_Anzola_dell_Emilia _BO_.pdf.p7m");
 //        System.out.println(isEml(new FileInputStream(file3)));
 //                System.exit(0);
 //        System.out.println(file1.getName() + " - " + detector.getMimeType(file1.getAbsolutePath()));
 //        System.out.println(file1.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file1)));
-        System.out.println(file1.getName() + " - " + detector.getMimeType(file1.getAbsolutePath()));
+        System.out.println(file2.getName() + " - " + detector.getMimeType(file2.getAbsolutePath()));
         
-        System.out.println(file1.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file1)));
+        System.out.println(file2.getName() + " - " + detector.getMimeTypeProParer(new FileInputStream(file2)));
 
         
        
