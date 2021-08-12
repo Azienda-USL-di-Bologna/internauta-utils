@@ -31,13 +31,20 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
 import com.sun.mail.util.QPDecoderStream;
+import com.sun.tools.sjavac.Log;
 import java.io.ByteArrayOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class EmlHandlerUtils {
 
+    private static final Logger LOG = LoggerFactory.getLogger(EmlHandlerUtils.class);
+    
     public static MimeMessage BuildMailMessageFromString(String s) throws EmlHandlerException {
 
         ByteArrayInputStream bais = null;
@@ -265,9 +272,18 @@ public class EmlHandlerUtils {
             } catch (javax.mail.internet.ParseException e) {
                 // Pattern rp= Pattern.compile("^.*filename=(.*);?$",Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
                 String disp = part.getHeader("Content-Disposition")[0];
-                System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                System.out.println("New disp disp: " + disp);
+                LOG.info("Original disp: " + disp);
+                
+                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\"");
+                
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+                
+//                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
+                LOG.info("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
             }
@@ -386,9 +402,17 @@ public class EmlHandlerUtils {
                 disposition = part.getDisposition();
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
-                System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                System.out.println("New disp disp: " + disp);
+                LOG.info("Original disp: " + disp);
+//                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
+                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\"");
+                
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+                
+                LOG.info("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
             }
@@ -422,9 +446,15 @@ public class EmlHandlerUtils {
                 disposition = part.getDisposition();
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
-                System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                System.out.println("New disp disp: " + disp);
+                LOG.info("Original disp: " + disp);
+                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\"");
+                
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+                LOG.info("New Disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
             }
@@ -460,9 +490,15 @@ public class EmlHandlerUtils {
                 disposition = part.getDisposition();
             } catch (javax.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
-                System.out.println("Original disp: " + disp);
-                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                System.out.println("New disp disp: " + disp);
+                LOG.info("Original disp: " + disp);
+                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\"");
+                
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+                LOG.info("New disp disp: " + disp);
                 part.setHeader("Content-Disposition", disp);
                 disposition = part.getDisposition();
             }
