@@ -30,7 +30,6 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
 import com.sun.mail.util.QPDecoderStream;
-import com.sun.tools.sjavac.Log;
 import java.io.ByteArrayOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
