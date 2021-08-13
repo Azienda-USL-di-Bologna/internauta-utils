@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import javax.activation.DataHandler;
@@ -31,14 +30,12 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
 import com.sun.mail.util.QPDecoderStream;
-import com.sun.tools.sjavac.Log;
 import java.io.ByteArrayOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class EmlHandlerUtils {
