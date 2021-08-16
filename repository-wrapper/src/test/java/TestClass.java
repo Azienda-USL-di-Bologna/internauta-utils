@@ -45,7 +45,7 @@ public class TestClass {
         String path = "/Procton/Documenti/2020-65400";
 //        String path = "/Relate";
 
-//       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true");
+       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true");
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/downloadgdml?safe=true");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo:siamocaldi@babelmongo1,babelmongo2/prod?safe=true&replicaSet=prod0");
 //         MongoWrapper m = new MongoWrapper("mongodb://argo102:e37jTcIeTp0w@babel102mongo.avec.emr.it/doc102?safe=true");
@@ -61,14 +61,14 @@ public class TestClass {
 //           MongoWrapper m = MongoWrapper.getWrapper(true, mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, "105", null);
 //          IOUtils.copy(m.get("5825d792e4b0527a032cbbbc"), new FileOutputStream("aaaaa.eml"));
 //        System.out.println(m.getFileName("5a68b996e4b0824256b7ef93"));
-        MinIOWrapper m = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
-        Arrays.asList("5e1a6f5fd5de52bfe69b56f4", "5e1a6e08d5de52bfe69b56ee", "5e1a6944d5de52bfe69b56c4", "5e17115ad5de52bfe69a9f7b", "5e1a6fc2d5de52bfe69b56fa")
-                .stream().forEach(s -> {
-                    MinIOWrapperFileInfo fileInfoByUuid = m.getFileInfoByUuid(s);
-                    System.out.println(fileInfoByUuid.getFileId());
-//                    m.deleteByFileUuid(s);
-//                    m.removeByFileId(fileInfoByUuid.getFileId(), false);
-        });
+//        MinIOWrapper m = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+//        Arrays.asList("5e1a6f5fd5de52bfe69b56f4", "5e1a6e08d5de52bfe69b56ee", "5e1a6944d5de52bfe69b56c4", "5e17115ad5de52bfe69a9f7b", "5e1a6fc2d5de52bfe69b56fa")
+//                .stream().forEach(s -> {
+//                    MinIOWrapperFileInfo fileInfoByUuid = m.getFileInfoByUuid(s);
+//                    System.out.println(fileInfoByUuid.getFileId());
+////                    m.deleteByFileUuid(s);
+////                    m.removeByFileId(fileInfoByUuid.getFileId(), false);
+//        });
 //        String res = m.put(new File("288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml"), "5a68b996e4b0824256b7ef93", "288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml", "/TRASH_DIR/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml", true);
 //        System.out.println("res: " + res);
 //        m.rename("5e1a6f5fd5de52bfe69b56f4", "4148657_12 Jan 2020 01 20 26 GMT UTF-servizi-fattutrazione@enom.com_2.eml");
