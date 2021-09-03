@@ -16,6 +16,8 @@ import com.mongodb.gridfs.GridFSInputFile;
 import it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
@@ -30,8 +32,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.bson.types.ObjectId;
 
 /**
@@ -85,6 +89,8 @@ public class MongoWrapper {
             return new MongoWrapper(mongoUri);
         }
     }
+    
+    
 
     /**
      * istanzia la classe collegandosi a mongo
@@ -367,7 +373,7 @@ public class MongoWrapper {
         }
         inf.setFilename(dirname + '/' + filename);
         if (uuid != null) {
-            inf.setId(uuid);
+            inf.setId(new ObjectId(uuid));
         }
         DBObject metadata = new BasicDBObject();
         metadata.put("creator", creator);
@@ -1525,7 +1531,51 @@ public class MongoWrapper {
         }
         return null;
     }
+    
+    @Deprecated
+    public void unSetErrorMovingMinIO(String uuid) {
+        GridFSDBFile findOne = gfs.findOne(new ObjectId(uuid));
+        DBObject metaData = findOne.getMetaData();
+        metaData.removeField("errorMovingMinIO");
+        findOne.save();
+    }
+    
+    @Deprecated
+    public void test2() {
+        GridFSDBFile findOne = gfs.findOne(new ObjectId("5a68b996e4b0824256b7ef93"));
+//        findOne.put("filename", "/TRASH_DIR/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml");
+//        DBObject metaData = findOne.getMetaData();
+//        metaData.put("deleteDate", 1516899217225l);
+//        metaData.put("oldPath", "/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml");
+//        findOne.setMetaData(metaData);
+//        findOne.save();
+//{'creator': None, 'category': None, 'deleteDate': 1516899217225, 'oldPath': '/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml'}
+        System.out.println(findOne);
+        System.exit(0);
+        DBObject query = QueryBuilder.start("filename")
+                .is("/TRASH_DIR/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml")
+                .get();
+//            query = QueryBuilder.start().
+//                    or(
+//                            QueryBuilder.start("metadata.oldPath").is(filepath).get(),
+//                            query
+//            ).get();
+        
+        List<GridFSDBFile> files = gfs.find(query);
+        try {
+            //IOUtils.copy(files.get(0).getInputStream(), new FileOutputStream("288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml"));
+//            gfs.remove("/TRASH_DIR/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml");
+          files.get(0).toString();
+//        DBCursor find = m.getDB().getCollection("fs").find(new BasicDBObject("md5", "4b6660022dd49e306f50c6735070203d"));
+//        DBObject next = find.next();
+//        System.out.println(next.toMap().toString());
+        } catch (Exception ex) {
+            java.util.logging.Logger.getLogger(MongoWrapper.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
 
+    @Deprecated
     public ArrayList<String> test(String dirname) {
 
 //            String crDt = "2014-04-28T15:28:58.851Z";
@@ -1564,4 +1614,5 @@ public class MongoWrapper {
         //1396004052000
         return res;
     }
+    
 }
