@@ -88,9 +88,10 @@ public class MinIOWrapper {
      * jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified)
      * @param minIODBUsername username per la connessione al DB
      * @param minIODBPassword password per la connessione al DB
+     * @param maxPoolSize numero massimo di connessioni al DB
      */
-    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
-        this(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, new ObjectMapper());
+    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
+        this(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, new ObjectMapper());
     }
 
     /**
@@ -105,9 +106,9 @@ public class MinIOWrapper {
      * @param objectMapper passare se si desidera usare il proprio objectMapper
      * (es in internauta)
      */
-    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, ObjectMapper objectMapper) {
+    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        initialize(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+        initialize(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
     }
 
     /**
@@ -120,12 +121,12 @@ public class MinIOWrapper {
      * @param minIODBUsername
      * @param minIODBPassword
      */
-    private synchronized void initialize(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
-        initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+    private synchronized void initialize(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
+        initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         buildConnectionsMap();
     }
 
-    private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
+    private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
         if (sql2oConnection == null) {
             HikariConfig hikariConfig = new HikariConfig();
             hikariConfig.setDriverClassName(minIODBDriver);
@@ -134,7 +135,7 @@ public class MinIOWrapper {
             hikariConfig.setPassword(minIODBPassword);
             // hikariConfig.setLeakDetectionThreshold(20000);
             hikariConfig.setMinimumIdle(1);
-            hikariConfig.setMaximumPoolSize(5);
+            hikariConfig.setMaximumPoolSize(maxPoolSize);
             // hikariConfig.getConnectionTimeout();
             hikariConfig.setConnectionTimeout(60000);
             HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
@@ -165,7 +166,7 @@ public class MinIOWrapper {
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
-                    
+
 //                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
 //                    OkHttpClient httpClient = new OkHttpClient.Builder()
 //                    .connectTimeout(1, TimeUnit.HOURS)
@@ -174,11 +175,9 @@ public class MinIOWrapper {
 //                    .callTimeout(1, TimeUnit.HOURS)
 //                    .connectionPool(p)
 //                    .build();
-                    
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
-                    
                     MinioClient minioClient = MinioClient.builder()
-//                            .httpClient(httpClient)
+                            //                            .httpClient(httpClient)
                             .endpoint(endPointUrl)
                             .credentials(accessKey, secretKey)
                             .build();
@@ -1244,13 +1243,13 @@ public class MinIOWrapper {
                     + "from repo.files "
                     + "[WHERE]" + (!includeDeleted ? " and deleted = false" : "");
             if (includeSubDir) {
-                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
                         .addParameter("path_array", pathsArray)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
             } else {
-                queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
+                queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
@@ -1574,7 +1573,7 @@ public class MinIOWrapper {
     public static Sql2o getSql2oConnection() {
         return sql2oConnection;
     }
-    
+
     public static MinioClient getMinIOClient(Integer serverId) {
         return minIOServerClientMap.get(serverId);
     }
