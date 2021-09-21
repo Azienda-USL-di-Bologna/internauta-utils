@@ -3,6 +3,7 @@ package it.bologna.ausl.minio.manager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.minio.BucketExistsArgs;
@@ -293,6 +294,42 @@ public class MinIOWrapper {
     }
 
     /**
+     * Restituisce una stringa di massimo 255 caratteri inserendo un un uuid
+     * prima dell'estensione. Se l'estesione è più lunga di 8 caratteri viene
+     * accorciata anche questa a 8. Se la stringa passata come parametro non
+     * supera i 255 caratteri, viene subito ritornata senza modifiche.
+     *
+     * @param name il nome da accorciare
+     */
+    private String getMinioTruncatedName(String name) {
+        if (name.length() >= 255) {
+
+            // ricavo l'estensione
+            String extension = Files.getFileExtension(name);
+
+            if (extension.length() >= 8) {
+                // se l'estensione è più lunga di 8 caratteri (SIS/SISX) la tagliamo,
+                // perché non è un'estensione: è un'anomalia
+                extension = extension.substring(0, 7);
+            }
+
+            String uuidNameReplace = UUID.randomUUID().toString();
+
+            // togliamo da 255 la lunghezza del uuid, un punto e l'estensione
+            int positionBefore = 255 - (extension.length() + 1 + uuidNameReplace.length());
+
+            name = name.substring(0, positionBefore) + uuidNameReplace;
+
+            if (!extension.isEmpty()) {
+                name = name + "." + extension;
+            }
+        }
+
+        return name;
+
+    }
+
+    /**
      * Carica un file sul repository
      *
      * @param obj lo stream da cariare sul repository
@@ -326,6 +363,13 @@ public class MinIOWrapper {
 
             // in base al serveId letto prendo l'istanza del repository
             MinioClient minIOClient = minIOServerClientMap.get(serverId);
+
+            // Se il nome è più lungo di 255 caratteri minIO da errore: 
+            // quindi bisogna accorciarlo cercando di mantenere l'estensione
+            // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
+            if (fileName.length() >= 255) {
+                fileName = getMinioTruncatedName(fileName);
+            }
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();

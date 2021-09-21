@@ -3,6 +3,7 @@ package it.bologna.ausl.minio.manager.test;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +36,8 @@ public class Tests {
 
     public static void main(String[] args) throws MinIOWrapperException, IOException, FileNotFoundException, NoSuchAlgorithmException {
         Tests t = new Tests();
-        t.uploadFile();
+
+//        t.uploadFile();
 //        t.deleteFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
 //        t.restoreFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
 //        t.testUploadDownloadGetFileInfoAndDeleteByFileId();
@@ -43,7 +45,6 @@ public class Tests {
 //        String fileId = "59/5c/bf/51/595cbf51-791e-4679-b143-67784c615a5d/test.txt";
 //        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
 //        minIOWrapper.removeByFileId(fileId, true);
-
 //        t.testRemoveByFileId(minIOWrapper, fileId);
     }
 
@@ -316,6 +317,26 @@ public class Tests {
         }
         testDeleteByFileId(minIOWrapper, fileInfoUpload.getFileId(), fileInfoUpload.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfoUpload.getFileId());
+    }
+
+    @Test
+    @Order(8)
+    public void testUploadFileConNomeMoltoLungo() throws MinIOWrapperException, IOException {
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
+        String fileName = "9677686_02 Mar 2021 10 43 15 GMT utf-8BUk4gLSBVLk8uIFNBTklUQScgQU5JTUFMRSwgSUdJRU5FIERFutf-8BR0xJIEFMSU1FTlRJIERJIE9SSUdJTkUgQU5JTUFMRSwgSUdJutf-8BRU5FIERFR0xJIEFMTEVWQU1FTlRJIEUgREVMTEUgUFJPRFVautf-8BSU9OSSBaT09URUNOSUNIRQ vet.rn.dsp@pec.auslromagna.it.eml";
+        Map<String, Object> metadata = null;
+        metadata = new HashMap();
+        metadata.put("key1", "val1");
+        metadata.put("key2", 2);
+        boolean overwrite = false;
+        MinIOWrapperFileInfo res = upload(minIOWrapper, "/" + getClass().getCanonicalName() + "/path/di/test/", fileName, metadata, overwrite);
+        System.out.println("res: " + res.toString());
+        String fileId = res.getFileId();
+        System.out.println("fileId: " + fileId);
+        File f = new File(fileId);
+        System.out.println("file.getName() " + f.getName());
+        System.out.println("file.getName().length() " + f.getName().length());
+        Assertions.assertTrue(f.getName().length() <= 255, "Il nome del file deve essere minore di 255 caratteri");
     }
 
 }
