@@ -104,6 +104,7 @@ public class MinIOWrapper {
      * jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified)
      * @param minIODBUsername username per la connessione al DB
      * @param minIODBPassword password per la connessione al DB
+     * @param maxPoolSize numero massimo di connessioni al DB
      * @param objectMapper passare se si desidera usare il proprio objectMapper
      * (es in internauta)
      */
