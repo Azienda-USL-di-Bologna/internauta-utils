@@ -42,6 +42,10 @@ import org.sql2o.tools.IOUtils;
  */
 public class Test {
 
+    public static MinIOWrapper getDefaultConfigurationMinIOWrapperInstance() {
+        return new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi", 5);
+    }
+
     public static void main(String[] args) throws IllegalArgumentException, IOException, ErrorResponseException, InsufficientDataException, FileNotFoundException, MinIOWrapperException, NoSuchAlgorithmException {
 //        MessageDigest digest = MessageDigest.getInstance("MD2");
 //        byte[] hashbytes1 = digest.digest("ciao gdm1".getBytes(StandardCharsets.UTF_8));
@@ -79,7 +83,7 @@ public class Test {
     }
 
     public static void genericTest() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
 //        minIOWrapper.restoreByFileId("2d/ab/5d/8c/2dab5d8c-cd83-4b67-aabf-a5780d9bafbc/aaaf_68.pdf");
 //        minIOWrapper.restoreByFileId("b9/61/6f/c9/b9616fc9-3e9d-48b3-99ae-8cf4599c4b7d/aaaf_69.pdf");
         //5b8937cc-e4b0-70b0-8419-9fb8
@@ -94,7 +98,7 @@ public class Test {
     }
 
     public static void testGetDeleted() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         List<MinIOWrapperFileInfo> deleted = minIOWrapper.getDeleted("105", ZonedDateTime.parse("2020-07-28T10:15:30+01:00[Europe/Rome]"));
         List<String> collect = collectionToStreamNullSafe(deleted).map(file -> file.getFileId()).collect(Collectors.toList());
         //List<String> collect = deleted.stream().map(file -> file.getFileId()).collect(Collectors.toList());
@@ -107,18 +111,18 @@ public class Test {
     }
 
     public static void testDelFilesInPath() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm";
         minIOWrapper.delFilesInPath(path, true, "105");
     }
 
 //    public static void testDirectRemoveFromMinIO() throws MinIOWrapperException {
-//        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+//        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapper();
 //        String fileId = "38/31/61/12/38316112-5c0e-4790-872b-6bc652a13911/test.txt";
 //        minIOWrapper.remove(fileId, "trash", 1);
 //    }
     public static void testGetFilesInPath() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm";
 //        String path = "/gdm/fshdfsh";
         List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(path, true, true, "105");
@@ -131,40 +135,40 @@ public class Test {
     }
 
     public static void testRestoreByFileId() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.restoreByFileId(fileId);
     }
 
     public static void testDeleteByFileId() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.deleteByFileId(fileId);
     }
 
     public static void testDeleteByPathAndFileName() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm/fshdfsh/hsdfh";
         String fileName = "aaaf.pdf";
         minIOWrapper.deleteByPathAndFileName(path, fileName, "105");
     }
 
     public static void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
 
         minIOWrapper.renameByFileId(fileId, "a2bc.ped");
     }
 
     public static void testRenameByFileId1() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
 
         minIOWrapper.renameByFileId(fileId, "/asfas/asfasf/", "abc.ped");
     }
 
     public static void testRenameByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm/";
         String fileName = "aaa_10.pdf";
 
@@ -172,7 +176,7 @@ public class Test {
     }
 
     public static void testRenameByPathAndFileName1() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm/";
         String fileName = "ffff.pef";
 
@@ -180,7 +184,7 @@ public class Test {
     }
 
     public static void testGetFileInfoByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
 //        String fileId = "b5/3e/32/76/b53e3276-0c0d-497f-a747-565676616763/aaaf.pdf";
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
 
@@ -191,7 +195,7 @@ public class Test {
     }
 
     public static void testGetFileInfoByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm/123/hsdfh/";
         String fileName = "aaaf.pdf";
 
@@ -200,7 +204,7 @@ public class Test {
     }
 
     public static void testDownloadByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
 
         try (InputStream res = minIOWrapper.getByFileId(fileId);) {
@@ -210,7 +214,7 @@ public class Test {
     }
 
     public static void testDownloadByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String path = "/gdm/";
         String fileName = "aaa.pdf";
 
@@ -221,7 +225,7 @@ public class Test {
     }
 
     public static void testUpload() throws FileNotFoundException, MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified", "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 4);

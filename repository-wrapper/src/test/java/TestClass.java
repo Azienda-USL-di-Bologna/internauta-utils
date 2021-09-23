@@ -35,17 +35,17 @@ public class TestClass {
 
     public static void main(String[] args) throws UnknownHostException, MongoException, MongoWrapperException, IOException, MinIOWrapperException {
 
-        String	minIODBDriver= "org.postgresql.Driver";
+        String minIODBDriver = "org.postgresql.Driver";
 //	String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
-	String minIODBUrl = "jdbc:postgresql://babel-big-auslbo.avec.emr.it:5432/minirepo?stringtype=unspecified";
-	String minIODBUsername= "minirepo";
+        String minIODBUrl = "jdbc:postgresql://babel-big-auslbo.avec.emr.it:5432/minirepo?stringtype=unspecified";
+        String minIODBUsername = "minirepo";
 //	String minIODBPassword ="siamofreschi";
-	String minIODBPassword ="4fHkXbSEA6D3";
-        
+        String minIODBPassword = "4fHkXbSEA6D3";
+
         String path = "/Procton/Documenti/2020-65400";
 //        String path = "/Relate";
 
-       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true");
+        MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true");
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/downloadgdml?safe=true");
 //        MongoWrapper m = new MongoWrapper("mongodb://argo:siamocaldi@babelmongo1,babelmongo2/prod?safe=true&replicaSet=prod0");
 //         MongoWrapper m = new MongoWrapper("mongodb://argo102:e37jTcIeTp0w@babel102mongo.avec.emr.it/doc102?safe=true");
@@ -79,10 +79,10 @@ public class TestClass {
         System.exit(0);
 //       MongoWrapper m = new MongoWrapper("mongodb://argo:siamocaldi@babelmongo1,babelmongo2/prod?safe=true&replicaSet=prod0");
 //        m.getDirFiles(path).stream().forEach(uuid -> {System.out.println(uuid + ": " + m.getFileName(uuid));});
-        MinIOWrapper minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
-    String toUndelete = "42/d1/f3/18/42d1f318-f4a4-4603-b460-f572e6295b01/2021-80689_Allegato_orig1.xlsx";
-    //minIOWrapper.renameByFileId(toUndelete, "PG0029996_2021_Allegato1.pdf", true);
-    minIOWrapper.restoreByFileId(toUndelete);
+        MinIOWrapper minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, 5);
+        String toUndelete = "42/d1/f3/18/42d1f318-f4a4-4603-b460-f572e6295b01/2021-80689_Allegato_orig1.xlsx";
+        //minIOWrapper.renameByFileId(toUndelete, "PG0029996_2021_Allegato1.pdf", true);
+        minIOWrapper.restoreByFileId(toUndelete);
 //    for (String uuid : toUndelete.split(",")) {
 //        m.unDelete(uuid);
 //           String fileName = m.getFileName(uuid);

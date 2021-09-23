@@ -86,6 +86,7 @@ public final class AziendaParamsManager {
             String minIODBUrl = (String) minIOConfig.get("DBUrl");
             String minIODBUsername = (String) minIOConfig.get("DBUsername");
             String minIODBPassword = (String) minIOConfig.get("DBPassword");
+            Integer minIOMaxPoolSize = (Integer) minIOConfig.get("maxPoolSize");
             MongoWrapper mongoWrapper = MongoWrapper.getWrapper(minIOActive,
                     aziendaParams.getMongoParams().getConnectionString(),
                     minIODBDriver,
@@ -93,6 +94,7 @@ public final class AziendaParamsManager {
                     minIODBUsername,
                     minIODBPassword,
                     codiceAzienda,
+                    minIOMaxPoolSize,
                     objectMapper);
             storageConnectionMap.put(codiceAzienda, mongoWrapper);
         }
