@@ -12,3 +12,4 @@ minIO-manager/target
 estrattore/src/main/java/test/Test2.java
 eml-handler/src/main/java/test/Test.java
 document-generator/target
+minIO-manager/src/test/java/it/bologna/ausl/minio/manager/test/SalClassiUtilitaBabelCare.java

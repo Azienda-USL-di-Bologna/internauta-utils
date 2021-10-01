@@ -43,16 +43,17 @@ public class MongoWrapperMinIO extends MongoWrapper {
     private ThreadLocal<Connection> conn = new ThreadLocal<>();
     private static final Logger log = LogManager.getLogger(MongoWrapperMinIO.class);
 
-    public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+    public MongoWrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword,
+            String codiceAzienda, Integer maxPoolSize, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
         if (codiceAzienda == null) {
             throw new MongoWrapperException("il codiceAzienda è obbligatorio!");
         }
         this.codiceAzienda = codiceAzienda;
         if (objectMapper != null) {
-            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, objectMapper);
+            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, objectMapper);
         } else {
-            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         }
     }
 
@@ -115,7 +116,7 @@ public class MongoWrapperMinIO extends MongoWrapper {
     public MinIOWrapper getMinIOWrapper() {
         return minIOWrapper;
     }
-    
+
     private String[] splitPath(String pathWithFileName) {
         pathWithFileName = StringUtils.cleanPath(pathWithFileName);
         String filename = StringUtils.getFilename(pathWithFileName);

@@ -82,15 +82,24 @@ public class MongoWrapper {
 
     public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         if (mongoUri.equals(NO_MONGO)) {
-            return new WrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
+            return new WrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, 5, objectMapper);
         } else if (useMinIO) {
-            return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, objectMapper);
+            return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, 5, objectMapper);
         } else {
             return new MongoWrapper(mongoUri);
         }
     }
-    
-    
+
+    public static MongoWrapper getWrapper(boolean useMinIO, String mongoUri, String minIODBDriver, String minIODBUrl,
+            String minIODBUsername, String minIODBPassword, String codiceAzienda, Integer maxPoolSize, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+        if (mongoUri.equals(NO_MONGO)) {
+            return new WrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, maxPoolSize, objectMapper);
+        } else if (useMinIO) {
+            return new MongoWrapperMinIO(mongoUri, minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, codiceAzienda, maxPoolSize, objectMapper);
+        } else {
+            return new MongoWrapper(mongoUri);
+        }
+    }
 
     /**
      * istanzia la classe collegandosi a mongo
@@ -733,7 +742,7 @@ public class MongoWrapper {
         BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + dirname + "([^/])+$"));
         return getFilesId(getFiles(query));
     }
-    
+
     /**
      * torna l'elenco dei file di una directory, ma non nelle sottodirectory
      *
@@ -763,7 +772,7 @@ public class MongoWrapper {
         BasicDBObject query = new BasicDBObject().append("filename", java.util.regex.Pattern.compile("^" + dirname + ".*$"));
         return getFilesId(getFiles(query));
     }
-    
+
     private List<String> getDirFilesAndFoldersNoOverride(String dirname) throws MongoWrapperException {
         if (!dirname.endsWith("/")) {
             //NON TOCCARE se no non stiamo piu' partendo da una directory
@@ -829,7 +838,7 @@ public class MongoWrapper {
             delete(f);
         }
     }
-    
+
     private void deleteNoOverride(String uuid) throws MongoWrapperException {
         GridFSDBFile f = null;
         try {
@@ -1271,8 +1280,8 @@ public class MongoWrapper {
         return false;
 
     }
-    
-        public Boolean existsObjectByPathNoOverride(String filepath) throws MongoWrapperException {
+
+    public Boolean existsObjectByPathNoOverride(String filepath) throws MongoWrapperException {
         String originalFilePath = filepath;
         GridFSDBFile f = null;
         try {
@@ -1495,7 +1504,7 @@ public class MongoWrapper {
     public boolean isTemp() {
         return this.db.collectionExists(IS_TEMP_COLLECTION_NAME);
     }
-    
+
     public Map<String, Object> getMetadataByUuid(String uuid) throws MongoWrapperException {
         GridFSDBFile gridFSFile = null;
         try {
@@ -1509,7 +1518,7 @@ public class MongoWrapper {
             return null;
         }
     }
-    
+
     public Map<String, Object> getMetadataByPath(String path) throws MongoWrapperException {
         GridFSDBFile gridFSFile = null;
         try {
@@ -1531,7 +1540,7 @@ public class MongoWrapper {
         }
         return null;
     }
-    
+
     @Deprecated
     public void unSetErrorMovingMinIO(String uuid) {
         GridFSDBFile findOne = gfs.findOne(new ObjectId(uuid));
@@ -1539,7 +1548,7 @@ public class MongoWrapper {
         metaData.removeField("errorMovingMinIO");
         findOne.save();
     }
-    
+
     @Deprecated
     public void test2() {
         GridFSDBFile findOne = gfs.findOne(new ObjectId("5a68b996e4b0824256b7ef93"));
@@ -1560,19 +1569,19 @@ public class MongoWrapper {
 //                            QueryBuilder.start("metadata.oldPath").is(filepath).get(),
 //                            query
 //            ).get();
-        
+
         List<GridFSDBFile> files = gfs.find(query);
         try {
             //IOUtils.copy(files.get(0).getInputStream(), new FileOutputStream("288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml"));
 //            gfs.remove("/TRASH_DIR/Argo/PECGW_STORE/medicina.legale@pec.aosp.bo.it/SENT/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml/288660_24 Jan 2018 10 45 10 GMT medicina.legale@pec.aosp.bo.it.eml");
-          files.get(0).toString();
+            files.get(0).toString();
 //        DBCursor find = m.getDB().getCollection("fs").find(new BasicDBObject("md5", "4b6660022dd49e306f50c6735070203d"));
 //        DBObject next = find.next();
 //        System.out.println(next.toMap().toString());
         } catch (Exception ex) {
             java.util.logging.Logger.getLogger(MongoWrapper.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
 
     @Deprecated
@@ -1614,5 +1623,5 @@ public class MongoWrapper {
         //1396004052000
         return res;
     }
-    
+
 }
