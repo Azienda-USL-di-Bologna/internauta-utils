@@ -3,6 +3,7 @@ package it.bologna.ausl.minio.manager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.minio.BucketExistsArgs;
@@ -88,9 +89,10 @@ public class MinIOWrapper {
      * jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified)
      * @param minIODBUsername username per la connessione al DB
      * @param minIODBPassword password per la connessione al DB
+     * @param maxPoolSize numero massimo di connessioni al DB
      */
-    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
-        this(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, new ObjectMapper());
+    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
+        this(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, new ObjectMapper());
     }
 
     /**
@@ -102,12 +104,13 @@ public class MinIOWrapper {
      * jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified)
      * @param minIODBUsername username per la connessione al DB
      * @param minIODBPassword password per la connessione al DB
+     * @param maxPoolSize numero massimo di connessioni al DB
      * @param objectMapper passare se si desidera usare il proprio objectMapper
      * (es in internauta)
      */
-    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, ObjectMapper objectMapper) {
+    public MinIOWrapper(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        initialize(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+        initialize(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
     }
 
     /**
@@ -120,12 +123,12 @@ public class MinIOWrapper {
      * @param minIODBUsername
      * @param minIODBPassword
      */
-    private synchronized void initialize(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
-        initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+    private synchronized void initialize(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
+        initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         buildConnectionsMap();
     }
 
-    private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword) {
+    private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
         if (sql2oConnection == null) {
             HikariConfig hikariConfig = new HikariConfig();
             hikariConfig.setDriverClassName(minIODBDriver);
@@ -134,7 +137,7 @@ public class MinIOWrapper {
             hikariConfig.setPassword(minIODBPassword);
             // hikariConfig.setLeakDetectionThreshold(20000);
             hikariConfig.setMinimumIdle(1);
-            hikariConfig.setMaximumPoolSize(5);
+            hikariConfig.setMaximumPoolSize(maxPoolSize);
             // hikariConfig.getConnectionTimeout();
             hikariConfig.setConnectionTimeout(60000);
             HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
@@ -165,7 +168,7 @@ public class MinIOWrapper {
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
-                    
+
 //                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
 //                    OkHttpClient httpClient = new OkHttpClient.Builder()
 //                    .connectTimeout(1, TimeUnit.HOURS)
@@ -174,11 +177,9 @@ public class MinIOWrapper {
 //                    .callTimeout(1, TimeUnit.HOURS)
 //                    .connectionPool(p)
 //                    .build();
-                    
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
-                    
                     MinioClient minioClient = MinioClient.builder()
-//                            .httpClient(httpClient)
+                            //                            .httpClient(httpClient)
                             .endpoint(endPointUrl)
                             .credentials(accessKey, secretKey)
                             .build();
@@ -294,6 +295,42 @@ public class MinIOWrapper {
     }
 
     /**
+     * Restituisce una stringa di massimo 255 caratteri inserendo un un uuid
+     * prima dell'estensione. Se l'estesione è più lunga di 8 caratteri viene
+     * accorciata anche questa a 8. Se la stringa passata come parametro non
+     * supera i 255 caratteri, viene subito ritornata senza modifiche.
+     *
+     * @param name il nome da accorciare
+     */
+    private String getMinioTruncatedName(String name) {
+        if (name.length() >= 255) {
+
+            // ricavo l'estensione
+            String extension = Files.getFileExtension(name);
+
+            if (extension.length() >= 8) {
+                // se l'estensione è più lunga di 8 caratteri (SIS/SISX) la tagliamo,
+                // perché non è un'estensione: è un'anomalia
+                extension = extension.substring(0, 7);
+            }
+
+            String uuidNameReplace = UUID.randomUUID().toString();
+
+            // togliamo da 255 la lunghezza del uuid, un punto e l'estensione
+            int positionBefore = 255 - (extension.length() + 1 + uuidNameReplace.length());
+
+            name = name.substring(0, positionBefore) + uuidNameReplace;
+
+            if (!extension.isEmpty()) {
+                name = name + "." + extension;
+            }
+        }
+
+        return name;
+
+    }
+
+    /**
      * Carica un file sul repository
      *
      * @param obj lo stream da cariare sul repository
@@ -327,6 +364,13 @@ public class MinIOWrapper {
 
             // in base al serveId letto prendo l'istanza del repository
             MinioClient minIOClient = minIOServerClientMap.get(serverId);
+
+            // Se il nome è più lungo di 255 caratteri minIO da errore: 
+            // quindi bisogna accorciarlo cercando di mantenere l'estensione
+            // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
+            if (fileName.length() >= 255) {
+                fileName = getMinioTruncatedName(fileName);
+            }
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();
@@ -1244,13 +1288,13 @@ public class MinIOWrapper {
                     + "from repo.files "
                     + "[WHERE]" + (!includeDeleted ? " and deleted = false" : "");
             if (includeSubDir) {
-                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
+                queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
                         .addParameter("path_array", pathsArray)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
             } else {
-                queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null? " and codice_azienda = :codice_azienda": ""));
+                queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
@@ -1574,7 +1618,7 @@ public class MinIOWrapper {
     public static Sql2o getSql2oConnection() {
         return sql2oConnection;
     }
-    
+
     public static MinioClient getMinIOClient(Integer serverId) {
         return minIOServerClientMap.get(serverId);
     }

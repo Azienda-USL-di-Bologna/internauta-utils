@@ -37,16 +37,16 @@ public class WrapperMinIO extends MongoWrapper {
     private String codiceAzienda;
     private static final Logger log = LogManager.getLogger(WrapperMinIO.class);
 
-    public WrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
+    public WrapperMinIO(String mongoUri, String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, String codiceAzienda, Integer maxPoolSize, ObjectMapper objectMapper) throws UnknownHostException, MongoException, MongoWrapperException {
         super(mongoUri);
         if (codiceAzienda == null) {
             throw new MongoWrapperException("il codiceAzienda è obbligatorio!");
         }
         this.codiceAzienda = codiceAzienda;
         if (objectMapper != null) {
-            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, objectMapper);
+            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, objectMapper);
         } else {
-            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword);
+            minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         }
     }
 
