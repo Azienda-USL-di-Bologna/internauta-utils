@@ -3,6 +3,7 @@ package it.bologna.ausl.minio.manager.test;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,24 +27,29 @@ import org.springframework.util.DigestUtils;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
-    
+
+    private static MinIOWrapper getDefaultConfigurationMinIOWrapperInstance() {
+        return new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", 5);
+    }
+
     private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
+
     public static void main(String[] args) throws MinIOWrapperException, IOException, FileNotFoundException, NoSuchAlgorithmException {
         Tests t = new Tests();
-        t.uploadFile();
+
+//        t.uploadFile();
 //        t.deleteFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
 //        t.restoreFile("ce/97/9e/9b/ce979e9b-95d4-4f60-a227-c90791885d8e/test.txt");
 //        t.testUploadDownloadGetFileInfoAndDeleteByFileId();
 //    t.testGetByPathAndFileName();
 //        String fileId = "59/5c/bf/51/595cbf51-791e-4679-b143-67784c615a5d/test.txt";
-//        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+//        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
 //        minIOWrapper.removeByFileId(fileId, true);
-
 //        t.testRemoveByFileId(minIOWrapper, fileId);
     }
-    
+
     public void uploadFile() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         Map<String, Object> metadata = null;
         metadata = new HashMap();
         metadata.put("key1", "val1");
@@ -52,22 +58,22 @@ public class Tests {
         MinIOWrapperFileInfo res = upload(minIOWrapper, "/" + getClass().getCanonicalName() + "/path/di/test/", "test.txt", metadata, overwrite);
         System.out.println("res: " + res.toString());
     }
-    
+
     public void deleteFile(String fileId) throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         minIOWrapper.deleteByFileId(fileId);
     }
-    
+
     public void restoreFile(String fileId) throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         minIOWrapper.restoreByFileId(fileId);
     }
-    
+
     @BeforeAll
     @AfterEach
     public void clearAllGarbage() throws MinIOWrapperException {
         System.out.println("clear all gatbage...");
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         List<MinIOWrapperFileInfo> files = minIOWrapper.getFilesInPath("/" + Tests.class.getCanonicalName(), true, true, "105t");
         if (files != null) {
             for (MinIOWrapperFileInfo file : files) {
@@ -75,11 +81,11 @@ public class Tests {
             }
         }
     }
-    
+
     @Test
     @Order(2)
     public void testUploadDownloadGetFileInfoDeleteAndRemoveByFileId() throws FileNotFoundException, MinIOWrapperException, IOException, NoSuchAlgorithmException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
@@ -90,7 +96,7 @@ public class Tests {
         testDeleteByFileId(minIOWrapper, res.getFileId(), res.getMd5());
         testRemoveByFileId(minIOWrapper, res.getFileId());
     }
-    
+
     private MinIOWrapperFileInfo upload(MinIOWrapper minIOWrapper, String path, String fileName, Map<String, Object> metadata, boolean overwrite) throws MinIOWrapperException {
 //        if (metadata == null) {
 //            metadata = new HashMap<>();
@@ -102,15 +108,15 @@ public class Tests {
         MinIOWrapperFileInfo res = minIOWrapper.put(is, "105t", path, fileName, metadata, overwrite);
         return res;
     }
-    
-    private  void testDownloadByFileId(MinIOWrapper minIOWrapper, String fileId, String uploadedFileMd5) throws FileNotFoundException, MinIOWrapperException, IOException, NoSuchAlgorithmException {        
+
+    private void testDownloadByFileId(MinIOWrapper minIOWrapper, String fileId, String uploadedFileMd5) throws FileNotFoundException, MinIOWrapperException, IOException, NoSuchAlgorithmException {
         try (
-            InputStream is = minIOWrapper.getByFileId(fileId);) {
+                InputStream is = minIOWrapper.getByFileId(fileId);) {
             String md5 = DigestUtils.md5DigestAsHex(is);
             Assertions.assertEquals(uploadedFileMd5, md5);
         }
     }
-    
+
     private void testDeleteByFileId(MinIOWrapper minIOWrapper, String fileId, String uploadedFileMd5) throws MinIOWrapperException, IOException {
         testGetFileInfoByFileId(minIOWrapper, fileId, uploadedFileMd5);
         minIOWrapper.deleteByFileId(fileId);
@@ -118,17 +124,17 @@ public class Tests {
         Assertions.assertNull(fileInfo);
     }
 
-    private MinIOWrapperFileInfo testGetFileInfoByFileId(MinIOWrapper minIOWrapper, String fileId, String uploadedFileMd5) throws FileNotFoundException, MinIOWrapperException, IOException {        
+    private MinIOWrapperFileInfo testGetFileInfoByFileId(MinIOWrapper minIOWrapper, String fileId, String uploadedFileMd5) throws FileNotFoundException, MinIOWrapperException, IOException {
         MinIOWrapperFileInfo fileInfo = getFileInfo(minIOWrapper, fileId);
         Assertions.assertNotNull(fileInfo);
         Assertions.assertEquals(uploadedFileMd5, fileInfo.getMd5());
         return fileInfo;
     }
-    
+
     private MinIOWrapperFileInfo getFileInfo(MinIOWrapper minIOWrapper, String fileId) throws MinIOWrapperException {
         return minIOWrapper.getFileInfoByFileId(fileId);
     }
-    
+
     private void testRemoveByFileId(MinIOWrapper minIOWrapper, String fileId) throws MinIOWrapperException, IOException {
         MinIOWrapperFileInfo fileInfo = minIOWrapper.getFileInfoByFileId(fileId, true);
         Assertions.assertNotNull(fileInfo);
@@ -145,8 +151,8 @@ public class Tests {
 
     @Test
     @Order(3)
-    public  void testGetAndDeleteByPathAndFileName() throws MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+    public void testGetAndDeleteByPathAndFileName() throws MinIOWrapperException, IOException {
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
@@ -170,17 +176,17 @@ public class Tests {
         Assertions.assertEquals(fileInfoUpload.getFileId(), fileInfoDeleted.getFileId());
         testRemoveByFileId(minIOWrapper, fileInfoDeleted.getFileId());
     }
-    
-    public  void testRestoreByFileId() throws MinIOWrapperException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+
+    public void testRestoreByFileId() throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "51/01/c9/91/5101c991-2ff2-4f44-bf0c-cd7a67fb006c/aaaf.pdf";
         minIOWrapper.restoreByFileId(fileId);
     }
-    
+
     @Test
     @Order(4)
-    public  void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+    public void testRenameByFileId() throws FileNotFoundException, MinIOWrapperException, IOException {
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         boolean overwrite = false;
         String path = "/" + getClass().getCanonicalName() + "/path/di/test";
         String newPath = "/" + getClass().getCanonicalName() + "/newpath/di/test";
@@ -199,11 +205,11 @@ public class Tests {
         testDeleteByFileId(minIOWrapper, fileInfoUpload.getFileId(), fileInfoUpload.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfoUpload.getFileId());
     }
-    
+
     @Test
     @Order(5)
     public void testRenameByPathAndFileName() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         boolean overwrite = false;
         String path = "/" + getClass().getCanonicalName() + "/path/di/test";
         String fileName = "test.txt";
@@ -226,7 +232,7 @@ public class Tests {
     @Test
     @Order(6)
     public void testGetFilesInPath() throws FileNotFoundException, MinIOWrapperException, IOException {
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         boolean overwrite = false;
         String path1 = "/" + getClass().getCanonicalName() + "/path/di/test";
         String fileName1 = "test1.txt";
@@ -243,9 +249,9 @@ public class Tests {
         Map<String, Object> metadata3 = new HashMap();
         metadata3.put("key1", "val13");
         metadata3.put("key2", 23);
-        
+
         String pathToCheck = "/" + getClass().getCanonicalName() + "/path";
-        
+
         MinIOWrapperFileInfo fileInfoUpload1 = upload(minIOWrapper, path1, fileName1, null, overwrite);
         MinIOWrapperFileInfo fileInfoUpload2 = upload(minIOWrapper, path2, fileName2, null, overwrite);
         MinIOWrapperFileInfo fileInfoUpload3 = upload(minIOWrapper, path3, fileName3, null, overwrite);
@@ -254,10 +260,10 @@ public class Tests {
                 () -> Assertions.assertNotNull(fileInfoUpload2),
                 () -> Assertions.assertNotNull(fileInfoUpload3)
         );
-        
+
         List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(pathToCheck, "105t");
         Assertions.assertAll("deve aver trovato 3 risultati",
-                () ->  Assertions.assertNotNull(filesInPath),
+                () -> Assertions.assertNotNull(filesInPath),
                 () -> Assertions.assertEquals(3, filesInPath.size())
         );
         MinIOWrapperFileInfo fileInfo1 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload1.getFileId())).findFirst().get();
@@ -266,21 +272,21 @@ public class Tests {
                 () -> Assertions.assertEquals(fileInfo1.getPath(), path1),
                 () -> Assertions.assertEquals(fileInfo1.getFileName(), fileName1)
         );
-        
+
         MinIOWrapperFileInfo fileInfo2 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload2.getFileId())).findFirst().get();
         Assertions.assertAll("il file 2 è stato trovato e i campi sono corretti",
                 () -> Assertions.assertNotNull(fileInfo2),
                 () -> Assertions.assertEquals(fileInfo2.getPath(), path2),
                 () -> Assertions.assertEquals(fileInfo2.getFileName(), fileName2)
         );
-        
+
         MinIOWrapperFileInfo fileInfo3 = filesInPath.stream().filter(f -> f.getFileId().equals(fileInfoUpload3.getFileId())).findFirst().get();
         Assertions.assertAll("il file 3 è stato trovato e i campi sono corretti",
                 () -> Assertions.assertNotNull(fileInfo3),
                 () -> Assertions.assertEquals(fileInfo3.getPath(), path3),
                 () -> Assertions.assertEquals(fileInfo3.getFileName(), fileName3)
         );
-        
+
         testDeleteByFileId(minIOWrapper, fileInfo1.getFileId(), fileInfo1.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfo1.getFileId());
         testDeleteByFileId(minIOWrapper, fileInfo2.getFileId(), fileInfo2.getMd5());
@@ -288,12 +294,12 @@ public class Tests {
         testDeleteByFileId(minIOWrapper, fileInfo3.getFileId(), fileInfo2.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfo3.getFileId());
     }
-    
+
     @Test
     @Order(7)
     public void testGetFilesLessThan() throws MinIOWrapperException, IOException {
         ZonedDateTime nowBefore = ZonedDateTime.now();
-        MinIOWrapper minIOWrapper = new MinIOWrapper("org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi");
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         Map<String, Object> metadata = new HashMap();
         metadata.put("key1", "val1");
         metadata.put("key2", 2);
@@ -312,5 +318,25 @@ public class Tests {
         testDeleteByFileId(minIOWrapper, fileInfoUpload.getFileId(), fileInfoUpload.getMd5());
         testRemoveByFileId(minIOWrapper, fileInfoUpload.getFileId());
     }
-    
+
+    @Test
+    @Order(8)
+    public void testUploadFileConNomeMoltoLungo() throws MinIOWrapperException, IOException {
+        MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
+        String fileName = "9677686_02 Mar 2021 10 43 15 GMT utf-8BUk4gLSBVLk8uIFNBTklUQScgQU5JTUFMRSwgSUdJRU5FIERFutf-8BR0xJIEFMSU1FTlRJIERJIE9SSUdJTkUgQU5JTUFMRSwgSUdJutf-8BRU5FIERFR0xJIEFMTEVWQU1FTlRJIEUgREVMTEUgUFJPRFVautf-8BSU9OSSBaT09URUNOSUNIRQ vet.rn.dsp@pec.auslromagna.it.eml";
+        Map<String, Object> metadata = null;
+        metadata = new HashMap();
+        metadata.put("key1", "val1");
+        metadata.put("key2", 2);
+        boolean overwrite = false;
+        MinIOWrapperFileInfo res = upload(minIOWrapper, "/" + getClass().getCanonicalName() + "/path/di/test/", fileName, metadata, overwrite);
+        System.out.println("res: " + res.toString());
+        String fileId = res.getFileId();
+        System.out.println("fileId: " + fileId);
+        File f = new File(fileId);
+        System.out.println("file.getName() " + f.getName());
+        System.out.println("file.getName().length() " + f.getName().length());
+        Assertions.assertTrue(f.getName().length() <= 255, "Il nome del file deve essere minore di 255 caratteri");
+    }
+
 }
