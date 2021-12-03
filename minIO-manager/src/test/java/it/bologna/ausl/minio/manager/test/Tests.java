@@ -105,7 +105,7 @@ public class Tests {
 //        path = "/" + getClass().getCanonicalName() + path;
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         InputStream is = classloader.getResourceAsStream("test.txt");
-        MinIOWrapperFileInfo res = minIOWrapper.put(is, "105t", path, fileName, metadata, overwrite);
+        MinIOWrapperFileInfo res = minIOWrapper.put(is, "105t", path, fileName, metadata, overwrite, null);
         return res;
     }
 
