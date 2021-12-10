@@ -668,9 +668,9 @@ public class MongoWrapperMinIO extends MongoWrapper {
             try {
                 lockByPath(StringUtils.trimTrailingCharacter(StringUtils.cleanPath(dirname), '/') + "/" + filename);
                 if (f != null) {
-                    fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                    fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
                 } else {
-                    fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                    fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
                 }
                 if (overwrite) {
                     super.delete(mongoUuid);

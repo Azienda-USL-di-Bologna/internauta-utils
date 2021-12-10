@@ -220,7 +220,7 @@ public class MinIOWrapper {
      * Carica un file sul repository
      *
      * @param file il file da cariare sul repository
-     * @param codiceAzienda es. 105, 902, 908, ecc.
+     * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome del bucket, se non diversamente specificato nell'apposito parametro
      * @param path il path che il file dovrà avere (path logico, quello fisico
      * sul repository verrà generato random)
      * @param fileName il nome che il file dovrà avere (NB: in caso
@@ -232,12 +232,34 @@ public class MinIOWrapper {
      * file e overwrite=true, questo viene sovrascritto, se overwrite=false,
      * viene cambiato il nome file aggiungendo un numero alla fine e inserito
      * come nuovo file
+     * @param bucket il bucket su cui scrivere il file. Se non passato sarà usato il bucket che si chiama come il codiceAzienda
+     * @return un oggetto contenente tutte le informazioni sul file caricato
+     * @throws MinIOWrapperException
+     */
+    public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String bucket) throws MinIOWrapperException, FileNotFoundException, IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, null, bucket);
+            return res;
+        }
+    }
+    
+    /**
+     * Carica un file sul repository
+     *
+     * @param file il file da cariare sul repository
+     * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome del bucket
+     * @param path il path che il file dovrà avere (path logico, quello fisico sul repository verrà generato random)
+     * @param fileName il nome che il file dovrà avere (NB: in caso overwrite=false e path logico e nome file già esistente, 
+     * questo verrà cambiato aggiungendo un numero alla fine)
+     * @param metadata eventuali metadati da inserite, se non si vogliono inserire passare null
+     * @param overWrite se esiste già un file con lo stesso path logico e nome file e overwrite=true, questo viene sovrascritto, se overwrite=false,
+     * viene cambiato il nome file aggiungendo un numero alla fine e inserito come nuovo file
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
     public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
-            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, null);
+            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, null, null);
             return res;
         }
     }
@@ -246,7 +268,7 @@ public class MinIOWrapper {
      * Carica un file sul repository
      *
      * @param file il file da cariare sul repository
-     * @param codiceAzienda es. 105, 902, 908, ecc.
+     * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome del bucket, se non diversamente specificato nell'apposito parametro
      * @param path il path che il file dovrà avere (path logico, quello fisico
      * sul repository verrà generato random)
      * @param fileName il nome che il file dovrà avere (NB: in caso
@@ -260,13 +282,14 @@ public class MinIOWrapper {
      * come nuovo file
      * @param mongoUuid l'uuid di mongo, viene usato dal mongowrapper per
      * retrocompatibilità
+     * @param bucket il bucket su cui scrivere il file. Se non passato sarà usato il bucket che si chiama come il codiceAzienda
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      * @throws java.io.FileNotFoundException
      */
-    public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException, FileNotFoundException, IOException {
+    public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid, String bucket) throws MinIOWrapperException, FileNotFoundException, IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
-            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, mongoUuid);
+            MinIOWrapperFileInfo res = put(fis, codiceAzienda, path, fileName, metadata, overWrite, mongoUuid, bucket);
             return res;
         }
     }
@@ -275,7 +298,7 @@ public class MinIOWrapper {
      * Carica un file sul repository
      *
      * @param obj il file da cariare sul repository
-     * @param codiceAzienda es. 105, 902, 908, ecc.
+    * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome del bucket, se non diversamente specificato nell'apposito parametro
      * @param path il path che il file dovrà avere (path logico, quello fisico
      * sul repository verrà generato random)
      * @param fileName il nome che il file dovrà avere (NB: in caso
@@ -287,11 +310,12 @@ public class MinIOWrapper {
      * file e overwrite=true, questo viene sovrascritto, se overwrite=false,
      * viene cambiato il nome file aggiungendo un numero alla fine e inserito
      * come nuovo file
+     * @param bucket il bucket su cui scrivere il file. Se non passato sarà usato il bucket che si chiama come il codiceAzienda
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
-    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException {
-        return put(obj, codiceAzienda, path, fileName, metadata, overWrite, null);
+    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String bucket) throws MinIOWrapperException {
+        return put(obj, codiceAzienda, path, fileName, metadata, overWrite, null, bucket);
     }
 
     /**
@@ -334,24 +358,19 @@ public class MinIOWrapper {
      * Carica un file sul repository
      *
      * @param obj lo stream da cariare sul repository
-     * @param codiceAzienda es. 105, 902, 908, ecc.
-     * @param path il path che il file dovrà avere (path logico, quello fisico
-     * sul repository verrà generato random)
-     * @param fileName il nome che il file dovrà avere (NB: in caso
-     * overwrite=false e path logico e nome file già esistente, questo verrà
+     * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome del bucket, se non diversamente specificato nell'apposito parametro
+     * @param path il path che il file dovrà avere (path logico, quello fisico sul repository verrà generato random)
+     * @param fileName il nome che il file dovrà avere (NB: in caso overwrite=false e path logico e nome file già esistente, questo verrà
      * cambiato aggiungendo un numero alla fine)
-     * @param metadata eventuali metadati da inserite, se non si vogliono
-     * inserire passare null
-     * @param overWrite se esiste già un file con lo stesso path logico e nome
-     * file e overwrite=true, questo viene sovrascritto, se overwrite=false,
-     * viene cambiato il nome file aggiungendo un numero alla fine e inserito
-     * come nuovo file
-     * @param mongoUuid l'uuid di mongo, viene usato dal mongowrapper per
-     * retrocompatibilità
+     * @param metadata eventuali metadati da inserite, se non si vogliono inserire passare null
+     * @param overWrite se esiste già un file con lo stesso path logico e nome file e overwrite=true, questo viene sovrascritto, se overwrite=false,
+     * viene cambiato il nome file aggiungendo un numero alla fine e inserito come nuovo file
+     * @param mongoUuid l'uuid di mongo, viene usato dal mongowrapper per retrocompatibilità
+     * @param bucket il bucket su cui scrivere il file. Se non passato sarà usato il bucket che si chiama come il codiceAzienda
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
      */
-    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid) throws MinIOWrapperException {
+    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid, String bucket) throws MinIOWrapperException {
         try {
             // wrappo lo stream dentro uno DigestInputStream per poter calcolare md5
             DigestInputStream digestInputStream = new DigestInputStream(obj, MessageDigest.getInstance("MD5"));
@@ -376,10 +395,15 @@ public class MinIOWrapper {
             String uuid = UUID.randomUUID().toString();
             String physicalPath = generatePhysicalPath(fileName, uuid);
 
-            // il nome del bucket sul quale andrà fatto l'upload del file (è il codiceAzienda)
-            String bucketName = codiceAzienda;
+            // il nome del bucket sul quale andrà fatto l'upload del file (se non passato è il codiceAzienda)
+            String bucketName;
+            if (StringUtils.hasText(bucket)) {
+                bucketName = bucket;
+            } else {
+                bucketName = codiceAzienda;
+            }
 
-            // se il buvket ancora non esiste lo crea
+            // se il bucket ancora non esiste lo crea
             boolean bucketExists = minIOClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!bucketExists) {
                 minIOClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
