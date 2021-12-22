@@ -29,6 +29,7 @@
         <module>middelmine</module>
         <module>minIO-manager</module>
         <module>document-generator</module>
+        <module>authorization-utils</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 <!--    <dependencies>
