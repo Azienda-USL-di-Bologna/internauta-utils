@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -137,6 +138,25 @@ public class PermessoStoredProcedure implements Serializable {
     @JsonProperty("attivo_al")
     public void setAttivoAl(LocalDateTime attivoAl) {
         this.attivoAl = attivoAl;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        Field[] declaredFields = this.getClass().getDeclaredFields();
+        for(Field field : declaredFields){
+            try{       
+                Object val1 = field.get(this);
+                Object val2 = obj.getClass().getDeclaredField(field.getName()).get(obj);
+                if((val1 != null && val2 == null) || (val1 == null && val2 != null)){
+                    return false;
+                }else if ((val1 != null && val2 != null) && !val1.equals(val2)){
+                    return false;
+                }
+            }catch(IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex){
+                return false;
+            }
+        }
+        return true;
     }
 
 }
