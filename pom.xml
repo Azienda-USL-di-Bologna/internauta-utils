@@ -30,7 +30,9 @@
         <module>minIO-manager</module>
         <module>document-generator</module>
         <module>authorization-utils</module>
-        <module>firma-remota</module>
+        <module>firma</module>
+        <module>parameters-manager</module>
+        <module>downloader</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 <!--    <dependencies>

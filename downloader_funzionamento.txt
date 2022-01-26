@@ -1,0 +1,16 @@
+																																sua identità
+				possiede certificato + chiave privata per firmare il token														file da scaricare
+servizio X -> 																	-> crea token contenente con chiave privata :	scadenza token									-> cifra il token con chiave pubblica -> genera url
+				possiede chiave pubblica per cifrare il token firmato															identificativo per riconoscere il certificato
+				
+				
+				
+				possiede certificati dei vari servizi (tra cui servizio X)
+Downloader -> 
+				possiede chiave privata per decifrare il token firmato
+			alla richiesta di download:
+			-> decifra il token con la chiave privata -> dall'header legge il campo "kid" 
+			-> tramite il kid indentifica il certificato del servizio chiamante 
+			-> con il certificato verifica la firma e decifra il payload 
+			-> capisce il file da scaricare
+			-> manda lo stream al chiamante
