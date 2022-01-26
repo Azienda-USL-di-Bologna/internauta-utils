@@ -1,4 +1,4 @@
-package it.bologna.ausl.estrattoremaven.exception;
+package it.bologna.ausl.estrattore.exception;
 
 /**
  *
