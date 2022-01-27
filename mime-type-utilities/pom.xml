@@ -6,7 +6,7 @@
         <artifactId>internauta-utils</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>mimetypeutil</artifactId>
+    <artifactId>mimetypeutilities</artifactId>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,4 +46,5 @@
             <type>jar</type>
         </dependency>
     </dependencies>
+    <name>mime-type-utilities</name>
 </project>
