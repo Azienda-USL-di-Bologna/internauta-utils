@@ -14,7 +14,7 @@ import it.bologna.ausl.documentgenerator.utils.GeneratorUtils;
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedArchiveTypes;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
