@@ -1,16 +1,12 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.io.IOUtils;

@@ -31,6 +31,8 @@ import com.google.common.io.ByteStreams;
 import com.sun.mail.util.BASE64DecoderStream;
 import com.sun.mail.util.QPDecoderStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +92,9 @@ public class EmlHandlerUtils {
 
     private static String getTextPart(Part p, String mime) throws MessagingException, IOException, EmlHandlerException {
         String text;
-        if (p.isMimeType(mime)) {
+        if (p.isMimeType(mime) && (mime.equals("text/html") || mime.equals("text/plain"))) {
+            return (String) getTextPartProcessingByteArray(p, mime);
+        }else if (p.isMimeType(mime)) {
             if (String.class.isAssignableFrom(p.getContent().getClass())) {
                 return (String) p.getContent();
             } else if (InputStream.class.isAssignableFrom(p.getContent().getClass())) {
@@ -128,6 +132,47 @@ public class EmlHandlerUtils {
 
         return null;
 
+    }
+    
+    private static String getTextPartProcessingByteArray(Part p, String mime) throws MessagingException, IOException {
+        Charset charSet = StandardCharsets.UTF_8;
+        String[] splitArray = p.getContentType().split(" *(,|=>| ) *");
+        for (int i = 0; i < splitArray.length; i++) {
+            if (splitArray[i].startsWith("charset=")) {
+                int lastIdx = splitArray[i].endsWith(";") ? splitArray[i].length() - 1 : splitArray[i].length();
+                String charsetName = splitArray[i].substring("charset=".length(), lastIdx);
+                try {
+                    // tolgo le virgolette se ci sono
+                    charSet = Charset.forName(charsetName.replace("\"", ""));
+                    System.out.println("Setto il charset " + charsetName);
+                } catch (Throwable t) {
+                    System.out.println("Errore nella lookup del charset " + charsetName + ": impossibile settarlo.");
+                    System.out.println(t.getMessage());
+                    System.out.println(t.getCause());
+                    System.out.println("Setto il charset " + StandardCharsets.UTF_8.toString());
+                    charSet = StandardCharsets.UTF_8;
+                }
+            }
+        }
+
+        InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(charSet));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int reads = in.read();
+
+        while (reads != -1) {
+            baos.write(reads);
+            reads = in.read();
+        }
+        try {
+            in.close();
+        } catch (Throwable t) {
+            System.out.println("Errore nella chiusura dell'InputStream");
+            System.out.println(t.getMessage());
+            System.out.println(t.getCause());
+        }
+        byte[] bytes = baos.toByteArray();
+        baos.close();
+        return (String) new String(bytes);
     }
 
     public static String getHtmlWithImg(Part p, EmlHandlerResult ehr) throws MessagingException, IOException {
@@ -324,25 +369,25 @@ public class EmlHandlerUtils {
         return res;
     }
 
-    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
-        return getAttachments(p, dirPath, false);
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean setAttachmentsStream) throws MessagingException, IOException {
+        return getAttachments(p, dirPath, setAttachmentsStream, false);
     }
 
-    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean saveAttachments) throws MessagingException, IOException {
-        ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean setAttachmentsStream, Boolean saveAttachments) throws MessagingException, IOException {
+        ArrayList<EmlHandlerAttachment> res;
 //forse qui 
         if (!p.isMimeType("multipart/*")) {
             if (saveAttachments) {
-                res = getEmlAttachment(p, false, true, dirPath);
+                res = getEmlAttachment(p, setAttachmentsStream, true, dirPath);
             } else {
-                res = getEmlAttachment(p, false);
+                res = getEmlAttachment(p, setAttachmentsStream);
             }
             return res.toArray(new EmlHandlerAttachment[res.size()]);
         }
         if (saveAttachments) {
-            res = getEmlAttachments(p, null, false, true, dirPath);
+            res = getEmlAttachments(p, null, setAttachmentsStream, true, dirPath);
         } else {
-            res = getEmlAttachments(p, null, false);
+            res = getEmlAttachments(p, null, setAttachmentsStream);
         }
         return res.toArray(new EmlHandlerAttachment[res.size()]);
     }

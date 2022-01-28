@@ -1,6 +1,6 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;

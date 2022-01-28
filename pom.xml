@@ -24,13 +24,13 @@
         <module>jpa-tools</module>
         <module>repository-wrapper</module>
         <module>rubrica-client</module>
-        <module>mimetypeutil</module>
         <module>estrattore</module>   
         <module>middelmine</module>
         <module>minIO-manager</module>
         <module>document-generator</module>
         <module>authorization-utils</module>
         <module>firma</module>
+        <module>mime-type-utilities</module>
         <module>parameters-manager</module>
         <module>downloader</module>
     </modules>

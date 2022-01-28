@@ -49,12 +49,12 @@ public class EmlHandler {
         }
     }
 
-    public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException 
+    public EmlHandlerResult handleRawEml(Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException 
     {
-        return handleRawEml(rawMessage, workingDir);
+        return handleRawEml(rawMessage, workingDir, setAttachmentsStream);
     }
 
-    public static EmlHandlerResult handleEml(String filePath)
+    public static EmlHandlerResult handleEml(String filePath, Boolean setAttachmentsStream)
             throws EmlHandlerException, UnsupportedEncodingException {
         FileInputStream is = null;
         MimeMessage m = null;
@@ -71,7 +71,7 @@ public class EmlHandler {
                         "Unable to open file " + filePath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            res = processEml(m, dir);
+            res = processEml(m, dir, setAttachmentsStream);
             return res;
         } finally {
             try {
@@ -124,20 +124,20 @@ public class EmlHandler {
 
     }
 
-    public static EmlHandlerResult handleRawEml(String rawMessage, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+    public static EmlHandlerResult handleRawEml(String rawMessage, File working_dir, Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException {
 
         MimeMessage m = null;
         EmlHandlerResult res = null;
 
         m = EmlHandlerUtils.BuildMailMessageFromString(rawMessage);
         //TODO: decidere cosa fare con il path
-        res = processEml(m, working_dir);
+        res = processEml(m, working_dir, setAttachmentsStream);
         return res;
 
     }
     
-    private static EmlHandlerResult processEml(MimeMessage m, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
-        return processEml(m, working_dir, false);
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException {
+        return processEml(m, working_dir, setAttachmentsStream, false);
     }
 
     /**
@@ -146,7 +146,7 @@ public class EmlHandler {
      * @return EmlHandlerResult contenente il risultato dell'elaborazione
      * @throws EmlHandlerException
      */
-    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean setAttachmentsStream, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
 
         File dir = working_dir;
         EmlHandlerResult res = new EmlHandlerResult();
@@ -217,7 +217,7 @@ public class EmlHandler {
         
         try {
             if (dir != null) {
-                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, saveAttachments));
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, setAttachmentsStream, saveAttachments));
             }
         } catch (MessagingException e) {
             // TODO Auto-generated catch block
