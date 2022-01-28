@@ -324,25 +324,25 @@ public class EmlHandlerUtils {
         return res;
     }
 
-    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath) throws MessagingException, IOException {
-        return getAttachments(p, dirPath, false);
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean setAttachmentsStream) throws MessagingException, IOException {
+        return getAttachments(p, dirPath, setAttachmentsStream, false);
     }
 
-    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean saveAttachments) throws MessagingException, IOException {
-        ArrayList<EmlHandlerAttachment> res = new ArrayList<EmlHandlerAttachment>();
+    public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean setAttachmentsStream, Boolean saveAttachments) throws MessagingException, IOException {
+        ArrayList<EmlHandlerAttachment> res;
 //forse qui 
         if (!p.isMimeType("multipart/*")) {
             if (saveAttachments) {
-                res = getEmlAttachment(p, false, true, dirPath);
+                res = getEmlAttachment(p, setAttachmentsStream, true, dirPath);
             } else {
-                res = getEmlAttachment(p, false);
+                res = getEmlAttachment(p, setAttachmentsStream);
             }
             return res.toArray(new EmlHandlerAttachment[res.size()]);
         }
         if (saveAttachments) {
-            res = getEmlAttachments(p, null, false, true, dirPath);
+            res = getEmlAttachments(p, null, setAttachmentsStream, true, dirPath);
         } else {
-            res = getEmlAttachments(p, null, false);
+            res = getEmlAttachments(p, null, setAttachmentsStream);
         }
         return res.toArray(new EmlHandlerAttachment[res.size()]);
     }
