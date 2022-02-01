@@ -16,6 +16,6 @@ minIO-manager/src/test/java/it/bologna/ausl/minio/manager/test/SalClassiUtilitaB
 authorization-utils/target
 firma/target
 parameters-manager/target
-.git/
 mime-type-utilities/target
 downloader/target
+.git/
