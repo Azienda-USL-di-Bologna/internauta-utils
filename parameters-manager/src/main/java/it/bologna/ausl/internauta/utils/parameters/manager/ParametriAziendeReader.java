@@ -27,7 +27,8 @@ public class ParametriAziendeReader {
     public enum ParametriAzienda {
         minIOConfig,
         mongoAndMinIOActive,
-        firmaRemota
+        firmaRemota,
+        fascicoliSAI
     }
     
     @Autowired

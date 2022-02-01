@@ -68,8 +68,8 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
         return res;
     }
     
-    @RequestMapping(value = "/firma", method = RequestMethod.POST)
-    public FirmaRemotaInformation firma(
+    @RequestMapping(value = "/firmaRemota", method = RequestMethod.POST)
+    public FirmaRemotaInformation firmaRemota(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation, 
                 @RequestParam(required = true) FirmaRemotaInformation.FirmaRemotaProviders provider) throws FirmaRemotaException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(firmaRemotaInformation.getProvider());
