@@ -9,6 +9,7 @@
     <artifactId>firma</artifactId>
     <packaging>jar</packaging>
     <name>firma</name>
+    <version>1.0</version>
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -30,6 +31,11 @@
             <artifactId>itextpdf</artifactId>
             <version>5.5.13.2</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-tools</artifactId>
+            <version>3.0.2</version>
         </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>

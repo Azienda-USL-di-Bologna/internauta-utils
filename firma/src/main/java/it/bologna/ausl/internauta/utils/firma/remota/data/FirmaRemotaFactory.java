@@ -31,7 +31,7 @@ public class FirmaRemotaFactory {
     @Autowired
     private FirmaRemotaUtils firmaRemotaUtils;
 
-    @Value("${arubasignservice.dominio_firma}")
+    @Value("${arubasignservice.dominio_firma:FRauslbo}")
     private String dominioFirmaDefault;
 
 //    @PostConstruct

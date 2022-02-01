@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice;
 
-import com.sun.xml.internal.ws.developer.JAXWSProperties;
+
+import com.sun.xml.ws.developer.JAXWSProperties;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 
 import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemota;
@@ -172,8 +173,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
                             signedMimeType = P7M_CONTENT_TYPE;
                         }
                         logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
-                        String res = firmaRemotaUtils.uploadToUploader(
-                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
+                        String res = null;
+//                        String res = firmaRemotaUtils.uploadToUploader(
+//                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
                         file.setUrlFirmato(res);
                     }
                     logger.info(String.format("file %s completed", file.getFileId()));

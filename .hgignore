@@ -18,3 +18,4 @@ firma/target
 parameters-manager/target
 .git/
 mime-type-utilities/target
+downloader/target
