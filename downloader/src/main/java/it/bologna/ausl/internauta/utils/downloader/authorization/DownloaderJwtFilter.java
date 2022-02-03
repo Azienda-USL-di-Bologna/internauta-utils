@@ -4,9 +4,8 @@ package it.bologna.ausl.internauta.utils.downloader.authorization;
  *
  * @author gdm
  */
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
+import com.nimbusds.jwt.SignedJWT;
+import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderSecurityException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.FilterChain;
@@ -18,14 +17,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
 
-public class JwtFilter extends GenericFilterBean {
+public class DownloaderJwtFilter extends GenericFilterBean {
+    
+    private final DownloaderAuthorizationUtils authorizationUtils;
 
-    private final String secretKey;
-    private final AuthorizationUtils authorizationUtils;
-
-    public JwtFilter(String secretKey, AuthorizationUtils authorizationUtils) {
+    public DownloaderJwtFilter(DownloaderAuthorizationUtils authorizationUtils) {
         super();
-        this.secretKey = secretKey;
         this.authorizationUtils = authorizationUtils;
     }
 
@@ -38,26 +35,34 @@ public class JwtFilter extends GenericFilterBean {
 
         if (!request.getMethod().equalsIgnoreCase("OPTIONS")) {
 
-            final String authHeader = request.getHeader("Authorization");
-            final String applicazione = request.getHeader("Application");
+//            final String authHeader = request.getHeader("Authorization");
+            final String authToken = request.getParameter("token");
+//            final String applicazione = request.getHeader("Application");
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                setResponseError(req, res, HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header.");
+//            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+//                setResponseError(req, res, HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header.");
+//                return;
+//            }
+            if (!StringUtils.hasText(authToken)) {
+                setResponseError(req, res, HttpServletResponse.SC_UNAUTHORIZED, "Missing authorization token.");
                 return;
             }
 
             // la parte dopo "Bearer "
-            final String token = authHeader.substring(7);
+//            final String token = authHeader.substring(7);
 
             try {
-                Claims claims = authorizationUtils.setInSecurityContext(token, secretKey, applicazione);
-                request.setAttribute("claims", claims);
-            } catch (ClassNotFoundException | BlackBoxPermissionException ex) {
-                throw new ServletException("Invalid token", ex);
-            } catch (ExpiredJwtException ex) {
-                logger.warn("token scaduto", ex);
+                SignedJWT decodedToken = authorizationUtils.insertInContext(authToken);
+                request.setAttribute("decodedToken", decodedToken);
+            } catch (DownloaderSecurityException ex) {
+                String errorMessage = "problemi di sicurezza nel controllo del token";
+                logger.error(errorMessage, ex);
                 setResponseError(req, res, HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage());
                 return;
+            } catch (Exception ex) {
+                String errorMessage = "errore nel controllo del token";
+                logger.error(errorMessage, ex);
+                throw new ServletException(errorMessage, ex);
             }
         }
 
@@ -73,6 +78,7 @@ public class JwtFilter extends GenericFilterBean {
         if (StringUtils.hasText(headerOrigin)) {
             response.setHeader("Access-Control-Allow-Origin", headerOrigin);
         }
+        response.setHeader("Content-Type", "text/plain;Charset=utf-8");
         try (PrintWriter writer = res.getWriter()) {
             writer.print(errorMessage);
         }

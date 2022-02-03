@@ -16,13 +16,13 @@ import org.springframework.web.filter.CorsFilter;
  * @author gdm
  */
 @Configuration
-public class RestConfiguration {
+public class DownloaderRestConfiguration {
 
     @Value("${cors.allowed.origins}")
     private String allowedOriginsString;
 
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsFilter downloaderCorsFilter() {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration configResources = new CorsConfiguration();

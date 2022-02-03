@@ -7,39 +7,26 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
 
 /**
  *
  * @author gdm
  */
 @Configuration
-public class RegistrationBean {
+public class DownloaderRegistrationBean {
 
-    @Value("${internauta.security.start-nodes-protection}")
+    @Value("${downloader.security.start-nodes-protection}")
     private String startNodesProtection;
-    
-    @Value("${internauta.security.passtoken-path}")
-    private String passTokenPath;
-    
-    @Value("${security.logout.path}")
-    private String logoutPath;
-    
-    @Value("${security.refresh-session.path}")
-    private String refreshSessionPath;
-
-    @Value("${jwt.secret:secret}")
-    private String secretKey;
 
     @Autowired
-    private AuthorizationUtils authorizationUtils;
+    private DownloaderAuthorizationUtils authorizationUtils;
 
     @Bean
-    public FilterRegistrationBean jwtFilter() throws CertificateException, IOException {
+    public FilterRegistrationBean downloaderJwtFilter() throws CertificateException, IOException {
 
         final FilterRegistrationBean registrationBean = new FilterRegistrationBean();
 
-        registrationBean.setFilter(new JwtFilter(secretKey, authorizationUtils));
+        registrationBean.setFilter(new DownloaderJwtFilter(authorizationUtils));
 
         // intercetta tutte le chiamate che iniziano per...
         registrationBean.addUrlPatterns(startNodesProtection.split(","));

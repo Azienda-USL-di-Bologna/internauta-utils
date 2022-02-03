@@ -1,26 +1,25 @@
 package it.bologna.ausl.internauta.utils.downloader.authorization;
 
-import java.util.Collection;
+import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
-    private String token;
+    private SignedJWT token;
     private AuthenticatedApplication application;
 
-    public TokenBasedAuthentication(String token, AuthenticatedApplication application, Collection<? extends GrantedAuthority> authorities) {
-        super(authorities);
+    public TokenBasedAuthentication(SignedJWT token, AuthenticatedApplication application) {
+        super(application.getAuthorities());
         this.token = token;
         this.application = application;
     }
 
-    public String getToken() {
+    public SignedJWT getToken() {
         return token;
     }
 
-    public void setToken(String token) {
+    public void setToken(SignedJWT token) {
         this.token = token;
     }
 
