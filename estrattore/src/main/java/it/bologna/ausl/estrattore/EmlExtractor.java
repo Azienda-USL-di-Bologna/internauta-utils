@@ -3,8 +3,8 @@ package it.bologna.ausl.estrattore;
 import it.bologna.ausl.eml.handler.EmlHandler;
 import it.bologna.ausl.eml.handler.EmlHandlerAttachment;
 import it.bologna.ausl.eml.handler.EmlHandlerResult;
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
@@ -179,7 +179,7 @@ public class EmlExtractor extends Extractor {
 
                 // aggiungo agli allegati estratti il file creato
                 // ExtractorResult extractorResult = new ExtractorResult(textFileName, getMimeType(textFile), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(),-1);
-                ExtractorResult extractorResult = new ExtractorResult(textFileName, textMediaType.toString(), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1, null,null);
+                ExtractorResult extractorResult = new ExtractorResult(textFileName, textMediaType.toString(), textFile.length(), getHashFromFile(textFile, "SHA-256"), textFile.getAbsolutePath(), -1, null, null);
                 attachments.add(extractorResult);
             }
             return attachments;
@@ -214,6 +214,7 @@ public class EmlExtractor extends Extractor {
                 textMediaType = MediaType.TEXT_HTML;
             } else { // se è nullo potrebbe essere non html, riprovo estraendo il plain/text
                 text = emlHandlerResult.getPlainText();
+                textMediaType = MediaType.TEXT_PLAIN;
             }
 
             // gestisco gli allegati. Sono già stati creati dall'emlHandler, quindi devo solo aggiungere i file creati al risultato
@@ -225,7 +226,7 @@ public class EmlExtractor extends Extractor {
                         throw new ExtractorException("file allegato atteso non trovato: " + attFile.getName() + "\n" + attFile.getAbsolutePath(), file.getName(), attachment.getFileName());
                     }
 
-                    extractorResult = new ExtractorResult(attFile.getName(), getMimeType(attFile), attFile.length(), getHashFromFile(attFile, "SHA-256"), attFile.getAbsolutePath(), -1,null,null);
+                    extractorResult = new ExtractorResult(attFile.getName(), getMimeType(attFile), attFile.length(), getHashFromFile(attFile, "SHA-256"), attFile.getAbsolutePath(), -1, null, null);
                     emlAttachments.add(extractorResult);
                 }
             }

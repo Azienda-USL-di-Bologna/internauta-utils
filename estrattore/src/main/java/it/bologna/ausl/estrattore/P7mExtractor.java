@@ -1,7 +1,7 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.*;
 import java.util.ArrayList;
 import org.apache.commons.io.IOUtils;
@@ -13,7 +13,6 @@ import org.bouncycastle.cms.CMSSignedDataParser;
 import org.bouncycastle.mime.encoding.Base64InputStream;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
-import org.bouncycastle.tsp.cms.CMSTimeStampedDataParser;
 
 /**
  *

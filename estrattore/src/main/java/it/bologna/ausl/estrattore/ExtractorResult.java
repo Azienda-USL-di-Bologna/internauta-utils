@@ -1,8 +1,6 @@
 package it.bologna.ausl.estrattore;
 
 import java.lang.reflect.Field;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 
 /**
  *
