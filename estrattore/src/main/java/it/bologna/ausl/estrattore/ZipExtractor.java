@@ -1,7 +1,7 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Enumeration;

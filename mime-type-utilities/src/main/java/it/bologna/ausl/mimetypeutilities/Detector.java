@@ -1,10 +1,8 @@
-package it.bologna.ausl.mimetypeutilitymaven;
+package it.bologna.ausl.mimetypeutilities;
 
 import java.io.*;
 import java.security.Security;
 import java.util.Scanner;
-import static java.util.stream.DoubleStream.builder;
-import javax.xml.XMLConstants;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.DefaultDetector;
 import org.apache.tika.io.IOUtils;
@@ -18,13 +16,7 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.tsp.cms.CMSTimeStampedDataParser;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
-import static org.bouncycastle.asn1.x500.style.RFC4519Style.name;
 import org.bouncycastle.mime.encoding.Base64InputStream;
-import org.bouncycastle.util.encoders.Base64;
 import org.xml.sax.SAXException;
 
 /**

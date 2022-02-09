@@ -1,14 +1,13 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
