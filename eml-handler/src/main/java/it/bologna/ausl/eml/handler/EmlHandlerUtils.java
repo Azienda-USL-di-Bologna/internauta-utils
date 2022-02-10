@@ -35,7 +35,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -351,7 +350,7 @@ public class EmlHandlerUtils {
                 a.setMimeType(contentType.replaceAll("^(.*)\\s*;\\s*name=\"?(.*?)\"?\\s*(;?\\s*charset\\s*=\\s*\"?([^\"]+?)\"?)?\\s*$", "$1; name=\\\"$2\\\"$3;"));
                 a.setId(i);
                 contentId = part.getHeader("Content-Id");
-                if (contentId != null && contentId.length > 0 && !StringUtils.isEmpty(contentId[0])) {
+                if (contentId != null && contentId.length > 0 && (contentId[0] == null || contentId[0].equals(""))) {
                     a.setContentId(part.getHeader("Content-Id")[0].replaceAll("[<>]", ""));
                 }
                 if (saveBytes) {
