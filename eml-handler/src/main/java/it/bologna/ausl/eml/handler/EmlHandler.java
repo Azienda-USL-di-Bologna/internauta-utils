@@ -45,7 +45,7 @@ public class EmlHandler {
         if (dir != null) {
             workingDir = new File(dir);
         } else {
-            dir = null;
+            workingDir = null;
         }
     }
 
@@ -223,6 +223,8 @@ public class EmlHandler {
         try {
             if (dir != null) {
                 res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, setAttachmentsStream, saveAttachments));
+            } else {
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, setAttachmentsStream, false));
             }
         } catch (MessagingException e) {
             // TODO Auto-generated catch block
