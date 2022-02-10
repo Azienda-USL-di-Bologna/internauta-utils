@@ -49,6 +49,11 @@ public class EmlHandler {
         }
     }
 
+    public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException 
+    {
+        return handleRawEml(rawMessage, workingDir, false);
+    }
+    
     public EmlHandlerResult handleRawEml(Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException 
     {
         return handleRawEml(rawMessage, workingDir, setAttachmentsStream);
@@ -111,7 +116,7 @@ public class EmlHandler {
                         "Unable to open file " + filePath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            res = processEml(m, dir, saveAttachments);
+            res = processEml(m, dir, false, saveAttachments);
             return res;
 
         } finally {
