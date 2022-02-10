@@ -26,6 +26,7 @@ public class ParametriAziendeReader {
 
     public enum ParametriAzienda {
         minIOConfig,
+        mongoConfig,
         mongoAndMinIOActive,
         firmaRemota,
         fascicoliSAI

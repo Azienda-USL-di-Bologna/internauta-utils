@@ -28,5 +28,21 @@
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>parameters-manager</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>minIO-manager</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>repository-wrapper</artifactId>
+            <version>2.1</version>
+        </dependency>
+        
     </dependencies>
 </project>

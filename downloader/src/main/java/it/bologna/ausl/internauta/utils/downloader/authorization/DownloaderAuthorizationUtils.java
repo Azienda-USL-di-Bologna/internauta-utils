@@ -22,6 +22,8 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,8 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author gdm
+ * 
+ * Questa classe effettua il controllo del token ricevuto nella chiamata. Lo Decripta e poi controlla la firma del token jws
  */
 @Component
 public class DownloaderAuthorizationUtils {
@@ -52,7 +56,6 @@ public class DownloaderAuthorizationUtils {
     
     @Value("${downloader.mode:test}")
     private String downloaderMode;
-    
     
     @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key.pk8")
     private Resource tokenDecripterPrivateKeyProd;
@@ -65,6 +68,9 @@ public class DownloaderAuthorizationUtils {
 
     @Value("classpath:downloader/DOWNLOADER_TEST.crt")
     private Resource downloaderPublicCertBabelTest;
+
+    //@Value("classpath:downloader/DOWNLOADER_TEST.crt")
+    private Integer maxLimitTokenSeconds = 86400;
     
     
     // la mappa contiene come chiave lo SHA-256 della chiave pubblica contenuta usata per firmare il token e come valore una coppia: common name del certificato - chiave pubblica estratta dal certificato
@@ -72,10 +78,10 @@ public class DownloaderAuthorizationUtils {
     
     private Resource tokenDecripterPrivateKey;
     
-    @PostConstruct
+    @PostConstruct // questa annotazione fa si che questo metodo venga eseguito subito dopo che spring istanzia questa classe
     public void initialize() throws DownloaderSecurityException, FileNotFoundException, IOException, CertificateEncodingException {
         switch (downloaderMode.toLowerCase()) {
-            case "test":
+            case "test": // se sono in modalità di test prendo la chiave di test per decrittare il token e il certificato di test per controllare la firma
                 this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyTest;
                 // qui ci vanno tutti i certificati di test
                 
@@ -84,7 +90,7 @@ public class DownloaderAuthorizationUtils {
                 hashPublicKeyMap.put("FDB1F11965344A44DB32C4FE1D53C4A5104453BAEFB58F106BD6ABDD4736537B", 
                         new Pair(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 break;
-            case "prod":
+            case "prod": // se sono in modalità di prod, prendo al chiave di prod per decrittare il token e il certificato di prod per controllare la firma
                 this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyProd;
                 
                 // qui ci vanno tutti i certificati di prod
@@ -101,6 +107,15 @@ public class DownloaderAuthorizationUtils {
         }
     }
     
+    /**
+     * Legge dal file corretto, la chiave privata per decrittare il token
+     * @return l'oggetto PrivateKey che rappresenta la chiave privata per decrittare il token
+     * @throws NoSuchAlgorithmException
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws InvalidKeyException
+     * @throws InvalidKeySpecException 
+     */
     private PrivateKey getEncryptPrivateKey() throws NoSuchAlgorithmException, FileNotFoundException, IOException, InvalidKeyException, InvalidKeySpecException {
         KeyFactory factory = KeyFactory.getInstance("RSA");
         try (
@@ -115,6 +130,13 @@ public class DownloaderAuthorizationUtils {
         }
     }
     
+    /**
+     * Legge dal file il certificato per il controllo della firma del token
+     * @param certFile
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
     private X509Certificate getX509CertificateFromFile(File certFile) throws FileNotFoundException, IOException {
         try (
             FileReader keyReader = new FileReader(certFile);
@@ -125,6 +147,12 @@ public class DownloaderAuthorizationUtils {
         }
     }
 
+    /**
+     * Estrae il common name dal certificato
+     * @param cert
+     * @return
+     * @throws CertificateEncodingException 
+     */
     private String getCommonNameFromX509Certificate(X509Certificate cert) throws CertificateEncodingException {
         X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
         RDN cn = x500name.getRDNs(BCStyle.CN)[0];
@@ -133,52 +161,73 @@ public class DownloaderAuthorizationUtils {
         return cnString;
     }
     
+    /**
+     * Decripta, controlla la firma del token.
+     * Inoltre controlla che il subject del token sia uguale common name del certificato dal quale ho estratto la chiave pubblica usata per controllare la firma
+     * @param encryptedToken
+     * @return il token in formato SignedJWT
+     * @throws DownloaderSecurityException
+     * @throws ParseException
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     * @throws FileNotFoundException
+     * @throws InvalidKeyException
+     * @throws InvalidKeySpecException
+     * @throws JOSEException 
+     */
     private SignedJWT checkAndDecodeToken(String encryptedToken) throws DownloaderSecurityException, ParseException, NoSuchAlgorithmException, IOException, FileNotFoundException, InvalidKeyException, InvalidKeySpecException, JOSEException {
-        switch (downloaderMode.toLowerCase()) {
-            case "test":
-                break;
-            case "prod":
-                break;
-            default:
-                String errorMessage = String.format("downloader mode deve essere \"%s\" o \"%s\". Valore trovato \"%s\"", "test", "prod", downloaderMode);
-                logger.error(errorMessage);
-                throw new DownloaderSecurityException(errorMessage);
-        }
         
-         // Parse the JWE string
+        // Parso la stringa che rappresenta il token criptato (jwe)
         JWEObject jweObject = JWEObject.parse(encryptedToken);
 
-        // Decrypt with private key
+        // decritto il token usando la mia chiave privata
         jweObject.decrypt(new RSADecrypter(getEncryptPrivateKey()));
 
-        // Extract payload
+        // Estraggo il payload che contiene il token firmato (jws)
         SignedJWT signedJWTDecrypted = jweObject.getPayload().toSignedJWT();
 
+        // nel keyID dell'header c'è l'hash (SHA-256) della chiave pubblica corrispondente alla chiava privata usata per firmare il token
+        // lo estraggo e lo uso per trovare la chiave pubblica nella mia mappa "hashPublicKeyMap"
         String keyID = signedJWTDecrypted.getHeader().getKeyID();
         String cn = this.hashPublicKeyMap.get(keyID).getKey();
         PublicKey pk = this.hashPublicKeyMap.get(keyID).getValue();
         
-        // Check the signature
+        // Controllo la firma con la chiave pubblica estratta sopra
         if (!signedJWTDecrypted.verify(new RSASSAVerifier((RSAPublicKey) pk))) {
             String errorMessage = "la firma del token non è valida";
             logger.error(errorMessage);
             throw new DownloaderSecurityException(errorMessage);
         }
+        
+        // controllo che il subject del token sia uguale common name del certificato dal quale ho estratto la chiave pubblica
         String subject = signedJWTDecrypted.getJWTClaimsSet().getSubject();
         if (!cn.equalsIgnoreCase(subject)) {
             String errorMessage = "il subject del token non corrisponde al common name del certificato";
             logger.error(String.format(errorMessage + " subject: %s - common name: %s", subject, cn));
             throw new DownloaderSecurityException(errorMessage);
         }
+        
+        // controllo che il token non sia scaduto oppure che la data di scadenza sia troppo elevata
         Date expirationTime = signedJWTDecrypted.getJWTClaimsSet().getExpirationTime();
+        Date maxLimitTokenTime = Date.from(LocalDateTime.now().plusSeconds(this.maxLimitTokenSeconds).atZone(ZoneId.systemDefault()).toInstant());
         if (expirationTime == null || new Date().after(expirationTime)) {
             String errorMessage = "il token è scaduto";
+            logger.error(errorMessage);
+            throw new DownloaderSecurityException(errorMessage);
+        } else if (expirationTime.after(maxLimitTokenTime)) {
+            String errorMessage = String.format("la scadenza del token è troppo lunga, il limite massimo è %s secondi", maxLimitTokenSeconds);
             logger.error(errorMessage);
             throw new DownloaderSecurityException(errorMessage);
         }
         return signedJWTDecrypted;
     }
     
+    /**
+     * Inserisce il token, dovo averlo parsato e controllato, nel contesto, dentro l'oggetto TokenBasedAuthentication
+     * @param token
+     * @return Il token parsato e controllato, dopo averlo inserito nel contesto
+     * @throws DownloaderSecurityException 
+     */
     public SignedJWT insertInContext(String token) throws  DownloaderSecurityException{
         SignedJWT decodedToken;
         try {

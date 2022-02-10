@@ -6,11 +6,20 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
 
 /**
- *
+ * Classe per le funzioni di utilities
+ * 
  * @author gdm
  */
 public class DownloaderUtilities {
-        
+
+    /**
+     * Calcola l'hash di un file passato tramite bytes
+     * @param file i bytes sui quali calcolare l'hash
+     * @param algorithm l'algoritmo di hasing da usare (es SHA-256, MD5, ecc.)
+     * @return una stringa che rappresenta l'hash del un file in esadecimale
+     * @throws IOException
+     * @throws NoSuchAlgorithmException 
+     */
     public static String getHashFromBytes(byte[] file, String algorithm) throws IOException, NoSuchAlgorithmException {
  
         MessageDigest mdigest = MessageDigest.getInstance(algorithm);

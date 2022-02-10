@@ -7,8 +7,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
- *
  * @author gdm
+ * 
+ * Rappresenta l'oggetto autenticato tramite il token, in questo caso l'oggetto è un applicazione di cui so il nome
  */
 public class AuthenticatedApplication implements UserDetails {
 

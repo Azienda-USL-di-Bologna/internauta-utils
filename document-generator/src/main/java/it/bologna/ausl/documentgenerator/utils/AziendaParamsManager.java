@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import net.sourceforge.jenesis4java.True;
 import org.sql2o.Sql2o;
 
 public final class AziendaParamsManager {

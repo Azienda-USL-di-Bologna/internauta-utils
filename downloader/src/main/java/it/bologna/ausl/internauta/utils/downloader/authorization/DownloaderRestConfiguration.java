@@ -12,15 +12,20 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 /**
- *
+ * Classe di configurazione che setta i cors da accettare sulle chiamate
  * @author gdm
  */
 @Configuration
 public class DownloaderRestConfiguration {
 
-    @Value("${cors.allowed.origins}")
+    @Value("${downloader.cors.allowed.origins}")
     private String allowedOriginsString;
 
+    /**
+     * Accetto solo richieste Options, Get, e Post e solo gli header application authorization e content-type
+     * e solo richieste provenienti dagli indirizzi inserito nel parametro downloader.cors.allowed.origins inserito nell'application.properties dell'applicazione
+     * @return 
+     */
     @Bean
     public CorsFilter downloaderCorsFilter() {
 
@@ -28,36 +33,18 @@ public class DownloaderRestConfiguration {
         CorsConfiguration configResources = new CorsConfiguration();
 //        configResources.setAllowCredentials(false); // con la versione 2.4.2 di spring se settato a true vanno per forza settati anche gli allowed orgin a qualcosa diversa da *
         configResources.setAllowCredentials(true); // con la versione 2.4.2 di spring se settato a true vanno per forza settati anche gli allowed orgin a qualcosa diversa da *
-//        config.addAllowedOrigin("http://localhost:4200");
-//        config.addAllowedOrigin("*.internal.ausl.bologna.it");
         List<String> allowedOriginList = new ArrayList<>(Arrays.asList(allowedOriginsString.split(",")));
         configResources.setAllowedOrigins(allowedOriginList);
-        //per disabilitare il controllo dei cors-origin
-//        configResources.addAllowedOrigin("*");
-//        configResources.addAllowedHeader("*");
+
         configResources.addAllowedHeader("application");
         configResources.addAllowedHeader("authorization");
-//        configResources.addAllowedHeader("krint");
         configResources.addAllowedHeader("content-type");
         configResources.addAllowedMethod(HttpMethod.OPTIONS);
         configResources.addAllowedMethod(HttpMethod.GET);
-//        configResources.addAllowedMethod(HttpMethod.PUT);
-//        configResources.addAllowedMethod(HttpMethod.PATCH);
         configResources.addAllowedMethod(HttpMethod.POST);
-//        configResources.addAllowedMethod(HttpMethod.DELETE);
 
-//        CorsConfiguration configLogin = new CorsConfiguration();
-//        configLogin.setAllowCredentials(true);
-//        configLogin.setAllowedOrigins(allowedOriginList);
-//        configLogin.addAllowedHeader("*");
-//        configLogin.addAllowedMethod(HttpMethod.OPTIONS);
-//        configLogin.addAllowedMethod(HttpMethod.GET);
-//        configLogin.addAllowedMethod(HttpMethod.POST);
 
         source.registerCorsConfiguration("/downloader-api/login/**", configResources);
-//        source.registerCorsConfiguration("/internauta-api/logout", configLogin);
-//        source.registerCorsConfiguration("/internauta-api/endpoint/login", configLogin);
-//        source.registerCorsConfiguration("/internauta-api/resources/**", configResources);
         return new CorsFilter(source);
     }
 }
