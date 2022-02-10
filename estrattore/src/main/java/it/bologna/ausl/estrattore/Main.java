@@ -16,10 +16,10 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) throws ExtractorException, IOException{
         
-    File folder = new File("D:\\");
-    File file = new File(folder,"PG0054903_2021_Pec id_11904845.eml");
-                ExtractorCreator zip = new ExtractorCreator(file);
-                zip.extractAll(folder);//        ExtractorCreator<InputStream> toMerge = new ArrayList();
+    File folder = new File("prova");
+    File file = new File("ccc.eml");
+    ExtractorCreator zip = new ExtractorCreator(file);
+    zip.extractAll(folder);//        ExtractorCreator<InputStream> toMerge = new ArrayList();
 //        for (File file : folder.listFiles()) {
 //            if (file.isFile()) {
 ////                EmlExtractor eml = new EmlExtractor(file);
