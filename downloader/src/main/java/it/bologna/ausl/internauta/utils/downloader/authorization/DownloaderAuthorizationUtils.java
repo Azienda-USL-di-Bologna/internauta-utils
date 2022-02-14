@@ -69,7 +69,7 @@ public class DownloaderAuthorizationUtils {
     @Value("classpath:downloader/DOWNLOADER_TEST.crt")
     private Resource downloaderPublicCertBabelTest;
 
-    //@Value("classpath:downloader/DOWNLOADER_TEST.crt")
+    @Value("${downloader.max-limit-token-seconds:30}")
     private Integer maxLimitTokenSeconds = 86400;
     
     

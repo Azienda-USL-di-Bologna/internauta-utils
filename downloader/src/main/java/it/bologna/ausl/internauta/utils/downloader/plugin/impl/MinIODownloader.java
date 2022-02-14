@@ -2,7 +2,7 @@ package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
 import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownloadException;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderPlugin;
+import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import java.io.InputStream;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * Implementa il plugin per lo scaricamento dei file da MinIO
  * @author gdm
  */
-public class MinIODownloader extends DownloaderPlugin {
+public class MinIODownloader extends DownloaderDownloadPlugin {
     
     private static Logger logger = LoggerFactory.getLogger(MinIODownloader.class);
 

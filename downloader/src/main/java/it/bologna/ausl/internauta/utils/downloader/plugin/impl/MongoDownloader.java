@@ -2,7 +2,7 @@ package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
 import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownloadException;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderPlugin;
+import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import java.io.InputStream;
 import java.util.Map;
@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
  * 
  * @author gdm
  */
-public class MongoDownloader extends DownloaderPlugin {
-    private static Logger logger = LoggerFactory.getLogger(DownloaderPlugin.class);
+public class MongoDownloader extends DownloaderDownloadPlugin {
+    private static Logger logger = LoggerFactory.getLogger(DownloaderDownloadPlugin.class);
     
     public MongoDownloader(Map<String, Object> params, RepositoryManager repositoryManager) {
         super(params, repositoryManager);

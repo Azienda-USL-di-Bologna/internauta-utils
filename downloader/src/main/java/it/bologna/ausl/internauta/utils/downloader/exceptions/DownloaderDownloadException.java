@@ -4,7 +4,7 @@ package it.bologna.ausl.internauta.utils.downloader.exceptions;
  *
  * @author gdm
  */
-public class DownloaderDownloadException extends Exception {
+public class DownloaderDownloadException extends DownloaderPluginException {
 
     public DownloaderDownloadException(String message) {
         super(message);
