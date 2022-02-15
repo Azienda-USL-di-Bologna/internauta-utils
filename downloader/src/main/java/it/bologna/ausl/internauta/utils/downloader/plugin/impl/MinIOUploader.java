@@ -1,15 +1,14 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
 import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
-import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownloadException;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
 import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderUploadPlugin;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -38,6 +37,9 @@ public class MinIOUploader extends DownloaderUploadPlugin {
      */
     @Override
     public Map<String, Object> putFile(InputStream file, String path, String fileName) throws DownloaderUploadException {
+        if (params == null || params.isEmpty()) {
+            throw new DownloaderUploadException("i params sono nulli o vuoti");
+        }
         
         if (!params.containsKey("codiceAzienda")) {
             throw new DownloaderUploadException("il parametro codiceAzienda non è stato passato");
@@ -78,13 +80,13 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         try {
-            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, bucket);
+            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
             Map<String, Object> resParams = new HashMap();
             resParams.put("fileId", res.getFileId());
             return resParams;
         } catch (Exception ex) {
             String errorMessage = "errore nell'upload del file";
-            logger.error(errorMessage);
+            logger.error(errorMessage, ex);
             throw new DownloaderUploadException(errorMessage, ex);
         }
     }

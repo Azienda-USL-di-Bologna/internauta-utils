@@ -1,15 +1,13 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
 import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
-import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownloadException;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderUploadPlugin;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +39,7 @@ public class DefaultUploader extends MinIOUploader {
     public Map<String, Object> putFile(InputStream file, String path, String fileName) throws DownloaderUploadException {
         
         Map<String, Object> metadata = null;
-        if (params.containsKey("metadata")) {
+        if (params != null && params.containsKey("metadata")) {
             metadata = (Map<String, Object>) params.get("metadata");
         }
 
@@ -54,13 +52,13 @@ public class DefaultUploader extends MinIOUploader {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         try {
-            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, bucket);
+            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
             Map<String, Object> resParams = new HashMap();
             resParams.put("fileId", res.getFileId());
             return resParams;
         } catch (Exception ex) {
             String errorMessage = "errore nell'upload del file";
-            logger.error(errorMessage);
+            logger.error(errorMessage, ex);
             throw new DownloaderUploadException(errorMessage, ex);
         }
     }

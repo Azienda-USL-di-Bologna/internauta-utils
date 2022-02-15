@@ -90,18 +90,18 @@ public class DownloaderController {
     /**
      * Servlet chiamata per l'upload di un file.Anche il token è passato in input, non viene usato direttamente:
      * La chiamata è intercettata da un filter (vedi classe it.bologna.ausl.internauta.utils.downloader.authorization.DownloaderRegistrationBean)
-     * Questo filter decritta e controlla il token e lo inserisce nel contesto.La servlet estrae il token dal contesto e reperisce il context-claim, che contiene le informazioni sul file da scaricare, grazie alle quali ne può reperire e tornare lo stream
+     * Questo filter decritta e controlla il token e lo inserisce nel contesto.La servlet estrae il token dal contesto e reperisce il context-claim, che contiene le informazioni sul file da caricare
      * 
-     *
      * @param request
      * @param response
      * @param stringToken il token in stringa
      * @param file il file da caricare
+     * @return le informazioni necessarie per creare i params da inserire nel token per la chiamata di download
      * @throws DownloaderParsingContextException 
      * @throws DownloaderUploadException 
      */
     @RequestMapping(value = "/upload", method = RequestMethod.POST)
-    public void upload(HttpServletRequest request, HttpServletResponse response,
+    public Map<String, Object> upload(HttpServletRequest request, HttpServletResponse response,
             @RequestParam(required = true, name = "token") String stringToken, 
             @RequestParam("file") MultipartFile file
             ) throws DownloaderParsingContextException, DownloaderUploadException {
@@ -119,13 +119,16 @@ public class DownloaderController {
                 path = (String) contextClaim.get("filePath");
             }
             
-            String fileName = null;
+            String fileName;
             if (contextClaim.containsKey("fileName")) {
                 fileName = (String) contextClaim.get("fileName");
+            } else {
+                fileName = file.getOriginalFilename();
             }
             
             // carica il file sul repository
             Map<String, Object> uploadRes = uploadPlugin.putFile(file.getInputStream(), path, fileName);
+            return uploadRes;
         } catch (DownloaderPluginException | ParseException ex) {
             String errorMessage = "errore nel parsing dei parametri per il download del file";
             logger.error(errorMessage, ex);
@@ -135,9 +138,6 @@ public class DownloaderController {
             logger.error(errorMessage, ex);
             throw new DownloaderUploadException(errorMessage, ex);
         }
-        
-        //TODO: devo creare il token e l'url di upload
-            
     }
 
     /**
