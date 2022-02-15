@@ -41,6 +41,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
             throw new DownloaderUploadException("i params sono nulli o vuoti");
         }
         
+        // il codiceAzienda è obbligatorio, se non c'è lancio eccezione
         if (!params.containsKey("codiceAzienda")) {
             throw new DownloaderUploadException("il parametro codiceAzienda non è stato passato");
         }
@@ -51,6 +52,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
             metadata = (Map<String, Object>) params.get("metadata");
         }
 
+        // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
         String bucket;
         if (params.containsKey("bucket")) {
             bucket = (String) params.get("bucket");
@@ -58,6 +60,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
             bucket = codiceAzienda;
         }
         
+        // se non c'è overwrite allora lo considero false
         Boolean overwrite;
         if (params.containsKey("overwrite")) {
             overwrite = (Boolean) params.get("overwrite");
@@ -65,12 +68,14 @@ public class MinIOUploader extends DownloaderUploadPlugin {
             overwrite = false;
         }
         
+        // mi assicuro che mi sia stato passato un path, altrimenti lancio eccezione
         if (!StringUtils.hasText(path)) {
             String errorMessage = "il parametro path non è stato passato";
             logger.error(errorMessage);
             throw new DownloaderUploadException(errorMessage);
         }
         
+        // mi assicuro che mi sia stato passato un fileName, altrimenti lancio eccezione
         if (!StringUtils.hasText(fileName)) {
             String errorMessage = "il parametro fileName non è stato passato";
             logger.error(errorMessage);
@@ -80,7 +85,10 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         try {
+            // carico il file su minIO, generando anche un uuidMongo tramite UUID.randomUUID().toString(), in modo che il file sia trovabile anche con la libreria RepositoryWrapper
             MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
+            
+            // Come risultato torno i params che servono per il DownloadPlugin con source MinIO
             Map<String, Object> resParams = new HashMap();
             resParams.put("fileId", res.getFileId());
             return resParams;
