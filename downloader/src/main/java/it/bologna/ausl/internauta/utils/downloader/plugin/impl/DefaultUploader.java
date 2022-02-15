@@ -12,7 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementa il plugin per lo scaricamento dei file da MinIO
+ * Implementa il plugin di default per l'upload. I file vengono caricati su MinIO in um path fisso(costante DEFAULT_PATH) e con nome file passato.
+ * Se il nome file non viene passato, viene usato il nome del file del client cliamante (letto dalla request http)
  * @author gdm
  */
 public class DefaultUploader extends MinIOUploader {
@@ -21,13 +22,15 @@ public class DefaultUploader extends MinIOUploader {
 
     private final String BUCKET = "uploader";
     
+    private final String DEFAULT_PATH = "/uploader";;
+    
     public DefaultUploader(Map<String, Object> params, RepositoryManager repositoryManager) {
         super(params, repositoryManager);
     }
     
     /**
      * Carica il file sul repository di default (MinIO) con le informazioni passate nei params
-     * il bucket usato è un bucket apposito per l'uploader, chiamato "uploader"
+     * il bucket usato è un bucket apposito per l'uploader (costante BUCKET)
      * L'unico params passabile è "metadata".
      * @param file lo stream del file da caricare sul repository
      * @param path non viene usato, viene generato a caso
@@ -45,14 +48,17 @@ public class DefaultUploader extends MinIOUploader {
 
         String bucket = BUCKET;
         String codiceAzienda = BUCKET;
-        path = "/uploader";
         
         Boolean overwrite = false;
         
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         try {
-            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
+            
+            // carico il file su minIO, generando anche un uuidMongo tramite UUID.randomUUID().toString(), in modo che il file sia trovabile anche con la libreria RepositoryWrapper
+            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, DEFAULT_PATH, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
+            
+            // Come risultato torno i params che servono per il DownloadPlugin con source Default (o MinIO che per il momento sono uguali)
             Map<String, Object> resParams = new HashMap();
             resParams.put("fileId", res.getFileId());
             return resParams;

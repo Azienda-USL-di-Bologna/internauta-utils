@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -27,8 +29,8 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import javafx.util.Pair;
 import javax.annotation.PostConstruct;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -57,11 +59,14 @@ public class DownloaderAuthorizationUtils {
     @Value("${downloader.mode:test}")
     private String downloaderMode;
     
-    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key.pk8")
-    private Resource tokenDecripterPrivateKeyProd;
+    @Value("${downloader.private-key-file.location}")
+    private String privateKeyFileLocation;
     
-    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key_Test.pk8")
-    private Resource tokenDecripterPrivateKeyTest;
+//    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key.pk8")
+//    private Resource tokenDecripterPrivateKeyProd;
+//    
+//    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key_Test.pk8")
+//    private Resource tokenDecripterPrivateKeyTest;
     
     @Value("classpath:downloader/DOWNLOADER_BABEL.crt")
     private Resource downloaderPublicCertBabelProd;
@@ -70,35 +75,33 @@ public class DownloaderAuthorizationUtils {
     private Resource downloaderPublicCertBabelTest;
 
     @Value("${downloader.max-limit-token-seconds:30}")
-    private Integer maxLimitTokenSeconds = 86400;
-    
+    private Integer maxLimitTokenSeconds = 86400; 
     
     // la mappa contiene come chiave lo SHA-256 della chiave pubblica contenuta usata per firmare il token e come valore una coppia: common name del certificato - chiave pubblica estratta dal certificato
     public Map<String, Pair<String, PublicKey>> hashPublicKeyMap = new HashMap();
-    
-    private Resource tokenDecripterPrivateKey;
     
     @PostConstruct // questa annotazione fa si che questo metodo venga eseguito subito dopo che spring istanzia questa classe
     public void initialize() throws DownloaderSecurityException, FileNotFoundException, IOException, CertificateEncodingException {
         switch (downloaderMode.toLowerCase()) {
             case "test": // se sono in modalità di test prendo la chiave di test per decrittare il token e il certificato di test per controllare la firma
-                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyTest;
+//                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyTest;
                 // qui ci vanno tutti i certificati di test
                 
                 // certificato di test
-                X509Certificate publicCertBabelTest = getX509CertificateFromFile(this.downloaderPublicCertBabelTest.getFile());
+//                X509Certificate publicCertBabelTest = getX509CertificateFromFile(new File("downloader/DOWNLOADER_TEST.crt"));
+                X509Certificate publicCertBabelTest = getX509CertificateFromFile(this.downloaderPublicCertBabelTest.getInputStream());
                 hashPublicKeyMap.put("FDB1F11965344A44DB32C4FE1D53C4A5104453BAEFB58F106BD6ABDD4736537B", 
-                        new Pair(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
+                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 break;
             case "prod": // se sono in modalità di prod, prendo al chiave di prod per decrittare il token e il certificato di prod per controllare la firma
-                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyProd;
+//                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyProd;
                 
                 // qui ci vanno tutti i certificati di prod
                 
                 // certificato interno nostro per prod
-                X509Certificate publicCertBabelProd = getX509CertificateFromFile(this.downloaderPublicCertBabelProd.getFile());
+                X509Certificate publicCertBabelProd = getX509CertificateFromFile(this.downloaderPublicCertBabelProd.getInputStream());
                 this.hashPublicKeyMap.put("819EE5A635FA45FBCED93BEE6ED0B9721C02A9B933328806DDFF84CD5AA9DD42",
-                        new Pair(getCommonNameFromX509Certificate(publicCertBabelProd), publicCertBabelProd.getPublicKey()));
+                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelProd), publicCertBabelProd.getPublicKey()));
                 break;
             default:
                 String errorMessage = String.format("downloader mode deve essere \"%s\" o \"%s\". Valore trovato \"%s\"", "test", "prod", downloaderMode);
@@ -119,7 +122,8 @@ public class DownloaderAuthorizationUtils {
     private PrivateKey getEncryptPrivateKey() throws NoSuchAlgorithmException, FileNotFoundException, IOException, InvalidKeyException, InvalidKeySpecException {
         KeyFactory factory = KeyFactory.getInstance("RSA");
         try (
-            FileReader keyReader = new FileReader(tokenDecripterPrivateKey.getFile());
+//            FileReader keyReader = new FileReader(tokenDecripterPrivateKey.getFile());
+            FileReader keyReader = new FileReader(new File(this.privateKeyFileLocation));
             PemReader pemReader = new PemReader(keyReader)) {
 
             PemObject pemObject = pemReader.readPemObject();
@@ -137,9 +141,9 @@ public class DownloaderAuthorizationUtils {
      * @throws FileNotFoundException
      * @throws IOException 
      */
-    private X509Certificate getX509CertificateFromFile(File certFile) throws FileNotFoundException, IOException {
+    private X509Certificate getX509CertificateFromFile(InputStream certFile) throws FileNotFoundException, IOException {
         try (
-            FileReader keyReader = new FileReader(certFile);
+            InputStreamReader keyReader = new InputStreamReader(certFile);
             PemReader pemReader = new PemReader(keyReader)) {
             
             X509Certificate cert = X509CertUtils.parse(pemReader.readPemObject().getContent());
