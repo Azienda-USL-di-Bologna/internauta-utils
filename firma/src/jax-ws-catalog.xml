@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/ArubaSignService?wsdl" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/ArubaSignService.wsdl"/>
+    <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/ArubaSignService?xsd=1" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/ArubaSignService.xsd_1.xsd"/>
+    <system systemId="http://www.w3.org/2005/05/xmlmime" uri="wsdl/www.w3.org/2005/05/xmlmime.xsd"/>
+    <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/CredentialProxyService?wsdl" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/CredentialProxyService.wsdl"/>
+    <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/CredentialProxyService?xsd=1" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/CredentialProxyService.xsd_1.xsd"/>
+</catalog>

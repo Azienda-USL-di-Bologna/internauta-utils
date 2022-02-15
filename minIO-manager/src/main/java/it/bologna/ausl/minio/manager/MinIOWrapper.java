@@ -36,8 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import okhttp3.ConnectionPool;
-import okhttp3.OkHttpClient;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -78,7 +76,7 @@ public class MinIOWrapper {
     // connection al Db con Connection Pool
     private static Sql2o sql2oConnection = null;
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     /**
      * Costruisce l'oggetto MinIOWrapper per l'interazione con il repository
@@ -144,7 +142,7 @@ public class MinIOWrapper {
 //            Sql2o sql2o = new Sql2o(hikariDataSource);
 //            Sql2o sql2o = new Sql2o(hikariDataSource, new PostgresQuirks());
             Sql2o sql2o = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());
-            sql2oConnection = sql2o;
+            sql2oConnection = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());;
         }
     }
 
