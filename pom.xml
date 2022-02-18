@@ -19,19 +19,19 @@
    
     <!-- sub modules -->
     <modules>
-        <module>eml-handler</module>
         <module>bds-types</module>
         <module>jpa-tools</module>
-        <module>repository-wrapper</module>
-        <module>rubrica-client</module>
-        <module>estrattore</module>   
-        <module>middelmine</module>
+        <module>parameters-manager</module>
         <module>minIO-manager</module>
-        <module>document-generator</module>
+        <module>repository-wrapper</module>
+        <module>eml-handler</module>
+        <module>estrattore</module>   
+        <module>rubrica-client</module>
+        <module>middelmine</module>
         <module>authorization-utils</module>
+        <module>document-generator</module>
         <module>firma</module>
         <module>mime-type-utilities</module>
-        <module>parameters-manager</module>
         <module>downloader</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
