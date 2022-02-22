@@ -3,6 +3,8 @@ package it.bologna.ausl.internauta.utils.firma.remota.data;
 /**
  *
  * @author gdm
+ * 
+ * Questa classe descrive il file da firmare
  */
 public class FirmaRemotaFile {
     public static final String PDF_MIMETYPE = "application/pdf";

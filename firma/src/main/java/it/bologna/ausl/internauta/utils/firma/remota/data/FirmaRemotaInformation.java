@@ -5,16 +5,25 @@ import java.util.List;
 /**
  *
  * @author gdm
+ * 
+ * Questa classe contiene le informazioni che servono per una sessioni di firma
  */
 public class FirmaRemotaInformation {
 
+    // elenco dei vari provider supportati
     public static enum FirmaRemotaProviders {
         ARUBA, INFOCERT
     };
 
+    // elenco dei file da firmare
     private List<FirmaRemotaFile> files;
+    
+    // informazioni relative all'utenza di firma
     private UserInformation userInformation;
-    private FirmaRemotaProviders provider; // legacy, da tenere fino a quando si usano le app inde, poi toglierlo
+    
+    // l'informazione del provider di firma deve essere rimosso da questa classe, perché non più necessario, 
+    // per motivi legacy però, bisogna tenerli fino a quando si usano le app inde
+    private FirmaRemotaProviders provider; 
 
     public FirmaRemotaInformation() {
     }
@@ -25,13 +34,11 @@ public class FirmaRemotaInformation {
     
     public FirmaRemotaInformation(List<FirmaRemotaFile> files, UserInformation userInformation) {
         this.files = files;
-        this.userInformation = userInformation;
-//        this.provider = provider;
+        this.userInformation = userInformation;//        this.provider = provider;
     }
     
     public FirmaRemotaInformation(List<FirmaRemotaFile> files, UserInformation userInformation, FirmaRemotaProviders provider) {
-        this.files = files;
-        this.userInformation = userInformation;
+        this(files, userInformation);
         this.provider = provider;
     }
 
@@ -58,5 +65,4 @@ public class FirmaRemotaInformation {
     public void setProvider(FirmaRemotaProviders provider) {
         this.provider = provider;
     }
-
 }

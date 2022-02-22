@@ -15,7 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- *
+ * Controller che implementa le API per la firma remota
+ * 
+ * Ogni servlet, come prima cosa, reperisce l'istanza corretta della classe di firma (implementazione di FirmaRemota) basandosi sul provider passato in input.
+ * L'istanza viene reperita tramite la classe factory FirmaRemotaFactory
+ * 
  * @author gdm
  */
 @RestController
@@ -42,18 +46,24 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/telefona", method = RequestMethod.POST)
     public void telefona(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation) throws FirmaRemotaException {
-        firmaRemotaFactory.getFirmaRemotaInstance(firmaRemotaInformation.getProvider()).telefona(firmaRemotaInformation.getUserInformation());
+        firmaRemotaFactory.getFirmaRemotaInstance(firmaRemotaInformation.getProvider()).preAuthentication(firmaRemotaInformation.getUserInformation());
     }
     
+    /**
+     * Servlet che esegue la pre-autenticazione
+     * @param userInformation
+     * @param provider
+     * @throws FirmaRemotaException 
+     */
     @RequestMapping(value = "/preAutentication", method = RequestMethod.POST)
     public void preAutentication(
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) FirmaRemotaInformation.FirmaRemotaProviders provider) throws FirmaRemotaException {
-        firmaRemotaFactory.getFirmaRemotaInstance(provider).telefona(userInformation);
+        firmaRemotaFactory.getFirmaRemotaInstance(provider).preAuthentication(userInformation);
     }
 
     /**
-     * 
+     * Servlet che firma il file
      * @param firmaRemotaInformation
      * @return
      * @throws FirmaRemotaException
@@ -68,6 +78,13 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
         return res;
     }
     
+    /**
+     * Servlet che firma il file
+     * @param firmaRemotaInformation
+     * @param provider
+     * @return
+     * @throws FirmaRemotaException 
+     */
     @RequestMapping(value = "/firmaRemota", method = RequestMethod.POST)
     public FirmaRemotaInformation firmaRemota(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation, 
@@ -77,6 +94,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
         return res;
     }
 
+    
     @RequestMapping(value = "/existingCredential", method = RequestMethod.POST)
     public Boolean existingCredential(
                 @RequestBody UserInformation userInformation, 

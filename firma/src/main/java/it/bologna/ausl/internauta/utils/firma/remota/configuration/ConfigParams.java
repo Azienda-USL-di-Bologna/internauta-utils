@@ -20,7 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- *
+ * Questa classe legge i parametri di configurazione dal database (tabella configurazione.parametri_azienda)
+ * La lettura viene effettuata tramite il modulo parametriAziendeReader.
+ * 
  * @author gdm
  */
 @Service

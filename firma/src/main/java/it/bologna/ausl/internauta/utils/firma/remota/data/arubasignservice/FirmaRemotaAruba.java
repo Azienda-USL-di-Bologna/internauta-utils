@@ -55,7 +55,9 @@ import org.springframework.util.StringUtils;
 
 /**
  *
- * @author guido
+ * @author gdm
+ * 
+ * Implementazione per la firma con provide ARUBA.
  */
 public class FirmaRemotaAruba extends FirmaRemota {
 
@@ -75,6 +77,8 @@ public class FirmaRemotaAruba extends FirmaRemota {
 
     public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaUtils firmaRemotaUtils, String dominioFirmaDefault) {
         this.configParams = configParams;
+        
+        // leggo le informazioni di configurazione della firma remota e del credential proxy
         Map<String, Map<String, Object>> firmaRemotaConfiguration = this.configParams.getFirmaRemotaConfiguration();
         Map<String, Object> arubaServiceConfiguration = firmaRemotaConfiguration.get("ArubaSignService");
         List<String> signServiceEndPointUri = (List<String>) arubaServiceConfiguration.get("ArubaSignServiceEndPointUri");
@@ -83,7 +87,6 @@ public class FirmaRemotaAruba extends FirmaRemota {
         this.credentialProxyActive = (Boolean) credentialProxyAdminInfo.get("active");
         
         this.firmaRemotaUtils = firmaRemotaUtils;
-//        this.firmaRemotaUtils = firmaRemotaUtils;
 //        this.httpClient = httpClient;
         this.dominioFirmaDefault = dominioFirmaDefault;
 
@@ -93,32 +96,43 @@ public class FirmaRemotaAruba extends FirmaRemota {
         CredentialProxyServiceService credentialProxyServiceService = new CredentialProxyServiceService();
         this.credentialProxyService = credentialProxyServiceService.getCredentialProxyServicePort();
 
+        // i server di ARUBA potrebbero essere più di uno, il parametro infatti è una lista.
         // TODO: temporaneamente prendiamo il primo url della lista (poi dovremmo fare un qualche meccanismo di fail-over)
+        
+        // impostazione dei parametri di connessione al servizio di firma remota
         String arubaSignServiceEndpointURL = signServiceEndPointUri.get(0);
         BindingProvider bpArubaSignService = (BindingProvider) this.arubaSignService;
         bpArubaSignService.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, arubaSignServiceEndpointURL);
         bpArubaSignService.getRequestContext().put(JAXWSProperties.HTTP_CLIENT_STREAMING_CHUNK_SIZE, 8192);
 
-        // TODO: temporaneamente prendiamo il primo url della lista (poi dovremmo fare un qualche meccanismo di fail-over)
+        // impostazione dei parametri di connessione al servizio di credential proxy
         String arubaCredentialProxyEndpointURL = credentialProxyEndPointUriList.get(0);
         BindingProvider bpCredentialProxy = (BindingProvider) this.credentialProxyService;
         bpCredentialProxy.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, arubaCredentialProxyEndpointURL);
 //        bpCredentialProxy.getRequestContext().put(JAXWSProperties.HTTP_CLIENT_STREAMING_CHUNK_SIZE, 8192);
     }
 
+    /**
+     * Implementazione ARUBA della firma.
+     * @param firmaRemotaInformation
+     * @return
+     * @throws FirmaRemotaException 
+     */
     @Override
     public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation) throws FirmaRemotaException {
 
         logger.info("in firma...");
-//        MongoWrapper mongoDownload = configParams.getMongoWrapperDownload();
         MinIOWrapper minIOWrapper = this.configParams.getMinIOWrapper();
 
+        // prendo i file da firmare
         List<FirmaRemotaFile> files = firmaRemotaInformation.getFiles();
 
+        // creo l'oggetto Auth necessario al WEB-SERVICE di aruba per identificare l'utente di firma
         Auth identity = getIdentity((ArubaUserInformation) firmaRemotaInformation.getUserInformation());
 
         String sessionId = null;
         try {
+            // apertura sessione
             logger.info("opening session...");
             sessionId = arubaSignService.opensession(identity);
             logger.info("sessionId: " + sessionId);
@@ -131,14 +145,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
                     throwCorrectException("KO", errorCode, "error opening session");
                 }
             }
-        } catch (FirmaRemotaException ex) {
-            if (sessionId != null) {
-                arubaSignService.closesession(identity, sessionId);
-            }
-            throw ex;
         } catch (Exception ex) {
             logger.error("error opening session", ex);
-            if (sessionId != null) {
+            if (sessionId != null) { // se c'è un errore chiudo la sessione, se è aperta
                 logger.info("closing session...");
                 arubaSignService.closesession(identity, sessionId);
             }
@@ -146,23 +155,24 @@ public class FirmaRemotaAruba extends FirmaRemota {
         }
 
         try {
-//            ArssReturn verifyOtp = service.verifyOtp(identity);
-//            System.out.println(verifyOtp.getReturnCode());
-//            System.out.println(verifyOtp.getDescription());
+            // ciclo i file da firmare e li firmo
             for (FirmaRemotaFile file : files) {
-//              HttpResponse response = firmaRemotaUtils.getFile(httpClient, file.getUrl());
-//              InputStream is = response.getEntity().getContent();
                 logger.info(String.format("signing file %s ...", file.getFileId()));
-                try (InputStream signedFileIs = sendSignRequest(sessionId, identity, file)) {
+                try (   // firma del file
+                        InputStream signedFileIs = sendSignRequest(sessionId, identity, file)) {
                     logger.info(String.format("OutputType %s ...", file.getOutputType().toString()));
+                    
+                    // OutputType.UUID sarà rimosso dopo che non ci saranno più le APP legacy
+                    // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
                     if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
                         logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
                         MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileIs, file.getCodiceAzienda(), "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), file.getCodiceAzienda() + "t");
                         String signedUuid = uploadedFileInfo.getMongoUuid();
-//                        String signedUuid = mongoDownload.put(signedFileIs, "signed_" + UUID.randomUUID(), "/temp", false);
                         logger.info(String.format("file %s written on temp repository", file.getFileId()));
+                        
+                        // setto l'uuid del file firmato caricato sul repository
                         file.setUuidFirmato(signedUuid);
-                    } else {
+                    } else { // in questa caso invio il file firmato al repository tramite la funzione "uploader" del modulo Downloader
                         String signedFileName;
                         String signedMimeType;
                         if (file.getFormatoFirma() == FirmaRemotaFile.FormatiFirma.PDF) {
@@ -176,6 +186,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                         String res = null;
 //                        String res = firmaRemotaUtils.uploadToUploader(
 //                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
+                        // una volta inviato il file firmato al Downloader settiamo l'url per poterlo scaricare nell'oggetto
                         file.setUrlFirmato(res);
                     }
                     logger.info(String.format("file %s completed", file.getFileId()));
@@ -196,17 +207,13 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return firmaRemotaInformation;
     }
 
-//    private CredentialsType getCredentialsType(ArubaUserInformation.ModalitaFirma modalitaFirma) {
-//        CredentialsType credentialsType = null;
-//        switch (modalitaFirma) {
-//            case ARUBACALL:
-//                credentialsType = CredentialsType.ARUBACALL;
-//                break;
-//        }
-//        return credentialsType;
-//    }
+    /**
+     * Questo medoto fa partire la telefonata o l'sms dai quali reperire il codice OTP identificato dal parametro userInformation
+     * @param userInformation
+     * @throws FirmaRemotaException 
+     */
     @Override
-    public void telefona(UserInformation userInformation) throws FirmaRemotaException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaException {
         Auth identity = getIdentity((ArubaUserInformation) userInformation);
         it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.ArssReturn credential = arubaSignService.sendCredential(identity, CredentialsType.ARUBACALL);
         //System.out.println(String.format("sendCredential %s %s %s", credential.getStatus(), credential.getDescription(), credential.getReturnCode()));
@@ -221,6 +228,14 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return resp.getStatus().equals("OK") && resp.getReturnCode().equals("0000");
     }
 
+    /**
+     * Controlla se esistono le credenziali sul CredentialProxy per l'utente passato
+     * @param userInformation
+     * @return "true" se esistono le credenziali sul CredentialProxy per l'utente passato, false altrimenti
+     * @throws RemoteServiceException
+     * @throws InvalidCredentialException
+     * @throws WrongTokenException 
+     */
     @Override
     public boolean existingCredential(UserInformation userInformation) throws RemoteServiceException, InvalidCredentialException, WrongTokenException {
         
@@ -251,6 +266,14 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return credenzialiPresenti;
     }
 
+    /**
+     * Setta le credenziali dell'utente passato sul CredentialProxy
+     * @param userInformation
+     * @return "true" se le credenziali sono state settate correttamente, "false" altrimenti
+     * @throws FirmaRemotaException
+     * @throws InvalidCredentialException
+     * @throws RemoteServiceException 
+     */
     @Override
     public boolean setCredential(UserInformation userInformation) throws FirmaRemotaException, InvalidCredentialException, RemoteServiceException {
         boolean insertionSuccessful = false;
@@ -277,6 +300,14 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return insertionSuccessful;
     }
 
+    /**
+     * Rimuove le credenziali dell'utente passato dal CredentialProxy
+     * @param userInformation
+     * @return "true" se le credenziali sono state rimosse correttamente, "false" altrimenti
+     * @throws FirmaRemotaException
+     * @throws InvalidCredentialException
+     * @throws RemoteServiceException 
+     */
     @Override
     public boolean removeCredential(UserInformation userInformation) throws FirmaRemotaException, InvalidCredentialException, RemoteServiceException {
         if (this.credentialProxyActive) {
@@ -306,7 +337,13 @@ public class FirmaRemotaAruba extends FirmaRemota {
         }
     }
 
-    public CredentialProxyAdmin getCredentialProxyAdmin() throws RemoteServiceException {
+    /**
+     * Crea l'oggetto CredentialProxyAdmin, che identifica l'amministratore del servizio di CredentialProxy. L'oggetto è necessario per l'utilizzo del servizio.
+     * I dati sono reperiti dai parametri aziendali.
+     * @return
+     * @throws RemoteServiceException 
+     */
+    private CredentialProxyAdmin getCredentialProxyAdmin() throws RemoteServiceException {
         if (this.credentialProxyActive) {
             String credentialProxyAdminUser = (String) credentialProxyAdminInfo.get("user");
             String credentialProxyAdminPassword = (String) credentialProxyAdminInfo.get("password");
@@ -321,17 +358,26 @@ public class FirmaRemotaAruba extends FirmaRemota {
         
     }
 
+    /**
+     * Crea l'oggetto AUTH a partire dall'implementazione di UserInformation
+     * @param userInformation
+     * @return 
+     */
     private Auth getIdentity(ArubaUserInformation userInformation) {
         Auth identity = new Auth();
         identity.setTypeHSM("COSIGN");
-        logger.info("dominio: " + userInformation.getDominioFirma());
-        if (!StringUtils.isEmpty(userInformation.getDominioFirma())) {
+        
+        // impostazione del dominio. Il dominio è un parametro di configurazione dell'utente ed è fornito da ARUBA in fase di attivazioen dell'utenza
+        logger.info("dominio: " + userInformation.getDominioFirma());     
+        if (StringUtils.hasText(userInformation.getDominioFirma())) {
             identity.setTypeOtpAuth(userInformation.getDominioFirma());
         } else {
             identity.setTypeOtpAuth(dominioFirmaDefault);
         }
         identity.setUser(userInformation.getUsername());
         identity.setUserPWD(userInformation.getPassword());
+        
+        // questo serve nel caso in cui si vuole effettuare la pre-autenthication
         if (userInformation.getModalitaFirma() == ModalitaFirma.ARUBACALL) {
             identity.setExtAuthtype(CredentialsType.ARUBACALL);
         }
@@ -340,6 +386,13 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return identity;
     }
 
+    /**
+     * Crea l'oggetto che descrive l'aspetto del campo firma visibile sui pdf
+     * @param file
+     * @param signAppearance
+     * @return
+     * @throws IOException 
+     */
     private PdfSignApparence getPdfSignApparence(File file, SignAppearance signAppearance) throws IOException {
         PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(file), signAppearance);
 
@@ -354,15 +407,24 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return pdfApparence;
     }
 
+    /**
+     * Genera l'oggetto contente i parametri per la firma, necessario al WEB-SERVICE ARUBA
+     * @param sessionId
+     * @param identity
+     * @param file
+     * @return 
+     */
     private SignRequestV2 getSignRequestV2(String sessionId, Auth identity, File file) {
         SignRequestV2 signRequestV2 = new SignRequestV2();
         signRequestV2.setSessionId(sessionId);
         signRequestV2.setIdentity(identity);
-        signRequestV2.setTransport(TypeTransport.STREAM);
+        signRequestV2.setTransport(TypeTransport.STREAM); // settando Stream è possibile passare il file in InputStream
         signRequestV2.setRequiredmark(false);
         signRequestV2.setCertID("AS0");
         signRequestV2.setProfile(null);
 
+        // settaggio del file da firmare in modalità stream
+        // devo necessariamente parire dal file fisico per creare lo stream, altrimenti non funziona (il perché non lo so, ma dipende dall'implementazione lato ARUBA)
         DataSource fds = new FileDataSource(file);
         DataHandler handler = new DataHandler(fds);
         signRequestV2.setStream(handler);
@@ -370,7 +432,23 @@ public class FirmaRemotaAruba extends FirmaRemota {
         return signRequestV2;
     }
 
+    /**
+     * esegue la chiamata per la firma al WEB-SERVICE di ARUBA
+     * @param sessionId
+     * @param identity
+     * @param file
+     * @return
+     * @throws MalformedURLException
+     * @throws IOException
+     * @throws FirmaRemotaException
+     * @throws TypeOfTransportNotImplemented_Exception
+     * @throws RemoteFileNotFoundException
+     * @throws RemoteServiceException
+     * @throws InvalidCredentialException
+     * @throws WrongTokenException 
+     */
     private InputStream sendSignRequest(String sessionId, Auth identity, FirmaRemotaFile file) throws MalformedURLException, IOException, FirmaRemotaException, TypeOfTransportNotImplemented_Exception, RemoteFileNotFoundException, RemoteServiceException, InvalidCredentialException, WrongTokenException {
+        
         File tempDir = new File(System.getProperty("java.io.tmpdir"), "firma_remota");
         if (!tempDir.exists()) {
             tempDir.mkdir();
@@ -378,6 +456,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
         File tmpFileToSign = File.createTempFile("firma_remota_to_sing_tmp", null, tempDir);
 //        File tempFileSigned = File.createTempFile("firma_remota_signed_tmp", null, tempDir);
         try {
+            // per prima cosa scarica il file da firmare nella cartella temporanea scaricandolo dall'url
             try {
                 InputStream in = new URL(file.getUrl()).openStream();
                 logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
@@ -386,6 +465,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
             } catch (IOException e) {
                 throw new RemoteFileNotFoundException("errore nel download del file da firmare probabilmente è scaduto il timeout", e);
             }
+            // genero l'oggetto dei parametri per eseguire la chiamata di firma
             logger.info(String.format("creating SignRequestV2 dor file %s", file.getFileId()));
             SignRequestV2 signRequestV2 = getSignRequestV2(sessionId, identity, tmpFileToSign);
 
@@ -394,16 +474,25 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 case PDF:
                     PdfSignApparence signAppearance = null;
                     logger.info("signAppearence: " + file.getSignAppearance());
+                    
+                    // se firmo in pdf creo la SignAppearance, se voluta
                     if (file.getSignAppearance() != null) {
                         logger.info(String.format("creating signApparence for file %s...", file.getFileId()));
                         signAppearance = getPdfSignApparence(tmpFileToSign, file.getSignAppearance());
                         logger.info("signApperence created");
                     }
                     logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
+                    
+                    // firma il file in pdf
                     signReturn = arubaSignService.pdfsignatureV2(signRequestV2, signAppearance, PdfProfile.PADESBES, null, null);
                     logger.info(String.format("file %s signed", file.getFileId()));
                     break;
                 case P7M:
+                    /* se voglio firmare in p7m ci sono 2 modalità possibili: 
+                     * p7m-mime, che crea un file p7m contentente sia il file, che la firma)
+                     * p7m-detached cre crea un file p7m con solo la firma.
+                     * A seconda della scelta chiamo la funzione adatta
+                    */
                     if (file.getMimeType().equalsIgnoreCase(FirmaRemotaFile.P7M_MIMETYPE)) {
                         logger.info(String.format("sending file %s for p7m-mime sign...", file.getFileId()));
                         signReturn = arubaSignService.addpkcs7Sign(signRequestV2, false);
@@ -421,13 +510,16 @@ public class FirmaRemotaAruba extends FirmaRemota {
             if (signReturn == null) {
                 throw new RemoteServiceException("remote sign error, result is null");
             } else {
+                // richiamo la funzione che in base allo status della firma lancia le eventuali eccezioni specifiche.
+                // Se la firma è andata a buon fine, la funzione non fa nulla
                 throwCorrectException(signReturn.getStatus(), signReturn.getReturnCode(), signReturn.getDescription());
             }
 
+            // reperisco lo stream del file firamto e lo ritorno
             InputStream signedFileIs = signReturn.getStream().getInputStream();
-
             return signedFileIs;
         } finally {
+            // una volta firmato, elimino il file non firmato
             if (tmpFileToSign.exists()) {
                 tmpFileToSign.delete();
             }
@@ -435,6 +527,17 @@ public class FirmaRemotaAruba extends FirmaRemota {
 
     }
 
+    /**
+     * Questa funzione, se lo status della firma (passato in input) identifica uno stato di errore, lancia la corretta eccezione in base al code (sempre passato in input)
+     * Se lo status non è di errore, allora non fa nulla.
+     * 
+     * @param status status della firma tornato da ARUBA
+     * @param code codice dell'operazione tornato da ARUBA
+     * @param description descrizione dello status dell'operazione (tornato da ARUBA)
+     * @throws InvalidCredentialException
+     * @throws WrongTokenException
+     * @throws RemoteServiceException 
+     */
     public void throwCorrectException(String status, String code, String description) throws InvalidCredentialException, WrongTokenException, RemoteServiceException {
         String descriptionString = (description != null && !description.isEmpty()) ? ": " + description : "";
         if ("KO".equalsIgnoreCase(status)) {

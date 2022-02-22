@@ -1,5 +1,10 @@
 package it.bologna.ausl.internauta.utils.firma.remota.data;
 
+/**
+ * Descrive le caratteristiche del campo firma visibile su un pdf
+ * 
+ * @author gdm
+ */
 public class SignAppearance {
 
     private String signPosition;
