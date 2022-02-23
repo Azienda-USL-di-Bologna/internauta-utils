@@ -1,19 +1,35 @@
 package it.bologna.ausl.internauta.utils.firma.remota.data;
 
+import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
-
-
+import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaUtils;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import java.io.InputStream;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author gdm
  */
 public abstract class FirmaRemota {
-
+    private static Logger logger = LoggerFactory.getLogger(FirmaRemota.class);
+    
+    private final ConfigParams configParams;
+    private final FirmaRemotaUtils firmaRemotaUtils;
+    
+    protected FirmaRemota(ConfigParams configParams, FirmaRemotaUtils firmaRemotaUtils) {
+        this.configParams = configParams;
+        this.firmaRemotaUtils = firmaRemotaUtils;
+    }
+    
     /**
      * Questo metodo firma uno o più files all'interno di "files" in firmaRemotaInformation e ritorna lo stesso oggetto con il risultato per ogni file
      * @param firmaRemotaInformation contiene tutto il necessatio per firmare (i files da firmare e tutte le inforazioni che servono per firmarli)
@@ -25,7 +41,51 @@ public abstract class FirmaRemota {
      * @throws RemoteServiceException 
      */
     public abstract FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation) throws FirmaRemotaException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException;
+    
+    /**
+     * Carica il file passato sul repository
+     * A seconda di file.getOutputType() decide se caricarlo direttente su MinIO oppure facendo una chiamata all'uploader.
+     * Una volta caricato viene richiamato file.setUuidFirmato() o file.setUrlFirmato() a seconda di file.getOutputType()
+     * 
+     * @param file le informazioni del file
+     * @param signedFileInputStream lo stream del file firmato
+     * @throws MinIOWrapperException 
+     */
+    public void upload(FirmaRemotaFile file, InputStream signedFileInputStream) throws MinIOWrapperException {
+        MinIOWrapper minIOWrapper = this.configParams.getMinIOWrapper();
+        
+        logger.info(String.format("OutputType %s ...", file.getOutputType().toString()));
+        
+        // OutputType.UUID sarà rimosso dopo che non ci saranno più le APP legacy
+        // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
+        if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
+            logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
+            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileInputStream, file.getCodiceAzienda(), "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), file.getCodiceAzienda() + "t");
+            String signedUuid = uploadedFileInfo.getMongoUuid();
+            logger.info(String.format("file %s written on temp repository", file.getFileId()));
 
+            // setto l'uuid del file firmato caricato sul repository
+            file.setUuidFirmato(signedUuid);
+        } else { // in questa caso invio il file firmato al repository tramite la funzione "uploader" del modulo Downloader
+            String signedFileName;
+            String signedMimeType;
+            if (file.getFormatoFirma() == FirmaRemotaFile.FormatiFirma.PDF) {
+                signedFileName = file.getFileId() + ".pdf";
+                signedMimeType = "application/pdf";
+            } else {
+                signedFileName = file.getFileId() + ".p7m";
+                signedMimeType = "application/pkcs7-mime";
+            }
+            logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
+            String res = null;
+//                        String res = firmaRemotaUtils.uploadToUploader(
+//                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
+            // una volta inviato il file firmato al Downloader settiamo l'url per poterlo scaricare nell'oggetto
+            file.setUrlFirmato(res);
+        }
+        logger.info(String.format("file %s completed", file.getFileId()));
+    }
+    
     /**
      * Questo metodo di occupa della pre-autenticazione, quando è necessario eseguire delle operazioni preliminari per ottenere il necessario per firmare.
      * Per esempio, il provider ARUBA ha una funzione che, previo passaggio di alcune informazioni invia un sms ho manda una chiamata al cellulare del firmatario con il codice OTP per firmare

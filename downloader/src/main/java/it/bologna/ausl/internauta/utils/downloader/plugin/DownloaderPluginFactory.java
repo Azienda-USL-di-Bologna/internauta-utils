@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author gdm
  */
-public class DonwloaderPluginFactory {
-    private static Logger logger = LoggerFactory.getLogger(DonwloaderPluginFactory.class);
+public class DownloaderPluginFactory {
+    private static Logger logger = LoggerFactory.getLogger(DownloaderPluginFactory.class);
     
     public static  enum TargetRepository {
         MinIO, Mongo, Default
