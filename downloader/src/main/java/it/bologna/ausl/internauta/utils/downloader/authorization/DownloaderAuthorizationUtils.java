@@ -68,10 +68,10 @@ public class DownloaderAuthorizationUtils {
 //    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key_Test.pk8")
 //    private Resource tokenDecripterPrivateKeyTest;
     
-    @Value("classpath:downloader/DOWNLOADER_BABEL.crt")
+    @Value("${downloader.public-cert-babel-prod}")
     private Resource downloaderPublicCertBabelProd;
 
-    @Value("classpath:downloader/DOWNLOADER_TEST.crt")
+    @Value("${downloader.public-cert-babel-test}")
     private Resource downloaderPublicCertBabelTest;
 
     @Value("${downloader.max-limit-token-seconds:30}")

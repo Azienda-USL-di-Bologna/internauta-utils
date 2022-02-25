@@ -6,7 +6,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.Invali
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
-import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaUtils;
+import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -22,12 +22,14 @@ import org.slf4j.LoggerFactory;
 public abstract class FirmaRemota {
     private static Logger logger = LoggerFactory.getLogger(FirmaRemota.class);
     
-    private final ConfigParams configParams;
-    private final FirmaRemotaUtils firmaRemotaUtils;
+    protected final ConfigParams configParams;
+    protected final FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils;
+    protected final String codiceAzienda;
     
-    protected FirmaRemota(ConfigParams configParams, FirmaRemotaUtils firmaRemotaUtils) {
+    protected FirmaRemota(String codiceAzienda, ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils) {
         this.configParams = configParams;
-        this.firmaRemotaUtils = firmaRemotaUtils;
+        this.firmaRemotaDownloaderUtils = firmaRemotaDownloaderUtils;
+        this.codiceAzienda = codiceAzienda;
     }
     
     /**
@@ -44,14 +46,14 @@ public abstract class FirmaRemota {
     
     /**
      * Carica il file passato sul repository
-     * A seconda di file.getOutputType() decide se caricarlo direttente su MinIO oppure facendo una chiamata all'uploader.
-     * Una volta caricato viene richiamato file.setUuidFirmato() o file.setUrlFirmato() a seconda di file.getOutputType()
+     * A seconda di file.getOutputType() decide se caricarlo direttente su MinIO oppure facendo una chiamata all'uploader.Una volta caricato viene richiamato file.setUuidFirmato() o file.setUrlFirmato() a seconda di file.getOutputType()
      * 
      * @param file le informazioni del file
      * @param signedFileInputStream lo stream del file firmato
      * @throws MinIOWrapperException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException 
      */
-    public void upload(FirmaRemotaFile file, InputStream signedFileInputStream) throws MinIOWrapperException {
+    public void upload(FirmaRemotaFile file, InputStream signedFileInputStream) throws MinIOWrapperException, FirmaRemotaException {
         MinIOWrapper minIOWrapper = this.configParams.getMinIOWrapper();
         
         logger.info(String.format("OutputType %s ...", file.getOutputType().toString()));
@@ -60,7 +62,7 @@ public abstract class FirmaRemota {
         // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
         if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
             logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
-            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileInputStream, file.getCodiceAzienda(), "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), file.getCodiceAzienda() + "t");
+            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileInputStream, this.codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), this.codiceAzienda + "t");
             String signedUuid = uploadedFileInfo.getMongoUuid();
             logger.info(String.format("file %s written on temp repository", file.getFileId()));
 
@@ -77,10 +79,11 @@ public abstract class FirmaRemota {
                 signedMimeType = "application/pkcs7-mime";
             }
             logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
-            String res = null;
-//                        String res = firmaRemotaUtils.uploadToUploader(
-//                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
-            // una volta inviato il file firmato al Downloader settiamo l'url per poterlo scaricare nell'oggetto
+            
+            // invio il file all'uploader e ottengo l'url per il suo scaricamento
+            String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, this.codiceAzienda, false);
+            
+            // una volta ottenuto l'url, lo setto
             file.setUrlFirmato(res);
         }
         logger.info(String.format("file %s completed", file.getFileId()));

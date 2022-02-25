@@ -23,12 +23,13 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wscli
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.SignReturnV2;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeOfTransportNotImplemented_Exception;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeTransport;
+import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
-import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaUtils;
+import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -66,28 +67,23 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final String P7M_CONTENT_TYPE = "application/pkcs7-mime";
 
-
-    Boolean credentialProxyActive = false;
+    private Boolean credentialProxyActive = false;
     private final Map<String, Object> credentialProxyAdminInfo;
-    private final FirmaRemotaUtils firmaRemotaUtils;
-//    private final HttpClient httpClient;
     private final ArubaSignService arubaSignService;
     private final CredentialProxyService credentialProxyService;
     private final String dominioFirmaDefault;
 
-    public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaUtils firmaRemotaUtils, String dominioFirmaDefault) {
-        super(configParams, firmaRemotaUtils);
+    public FirmaRemotaAruba(String codiceAzienda, ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
+        super(codiceAzienda, configParams, firmaRemotaDownloaderUtils);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
-        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration();
+        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration(codiceAzienda);
         Map<String, Object> arubaServiceConfiguration = firmaRemotaConfiguration.get("ArubaSignService");
         List<String> signServiceEndPointUri = (List<String>) arubaServiceConfiguration.get("ArubaSignServiceEndPointUri");
         List<String> credentialProxyEndPointUriList = (List<String>) arubaServiceConfiguration.get("ArubaCredentialProxyEndPointUriList");
         this.credentialProxyAdminInfo = (Map<String, Object>) arubaServiceConfiguration.get("ArubaCredentialProxyAdminInfo");
         this.credentialProxyActive = (Boolean) credentialProxyAdminInfo.get("active");
         
-        this.firmaRemotaUtils = firmaRemotaUtils;
-//        this.httpClient = httpClient;
         this.dominioFirmaDefault = dominioFirmaDefault;
 
         ArubaSignServiceService arubaSignServiceService = new ArubaSignServiceService();

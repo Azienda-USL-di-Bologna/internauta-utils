@@ -37,34 +37,34 @@ public class InternautaAuthorizationUtils {
     @Autowired
     private ObjectMapper objectMapper;
     
-    @Value("${test-mode}")
+    @Value("${test-mode:true}")
     private Boolean testMode;
 
     @Value("classpath:BABEL_TEST.p12")
     private Resource babelP12Test;
 
-    @Value("${babel-p12-test-alias}")
+    @Value("${babel-p12-test-alias:alias}")
     private String babelP12TestAlias;
 
-    @Value("${babel-p12-test-password}")
+    @Value("${babel-p12-test-password:password}")
     private String babelP12TestPassword;
 
     @Value("classpath:BABEL_PROD.p12")
     private Resource babelP12Prod;
 
-    @Value("${babel-p12-prod-alias}")
+    @Value("${babel-p12-prod-alias:alias}")
     private String babelP12ProdAlias;
 
-    @Value("${babel-p12-prod-password}")
+    @Value("${babel-p12-prod-password:password}")
     private String babelP12ProdPassword;
 
-    @Value("${internauta-base-url}")
+    @Value("${internauta-base-url:localhost}")
     private String internautaBaseUrl; // http://localhost:10005/internauta-api
 
-    @Value("${internauta-api-path}") // /endpoint/login
+    @Value("${internauta-api-path:internauta-api}") // /endpoint/login
     private String internautaApiPath;
     
-    @Value("${internauta-login-path}") // /endpoint/login
+    @Value("${internauta-login-path:internauta-login}") // /endpoint/login
     private String internautaLoginPath;
     
     private String generatePreToken(String subject, String codiceAzienda, String codiceRegioneAzienda, String mode) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException {
