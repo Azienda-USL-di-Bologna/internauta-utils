@@ -7,6 +7,8 @@ package it.bologna.ausl.internauta.utils.firma.remota.data;
  */
 public class SignAppearance {
 
+    // formato: page;width;heigth;paddingWidth;paddingHeigth Es. 2;200;300;10;15
+    // per indicare l'ultima pagina inserire n. Es. n;200;300;10;15 
     private String signPosition;
     private String signName;
 

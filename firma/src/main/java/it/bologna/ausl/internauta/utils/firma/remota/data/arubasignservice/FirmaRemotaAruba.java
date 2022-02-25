@@ -23,12 +23,13 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wscli
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.SignReturnV2;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeOfTransportNotImplemented_Exception;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeTransport;
+import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
-import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaUtils;
+import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -66,28 +67,23 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final String P7M_CONTENT_TYPE = "application/pkcs7-mime";
 
-    private final ConfigParams configParams;
-    Boolean credentialProxyActive = false;
+    private Boolean credentialProxyActive = false;
     private final Map<String, Object> credentialProxyAdminInfo;
-    private final FirmaRemotaUtils firmaRemotaUtils;
-//    private final HttpClient httpClient;
     private final ArubaSignService arubaSignService;
     private final CredentialProxyService credentialProxyService;
     private final String dominioFirmaDefault;
 
-    public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaUtils firmaRemotaUtils, String dominioFirmaDefault) {
-        this.configParams = configParams;
+    public FirmaRemotaAruba(String codiceAzienda, ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
+        super(codiceAzienda, configParams, firmaRemotaDownloaderUtils);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
-        Map<String, Map<String, Object>> firmaRemotaConfiguration = this.configParams.getFirmaRemotaConfiguration();
+        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration(codiceAzienda);
         Map<String, Object> arubaServiceConfiguration = firmaRemotaConfiguration.get("ArubaSignService");
         List<String> signServiceEndPointUri = (List<String>) arubaServiceConfiguration.get("ArubaSignServiceEndPointUri");
         List<String> credentialProxyEndPointUriList = (List<String>) arubaServiceConfiguration.get("ArubaCredentialProxyEndPointUriList");
         this.credentialProxyAdminInfo = (Map<String, Object>) arubaServiceConfiguration.get("ArubaCredentialProxyAdminInfo");
         this.credentialProxyActive = (Boolean) credentialProxyAdminInfo.get("active");
         
-        this.firmaRemotaUtils = firmaRemotaUtils;
-//        this.httpClient = httpClient;
         this.dominioFirmaDefault = dominioFirmaDefault;
 
         ArubaSignServiceService arubaSignServiceService = new ArubaSignServiceService();
@@ -120,9 +116,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
      */
     @Override
     public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation) throws FirmaRemotaException {
-
         logger.info("in firma...");
-        MinIOWrapper minIOWrapper = this.configParams.getMinIOWrapper();
 
         // prendo i file da firmare
         List<FirmaRemotaFile> files = firmaRemotaInformation.getFiles();
@@ -159,42 +153,15 @@ public class FirmaRemotaAruba extends FirmaRemota {
             for (FirmaRemotaFile file : files) {
                 logger.info(String.format("signing file %s ...", file.getFileId()));
                 try (   // firma del file
-                        InputStream signedFileIs = sendSignRequest(sessionId, identity, file)) {
-                    logger.info(String.format("OutputType %s ...", file.getOutputType().toString()));
-                    
-                    // OutputType.UUID sarà rimosso dopo che non ci saranno più le APP legacy
-                    // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
-                    if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
-                        logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
-                        MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileIs, file.getCodiceAzienda(), "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), file.getCodiceAzienda() + "t");
-                        String signedUuid = uploadedFileInfo.getMongoUuid();
-                        logger.info(String.format("file %s written on temp repository", file.getFileId()));
-                        
-                        // setto l'uuid del file firmato caricato sul repository
-                        file.setUuidFirmato(signedUuid);
-                    } else { // in questa caso invio il file firmato al repository tramite la funzione "uploader" del modulo Downloader
-                        String signedFileName;
-                        String signedMimeType;
-                        if (file.getFormatoFirma() == FirmaRemotaFile.FormatiFirma.PDF) {
-                            signedFileName = file.getFileId() + ".pdf";
-                            signedMimeType = PDF_CONTENT_TYPE;
-                        } else {
-                            signedFileName = file.getFileId() + ".p7m";
-                            signedMimeType = P7M_CONTENT_TYPE;
-                        }
-                        logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
-                        String res = null;
-//                        String res = firmaRemotaUtils.uploadToUploader(
-//                                configParams.getUploaderFileServletUrl(), signedFileIs, signedFileName, signedMimeType);
-                        // una volta inviato il file firmato al Downloader settiamo l'url per poterlo scaricare nell'oggetto
-                        file.setUrlFirmato(res);
-                    }
-                    logger.info(String.format("file %s completed", file.getFileId()));
-                }
-                logger.info("all file signed");
+                    InputStream signedFileIs = sendSignRequest(sessionId, identity, file)) {
+                    logger.info(String.format("uploading fileId %s...", file.getFileId()));
 
-                //IOUtils.write(bytes, new FileOutputStream("c:/temp/" + file.getFileId() + "_test.gdm.pdf"));
+                    // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
+                    super.upload(file, signedFileIs);
+                }
+                logger.info(String.format("file %s completed", file.getFileId()));
             }
+            logger.info("all file signed");
         } catch (FirmaRemotaException ex) {
             logger.error("errore nella firma remota dei file: ", ex);
             throw ex;
@@ -355,7 +322,6 @@ public class FirmaRemotaAruba extends FirmaRemota {
         }  else {
             throw new RemoteServiceException("servizio di credentialProxy non attivo");
         }
-        
     }
 
     /**
@@ -454,7 +420,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
             tempDir.mkdir();
         }
         File tmpFileToSign = File.createTempFile("firma_remota_to_sing_tmp", null, tempDir);
-//        File tempFileSigned = File.createTempFile("firma_remota_signed_tmp", null, tempDir);
+        
         try {
             // per prima cosa scarica il file da firmare nella cartella temporanea scaricandolo dall'url
             try {
