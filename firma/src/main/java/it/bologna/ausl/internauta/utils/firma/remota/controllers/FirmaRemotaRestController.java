@@ -75,7 +75,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @return
      * @throws FirmaRemotaException
      * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException
-     * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare preAutentication l'altra firma
+     * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare firmaRemota
      */
     @Deprecated
     @RequestMapping(value = "/firma", method = RequestMethod.POST)

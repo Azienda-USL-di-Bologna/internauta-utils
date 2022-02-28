@@ -24,8 +24,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
- * Questa classe legge i parametri di configurazione dal database (tabella configurazione.parametri_azienda)
- * La lettura viene effettuata tramite il modulo parametriAziendeReader.
+ * Questa classe legge, tramite il modulo parameters-manager, i parametri di configurazione dal database (tabella configurazione.parametri_azienda)
  * 
  * @author gdm
  */
