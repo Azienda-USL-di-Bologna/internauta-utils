@@ -29,7 +29,8 @@ public class ParametriAziendeReader {
         mongoConfig,
         mongoAndMinIOActive,
         firmaRemota,
-        fascicoliSAI
+        fascicoliSAI,
+        downloader
     }
     
     @Autowired

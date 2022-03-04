@@ -3,6 +3,8 @@ package it.bologna.ausl.internauta.utils.firma.remota.data;
 /**
  *
  * @author gdm
+ * 
+ * Questa classe descrive il file da firmare
  */
 public class FirmaRemotaFile {
     public static final String PDF_MIMETYPE = "application/pdf";
@@ -17,7 +19,7 @@ public class FirmaRemotaFile {
     private String url; // url per scaricare il file da firmare
     private String mimeType; // mime Type del file da firmare
     private FormatiFirma formatoFirma; //formato firma da ottenere 
-    private SignAppearance signAppearance; // se popolato indica che la firma è visibile definendo pagina e posizione. Valido solo se formato firma è pdf
+    private SignAppearance signAppearance; // se popolato indica che la firma è visibile definendo pagina e posizione. Valido solo se formato firma è pdf. page;width;heigth;paddingWidth;paddingHeigth
     private OutputType outputType = OutputType.UUID; // indica se l'output del file firmato sarà direttamente l'uuid su mongodownload oppure il link per poterlo scaricare (con il downloader)
     
     private String codiceAzienda; //azienda proprietaria del file. Probabilmente serve solo per le applicazioni INDE, poi vedremo
