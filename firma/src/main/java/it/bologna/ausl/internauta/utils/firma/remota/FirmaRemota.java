@@ -1,11 +1,14 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data;
+package it.bologna.ausl.internauta.utils.firma.remota;
 
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;

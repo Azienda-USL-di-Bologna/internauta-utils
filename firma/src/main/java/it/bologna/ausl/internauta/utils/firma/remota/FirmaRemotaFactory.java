@@ -1,11 +1,11 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data;
+package it.bologna.ausl.internauta.utils.firma.remota;
 
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaInformation.FirmaRemotaProviders;
-import static it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaInformation.FirmaRemotaProviders.ARUBA;
-import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.FirmaRemotaAruba;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders;
+import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders.ARUBA;
+import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemotaAruba;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import java.util.HashMap;
 import java.util.Map;

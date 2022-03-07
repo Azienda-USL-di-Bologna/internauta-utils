@@ -1,6 +1,6 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice;
+package it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice;
 
-import it.bologna.ausl.internauta.utils.firma.remota.data.UserInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 
 /**
  *
