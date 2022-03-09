@@ -1,12 +1,12 @@
 package it.bologna.ausl.internauta.utils.firma.remota.controllers;
 
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemota;
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaFactory;
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.data.UserInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +42,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param firmaRemotaInformation l'oggetto può contenere solo la parte userInformation con le informazioni che identificano l'utente al quale mandare l'sms o la telefonata
      * @param codiceAzienda codcice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @throws FirmaRemotaException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare preAutentication
      */
     @Deprecated
@@ -74,7 +74,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codcice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @return
      * @throws FirmaRemotaException
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException
      * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare firmaRemota
      */
     @Deprecated
@@ -94,7 +94,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codcice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @return
      * @throws FirmaRemotaException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/firmaRemota", method = RequestMethod.POST)
     public FirmaRemotaInformation firmaRemota(
@@ -113,7 +113,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codcice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @return
      * @throws FirmaRemotaException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/existingCredential", method = RequestMethod.POST)
     public Boolean existingCredential(
@@ -131,7 +131,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda
      * @return
      * @throws FirmaRemotaException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/setCredential", method = RequestMethod.POST)
     public Boolean setCredential(
@@ -149,7 +149,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codcice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @return
      * @throws FirmaRemotaException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/removeCredential", method = RequestMethod.POST)
     public Boolean removeCredential(

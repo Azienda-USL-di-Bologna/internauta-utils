@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http;
+package it.bologna.ausl.internauta.utils.firma.remota.exceptions.http;
 
 import java.util.HashMap;
 import java.util.Map;

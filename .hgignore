@@ -19,3 +19,4 @@ parameters-manager/target
 mime-type-utilities/target
 downloader/target
 .git/
+firma-data/target

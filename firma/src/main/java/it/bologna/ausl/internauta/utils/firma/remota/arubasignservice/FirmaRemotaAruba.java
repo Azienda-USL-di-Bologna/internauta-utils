@@ -1,15 +1,16 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice;
+package it.bologna.ausl.internauta.utils.firma.remota.arubasignservice;
 
 
+import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation;
 import com.sun.xml.ws.developer.JAXWSProperties;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemota;
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaFile;
-import it.bologna.ausl.internauta.utils.firma.remota.data.FirmaRemotaInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.data.SignAppearance;
-import it.bologna.ausl.internauta.utils.firma.remota.data.UserInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.ArubaUserInformation.ModalitaFirma;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.SignAppearance;
+import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation.ModalitaFirma;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.CredentialProxyAdmin;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.CredentialProxyService;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.CredentialProxyServiceService;
@@ -23,12 +24,13 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wscli
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.SignReturnV2;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeOfTransportNotImplemented_Exception;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeTransport;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
