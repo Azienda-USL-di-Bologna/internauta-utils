@@ -65,7 +65,7 @@ public abstract class FirmaRemota {
         // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
         if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
             logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
-            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileInputStream, this.codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), this.codiceAzienda + "t");
+            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.putWithBucket(signedFileInputStream, this.codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), this.codiceAzienda + "t");
             String signedUuid = uploadedFileInfo.getMongoUuid();
             logger.info(String.format("file %s written on temp repository", file.getFileId()));
 

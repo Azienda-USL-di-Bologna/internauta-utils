@@ -86,7 +86,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         try {
             // carico il file su minIO, generando anche un uuidMongo tramite UUID.randomUUID().toString(), in modo che il file sia trovabile anche con la libreria RepositoryWrapper
-            MinIOWrapperFileInfo res = minIOWrapper.put(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
+            MinIOWrapperFileInfo res = minIOWrapper.putWithBucket(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
             
             // Come risultato torno i params che servono per il DownloadPlugin con source MinIO
             Map<String, Object> resParams = new HashMap();
