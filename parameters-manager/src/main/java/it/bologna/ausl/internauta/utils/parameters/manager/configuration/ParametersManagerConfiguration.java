@@ -12,5 +12,5 @@ public abstract class ParametersManagerConfiguration {
      * Deve tornare la mappa codice-azienda->id-azienda
      * @return 
      */
-    public abstract Map<String, Integer> getCodiceAziendaIdAziendaMap();
+    public abstract Map<String, Object> getCodiceAziendaIdAziendaMap();
 }

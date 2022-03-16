@@ -1,6 +1,8 @@
 package it.bologna.ausl.mongowrapper.test;
 
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +35,11 @@ public class Tests {
     //private static String minIODBUrl = "jdbc:postgresql://arena.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
     private static String mongoUrl = "mongodb://argo:siamofreschi@babelmongotest01-auslbo.avec.emr.it/doc?safe=true";
     //private static String mongoUrl = "mongodb://argo:siamofreschi@arena/arena?safe=true";
+    
+    static {
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.INFO);
+    }
     
     public static void main(String[] args) throws MongoException, MongoWrapperException, IOException {
         Tests t = new Tests();

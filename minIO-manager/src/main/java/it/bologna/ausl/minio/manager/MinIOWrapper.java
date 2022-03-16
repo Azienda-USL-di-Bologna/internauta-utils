@@ -13,6 +13,7 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveBucketArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -1195,6 +1196,46 @@ public class MinIOWrapper {
         }
     }
 
+    /**
+     * Sposta il file in un altro bucket senza rimuovere il bucket sorgente
+     * @param fileId il fileId del file da spostare
+     * @param srcBucket il bucket in cui il filesi trova
+     * @param serverId il serverId del file
+     * @param dstBucket il bucket in cui spostare il file
+     * @throws MinIOWrapperException 
+     */
+    public void moveToAnotherBucket(String fileId, String srcBucket, Integer serverId, String dstBucket) throws MinIOWrapperException {
+        moveToAnotherBucket(fileId, srcBucket, serverId, dstBucket, false);
+    }
+    
+    /**
+     * Sposta il file in un altro bucket con la possibilità di rimuovere il bucket sorgente
+     * @param fileId il fileId del file da spostare
+     * @param srcBucket il bucket in cui il filesi trova
+     * @param serverId il serverId del file
+     * @param dstBucket il bucket in cui spostare il file
+     * @param removeSrcBucket passare true se si vuole eliminare il bucket sorgente
+     * @throws MinIOWrapperException 
+     */
+    public void moveToAnotherBucket(String fileId, String srcBucket, Integer serverId, String dstBucket, boolean removeSrcBucket) throws MinIOWrapperException {
+        // dato che minIO non supporta lo spostamento, prima copiamo il file nel nuovo bucket e poi eliminiamo dal vecchio
+        try {
+            MinioClient minIOClient = minIOServerClientMap.get(serverId);
+            boolean dstBucketExists = minIOClient.bucketExists(BucketExistsArgs.builder().bucket(dstBucket).build());
+            if (!dstBucketExists) {
+                minIOClient.makeBucket(MakeBucketArgs.builder().bucket(dstBucket).build());
+            }
+            minIOClient.copyObject(CopyObjectArgs.builder().bucket(dstBucket).object(fileId)
+                    .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
+            minIOClient.removeObject(RemoveObjectArgs.builder().bucket(srcBucket).object(fileId).build());
+            if (removeSrcBucket) {
+                minIOClient.removeBucket(RemoveBucketArgs.builder().bucket(srcBucket).build());
+            }
+        } catch (Exception ex) {
+            throw new MinIOWrapperException("errore nello spostamento del file all'interno del bucket " + dstBucket, ex);
+        }
+    }
+    
     /**
      * Sposta un file dal bucket passato al bucket di trash
      *

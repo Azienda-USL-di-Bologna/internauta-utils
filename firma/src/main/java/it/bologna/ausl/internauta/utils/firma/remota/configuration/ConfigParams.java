@@ -50,7 +50,7 @@ public class ConfigParams {
     */
     @Autowired
     @Qualifier("codiceAziendaIdAziendaMap")
-    private Map<String, Integer> codiceAziendaIdAziendaMap;
+    private Map<String, Object> codiceAziendaIdAziendaMap;
     
     private List<ParametroAziende> downloaderParams;
     
@@ -89,7 +89,7 @@ public class ConfigParams {
      * @return
      */
     public Map<String, String> getDownloaderParams(String codiceAzienda) {
-        Integer idAzienda = this.codiceAziendaIdAziendaMap.get(codiceAzienda);
+        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
         Optional<ParametroAziende> paramOp = this.downloaderParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
         ParametroAziende param;
         if (paramOp.isPresent()) {
@@ -128,7 +128,7 @@ public class ConfigParams {
      * @return 
      */
     public Map<String, Map<String, Object>> getFirmaRemotaConfiguration(String codiceAzienda) {
-        Integer idAzienda = this.codiceAziendaIdAziendaMap.get(codiceAzienda);
+        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
         Optional<ParametroAziende> paramOp = this.firmaRemotaConfigurationParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
         ParametroAziende param;
         if (paramOp.isPresent()) {
