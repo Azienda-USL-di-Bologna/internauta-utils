@@ -24,7 +24,7 @@ public class ParametersManagerInitialize {
      * @return 
      */
     @Bean(name = "codiceAziendaIdAziendaMap")
-    public Map<String, Integer> codiceAziendaIdAziendaMap() {
+    public Map<String, Object> codiceAziendaIdAziendaMap() {
         return this.parametersManagerConfiguration.getCodiceAziendaIdAziendaMap();
     }
 }

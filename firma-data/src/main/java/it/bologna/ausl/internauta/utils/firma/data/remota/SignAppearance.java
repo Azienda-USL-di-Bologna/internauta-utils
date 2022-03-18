@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data;
+package it.bologna.ausl.internauta.utils.firma.data.remota;
 
 /**
  * Descrive le caratteristiche del campo firma visibile su un pdf

@@ -1,8 +1,8 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data;
+package it.bologna.ausl.internauta.utils.firma.data.remota;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.ArubaUserInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation;
 
 /**
  *

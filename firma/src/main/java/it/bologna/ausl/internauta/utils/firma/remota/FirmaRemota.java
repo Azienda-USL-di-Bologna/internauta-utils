@@ -1,11 +1,14 @@
-package it.bologna.ausl.internauta.utils.firma.remota.data;
+package it.bologna.ausl.internauta.utils.firma.remota;
 
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.FirmaRemotaException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.InvalidCredentialException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteFileNotFoundException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.RemoteServiceException;
-import it.bologna.ausl.internauta.utils.firma.remota.data.exceptions.http.WrongTokenException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
@@ -62,7 +65,7 @@ public abstract class FirmaRemota {
         // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
         if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
             logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
-            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.put(signedFileInputStream, this.codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), this.codiceAzienda + "t");
+            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.putWithBucket(signedFileInputStream, this.codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), this.codiceAzienda + "t");
             String signedUuid = uploadedFileInfo.getMongoUuid();
             logger.info(String.format("file %s written on temp repository", file.getFileId()));
 

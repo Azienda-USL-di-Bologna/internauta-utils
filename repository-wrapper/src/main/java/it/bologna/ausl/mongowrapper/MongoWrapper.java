@@ -544,10 +544,10 @@ public class MongoWrapper {
         List<GridFSDBFile> files = gfs.find(query);
         if (files == null) {
             log.warn("--file not found--");
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            String stackToString = Arrays.toString(stackTrace);
-            log.warn(stackToString);
-            log.warn("--    --    --");
+//            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+//            String stackToString = Arrays.toString(stackTrace);
+//            log.warn(stackToString);
+//            log.warn("--    --    --");
         }
 //        if (includeDeleted) {
 //            if (files == null) {
@@ -604,10 +604,10 @@ public class MongoWrapper {
         }
         if (f == null) {
             log.warn("--file not found--");
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            String stackToString = Arrays.toString(stackTrace);
-            log.warn(stackToString);
-            log.warn("--    --    --");
+//            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+//            String stackToString = Arrays.toString(stackTrace);
+//            log.warn(stackToString);
+//            log.warn("--    --    --");
         } else if (!includeDeleted && f.getMetaData() != null && f.getMetaData().containsField("deleteDate")) {
             throw new FileDeletedExceptions("file logically deleted");
         }

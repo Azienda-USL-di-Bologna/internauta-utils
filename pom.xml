@@ -36,6 +36,7 @@
         <module>middelmine</module>
         <module>authorization-utils</module>
         <module>document-generator</module>
+        <module>firma-data</module>
         <module>firma</module>
         <module>mime-type-utilities</module>
         <module>downloader</module>
