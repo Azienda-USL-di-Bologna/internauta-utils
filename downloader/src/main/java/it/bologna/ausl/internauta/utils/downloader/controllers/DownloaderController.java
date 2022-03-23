@@ -8,7 +8,7 @@ import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownload
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderParsingContextException;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderPluginException;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
-import it.bologna.ausl.internauta.utils.downloader.plugin.DonwloaderPluginFactory;
+import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderPluginFactory;
 import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
 import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderUploadPlugin;
 import java.io.IOException;
@@ -105,20 +105,18 @@ public class DownloaderController {
             @RequestParam(required = true, name = "token") String stringToken, 
             @RequestParam("file") MultipartFile file
             ) throws DownloaderParsingContextException, DownloaderUploadException {
-        DownloaderUploadPlugin uploadPlugin;
         Map<String, Object> contextClaim;
         try {
             // reperisco il context-claim
             contextClaim = getContextClaimFromToken();
             
-            // dal context-claim estraggo le informazioni per istanziare il corretto upload plugin e lo reperisco
-            uploadPlugin = getUploadPluginInstance(contextClaim);
-            
+            // reperisco il path
             String path = null;
             if (contextClaim.containsKey("filePath")) {
                 path = (String) contextClaim.get("filePath");
             }
             
+            // reperisco il nome del file
             String fileName;
             if (contextClaim.containsKey("fileName")) {
                 fileName = (String) contextClaim.get("fileName");
@@ -126,9 +124,14 @@ public class DownloaderController {
                 fileName = file.getOriginalFilename();
             }
             
+            // per instanziare il corretto downloader leggo il campo source dal context-claim
+            DownloaderPluginFactory.TargetRepository target = DownloaderPluginFactory.TargetRepository.valueOf((String) contextClaim.get("target"));
+            
+            // inoltre per istanziarlo ho bisogno anche dei parametri, inserito nel campo params
+            Map<String, Object> params = (Map<String, Object>) contextClaim.get("params");
+            
             // carica il file sul repository
-            Map<String, Object> uploadRes = uploadPlugin.putFile(file.getInputStream(), path, fileName);
-            return uploadRes;
+            return upload(target, params, file.getInputStream(), path, fileName);
         } catch (DownloaderPluginException | ParseException ex) {
             String errorMessage = "errore nel parsing dei parametri per il download del file";
             logger.error(errorMessage, ex);
@@ -138,6 +141,32 @@ public class DownloaderController {
             logger.error(errorMessage, ex);
             throw new DownloaderUploadException(errorMessage, ex);
         }
+    }
+    
+    /**
+     * Carica un file sul repository target
+     * @param target il repository target sul quale caricare il file
+     * @param params i params del plugin relativo al repository target
+     * @param file lo stream del file da caricare
+     * @param path il path del file sul repository
+     * @param fileName il nome del file sul repository
+     * @return le informazioni necessarie per creare i params da inserire nel token per la chiamata di download
+     * @throws DownloaderPluginException 
+     */
+    public Map<String, Object> upload(DownloaderPluginFactory.TargetRepository target, Map<String, Object> params, InputStream file, String path, String fileName) throws DownloaderPluginException {
+        DownloaderUploadPlugin uploadPluginInstance;
+        try {
+            uploadPluginInstance = getUploadPluginInstance(target, params);
+        } catch (ParseException ex) {
+            String errorMessage = "errore nell'istanziare il plugin di upload";
+            logger.error(errorMessage, ex);
+            throw new DownloaderUploadException(errorMessage, ex);
+        }
+        
+        // carica il file sul repository
+        Map<String, Object> uploadRes = uploadPluginInstance.putFile(file, path, fileName);
+        
+        return uploadRes;
     }
 
     /**
@@ -150,33 +179,28 @@ public class DownloaderController {
     private DownloaderDownloadPlugin getDownloadPluginInstance(Map<String, Object> contextClaim) throws ParseException, DownloaderPluginException {
         
         // per instanziare il corretto downloader leggo il campo source dal context-claim
-        DonwloaderPluginFactory.TargetRepository source = DonwloaderPluginFactory.TargetRepository.valueOf((String) contextClaim.get("source"));
+        DownloaderPluginFactory.TargetRepository source = DownloaderPluginFactory.TargetRepository.valueOf((String) contextClaim.get("source"));
         
         // inoltre per istanziarlo ho bisogno anche dei parametri, inserito nel campo params
         Map<String, Object> params = (Map<String, Object>) contextClaim.get("params");
         
         // tramite la factory ottengo l'istanza corretta del downloader.plugin
-        DownloaderDownloadPlugin downloadPluginInstance = DonwloaderPluginFactory.getDownloadPlugin(source, params, this.downloaderRepositoryConfiguration.getRepositoryManager());
+        DownloaderDownloadPlugin downloadPluginInstance = DownloaderPluginFactory.getDownloadPlugin(source, params, this.downloaderRepositoryConfiguration.getRepositoryManager());
         return downloadPluginInstance;
     }
     
     /**
-     * Torna l'uploadPlugin adatto, basandosi sul campo target all'interno dei context-claim estratti dal token di autenticazione
-     * @param contextClaim
+     * Torna l'uploadPlugin adatto relativo al target e ai params passati
+     * @param target
+     * @param params
      * @return l'istanza dell'uploadPlugin
      * @throws ParseException
      * @throws DownloaderPluginException 
      */
-    private DownloaderUploadPlugin getUploadPluginInstance(Map<String, Object> contextClaim) throws ParseException, DownloaderPluginException {
+    public DownloaderUploadPlugin getUploadPluginInstance(DownloaderPluginFactory.TargetRepository target, Map<String, Object> params) throws ParseException, DownloaderPluginException {
         
-        // per instanziare il corretto downloader leggo il campo source dal context-claim
-        DonwloaderPluginFactory.TargetRepository target = DonwloaderPluginFactory.TargetRepository.valueOf((String) contextClaim.get("target"));
-        
-        // inoltre per istanziarlo ho bisogno anche dei parametri, inserito nel campo params
-        Map<String, Object> params = (Map<String, Object>) contextClaim.get("params");
-        
-        // tramite la factory ottengo l'istanza corretta del downloader.plugin
-        DownloaderUploadPlugin uploadPluginInstance = DonwloaderPluginFactory.getUploadPlugin(target, params, this.downloaderRepositoryConfiguration.getRepositoryManager());
+        // tramite la factory ottengo l'istanza corretta del downloader plugin
+        DownloaderUploadPlugin uploadPluginInstance = DownloaderPluginFactory.getUploadPlugin(target, params, this.downloaderRepositoryConfiguration.getRepositoryManager());
         return uploadPluginInstance;
     }
     

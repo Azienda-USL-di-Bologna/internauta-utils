@@ -33,7 +33,7 @@ import org.springframework.format.annotation.DateTimeFormat;
         }
 )
 @Entity
-@Table(name = "parametri_aziende", catalog = "internauta", schema = "configurazione")
+@Table(name = "parametri_aziende", schema = "configurazione")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
@@ -155,7 +155,7 @@ public class ParametroAziende implements Serializable {
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.configuration.ParametriAziende[ id=" + id + " ]";
+        return getClass().getCanonicalName() + " [ id=" + id + " ]";
     }
 
 }

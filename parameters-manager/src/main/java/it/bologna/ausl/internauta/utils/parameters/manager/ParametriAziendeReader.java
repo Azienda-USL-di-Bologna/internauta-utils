@@ -18,18 +18,25 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
+ *Classe che contiene tutti i metodi per leggere i parametri_aziende.
+ * 
  *
  * @author gdm
  */
 @Component
 public class ParametriAziendeReader {
 
+    /**
+     * TO DO: Popolare questo enum mano a mano che vengono utilizzati i vari
+     * parametri, così da averli tutti raccolti in un punto.
+     */
     public enum ParametriAzienda {
         minIOConfig,
         mongoConfig,
         mongoAndMinIOActive,
         firmaRemota,
-        fascicoliSAI
+        fascicoliSAI,
+        downloader
     }
     
     @Autowired
@@ -57,7 +64,15 @@ public class ParametriAziendeReader {
     public List<ParametroAziende> getParameters(String nome, String[] idApplicazioni) {
         return getParameters(nome, null, idApplicazioni);
     }
-
+/**
+ * Metodo che prende in ingresso
+ * @param nome
+ * @param idAziende 
+ * @param idApplicazioni 
+ * e restituisce
+ * @return List di ParametroAziende
+ * Se non si esplicitano le aziende o le applicazioni, non viene applicato il filtro su quei due campi.
+ */
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende, String[] idApplicazioni) {
         BooleanExpression filter = QParametroAziende.parametroAziende.nome.eq(nome);
         if (idAziende != null) {
@@ -75,6 +90,14 @@ public class ParametriAziendeReader {
         return res;
     }
 
+    /**
+     * Metodo per estrarre tutti i parametri di un'applicazione, in una determinata azienda.
+     * Tipico di un processo di inizializzazione.
+     * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente.
+     * @param app
+     * @param idAzienda
+     * @return mappa di nome-valore dei parametri
+     */
     public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda) {
 
         BooleanTemplate filterAzienda = Expressions.booleanTemplate(
