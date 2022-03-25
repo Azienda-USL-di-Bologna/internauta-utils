@@ -10,6 +10,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloader
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +36,7 @@ public class FirmaRemotaFactory {
     * Questa mappa è un Bean di parameters-manager e viene popolata dall'applicazione contenitore (es. internauta) implementando it.bologna.ausl.internauta.utils.parameters.manager.configuration.ParametersManagerConfiguration
     * Contiene la mappa codice-azienda->id-azienda
     */
-    @Autowired
+    @Resource
     @Qualifier("codiceAziendaIdAziendaMap")
     private Map<String, Object> codiceAziendaIdAziendaMap;
 
