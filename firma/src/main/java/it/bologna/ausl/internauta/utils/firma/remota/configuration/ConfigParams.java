@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +49,7 @@ public class ConfigParams {
     * Questa mappa è un Bean di parameters-manager e viene popolata dall'applicazione contenitore (es. internauta) implementando it.bologna.ausl.internauta.utils.parameters.manager.configuration.ParametersManagerConfiguration
     * Contiene la mappa codice-azienda->id-azienda
     */
-    @Autowired
+    @Resource
     @Qualifier("codiceAziendaIdAziendaMap")
     private Map<String, Object> codiceAziendaIdAziendaMap;
     
