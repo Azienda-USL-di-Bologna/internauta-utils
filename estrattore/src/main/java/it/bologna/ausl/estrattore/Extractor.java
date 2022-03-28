@@ -3,6 +3,7 @@ package it.bologna.ausl.estrattore;
 import it.bologna.ausl.estrattore.exception.ExtractorException;
 import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.*;
+import java.nio.file.Files;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -53,8 +54,19 @@ public abstract class Extractor {
     }
 
     protected static String getMimeType(File file) throws UnsupportedEncodingException, IOException, MimeTypeException {
-        Detector d = new Detector();
-        return d.getMimeType(file.getAbsolutePath());
+        String mimeType;
+        try {
+            mimeType = Files.probeContentType(file.toPath());
+        } catch (Throwable t) {
+            System.out.println(t.getMessage());
+            Detector d = new Detector();
+            mimeType = d.getMimeType(file.getAbsolutePath());
+        }
+        if (mimeType == null) {
+            Detector d = new Detector();
+            mimeType = d.getMimeType(file.getAbsolutePath());
+        }
+        return mimeType;
     }
 
     protected static String getMimeType(InputStream is) throws UnsupportedEncodingException, IOException, MimeTypeException {
