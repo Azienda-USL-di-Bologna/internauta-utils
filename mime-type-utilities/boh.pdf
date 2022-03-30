@@ -1,0 +1,124 @@
+Message-ID: <FA4FFABD-D2E2-702E-F890-4CE2E03BAB62@telecompost.it>
+MIME-Version: 1.0
+X-Riferimento-Message-ID: <1BDF388E8EBE2D8693A8521E110D5DB5@postacert.inps.gov.it>
+Received: from 10.11.131.102 ([10.11.131.102])
+          by pecbe1 (JAMES SMTP Server 2.3.2.1) with SMTP ID 335
+          for <amministrazione.personale@pec.ausl.bologna.it>;
+          Fri, 11 Feb 2022 13:30:36 +0100 (CET)
+X-VirusFound: false
+X-Spam: Score=-1.5
+X-Virus-Scanned: amavisd-new at telecompost.it
+Received: from pecfe9.telecompost.it ([10.11.56.139])
+	by localhost (pec-av3.telecompost.it [10.11.131.102]) (amavisd-new, port 10465)
+	with ESMTP id 6Y5ILvn_w3V4
+	for <amministrazione.personale@pec.ausl.bologna.it>;
+	Fri, 11 Feb 2022 13:30:36 +0100 (CET)
+Received: from BATCHR03.servizi.inps (89-97-59-98.fweds-spc.it [89.97.59.98])
+	(Authenticated sender: direzione.provinciale.bologna@postacert.inps.gov.it)
+	by pecfe9.telecompost.it (Postfix) with ESMTPSA id 0BA6A600021A
+	for <amministrazione.personale@pec.ausl.bologna.it>; Fri, 11 Feb 2022 13:30:36 +0100 (CET)
+Date: Fri, 11 Feb 2022 13:30:35 +0100 (CET)
+From: direzione.provinciale.bologna@postacert.inps.gov.it
+To: amministrazione.personale@pec.ausl.bologna.it
+Subject: Sistemazione e certificazione posizione assicurativa Nassi Emanuela
+ - NSSMNL62B68B969C [INPS.1300.11/02/2022.0079709]
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_0_800095825.1644582635442"
+X-TipoRicevuta: completa
+X-TransactionId: 2dd77f62-7152-4a26-ae4d-d537a7c69f76
+
+------=_Part_0_800095825.1644582635442
+Content-Type: text/plain; charset=Cp1252
+Content-Transfer-Encoding: quoted-printable
+
+Buongiorno,=20
+con la presente si chiede la sistemazione e la certificazione della posizio=
+ne assicurativa dell'utente in oggetto, per quanto di competenza, con parti=
+colare riguardo per le annualit=E0 del 1990-1997, cos=EC come richiesto dal=
+l'utente. L'attivazione =E8 avvenuta anche tramite Nuova Passweb.
+Si ringrazia per la collaborazione e si porgono cordiali saluti.
+
+Noemi Alfano
+DIREZIONE PROVINCIALE BOLOGNA
+PENSIONI FONDI ALTERNATIVI ALL=92AGO
+
+
+
+----------------------------------------------------------------------
+Questo =E8 un messaggio di Posta Elettronica Certificata (PEC) inviato dall=
+'INPS (Istituto Nazionale Previdenza Sociale). Per rispondere a questo mess=
+aggio =E8 necessario disporre di una casella di Posta Elettronica Certifica=
+ta. Eventuali messaggi inviati a indirizzi PEC dell'INPS da caselle di post=
+a elettronica ordinaria (non certificata) verranno rifiutati dal sistema.
+----------------------------------------------------------------------
+
+=20
+------=_Part_0_800095825.1644582635442
+Content-Type: application/octet-stream; name=Segnatura.xml
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=Segnatura.xml
+
+<Segnatura versione=3D"2013-01-23"><Intestazione><Identificatore><CodiceAmm=
+inistrazione>INPS</CodiceAmministrazione><CodiceAOO>1300</CodiceAOO><Codice=
+Registro>1300</CodiceRegistro><NumeroRegistrazione>0079709</NumeroRegistraz=
+ione><DataRegistrazione>2022-02-11</DataRegistrazione></Identificatore><Ori=
+gine><IndirizzoTelematico>direzione.provinciale.bologna@postacert.inps.gov.=
+it</IndirizzoTelematico><Mittente><Amministrazione><Denominazione>Istituto =
+Nazionale della Previdenza Sociale</Denominazione><CodiceAmministrazione>IN=
+PS</CodiceAmministrazione><IndirizzoPostale><Denominazione /></IndirizzoPos=
+tale></Amministrazione><AOO><Denominazione>BOLOGNA</Denominazione><CodiceAO=
+O>1300</CodiceAOO></AOO></Mittente></Origine><Destinazione><IndirizzoTelema=
+tico>amministrazione.personale@pec.ausl.bologna.it</IndirizzoTelematico><De=
+stinatario><Amministrazione><Denominazione>amministrazione.personale@pec.au=
+sl.bologna.it</Denominazione><CodiceAmministrazione>INPS.ammi</CodiceAmmini=
+strazione><IndirizzoPostale><Denominazione>amministrazione.personale@pec.au=
+sl.bologna.it</Denominazione></IndirizzoPostale></Amministrazione></Destina=
+tario></Destinazione><Risposta><IndirizzoTelematico>direzione.provinciale.b=
+ologna@postacert.inps.gov.it</IndirizzoTelematico></Risposta><Riservato>N</=
+Riservato><Oggetto>Sistemazione e certificazione posizione assicurativa Nas=
+si Emanuela - NSSMNL62B68B969C</Oggetto><Classifica><Livello>27</Livello><L=
+ivello>1</Livello></Classifica><Classifica><Livello>800</Livello><Livello>0=
+20</Livello></Classifica></Intestazione><Descrizione><Documento id=3D"T_dbc=
+4d088-782e-4b98-940f-7a649071514a_0_0_2022" nome=3D"TestoDelMessaggio.txt">=
+<CollocazioneTelematica>Telematico</CollocazioneTelematica><Impronta algori=
+tmo=3D"SHA-256" codifica=3D"base64">SHdvQ0MwaVI0d1YwQ29iM2VIRlU0cWxsVG9yYkN=
+NTGZ0MGNxcTUzb0l3RT0=3D</Impronta><Oggetto>Sistemazione e certificazione po=
+sizione assicurativa Nassi Emanuela - NSSMNL62B68B969C</Oggetto></Documento=
+></Descrizione></Segnatura>
+------=_Part_0_800095825.1644582635442
+Content-Type: application/octet-stream; name=TestoDelMessaggio.txt
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=TestoDelMessaggio.txt
+
+DQoKcG9zdGEgY2VydGlmaWNhdGEgaW4gdXNjaXRhDQoKU2VkZSAxMzAwDQoKQ29tcG9zaXRvcmU6
+IDQ5OTUyODAwDQoKTWl0dGVudGU6IDQ5OTUyODAwDQoKU2VnbmF0dXJhIDpJTlBTLjEzMDAuMTEv
+MDIvMjAyMi4wMDc5NzA5DQoKU2VnbmF0dXJhIHBhZHJlOg0KClNlZ25hdHVyYSBvcmlnaW5lOg0K
+ClNlZ25hdHVyYSBtaXR0ZW50ZToNCgpUaXRvbGFyaW86IDgwMC4wMjAgUG9zdGEgRWxldHRyb25p
+Y2EgQ2VydGlmaWNhdGENCgpSaXNlcnZhdG86IE4NCgpTZW5zaWJpbGU6IE4NCgpUaXBvIFJpY2V2
+dXRhOiBjb21wbGV0YQ0KCkNvbmZlcm1hIHJpY2V6aW9uZTogbm8gDQoKLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLQ0KClJpc3Bvc3RhOiAwDQoKTWVzc2FnZS1JRDogPDFCREYzODhFOEVCRTJEODY5
+M0E4NTIxRTExMEQ1REI1QHBvc3RhY2VydC5pbnBzLmdvdi5pdD4NCgpEYTogZGlyZXppb25lLnBy
+b3ZpbmNpYWxlLmJvbG9nbmFAcG9zdGFjZXJ0LmlucHMuZ292Lml0DQoKUG9zdGVkIGRhdGU6IDIw
+MjItMDItMTEgMTM6Mjk6NDkuMzA3DQoKUGVyIA0KCmFtbWluaXN0cmF6aW9uZS5wZXJzb25hbGVA
+cGVjLmF1c2wuYm9sb2duYS5pdA0KCkNjIA0KCkFsbGVnYXRpIA0KCk9nZ2V0dG86IFNpc3RlbWF6
+aW9uZSBlIGNlcnRpZmljYXppb25lIHBvc2l6aW9uZSBhc3NpY3VyYXRpdmEgTmFzc2kgRW1hbnVl
+bGEgLSBOU1NNTkw2MkI2OEI5NjlDIFtJTlBTLjEzMDAuMTEvMDIvMjAyMi4wMDc5NzA5XQ0KCi0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0NCgpCdW9uZ2lvcm5vLCAKY29uIGxhIHByZXNlbnRlIHNp
+IGNoaWVkZSBsYSBzaXN0ZW1hemlvbmUgZSBsYSBjZXJ0aWZpY2F6aW9uZSBkZWxsYSBwb3Npemlv
+bmUgYXNzaWN1cmF0aXZhIGRlbGwndXRlbnRlIGluIG9nZ2V0dG8sIHBlciBxdWFudG8gZGkgY29t
+cGV0ZW56YSwgY29uIHBhcnRpY29sYXJlIHJpZ3VhcmRvIHBlciBsZSBhbm51YWxpdOAgZGVsIDE5
+OTAtMTk5NywgY29z7CBjb21lIHJpY2hpZXN0byBkYWxsJ3V0ZW50ZS4gTCdhdHRpdmF6aW9uZSDo
+IGF2dmVudXRhIGFuY2hlIHRyYW1pdGUgTnVvdmEgUGFzc3dlYi4KU2kgcmluZ3JhemlhIHBlciBs
+YSBjb2xsYWJvcmF6aW9uZSBlIHNpIHBvcmdvbm8gY29yZGlhbGkgc2FsdXRpLgoKTm9lbWkgQWxm
+YW5vCkRJUkVaSU9ORSBQUk9WSU5DSUFMRSBCT0xPR05BClBFTlNJT05JIEZPTkRJIEFMVEVSTkFU
+SVZJIEFMTJJBR08KCgoKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpRdWVzdG8g6CB1biBtZXNzYWdnaW8gZGkgUG9z
+dGEgRWxldHRyb25pY2EgQ2VydGlmaWNhdGEgKFBFQykgaW52aWF0byBkYWxsJ0lOUFMgKElzdGl0
+dXRvIE5hemlvbmFsZSBQcmV2aWRlbnphIFNvY2lhbGUpLiBQZXIgcmlzcG9uZGVyZSBhIHF1ZXN0
+byBtZXNzYWdnaW8g6CBuZWNlc3NhcmlvIGRpc3BvcnJlIGRpIHVuYSBjYXNlbGxhIGRpIFBvc3Rh
+IEVsZXR0cm9uaWNhIENlcnRpZmljYXRhLiBFdmVudHVhbGkgbWVzc2FnZ2kgaW52aWF0aSBhIGlu
+ZGlyaXp6aSBQRUMgZGVsbCdJTlBTIGRhIGNhc2VsbGUgZGkgcG9zdGEgZWxldHRyb25pY2Egb3Jk
+aW5hcmlhIChub24gY2VydGlmaWNhdGEpIHZlcnJhbm5vIHJpZml1dGF0aSBkYWwgc2lzdGVtYS4K
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLQoKIA==
+------=_Part_0_800095825.1644582635442--

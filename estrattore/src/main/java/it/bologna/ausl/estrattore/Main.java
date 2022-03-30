@@ -18,16 +18,22 @@ import java.nio.file.Files;
  * @author Top
  */
 public class Main {
-    public static void main(String[] args) throws ExtractorException, IOException, EmlHandlerException{
-        
-    File folder = new File("prova");
-    File file = new File("bbb.eml");
-    String actual = new String(Files.readAllBytes(file.toPath()));
-    EmlHandler emlHandler = new EmlHandler();
-    emlHandler.setParameters(actual, null);
-    EmlHandlerResult res = emlHandler.handleRawEml();
-    System.out.println("res: " + res);
-    System.out.println("res: " + res.getMessageId());
+
+    public static void main(String[] args) throws ExtractorException, IOException, EmlHandlerException {
+
+        File folder = new File("prova");
+        File file = new File("boh.eml");
+        String actual = new String(Files.readAllBytes(file.toPath()));
+        EmlHandler emlHandler = new EmlHandler();
+        emlHandler.setParameters(actual, null);
+        EmlHandlerResult res = emlHandler.handleRawEml();
+        System.out.println("res: " + res);
+        System.out.println("res: " + res.getMessageId());
+        ExtractorCreator extractorCreator = new ExtractorCreator(file);
+        extractorCreator.extractAll(folder);
+        for (File outFile : folder.listFiles()) {
+            System.out.println(outFile.getName());
+        }
 //    ExtractorCreator zip = new ExtractorCreator(file);
 //    zip.extractAll(folder);//        ExtractorCreator<InputStream> toMerge = new ArrayList();
 //        for (File file : folder.listFiles()) {

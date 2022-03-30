@@ -17,7 +17,6 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.tsp.cms.CMSTimeStampedDataParser;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
-import org.apache.commons.io.FilenameUtils;
 import org.bouncycastle.mime.encoding.Base64InputStream;
 import org.xml.sax.SAXException;
 
@@ -51,8 +50,7 @@ public class Detector {
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(filePath);
-            String extension = FilenameUtils.getExtension(filePath);
-            String mimeType = getMimeType(fis, extension);
+            String mimeType = getMimeType(fis);
             MediaType mediaType = MediaType.parse(mimeType);
             if (mediaType == MEDIA_TYPE_TEXT_PLAIN) {
                 String ext = getExtensionFromFileName(new File(filePath).getName());
@@ -68,12 +66,11 @@ public class Detector {
         }
     }
 
-    public String getMimeType(InputStream is, String extension) throws UnsupportedEncodingException, IOException, MimeTypeException {
-        //        byte[] inputStreamBytes = inputStreamToBytes(is);
+    public String getMimeType(InputStream is) throws UnsupportedEncodingException, IOException, MimeTypeException {
+//        byte[] inputStreamBytes = inputStreamToBytes(is);
         TikaInputStream tikais = null;
 //        File tempFile = File.createTempFile(getClass().getSimpleName() + "_", null, new File("c:/tmp/test"));
-        String suffix = extension != null && !extension.isEmpty() ? "." + extension : null;
-        File tempFile = File.createTempFile(getClass().getSimpleName() + "_", suffix);
+        File tempFile = File.createTempFile(getClass().getSimpleName() + "_", null);
         inputStreamToFile(is, tempFile);
         try {
             tikais = TikaInputStream.get(tempFile.toPath());
@@ -82,19 +79,8 @@ public class Detector {
             if (tikais.getLength() == 0) {
                 mediaType = MEDIA_TYPE_TEXT_PLAIN;
             } else {
-                String mimeType = null;
-                try {
-                    mimeType = Files.probeContentType(tempFile.toPath());
-                    mediaType = MediaType.parse(mimeType);
-                } catch (Throwable t) {
-                    System.out.println(t.getMessage());
-                    org.apache.tika.detect.Detector detector = new DefaultDetector(MimeTypes.getDefaultMimeTypes());
-                    mediaType = detector.detect(tikais, new Metadata());
-                }
-                if (mediaType == null) {
-                    org.apache.tika.detect.Detector detector = new DefaultDetector(MimeTypes.getDefaultMimeTypes());
-                    mediaType = detector.detect(tikais, new Metadata());
-                }
+                org.apache.tika.detect.Detector detector = new DefaultDetector(MimeTypes.getDefaultMimeTypes());
+                mediaType = detector.detect(tikais, new Metadata());
             }
             IOUtils.closeQuietly(tikais);
 
@@ -180,10 +166,6 @@ public class Detector {
             } catch (Exception ex) {
             }
         }
-    }
-
-    public String getMimeType(InputStream is) throws UnsupportedEncodingException, IOException, MimeTypeException {
-        return getMimeType(is, null);
     }
 
     public int detectPemMalformed(InputStream is) {
@@ -472,12 +454,13 @@ public class Detector {
 //        FileInputStream a = new FileInputStream("c:/tmp/PG0130655_2013_AA FONDAROLI CORAZZA.pdf.p7m");
 //        System.out.println(whatP7m(a));
         Detector detector = new Detector();
-        detector.getMimeType("C:\\Users\\Utente\\Downloads\\TestoDelMessaggio.txt");
-        System.out.println(detector.getMimeType("C:\\Users\\Utente\\Downloads\\TestoDelMessaggio.txt") + "!!!");
-        System.exit(0);
 //        System.out.println(detector.getMimeType(a));
 //        File file1 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
         File file2 = new File("C:\\Users\\Top\\Downloads\\ZipConEml.zip");
+        System.out.println(detector.getMimeType("boh.pdf") + "  !!");
+        System.out.println(Files.probeContentType(new File("boh.pdf").toPath()) + " ??");
+        System.exit(0);
+
 //        File file3 = new File("c:/tmp/gdm/NSI_AS400.mdb");
 //        File file4 = new File("c:/tmp/gdm/gdm.7z");
 //        File file5 = new File("c:/tmp/gdm/PROSA.MDB");
