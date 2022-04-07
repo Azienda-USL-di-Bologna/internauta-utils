@@ -12,5 +12,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
  */
 //@NextSdrRepository(repositoryPath = "${messaggero.mapping.url.root}/amministrazionemessaggio", defaultProjection = AmministrazioneMessaggioWithPlainFields.class)
 @RepositoryRestResource(collectionResourceRel = "requestparameter", path = "requestparameter", exported = false)
-public interface RequestParameterRepository extends QuerydslPredicateExecutor<RequestParameter>, JpaRepository<RequestParameter, Integer> {
+public interface RequestParameterRepository extends QuerydslPredicateExecutor<RequestParameter>, JpaRepository<RequestParameter, String> {
 }

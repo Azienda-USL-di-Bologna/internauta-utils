@@ -1,8 +1,13 @@
 package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -74,5 +79,19 @@ public class SignParams {
 
     public void setSignFileList(List<SignDocument> signFileList) {
         this.signFileList = signFileList;
+    }
+    
+    @JsonIgnore
+    public Map<String, Object> toMap() throws SignParamsException {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Field[] declaredFields = getClass().getDeclaredFields();
+            for (Field declaredField : declaredFields) {
+                res.put(declaredField.getName(), declaredField.get(this));
+            }
+        } catch (Exception ex) {
+            throw new SignParamsException("errore nella trasformazione dei signparams in mappa", ex);
+        }
+        return res;
     }
 }

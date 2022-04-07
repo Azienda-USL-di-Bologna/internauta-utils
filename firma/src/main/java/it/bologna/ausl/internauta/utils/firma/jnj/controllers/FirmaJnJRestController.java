@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.firma.jnj.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParams;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent;
 import it.bologna.ausl.internauta.utils.firma.remota.controllers.*;
@@ -7,16 +9,25 @@ import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
+import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJException;
+import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterExpiredException;
+import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
 import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepository;
+import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.model.entities.firma.RequestParameter;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +49,15 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
 
     @Autowired
     private RequestParameterRepository requestParameterRepository;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
+    
+    @Value("${firma.jnj.mapping.url}")
+    private String firmaJnJMappingUrl;
+    
+    @Value("${firma.jnj.params-expire-seconds}")
+    private Integer firmaJnJParamsExpireSeconds;
 
     @RequestMapping(value = "/test/{nome}/{cognome}", method = RequestMethod.GET)
     public String test(@PathVariable String nome, @PathVariable String cognome) {
@@ -47,36 +67,47 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
     }
     
     @RequestMapping(value = "/getParameters", method = RequestMethod.GET)
-    public SignParams getParameters(@RequestParam(required = true) String token) {
-        List<RequestParameter> findAll = requestParameterRepository.findAll();
-        for (RequestParameter requestParameter : findAll) {
-            System.out.println(requestParameter.getId() + " " + requestParameter.getData().toString());
+    public SignParams getParameters(@RequestParam(required = true) String token, HttpServletRequest request) throws FirmaJnJException {
+        Optional<RequestParameter> requestParamOptional = requestParameterRepository.findById(token);
+        
+        SignParams res = null;
+        if (requestParamOptional.isPresent()) {
+            RequestParameter requestParameter = requestParamOptional.get();
+            if (requestParameter.getExpireOn().isAfter(ZonedDateTime.now())) {
+                res = objectMapper.convertValue(requestParameter.getData(), SignParams.class);
+                res.setServerUrl(getFirmaJnJServerUrl(request));
+            } else {
+                throw new FirmaJnJRequestParameterExpiredException(String.format("RequestParamter %s scaduto", token));
+            }
+        } else {
+            throw new FirmaJnJRequestParameterNotFoundException(String.format("RequestParamter %s non trovato", token));
         }
-        SignParamsComponent.SignDocument signDocument = new SignParamsComponent.SignDocument();
-        signDocument.setFile("http://aaaaa.pdf");
-        signDocument.setId("file-1");
-        signDocument.setMimeType("application/pdf");
-        signDocument.setName("aaaa.pdf");
-        signDocument.setSignType(SignParamsComponent.SignDocument.SignTypes.PADES);
-        signDocument.setSource(SignParamsComponent.SignDocument.Sources.URI);
-        signDocument.setType("AllegatoPicoNuovoPU");
         
-        List<SignParamsComponent.SignDocument> signFileList = Arrays.asList(signDocument);
-        
-        SignParamsComponent.EndSign endSign = new SignParamsComponent.EndSign();
-        endSign.setCallBackUrl("aaaaa");
-        Map<String, Object> endSignParams = new HashMap();
-        endSignParams.put("param1", "value1");
-        endSign.setEndSignParams(endSignParams);
-//        endSign.setSignResult(SignParamsComponent.EndSign.SignResult.ALL_SIGNED);
-//        endSign.setSignedFileList(signFileList);
-        SignParams s = new SignParams();
-        s.setUserId("gdm");
-        s.setEndSign(endSign);
-        s.setServerUrl(token);
-        return null;
+        return res;
     }
 
+    @RequestMapping(value = "/setParameters", method = RequestMethod.POST)
+    public String setParameters(@RequestBody(required = true) SignParams signParams) throws SignParamsException {
+        RequestParameter requestParameter = new RequestParameter();
+        String token = UUID.randomUUID().toString();
+        requestParameter.setId(token);
+        requestParameter.setData(signParams.toMap());
+        requestParameter.setExpireOn(ZonedDateTime.now().plusSeconds(firmaJnJParamsExpireSeconds));
+        RequestParameter savedRequestParamter = requestParameterRepository.save(requestParameter);
+        return token;
+    }
     
-    
+    private String getFirmaJnJServerUrl(HttpServletRequest request) {
+        String hostname = CommonUtils.getHostname(request);
+        if (!firmaJnJMappingUrl.startsWith("/")) {
+           firmaJnJMappingUrl = "/" + firmaJnJMappingUrl;
+        }
+        String scheme = request.getScheme();
+        String port = "";
+        if (request.getServerPort() > 0) {
+            port = ":" + request.getServerPort();
+        }
+        String serverUrl = scheme + "://" + hostname + port + firmaJnJMappingUrl;
+        return serverUrl;
+    }
 }
