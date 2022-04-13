@@ -5,7 +5,6 @@ import java.security.Security;
 import java.util.Scanner;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.DefaultDetector;
-import org.apache.tika.io.IOUtils;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.*;
@@ -16,6 +15,7 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.tsp.cms.CMSTimeStampedDataParser;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
+import org.apache.commons.io.IOUtils;
 import org.bouncycastle.mime.encoding.Base64InputStream;
 import org.xml.sax.SAXException;
 
