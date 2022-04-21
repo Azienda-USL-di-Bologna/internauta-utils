@@ -264,7 +264,8 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 throw new RemoteServiceException("Error: insertion successful but retrieval failed");
             }
         } else {
-            throwCorrectException(resp.getStatus(), resp.getReturnCode(), resp.getDescription());
+            String[] statusSplitted = resp.getStatus().split("-", 2);
+            throwCorrectException(statusSplitted[0].trim(), statusSplitted[1].trim(), resp.getDescription());
         }
         return insertionSuccessful;
     }
