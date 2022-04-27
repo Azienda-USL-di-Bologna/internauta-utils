@@ -6,6 +6,7 @@ import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInfo
 import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemotaAruba;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.FirmaRemotaInfocert;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +92,16 @@ public class FirmaRemotaFactory {
                 
                 // torno l'istanza prendendola dalla mappa
                 firmaRemotaInstance = providerMap.get(FirmaRemotaProviders.ARUBA);
+                break;
+            case INFOCERT:
+                 if (providerMap.get(FirmaRemotaProviders.INFOCERT) == null) {
+                    synchronized (LOCK) {
+                        if (providerMap.get(FirmaRemotaProviders.INFOCERT) == null) {
+                            firmaRemotaInstance = new FirmaRemotaInfocert(codiceAzienda, configParams, firmaRemotaUtils);
+                            providerMap.put(FirmaRemotaProviders.INFOCERT, firmaRemotaInstance);     
+                        }
+                    }
+                 }
                 break;
             default:
                 throw new FirmaRemotaException("Provider: " + provider + " not found");
