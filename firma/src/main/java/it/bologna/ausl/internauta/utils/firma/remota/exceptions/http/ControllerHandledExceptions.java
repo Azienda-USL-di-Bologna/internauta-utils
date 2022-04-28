@@ -10,13 +10,13 @@ public interface ControllerHandledExceptions {
 
     @ExceptionHandler({WrongTokenException.class, InvalidCredentialException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    public default Map<String, Object> handleConflitctException(FirmaRemotaException ex) {
+    public default Map<String, Object> handleConflitctException(FirmaRemotaHttpException ex) {
         return ex.toMap(HttpStatus.CONFLICT);
     }
     
     @ExceptionHandler({RemoteFileNotFoundException.class, RemoteServiceException.class})
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
-    public default Map<String, Object> handleBadGatewayException(FirmaRemotaException ex) {
+    public default Map<String, Object> handleBadGatewayException(FirmaRemotaHttpException ex) {
         return ex.toMap(HttpStatus.BAD_GATEWAY);
     }
 }

@@ -128,16 +128,17 @@ public class ConfigParams {
      * @param codiceAzienda
      * @return 
      */
-    public Map<String, Map<String, Object>> getFirmaRemotaConfiguration(String codiceAzienda) {
-        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
-        Optional<ParametroAziende> paramOp = this.firmaRemotaConfigurationParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
-        ParametroAziende param;
-        if (paramOp.isPresent()) {
-            param = paramOp.get();
-        } else {
-            param = this.firmaRemotaConfigurationParams.get(0);
-        }
-        Map<String, Map<String, Object>> paramValue = this.parametriAziendeReader.getValue(param, new TypeReference<Map<String, Map<String, Object>>>(){});
-        return paramValue;
-    }
+//    public Map<String, Map<String, Object>> getFirmaRemotaConfiguration(String codiceAzienda) {
+//        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
+//        Optional<ParametroAziende> paramOp = this.firmaRemotaConfigurationParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
+//        ParametroAziende param;
+//        if (paramOp.isPresent()) {
+//            param = paramOp.get();
+//        } else {
+//            param = this.firmaRemotaConfigurationParams.get(0);
+//        }
+//        Map<String, Map<String, Object>> paramValue = this.parametriAziendeReader.getValue(param, new TypeReference<Map<String, Map<String, Object>>>(){});
+//        return paramValue;
+//    }
+    
 }
