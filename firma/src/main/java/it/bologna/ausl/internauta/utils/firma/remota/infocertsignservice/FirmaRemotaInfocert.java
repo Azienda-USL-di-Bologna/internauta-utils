@@ -104,10 +104,10 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                             
                             form.field("box_signature_page", Integer.toString(pdfSignFieldDescriptor.getPage()));
                             form.field("box_signature_llx", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
-                            form.field("box_signature_lly", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
-                            form.field("box_signature_urx", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
-                            form.field("box_signature_ury", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
-                            form.field("box_signature_reason", pdfSignFieldDescriptor.getSignName());
+                            form.field("box_signature_lly", Integer.toString(pdfSignFieldDescriptor.getLowerLeftY()));
+                            form.field("box_signature_urx", Integer.toString(pdfSignFieldDescriptor.getUpperRightX()));
+                            form.field("box_signature_ury", Integer.toString(pdfSignFieldDescriptor.getUpperRightY()));
+                            form.field("box_signature_reason", pdfSignFieldDescriptor.getSignName());      
                         }
                         break;
 
