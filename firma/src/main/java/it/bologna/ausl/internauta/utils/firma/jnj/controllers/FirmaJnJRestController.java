@@ -14,7 +14,7 @@ import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestPara
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepository;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.model.entities.firma.RequestParameter;
