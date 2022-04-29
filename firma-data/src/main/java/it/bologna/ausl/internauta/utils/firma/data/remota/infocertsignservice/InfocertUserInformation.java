@@ -16,6 +16,7 @@ public class InfocertUserInformation extends UserInformation {
     private String pin;
     private String token;
     private ModalitaFirma modalitaFirma;
+    private Boolean useSavedCredential;
 
     public InfocertUserInformation() {
     }
@@ -26,20 +27,27 @@ public class InfocertUserInformation extends UserInformation {
         this.token = token;
         this.modalitaFirma = modalitaFirma;
     }
-
-    public String getAlias() {
+    
+       @Override
+    public String getUsername() {
         return alias;
     }
 
-    public void setAlias(final String username) {
-        this.alias = username;
-    }
-
-    public String getPin() {
+    @Override
+    public String getPassword() {
         return pin;
     }
 
-    public void setPin(final String pin) {
+    @Override
+    public Boolean useSavedCredential() {
+        return useSavedCredential;
+    }
+
+    public void setUsername(final String username) {
+        this.alias = username;
+    }
+
+    public void setPassword(final String pin) {
         this.pin = pin;
     }
 
@@ -57,5 +65,13 @@ public class InfocertUserInformation extends UserInformation {
 
     public void setModalitaFirma(final ModalitaFirma modalitaFirma) {
         this.modalitaFirma = modalitaFirma;
-    }   
+    }
+
+    public Boolean getUseSavedCredential() {
+        return useSavedCredential;
+    }
+
+    public void setUseSavedCredential(Boolean useSavedCredential) {
+        this.useSavedCredential = useSavedCredential;
+    }
 }

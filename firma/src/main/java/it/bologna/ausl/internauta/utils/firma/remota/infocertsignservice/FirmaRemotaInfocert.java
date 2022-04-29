@@ -7,10 +7,11 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.In
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfoCertPathEnum;
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfocertUserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
+import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.CredentialProxyService;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
@@ -19,6 +20,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloader
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,18 +56,18 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     private CredentialProxyService credentialProxyService;
     private String signServiceEndPointUri;
     
-    public FirmaRemotaInfocert(String codiceAzienda, ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils) throws FirmaRemotaConfigurationException {
-        super(codiceAzienda, configParams, firmaRemotaDownloaderUtils);
+    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
-        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration(codiceAzienda);
-        Map<String, Object> infocertServiceConfiguration = firmaRemotaConfiguration.get(INFOCERT_SIGN_SERVICE);
+        Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
+        Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) firmaRemotaConfiguration.get(INFOCERT_SIGN_SERVICE);
         signServiceEndPointUri = infocertServiceConfiguration.get("SignServiceEndPointUri").toString();
         credentialProxyAdminInfo = (Map<String, Object>) infocertServiceConfiguration.get("CredentialProxyAdminInfo");
     }
 
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation) throws FirmaRemotaException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
         
         List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
         
@@ -86,7 +88,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 Client client = ClientBuilder.newBuilder().register(MultiPartFeature.class).build();
 
                 FormDataMultiPart form = new FormDataMultiPart();
-                form.field("pin", userInformation.getPin());
+                form.field("pin", userInformation.getPassword());
                 String context = InfoCertContextEnum.AUTO.context;
                 if (userInformation.getModalitaFirma().equals(InfocertUserInformation.ModalitaFirma.AUTOMATICA)) {
                     form.field("otp", userInformation.getToken());
@@ -95,7 +97,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 String endPointFirmaURI;
                 switch (file.getFormatoFirma()) {
                     case PDF:      
-                        endPointFirmaURI = InfoCertPathEnum.FIRMA_CADES.getPath(context, userInformation.getAlias());
+                        endPointFirmaURI = InfoCertPathEnum.FIRMA_CADES.getPath(context, userInformation.getUsername());
                         // Check della SignAppearance, se voluta
                         logger.info("signAppearence: " + file.getSignAppearance());
                         if (file.getSignAppearance() != null) {
@@ -112,10 +114,10 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         break;
 
                     case P7M:
-                        endPointFirmaURI = InfoCertPathEnum.FIRMA_PADES.getPath(context, userInformation.getAlias());
+                        endPointFirmaURI = InfoCertPathEnum.FIRMA_PADES.getPath(context, userInformation.getUsername());
                         break;
                     default:
-                        throw new FirmaRemotaException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
+                        throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
                 }
                 
                 logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
@@ -125,7 +127,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 if (response.getStatus() == 200) {
                     try ( InputStream signedFileIs = response.readEntity(InputStream.class)) {
                         // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
-                        super.upload(file, signedFileIs);
+                        super.upload(file, signedFileIs, codiceAzienda);
                         logger.info("File firmato");
                     } catch (IOException | MinIOWrapperException e) {
                         logger.error(e.getMessage());
@@ -142,21 +144,23 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     }
 
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+      
     }
 
     @Override
-    public boolean existingCredential(UserInformation userInformation) throws FirmaRemotaException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
     @Override
-    public boolean setCredential(UserInformation userInformation) throws FirmaRemotaException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
     @Override
-    public boolean removeCredential(UserInformation userInformation) throws FirmaRemotaException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
-    }       
+    }
+
 }
