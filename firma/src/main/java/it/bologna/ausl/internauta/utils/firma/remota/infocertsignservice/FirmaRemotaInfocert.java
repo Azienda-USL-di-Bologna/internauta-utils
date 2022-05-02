@@ -9,7 +9,6 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.In
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.CredentialProxyService;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
@@ -39,6 +38,7 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,13 +48,10 @@ import org.slf4j.LoggerFactory;
  */
 public class FirmaRemotaInfocert extends FirmaRemota {
 
-    private static Logger logger = LoggerFactory.getLogger(FirmaRemotaInfocert.class);
-    private static String INFOCERT_SIGN_SERVICE = "InfocertSignService";
-    
-    private Boolean credentialProxyActive = false;
-    private Map<String, Object> credentialProxyAdminInfo;
-    private CredentialProxyService credentialProxyService;
-    private String signServiceEndPointUri;
+    private static final Logger logger = LoggerFactory.getLogger(FirmaRemotaInfocert.class);
+    private static final String INFOCERT_SIGN_SERVICE = "InfocertSignService";
+   
+    private final String signServiceEndPointUri;
     
     public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager) throws FirmaRemotaConfigurationException {
         super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager);
@@ -63,11 +60,18 @@ public class FirmaRemotaInfocert extends FirmaRemota {
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
         Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) firmaRemotaConfiguration.get(INFOCERT_SIGN_SERVICE);
         signServiceEndPointUri = infocertServiceConfiguration.get("InfocertSignServiceEndPointUri").toString();
-        credentialProxyAdminInfo = (Map<String, Object>) infocertServiceConfiguration.get("CredentialProxyAdminInfo");
     }
 
+    /**
+     * Implementazione firma remota Infocert.
+     * Prende i parametri in input e costruisce il json per effettuare la chiamata http al server Infocert.
+     * @param firmaRemotaInformation L'oggetto contenente i files da firmare e i parametri dell'utente.
+     * @param codiceAzienda Il codice dell'azienda, utilizzato per effettuare l'upload del file sul repository.
+     * @return L'oggetto RifmaRemotaInformation con le informazioni aggiuntive dei file firmati.
+     * @throws FirmaRemotaHttpException Errore durante l'upload del file.
+     */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException {
         
         List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
         
@@ -89,26 +93,23 @@ public class FirmaRemotaInfocert extends FirmaRemota {
              
                 // creo la richiesta multipart mettendo il token nei query-params
                 RequestBody dataBody = RequestBody.create(okhttp3.MultipartBody.FORM, tmpFileToSign);
-                MultipartBody.Builder formData = new MultipartBody.Builder();
+                MultipartBody.Builder formData = new MultipartBody.Builder().setType(MultipartBody.FORM);
                 
-                if (userInformation.useSavedCredential()) {
-                    if (configuration.getInternalCredentialsManager()) {
-                        formData.addFormDataPart("pin", internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
-                    } else {
-                        formData.addFormDataPart("pin", userInformation.getPassword());
-                    }
+                if (userInformation.useSavedCredential() && configuration.getInternalCredentialsManager()) {
+                    formData.addFormDataPart("pin", internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
                 } else {
                     formData.addFormDataPart("pin", userInformation.getPassword());
                 }
+                
                 String context = InfoCertContextEnum.AUTO.context;
-                if (userInformation.getModalitaFirma().equals(InfocertUserInformation.ModalitaFirma.AUTOMATICA)) {
+                if (userInformation.getModalitaFirma().equals(InfocertUserInformation.ModalitaFirma.OTP)) {
                     formData.addFormDataPart("otp", userInformation.getToken());
                     context = InfoCertContextEnum.REMOTE.context;
                 }
                 String endPointFirmaURI;
                 switch (file.getFormatoFirma()) {
                     case PDF:      
-                        endPointFirmaURI = InfoCertPathEnum.FIRMA_CADES.getPath(context, userInformation.getUsername());
+                        endPointFirmaURI = InfoCertPathEnum.FIRMA_PADES.getPath(context, userInformation.getUsername());
                         // Check della SignAppearance, se voluta
                         logger.info("signAppearence: " + file.getSignAppearance());
                         if (file.getSignAppearance() != null) {
@@ -120,12 +121,12 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                             formData.addFormDataPart("box_signature_lly", Integer.toString(pdfSignFieldDescriptor.getLowerLeftY()));
                             formData.addFormDataPart("box_signature_urx", Integer.toString(pdfSignFieldDescriptor.getUpperRightX()));
                             formData.addFormDataPart("box_signature_ury", Integer.toString(pdfSignFieldDescriptor.getUpperRightY()));
-                            formData.addFormDataPart("box_signature_reason", pdfSignFieldDescriptor.getSignName());         
+                            // formData.addFormDataPart("box_signature_reason", pdfSignFieldDescriptor.getSignName());         
                         }
                         break;
 
                     case P7M:
-                        endPointFirmaURI = InfoCertPathEnum.FIRMA_PADES.getPath(context, userInformation.getUsername());
+                        endPointFirmaURI = InfoCertPathEnum.FIRMA_CADES.getPath(context, userInformation.getUsername());
                         break;
                     default:
                         throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
@@ -133,7 +134,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 
                 logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
                 
-                MultipartBody multipartBody = formData.addPart(MultipartBody.Part.createFormData("file", filename, dataBody))
+                MultipartBody multipartBody = formData.addPart(MultipartBody.Part.createFormData("contentToSign-0", filename, dataBody))
                         .build();
                 
                 Request request = new Request.Builder()
@@ -148,11 +149,12 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 okhttp3.Response response = call.execute();
 
                 if (response.isSuccessful()) {
-                    try ( InputStream signedFileIs = response.body().byteStream()) {
+                    try (ResponseBody responseBody = response.body()) {
+                        InputStream signedFileIs = responseBody.byteStream();
                         // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
                         super.upload(file, signedFileIs, codiceAzienda);
                         logger.info("File firmato");
-                    } catch (IOException | MinIOWrapperException e) {
+                    } catch (MinIOWrapperException e) {
                         logger.error(e.getMessage());
                     }
                 } else {
@@ -168,9 +170,24 @@ public class FirmaRemotaInfocert extends FirmaRemota {
         return firmaRemotaInformation;
     }
 
+    /**
+     * Implementazione della chiamata http per richiedere il token OTP.
+     * @param userInformation Le informazioni dell'utente.
+     */
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
-      
+    public void preAuthentication(UserInformation userInformation) {
+        // Non so se ha senso mettere un controllo dell'alias utente
+        try {
+            Request request = new Request.Builder()
+                    .url(signServiceEndPointUri + InfoCertPathEnum.RICHIESTA_OPT.getPath(InfoCertContextEnum.REMOTE.context, userInformation.getUsername()))
+                    .build();
+            
+            OkHttpClient httpClient = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).build();
+            Call call = httpClient.newCall(request);
+            call.execute();
+        } catch (IOException ex) {
+            logger.error(ex.getMessage());
+        }
     }
 
     @Override
