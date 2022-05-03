@@ -6,6 +6,7 @@ import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInfo
 import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemotaAruba;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.FirmaRemotaInfocert;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
 import java.util.HashMap;
@@ -53,7 +54,8 @@ public class FirmaRemotaFactory {
                     firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, dominioFirmaDefault);
                     break;
                 case INFOCERT:
-                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not implemented yet");
+                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager);
+                    break;
                 default:
                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not found");
             }
