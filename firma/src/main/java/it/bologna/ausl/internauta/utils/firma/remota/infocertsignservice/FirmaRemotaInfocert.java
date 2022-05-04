@@ -12,9 +12,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
@@ -144,7 +142,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
 
                 // eseguo la chiamata all'upload
                 OkHttpClient.Builder builder = new OkHttpClient.Builder();
-                OkHttpClient httpClient = builder.connectTimeout(15, TimeUnit.MINUTES).readTimeout(15, TimeUnit.MINUTES).writeTimeout(15, TimeUnit.MINUTES).build();
+                OkHttpClient httpClient = builder.connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).writeTimeout(15, TimeUnit.SECONDS).build();
                 Call call = httpClient.newCall(request);
                 okhttp3.Response response = call.execute();
 
