@@ -113,8 +113,8 @@ public class EmlHandlerAttachment implements Serializable, Cloneable {
     public EmlHandlerAttachment clone() {
         EmlHandlerAttachment cloned = null;
         try {
+            cloned = (EmlHandlerAttachment) super.clone();
             if (getInputStream() != null) {
-                cloned = (EmlHandlerAttachment) super.clone();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 byte[] buffer = new byte[1024];
                 int len;
