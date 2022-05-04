@@ -1,7 +1,13 @@
 package it.bologna.ausl.eml.handler;
 
+import com.sun.media.sound.EmergencySoundbank;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author andrea zucchelli
@@ -15,7 +21,7 @@ import java.io.Serializable;
  * <b>mimeType</b> contiene il content type dell'attachment.
  * </p>
  */
-public class EmlHandlerAttachment  implements Serializable {
+public class EmlHandlerAttachment implements Serializable, Cloneable {
 
     private Integer id;
     private String contentId;
@@ -98,8 +104,32 @@ public class EmlHandlerAttachment  implements Serializable {
     public void setInputStream(InputStream inputStream) {
         this.inputStream = inputStream;
     }
-    
+
     public String toString() {
         return "filename: " + fileName + " filepath: " + filePath + " mimetype: " + mimeType + " size: " + size;
+    }
+
+    @Override
+    public EmlHandlerAttachment clone() {
+        EmlHandlerAttachment cloned = null;
+        try {
+            if (getInputStream() != null) {
+                cloned = (EmlHandlerAttachment) super.clone();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = getInputStream().read(buffer)) > -1) {
+                    baos.write(buffer, 0, len);
+                }
+                baos.flush();
+                cloned.setInputStream(new ByteArrayInputStream(baos.toByteArray()));
+                setInputStream(new ByteArrayInputStream(baos.toByteArray()));
+            }
+        } catch (CloneNotSupportedException ex) {
+            Logger.getLogger(EmlHandlerAttachment.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(EmlHandlerAttachment.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return cloned;
     }
 }
