@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.bds.types;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -140,6 +139,16 @@ public class PermessoStoredProcedure implements Serializable {
     @JsonProperty("attivo_al")
     public void setAttivoAl(LocalDateTime attivoAl) {
         this.attivoAl = attivoAl;
+    }
+
+    @JsonProperty("entita_veicolante")
+    public EntitaStoredProcedure getEntitaVeicolante() {
+        return entitaVeicolante;
+    }
+
+    @JsonProperty("entita_veicolante")
+    public void setEntitaVeicolante(EntitaStoredProcedure entitaVeicolante) {
+        this.entitaVeicolante = entitaVeicolante;
     }
 
     @Override
