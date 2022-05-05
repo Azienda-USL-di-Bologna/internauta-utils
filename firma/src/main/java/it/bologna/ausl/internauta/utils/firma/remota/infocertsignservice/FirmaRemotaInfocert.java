@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfi
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,7 +32,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import okhttp3.Call;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -39,9 +42,12 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
- *
+ * Classe che implementa i metodi necessari per la firma remota Infocert.
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
 public class FirmaRemotaInfocert extends FirmaRemota {
@@ -99,10 +105,12 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                     formData.addFormDataPart("pin", userInformation.getPassword());
                 }
                 
-                String context = InfoCertContextEnum.AUTO.context;
+                String context; 
                 if (userInformation.getModalitaFirma().equals(InfocertUserInformation.ModalitaFirma.OTP)) {
                     formData.addFormDataPart("otp", userInformation.getToken());
                     context = InfoCertContextEnum.REMOTE.context;
+                } else {
+                    context = InfoCertContextEnum.AUTO.context;
                 }
                 String endPointFirmaURI;
                 switch (file.getFormatoFirma()) {
@@ -132,10 +140,10 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 
                 logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
                 
-                MultipartBody multipartBody = formData.addPart(MultipartBody.Part.createFormData("contentToSign-0", filename, dataBody))
+                MultipartBody multipartBody = formData.addFormDataPart("contentToSign-0", filename, dataBody)
                         .build();
                 
-                Request request = new Request.Builder()
+                Request request = new Request.Builder().header("Content-Type", "multipart/form-data")
                         .url(signServiceEndPointUri + endPointFirmaURI)
                         .post(multipartBody)
                         .build();
@@ -145,23 +153,24 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 OkHttpClient httpClient = builder.connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).writeTimeout(15, TimeUnit.SECONDS).build();
                 Call call = httpClient.newCall(request);
                 okhttp3.Response response = call.execute();
-
-                if (response.isSuccessful()) {
-                    try (ResponseBody responseBody = response.body()) {
-                        InputStream signedFileIs = responseBody.byteStream();
-                        // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
-                        super.upload(file, signedFileIs, codiceAzienda);
-                        logger.info("File firmato");
-                    } catch (MinIOWrapperException e) {
-                        logger.error(e.getMessage());
-                    }
-                } else {
-                    logger.error("Errore:" + response.message());
-                }      
-            } catch (IOException ex) {
+                
+                try (ResponseBody responseBody = response.body()) {
+                    if (response.isSuccessful()) {
+                        try {
+                            InputStream signedFileIs = responseBody.byteStream();
+                            // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
+                            super.upload(file, signedFileIs, codiceAzienda);
+                            logger.info("File firmato");
+                        } catch (MinIOWrapperException e) {
+                            logger.error(e.getMessage());
+                        }
+                    } else {
+                        logger.warn("Errore:" + response.message());
+                        throwCorrectException(responseBody.string());
+                    }   
+                }
+            } catch (IOException | EncryptionException ex) {
                 logger.error(ex.getMessage());
-            } catch (EncryptionException ex) {
-                java.util.logging.Logger.getLogger(FirmaRemotaInfocert.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -174,6 +183,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
      */
     @Override
     public void preAuthentication(UserInformation userInformation) {
+        logger.info("Richiesta codice OTP per l'utente: " + userInformation.getUsername());
         // Non so se ha senso mettere un controllo dell'alias utente
         try {
             Request request = new Request.Builder()
@@ -201,6 +211,48 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     @Override
     protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
+    }
+    
+    
+    /**
+     * Questa funzione identifica uno stato di errore, lancia la corretta eccezione in base al codice di errore 
+     * parsato dal body della response in xml passato in ingresso come stringa.
+     * 
+     * @param xmlResponse Il body xml della response in formato stringa.
+     * @throws InvalidCredentialException Credenziali non valide.
+     * @throws WrongTokenException Token non valido.
+     * @throws RemoteServiceException Errore generico.
+     */
+    public void throwCorrectException(String xmlResponse) throws InvalidCredentialException, WrongTokenException, RemoteServiceException {
+        
+        try {
+            Document doc = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new InputSource(new StringReader(xmlResponse)));
+            String errorCode = doc.getElementsByTagName("proxysign-error-code").item(0).getTextContent();
+            String errorDescription = doc.getElementsByTagName("proxysign-error-description").item(0).getTextContent();
+                        
+            logger.info(String.format("Errore firma remota Infocert code: %s - description: %s", errorCode, errorDescription));
+            String descriptionString = (errorDescription != null && !errorDescription.isEmpty()) ? ": " + errorDescription : "";
+            if (errorCode != null) {
+                switch (errorCode) {
+                    case "PRS-0009":
+                    case "PRS-0010":
+                    case "PRS-0012":
+                    case "PRS-0015":
+                        throw new InvalidCredentialException("invalid credential" + descriptionString);
+                    case "PRS-0003":
+                    case "PRS-0008":
+                    case "PRS-0017":
+                        throw new WrongTokenException("invalid or blocked token" + descriptionString);
+                    // TODO: inserire gli eventuali altri casi di errore
+                    default:
+                        throw new RemoteServiceException(String.format("remote server error. code: %s - description: %s", errorCode, errorDescription));
+                }
+            }
+        } catch (ParserConfigurationException | SAXException | IOException  ex) {
+            logger.error(ex.getMessage());
+        }
     }
 
 }
