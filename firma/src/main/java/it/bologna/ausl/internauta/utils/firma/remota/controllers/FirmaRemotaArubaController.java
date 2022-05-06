@@ -34,7 +34,9 @@ public class FirmaRemotaArubaController {
     
     @RequestMapping(value = "/getHostIdFromDominio", method = RequestMethod.GET)
     public String getHostIdFromDominio(
-            DominioAruba dominioAruba) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
-        return null;
+            DominioAruba.DominiAruba dominioAruba) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+        
+        String hostId = dominioArubaRepository.getHostId(dominioAruba.toString());
+        return hostId;
     }
 }
