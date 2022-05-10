@@ -155,7 +155,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 logger.info("closing session...");
                 arubaSignService.closesession(identity, sessionId);
             }
-            throw new FirmaRemotaHttpException("error opening session", ex);
+            throw ex;
         }
 
         try {
