@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @author gdm
  */
 //@ResponseStatus(HttpStatus.CONFLICT)
-public class WrongTokenException extends FirmaRemotaException {
+public class WrongTokenException extends FirmaRemotaHttpException {
 
     public WrongTokenException(String message) {
         super(message);
