@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota.controllers;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
@@ -7,6 +8,15 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
+import it.bologna.ausl.model.entities.firma.Configuration;
+import it.bologna.ausl.model.entities.firma.QConfiguration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +39,9 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
 
     @Autowired
     private FirmaRemotaFactory firmaRemotaFactory;
+    
+    @Autowired
+    private ConfigurationRepository configurationRepository;
 
     @RequestMapping(value = "/test/{nome}/{cognome}", method = RequestMethod.GET)
     public String test(@PathVariable String nome, @PathVariable String cognome) {
@@ -153,6 +166,33 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         return firmaRemotaInstance.removeCredential(userInformation, hostId);
+    }
+    
+    /**
+     * Restituisce le descrizioni di tutti i providers oppure dei soli hostIds richiesti.
+     * @param hostIds La lista degli hostId.
+     * @return La descrizione dei providers.
+     */
+    @RequestMapping(value = "/getProvidersInfo", method = RequestMethod.GET)
+    public List<Map<String, String>> getProvidersInfo(@RequestParam(required = false) List<String> hostIds) {
+        List<Configuration> configurationList;
+        if (hostIds == null || hostIds.isEmpty()) {
+            configurationList = configurationRepository.findAll();
+        } else {
+            configurationList = new ArrayList<>();
+            BooleanExpression filter = QConfiguration.configuration.hostId.in(hostIds);
+            configurationRepository.findAll(filter).iterator().forEachRemaining(configurationList::add);
+        }
+        
+        List<Map<String, String>> providersInfo = new ArrayList();
+        configurationList.stream().forEach(c -> {
+            Map<String, String> row = new HashMap();
+            row.put("hostId", c.getHostId());
+            row.put("provider", c.getProvider());
+            row.put("descrizione", c.getDescrizione());
+            providersInfo.add(row);
+        });
+        return providersInfo;
     }
     
 }
