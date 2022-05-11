@@ -39,9 +39,6 @@ public class ConfigParams {
     
     @Autowired
     private ParametriAziendeReader parametriAziendeReader;
-
-//    Map<String, Map<String, Object>> firmaRemotaConfiguration;
-    private List<ParametroAziende> firmaRemotaConfigurationParams;
     
     private MinIOWrapper minIOWrapper;
     
@@ -69,12 +66,7 @@ public class ConfigParams {
             throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nei parametri_aziende, oppure è presente più volte per la stessa azienda", ParametriAziendeReader.ParametriAzienda.minIOConfig.toString()));
         }
         Map<String, Object> minIOConfig = parametriAziendeReader.getValue(parametersMinIO.get(0), new TypeReference<Map<String, Object>>() {});
-        
-        this.firmaRemotaConfigurationParams = parametriAziendeReader.getParameters(ParametriAziendeReader.ParametriAzienda.firmaRemota.toString());
-       if (this.firmaRemotaConfigurationParams == null || this.firmaRemotaConfigurationParams.isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("parametro %s non presente", ParametriAziendeReader.ParametriAzienda.firmaRemota.toString()));
-        }
-        
+
         initMinIO(minIOConfig);
         
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
@@ -122,23 +114,5 @@ public class ConfigParams {
     public MinIOWrapper getMinIOWrapper() {
         return minIOWrapper;
     }
-
-    /**
-     * Torna la configurazione della firma remota per l'azienda passata
-     * @param codiceAzienda
-     * @return 
-     */
-//    public Map<String, Map<String, Object>> getFirmaRemotaConfiguration(String codiceAzienda) {
-//        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
-//        Optional<ParametroAziende> paramOp = this.firmaRemotaConfigurationParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
-//        ParametroAziende param;
-//        if (paramOp.isPresent()) {
-//            param = paramOp.get();
-//        } else {
-//            param = this.firmaRemotaConfigurationParams.get(0);
-//        }
-//        Map<String, Map<String, Object>> paramValue = this.parametriAziendeReader.getValue(param, new TypeReference<Map<String, Map<String, Object>>>(){});
-//        return paramValue;
-//    }
     
 }

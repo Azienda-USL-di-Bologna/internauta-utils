@@ -26,7 +26,7 @@ import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
- *
+ * Classe per mappare le credenziali utente.
  * @author solidus83
  */
 @TypeDefs({

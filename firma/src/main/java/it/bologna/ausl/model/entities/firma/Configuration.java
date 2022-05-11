@@ -47,6 +47,10 @@ public class Configuration implements Serializable {
     @Type(type = "jsonb")
     @Column(name = "params", columnDefinition = "jsonb")
     private Map<String, Object> params;
+    
+    @Basic(optional = false)
+    @Column(name = "descrizione")
+    private String descrizione;
 
     public Configuration() {
     }
@@ -83,6 +87,14 @@ public class Configuration implements Serializable {
         this.params = params;
     }
 
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+    
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
