@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @author gdm
  */
 //@ResponseStatus(HttpStatus.BAD_GATEWAY)
-public class RemoteFileNotFoundException extends FirmaRemotaException {
+public class RemoteFileNotFoundException extends FirmaRemotaHttpException {
 
     public RemoteFileNotFoundException(String message) {
         super(message);

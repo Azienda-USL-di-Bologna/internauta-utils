@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * @author gdm
  */
 //@ResponseStatus(HttpStatus.CONFLICT)
-public class InvalidCredentialException extends FirmaRemotaException {
+public class InvalidCredentialException extends FirmaRemotaHttpException {
 
     public InvalidCredentialException(String message) {
         super(message);

@@ -92,6 +92,8 @@ public class DownloaderAuthorizationUtils {
                 X509Certificate publicCertBabelTest = getX509CertificateFromFile(this.downloaderPublicCertBabelTest.getInputStream());
                 hashPublicKeyMap.put("FDB1F11965344A44DB32C4FE1D53C4A5104453BAEFB58F106BD6ABDD4736537B", 
                         Pair.of(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
+                hashPublicKeyMap.put("546B45E5E5190F9909467052C63FAD59067DE9B6AEC45E7D8E4BDE742FF2F195", 
+                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 break;
             case "prod": // se sono in modalità di prod, prendo al chiave di prod per decrittare il token e il certificato di prod per controllare la firma
 //                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyProd;
