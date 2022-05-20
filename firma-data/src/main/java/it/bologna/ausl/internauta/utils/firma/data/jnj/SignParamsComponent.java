@@ -11,14 +11,14 @@ import java.util.Map;
 public class SignParamsComponent {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class EndSign {
-        public static enum SignResult {
+        public static enum SignResults {
             ALL_SIGNED, PARTIALLY_SIGNED, ERROR, ABORT
         }
         
         private String callBackUrl;
         private Map<String, Object> endSignParams;
         private List<SignDocument> signedFileList;
-        private SignResult signResult;
+        private SignResults signResult;
 
         public EndSign() {
         }
@@ -47,18 +47,18 @@ public class SignParamsComponent {
             this.signedFileList = signedFileList;
         }
 
-        public SignResult getSignResult() {
+        public SignResults getSignResult() {
             return signResult;
         }
 
-        public void setSignResult(SignResult signResult) {
+        public void setSignResult(SignResults signResult) {
             this.signResult = signResult;
         }
     } 
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class SignDocument {
-        public static enum SignTypes {CADES, PADES}
+        public static enum SignTypes {CADES, PADES, XADES}
         public static enum Sources {URI, FILE_SYSTEM, BASE_64}
         private String file;
 	private Sources source;
@@ -189,7 +189,7 @@ public class SignParamsComponent {
         private Integer fieldOriginX;
         private Integer fieldOriginY;
         private Integer fieldWidth;
-        private Integer fieldtHeight;
+        private Integer fieldHeight;
         private Integer page;  // from 1 to n..., 0 not allowed, -1 is the last page
 
         public SignFileAttributesPosition() {
@@ -235,12 +235,12 @@ public class SignParamsComponent {
             this.fieldWidth = fieldWidth;
         }
 
-        public Integer getFieldtHeight() {
-            return fieldtHeight;
+        public Integer getFieldHeight() {
+            return fieldHeight;
         }
 
-        public void setFieldtHeight(Integer fieldtHeight) {
-            this.fieldtHeight = fieldtHeight;
+        public void setFieldHeight(Integer fieldHeight) {
+            this.fieldHeight = fieldHeight;
         }
 
         public Integer getPage() {
