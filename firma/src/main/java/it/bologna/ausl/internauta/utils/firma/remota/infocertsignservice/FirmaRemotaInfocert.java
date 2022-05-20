@@ -236,14 +236,15 @@ public class FirmaRemotaInfocert extends FirmaRemota {
             String descriptionString = (errorDescription != null && !errorDescription.isEmpty()) ? ": " + errorDescription : "";
             if (errorCode != null) {
                 switch (errorCode) {
+                    case "PRS-0002":
                     case "PRS-0009":
                     case "PRS-0010":
                     case "PRS-0012":
-                    case "PRS-0015":
+                    case "PRS-0017":
                         throw new InvalidCredentialException("invalid credential" + descriptionString);
                     case "PRS-0003":
                     case "PRS-0008":
-                    case "PRS-0017":
+                    case "PRS-0015":
                         throw new WrongTokenException("invalid or blocked token" + descriptionString);
                     // TODO: inserire gli eventuali altri casi di errore
                     default:
