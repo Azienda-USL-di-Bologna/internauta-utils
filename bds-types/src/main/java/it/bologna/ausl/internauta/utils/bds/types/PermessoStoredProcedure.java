@@ -14,8 +14,9 @@ import org.springframework.format.annotation.DateTimeFormat;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PermessoStoredProcedure implements Serializable {
-//    private Integer id;
 
+    //private static final long serialVersionUID = 1L;
+    private Integer id;
     private String predicato;
     private Boolean propagaSoggetto;
     private Boolean propagaOggetto;
@@ -54,6 +55,14 @@ public class PermessoStoredProcedure implements Serializable {
         this.attivoAl = attivoAl;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    
     public String getPredicato() {
         return predicato;
     }
