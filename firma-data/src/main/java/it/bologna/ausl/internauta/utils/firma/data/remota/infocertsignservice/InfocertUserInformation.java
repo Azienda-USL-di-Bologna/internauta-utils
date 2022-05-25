@@ -21,11 +21,12 @@ public class InfocertUserInformation extends UserInformation {
     public InfocertUserInformation() {
     }
 
-    public InfocertUserInformation(final String alias, final String pin, final String token, final ModalitaFirma modalitaFirma) {
+    public InfocertUserInformation(final String alias, final String pin, final String token, final ModalitaFirma modalitaFirma, final Boolean useSavedCredential) {
         this.alias = alias;
         this.pin = pin;
         this.token = token;
         this.modalitaFirma = modalitaFirma;
+        this.useSavedCredential = useSavedCredential;
     }
     
        @Override

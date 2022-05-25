@@ -14,7 +14,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.Aruba
  * @author gdm
  */
 public class TestJson {
-    public static void main(String[] args) throws JsonProcessingException {
+    public static void main1(String[] args) throws JsonProcessingException {
         ArubaUserInformation a = new ArubaUserInformation("dmrgpp83e29d851cb", "qwerty123456", "123", ModalitaFirma.OTP, "1", "frAUSLBO", false);
         ObjectMapper objectMapper = new ObjectMapper();
         String str = objectMapper.writeValueAsString(a);
@@ -24,5 +24,9 @@ public class TestJson {
         ArubaUserInformation a2 = objectMapper.readValue(str, ArubaUserInformation.class);
         System.out.println("parsed:");
         System.out.println(objectMapper.writeValueAsString(a));
+    }
+    
+    public static void main(String[] args) {
+
     }
 }

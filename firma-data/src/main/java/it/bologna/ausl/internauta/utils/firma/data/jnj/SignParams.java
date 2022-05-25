@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
@@ -14,6 +16,9 @@ import java.util.Map;
  * @author gdm
  */
 public class SignParams {
+    
+    private ObjectMapper objectMapper = new ObjectMapper();
+    
     private String serverUrl;
     private String signSessionId;
     private String userId;
@@ -93,5 +98,13 @@ public class SignParams {
             throw new SignParamsException("errore nella trasformazione dei signparams in mappa", ex);
         }
         return res;
+    }
+    
+    public String toJsonString() throws JsonProcessingException {
+        return this.objectMapper.writeValueAsString(this);
+    }
+    
+    public byte[] toJsonByte() throws JsonProcessingException {
+        return this.objectMapper.writeValueAsBytes(this);
     }
 }

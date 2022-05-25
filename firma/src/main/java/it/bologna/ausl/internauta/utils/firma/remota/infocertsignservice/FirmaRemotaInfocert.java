@@ -99,7 +99,9 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 RequestBody dataBody = RequestBody.create(okhttp3.MultipartBody.FORM, tmpFileToSign);
                 MultipartBody.Builder formData = new MultipartBody.Builder().setType(MultipartBody.FORM);
                 
-                if (userInformation.useSavedCredential() && configuration.getInternalCredentialsManager()) {
+                if (userInformation.useSavedCredential() != null && 
+                        userInformation.useSavedCredential() && 
+                        configuration.getInternalCredentialsManager() != null) {
                     formData.addFormDataPart("pin", internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
                 } else {
                     formData.addFormDataPart("pin", userInformation.getPassword());
@@ -150,7 +152,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
 
                 // eseguo la chiamata all'upload
                 OkHttpClient.Builder builder = new OkHttpClient.Builder();
-                OkHttpClient httpClient = builder.connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).writeTimeout(15, TimeUnit.SECONDS).build();
+                OkHttpClient httpClient = builder.connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS).build();
                 Call call = httpClient.newCall(request);
                 okhttp3.Response response = call.execute();
                 
@@ -171,6 +173,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 }
             } catch (IOException | EncryptionException ex) {
                 logger.error(ex.getMessage());
+                throw new FirmaRemotaHttpException(ex.getMessage());
             }
         }
 
@@ -182,19 +185,20 @@ public class FirmaRemotaInfocert extends FirmaRemota {
      * @param userInformation Le informazioni dell'utente.
      */
     @Override
-    public void preAuthentication(UserInformation userInformation) {
+    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException {
         logger.info("Richiesta codice OTP per l'utente: " + userInformation.getUsername());
-        // Non so se ha senso mettere un controllo dell'alias utente
+        // Non so se ha senso mettere un controllo dell'alias utente o sul numero di volte che può fare richiedi
         try {
             Request request = new Request.Builder()
                     .url(signServiceEndPointUri + InfoCertPathEnum.RICHIESTA_OPT.getPath(InfoCertContextEnum.REMOTE.context, userInformation.getUsername()))
                     .build();
             
-            OkHttpClient httpClient = new OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).build();
+            OkHttpClient httpClient = new OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).build();
             Call call = httpClient.newCall(request);
             call.execute();
         } catch (IOException ex) {
             logger.error(ex.getMessage());
+            throw new FirmaRemotaHttpException(ex.getMessage());
         }
     }
 
@@ -236,14 +240,15 @@ public class FirmaRemotaInfocert extends FirmaRemota {
             String descriptionString = (errorDescription != null && !errorDescription.isEmpty()) ? ": " + errorDescription : "";
             if (errorCode != null) {
                 switch (errorCode) {
+                    case "PRS-0002":
                     case "PRS-0009":
                     case "PRS-0010":
                     case "PRS-0012":
-                    case "PRS-0015":
+                    case "PRS-0017":
                         throw new InvalidCredentialException("invalid credential" + descriptionString);
                     case "PRS-0003":
                     case "PRS-0008":
-                    case "PRS-0017":
+                    case "PRS-0015":
                         throw new WrongTokenException("invalid or blocked token" + descriptionString);
                     // TODO: inserire gli eventuali altri casi di errore
                     default:
