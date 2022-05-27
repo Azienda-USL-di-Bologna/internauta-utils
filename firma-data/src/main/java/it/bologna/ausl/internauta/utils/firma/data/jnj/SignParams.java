@@ -16,9 +16,7 @@ import java.util.Map;
  * @author gdm
  */
 public class SignParams {
-    
-    private ObjectMapper objectMapper = new ObjectMapper();
-    
+       
     private String serverUrl;
     private String signSessionId;
     private String userId;
@@ -92,7 +90,9 @@ public class SignParams {
         try {
             Field[] declaredFields = getClass().getDeclaredFields();
             for (Field declaredField : declaredFields) {
-                res.put(declaredField.getName(), declaredField.get(this));
+                if (declaredField.getAnnotation(JsonIgnore.class) == null) {
+                    res.put(declaredField.getName(), declaredField.get(this));
+                }
             }
         } catch (Exception ex) {
             throw new SignParamsException("errore nella trasformazione dei signparams in mappa", ex);
@@ -100,11 +100,15 @@ public class SignParams {
         return res;
     }
     
+    public static SignParams parse(String str) throws JsonProcessingException {
+        return SignParamsComponent.getObjectMapper().readValue(str, SignParams.class);
+    }
+    
     public String toJsonString() throws JsonProcessingException {
-        return this.objectMapper.writeValueAsString(this);
+        return SignParamsComponent.getObjectMapper().writeValueAsString(this);
     }
     
     public byte[] toJsonByte() throws JsonProcessingException {
-        return this.objectMapper.writeValueAsBytes(this);
+        return SignParamsComponent.getObjectMapper().writeValueAsBytes(this);
     }
 }
