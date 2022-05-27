@@ -45,14 +45,15 @@ public class DefaultUploader extends MinIOUploader {
         if (params != null && params.containsKey("metadata")) {
             metadata = (Map<String, Object>) params.get("metadata");
         }
-
-        String bucket = BUCKET;
-        String codiceAzienda = BUCKET;
         
         Boolean overwrite = false;
         
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
+        
+        String bucket = minIOWrapper.setBucketName(BUCKET);
+        String codiceAzienda = BUCKET;
+        
         try {
             
             // carico il file su minIO, generando anche un uuidMongo tramite UUID.randomUUID().toString(), in modo che il file sia trovabile anche con la libreria RepositoryWrapper

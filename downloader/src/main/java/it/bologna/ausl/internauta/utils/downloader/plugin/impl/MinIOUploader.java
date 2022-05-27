@@ -52,14 +52,6 @@ public class MinIOUploader extends DownloaderUploadPlugin {
             metadata = (Map<String, Object>) params.get("metadata");
         }
 
-        // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
-        String bucket;
-        if (params.containsKey("bucket")) {
-            bucket = (String) params.get("bucket");
-        } else {
-            bucket = codiceAzienda;
-        }
-        
         // se non c'è overwrite allora lo considero false
         Boolean overwrite;
         if (params.containsKey("overwrite")) {
@@ -84,6 +76,15 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
+        
+        // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
+        String bucket;
+        if (params.containsKey("bucket")) {
+            bucket = (String) params.get("bucket");
+        } else {
+            bucket = minIOWrapper.setBucketName(codiceAzienda);
+        }
+        
         try {
             // carico il file su minIO, generando anche un uuidMongo tramite UUID.randomUUID().toString(), in modo che il file sia trovabile anche con la libreria RepositoryWrapper
             MinIOWrapperFileInfo res = minIOWrapper.putWithBucket(file, codiceAzienda, path, fileName, metadata, overwrite, UUID.randomUUID().toString(), bucket);
