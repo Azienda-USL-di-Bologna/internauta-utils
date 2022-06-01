@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -133,7 +134,7 @@ public class MinIOWrapper {
         initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         buildConnectionsMap();
         loadConfigurations();
-        trashBucket = setBucketName(trashBucket);
+        trashBucket = getBucketName(trashBucket);
     }
 
     private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
@@ -173,6 +174,7 @@ public class MinIOWrapper {
                     String endPointUrl = (String) row.get("urls");
 //                    endPointUrl = "http://babelminioprod02.avec.emr.it:9000";
 //                    endPointUrl = "http://babelminiotest01-auslbo.avec.emr.it:9001";
+//                    endPointUrl = "https://s3.eu-west-1.amazonaws.com";
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
@@ -203,17 +205,33 @@ public class MinIOWrapper {
      * Carica i parametri di configurazione del repository S3 e popola la mappa statica.
      */
     private void loadConfigurations() {
-         try (Connection conn = (Connection) sql2oConnection.open()) {
-            List<Map<String, Object>> res = conn.createQuery("select c.key, c.value from repo.configurations")
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            List<Map<String, Object>> res = conn.createQuery("select c.key, c.value from repo.configurations c")
                     .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
-                repositoryConfigurations.put((String) row.get("key"), (String) row.get("codice_azienda"));
+                try {
+                    repositoryConfigurations.put((String) row.get("key"), getJsonField(row.get("value"), String.class));
+                } catch (MinIOWrapperException ex) {
+                    logger.error("Error reading configurations.");
+                }
             }
-         }
+        }
     }
     
-    public String setBucketName(String bucketName) {
-        return repositoryConfigurations.getOrDefault("prefix-bucket", "") + bucketName;
+    /**
+     * Il metodo restituisce il nome del bucket aggiungendo un prefisso se presente nella configurazione
+     * al parametro passato altrimenti restituisce il parametro stesso.
+     * @param bucketName Il nome del bucket al quale verrà aggiunto il prefisso.
+     * @return il nome del bucket.
+     */
+    public String getBucketName(String bucketName) {
+        // Controlla se il bucket ha già il prefisso.
+        String prefixBucket = repositoryConfigurations.get("prefix-bucket");
+        if (prefixBucket != null && (!bucketName.startsWith(prefixBucket) || bucketName.equals(prefixBucket))) {
+            return prefixBucket + bucketName;
+        } else {
+            return bucketName;
+        }
     }
 
     private MinioClient getMinIOClientFromCodiceAzienda(String codiceAzienda) {
@@ -445,7 +463,7 @@ public class MinIOWrapper {
             if (StringUtils.hasText(bucket)) {
                 bucketName = bucket;
             } else {
-                bucketName = setBucketName(codiceAzienda);
+                bucketName = getBucketName(codiceAzienda);
             }
 
             // se il bucket ancora non esiste lo crea
@@ -1698,6 +1716,15 @@ public class MinIOWrapper {
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei metadati", ex);
         }
+    }
+    
+    private <T> T getJsonField(Object field, Class<T> type) throws MinIOWrapperException {
+        return getJsonField(field, new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return type;
+            }
+        });
     }
 
     private ZonedDateTime getZonedDateTime(Object timestamptzField) throws MinIOWrapperException {
