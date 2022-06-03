@@ -6,7 +6,7 @@ import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreato
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaException;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -125,9 +125,9 @@ public class FirmaRemotaDownloaderUtils {
      * @param codiceAzienda il codice azienda alla quale il file appartiene
      * @param forceDownload se "true" l'url tornato forzerà il download
      * @return l'url per poter scaricare il file attraverso la funzione download del Downloader
-     * @throws FirmaRemotaException 
+     * @throws FirmaRemotaHttpException 
      */
-    public String uploadToUploader(InputStream file, String filename, String mimeType, String codiceAzienda, Boolean forceDownload) throws FirmaRemotaException {
+    public String uploadToUploader(InputStream file, String filename, String mimeType, String codiceAzienda, Boolean forceDownload) throws FirmaRemotaHttpException {
         String res;
         String token;
         
@@ -137,7 +137,7 @@ public class FirmaRemotaDownloaderUtils {
         } catch (Exception ex) {
             String errorMessage = "errore nella creazione del token per l'upload";
             logger.error(errorMessage, ex);
-            throw new FirmaRemotaException(errorMessage, ex);
+            throw new FirmaRemotaHttpException(errorMessage, ex);
         }
 
         File tmpFileToUpload = null;
@@ -149,7 +149,7 @@ public class FirmaRemotaDownloaderUtils {
             } catch (Exception ex) {
                 String errorMessage = "errore nella creazione del file temporaneo per l'upload";
                 logger.error(errorMessage, ex);
-                throw new FirmaRemotaException(errorMessage, ex);
+                throw new FirmaRemotaHttpException(errorMessage, ex);
             }
             
             // reperisco l'url del downloader dell'azienda a cui il file fa riferimento
@@ -173,9 +173,9 @@ public class FirmaRemotaDownloaderUtils {
             ResponseBody content = response.body();
             if (!response.isSuccessful()) {
                 if (content != null) {
-                    throw new FirmaRemotaException(String.format("errore nella chiamata all'URL: %s RESPONSE: %s", uploadUrl, content.string()));
+                    throw new FirmaRemotaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: %s", uploadUrl, content.string()));
                 } else {
-                    throw new FirmaRemotaException(String.format("errore nella chiamata all'URL: %s RESPONSE: null", uploadUrl));
+                    throw new FirmaRemotaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: null", uploadUrl));
                 }
             } else { // tutto ok
                 if (content != null) {
@@ -184,7 +184,7 @@ public class FirmaRemotaDownloaderUtils {
                     res = buildDownloadUrl(codiceAzienda, filename, mimeType, downloadParams, forceDownload);
                 }
                 else {
-                    throw new FirmaRemotaException(String.format("l'upload non ha tornato risultato", uploadUrl));
+                    throw new FirmaRemotaHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
                 }
             }
             return res;
@@ -192,7 +192,7 @@ public class FirmaRemotaDownloaderUtils {
         catch (Exception ex) {
             String errorMessage = "errore nella creazione del token per l'upload";
             logger.error(errorMessage, ex);
-            throw new FirmaRemotaException(errorMessage, ex);
+            throw new FirmaRemotaHttpException(errorMessage, ex);
         } finally { // elimina sempre il file temporaneo creato e chiude lo stream del file passato in input
             IOUtils.closeQuietly(file);
             if (tmpFileToUpload != null && tmpFileToUpload.exists()) {

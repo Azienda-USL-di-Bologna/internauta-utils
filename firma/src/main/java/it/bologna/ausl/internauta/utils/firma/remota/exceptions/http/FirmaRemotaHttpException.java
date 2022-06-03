@@ -8,17 +8,17 @@ import org.springframework.http.HttpStatus;
  *
  * @author The great Guido
  */
-public class FirmaRemotaException extends Exception {
+public class FirmaRemotaHttpException extends Exception {
 
-    public FirmaRemotaException(String message) {
+    public FirmaRemotaHttpException(String message) {
         super(message);
     }
 
-    public FirmaRemotaException(Throwable cause) {
+    public FirmaRemotaHttpException(Throwable cause) {
         super(cause);
     }
 
-    public FirmaRemotaException(String message, Throwable cause) {
+    public FirmaRemotaHttpException(String message, Throwable cause) {
         super(message, cause);
     }
     

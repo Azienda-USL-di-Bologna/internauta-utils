@@ -17,19 +17,22 @@ public class ArubaUserInformation extends UserInformation {
     private ModalitaFirma modalitaFirma;
     private String certId; // rappresenta l'id del certificato di firma remota dell'utente. Non sappiamo se servirà
     private String dominioFirma; // rappresenta il dominio della firma (es. frAUSLBO)
+    private Boolean useSavedCredential;
 
     public ArubaUserInformation() {
     }
 
-    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma) {
+    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential) {
         this.username = username;
         this.password = password;
         this.token = token;
         this.modalitaFirma = modalitaFirma;
         this.certId = certId;
         this.dominioFirma = dominioFirma;
+        this.useSavedCredential = useSavedCredential;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -38,6 +41,7 @@ public class ArubaUserInformation extends UserInformation {
         this.username = username;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -46,6 +50,15 @@ public class ArubaUserInformation extends UserInformation {
         this.password = password;
     }
 
+    @Override
+    public Boolean useSavedCredential() {
+        return useSavedCredential;
+    }
+
+    public void setUseSavedCredential(Boolean useSavedCredential) {
+        this.useSavedCredential = useSavedCredential;
+    }
+    
     public String getToken() {
         return token;
     }

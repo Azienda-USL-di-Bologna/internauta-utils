@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.bds.types;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -15,7 +14,9 @@ import org.springframework.format.annotation.DateTimeFormat;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PermessoStoredProcedure implements Serializable {
-//    private Integer id;
+
+    //private static final long serialVersionUID = 1L;
+    private Integer id;
     private String predicato;
     private Boolean propagaSoggetto;
     private Boolean propagaOggetto;
@@ -31,6 +32,7 @@ public class PermessoStoredProcedure implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private LocalDateTime attivoAl;
+    private EntitaStoredProcedure entitaVeicolante;
 
     public PermessoStoredProcedure() {
     }
@@ -42,7 +44,7 @@ public class PermessoStoredProcedure implements Serializable {
         this.virtuale = virtuale;
         this.dataInserimentoRiga = dataInserimentoRiga;
     }
-    
+
     public PermessoStoredProcedure(String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, String originePermesso, Integer idPermessoBloccato, LocalDateTime attivoDal, LocalDateTime attivoAl) {
         this.predicato = predicato;
         this.propagaSoggetto = propagaSoggetto;
@@ -53,6 +55,14 @@ public class PermessoStoredProcedure implements Serializable {
         this.attivoAl = attivoAl;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    
     public String getPredicato() {
         return predicato;
     }
@@ -60,7 +70,7 @@ public class PermessoStoredProcedure implements Serializable {
     public void setPredicato(String predicato) {
         this.predicato = predicato;
     }
-    
+
     @JsonProperty("propaga_soggetto")
     public Boolean getPropagaSoggetto() {
         return propagaSoggetto;
@@ -71,7 +81,7 @@ public class PermessoStoredProcedure implements Serializable {
     public void setPropagaSoggetto(Boolean propagaSoggetto) {
         this.propagaSoggetto = propagaSoggetto;
     }
-    
+
     @JsonProperty("propaga_oggetto")
     public Boolean getPropagaOggetto() {
         return propagaOggetto;
@@ -94,65 +104,75 @@ public class PermessoStoredProcedure implements Serializable {
     public LocalDateTime getDataInserimentoRiga() {
         return dataInserimentoRiga;
     }
-    
+
     @JsonProperty("data_inserimento_riga")
     public void setDataInserimentoRiga(LocalDateTime dataInserimentoRiga) {
         this.dataInserimentoRiga = dataInserimentoRiga;
     }
-    
+
     @JsonProperty("origine_permesso")
     public String getOriginePermesso() {
         return originePermesso;
     }
-    
+
     @JsonProperty("origine_permesso")
     public void setOriginePermesso(String originePermesso) {
         this.originePermesso = originePermesso;
     }
-    
+
     @JsonProperty("id_permesso_bloccato")
     public Integer getIdPermessoBloccato() {
         return idPermessoBloccato;
     }
-    
+
     @JsonProperty("id_permesso_bloccato")
     public void setIdPermessoBloccato(Integer idPermessoBloccato) {
         this.idPermessoBloccato = idPermessoBloccato;
     }
-    
+
     @JsonProperty("attivo_dal")
     public LocalDateTime getAttivoDal() {
         return attivoDal;
     }
-    
+
     @JsonProperty("attivo_dal")
     public void setAttivoDal(LocalDateTime attivoDal) {
         this.attivoDal = attivoDal;
     }
-    
+
     @JsonProperty("attivo_al")
     public LocalDateTime getAttivoAl() {
         return attivoAl;
     }
-    
+
     @JsonProperty("attivo_al")
     public void setAttivoAl(LocalDateTime attivoAl) {
         this.attivoAl = attivoAl;
     }
 
+    @JsonProperty("entita_veicolante")
+    public EntitaStoredProcedure getEntitaVeicolante() {
+        return entitaVeicolante;
+    }
+
+    @JsonProperty("entita_veicolante")
+    public void setEntitaVeicolante(EntitaStoredProcedure entitaVeicolante) {
+        this.entitaVeicolante = entitaVeicolante;
+    }
+
     @Override
     public boolean equals(Object obj) {
         Field[] declaredFields = this.getClass().getDeclaredFields();
-        for(Field field : declaredFields){
-            try{       
+        for (Field field : declaredFields) {
+            try {
                 Object val1 = field.get(this);
                 Object val2 = obj.getClass().getDeclaredField(field.getName()).get(obj);
-                if((val1 != null && val2 == null) || (val1 == null && val2 != null)){
+                if ((val1 != null && val2 == null) || (val1 == null && val2 != null)) {
                     return false;
-                }else if ((val1 != null && val2 != null) && !val1.equals(val2)){
+                } else if ((val1 != null && val2 != null) && !val1.equals(val2)) {
                     return false;
                 }
-            }catch(IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex){
+            } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
                 return false;
             }
         }
