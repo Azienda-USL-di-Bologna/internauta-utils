@@ -51,7 +51,7 @@ public class DefaultUploader extends MinIOUploader {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         
-        String bucket = minIOWrapper.getBucketName(BUCKET);
+        String bucket = BUCKET;
         String codiceAzienda = BUCKET;
         
         try {

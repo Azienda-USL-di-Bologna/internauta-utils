@@ -80,7 +80,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
         String bucket;
         if (params.containsKey("bucket")) {
-            bucket = (String) params.get("bucket");
+            bucket = minIOWrapper.getBucketName((String) params.get("bucket"));
         } else {
             bucket = minIOWrapper.getBucketName(codiceAzienda);
         }

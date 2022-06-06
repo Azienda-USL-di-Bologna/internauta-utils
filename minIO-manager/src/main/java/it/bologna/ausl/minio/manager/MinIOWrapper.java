@@ -461,7 +461,7 @@ public class MinIOWrapper {
             // il nome del bucket sul quale andrà fatto l'upload del file (se non passato è il codiceAzienda)
             String bucketName;
             if (StringUtils.hasText(bucket)) {
-                bucketName = bucket;
+                bucketName = getBucketName(bucket);
             } else {
                 bucketName = getBucketName(codiceAzienda);
             }
