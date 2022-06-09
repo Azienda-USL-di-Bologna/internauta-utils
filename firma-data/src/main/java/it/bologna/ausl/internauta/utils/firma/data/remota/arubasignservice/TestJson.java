@@ -19,7 +19,6 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.Aruba
 public class TestJson {
     
     private static String signParamsString = "{\"signResult\":\"ALL_SIGNED\",\"callBackUrl\":\"http:\\/\\/localhost:8082\\/bds_tools\\/EndSignManager\",\"signedFileList\":[{\"uploaderResult\":\"0194f5e5-4585-4170-b7d8-e31ec28800ec\",\"file\":\"https:\\/\\/gdml.internal.ausl.bologna.it\\/bds_tools\\/Downloader?token=74287608-468A-8FF1-731B-BBA8A598D95B&deletetoken=false\",\"name\":\"2022-902_Allegato1\",\"signType\":\"PADES\",\"signAttributes\":{\"visible\":false,\"textTemplate\":\"[COMMONNAME]\"},\"source\":\"URI\",\"id\":\"E158FF93-C3BC-EAA6-80AB-4517D11884B2\",\"mimeType\":\"application\\/pdf\",\"type\":\"AllegatoPicoNuovoPU\"}],\"endSignParams\":{\"ResultChannel\":\"sign_response_2E83B686-3EFB-41A6-A676-8AE708E99189\"}}";
-    private static String endSignString = "{\"callBackUrl\":\"https:\\/\\/gdml.internal.ausl.bologna.it\\/bds_tools\\/EndSignManager\",\"endSignResult\":\"ABORT\",\"endSignParams\":{\"ResultChannel\":\"sign_response_922CEBA8-F930-D2BA-F1E7-3F75AF07E9F1\",\"signSessionId\":\"\"}}";
     
     public static void main1(String[] args) throws JsonProcessingException {
         ArubaUserInformation a = new ArubaUserInformation("dmrgpp83e29d851cb", "qwerty123456", "123", ModalitaFirma.OTP, "1", "frAUSLBO", false);
@@ -34,7 +33,7 @@ public class TestJson {
     }
     
     public static void main(String[] args) throws JsonProcessingException {
-        SignParamsComponent.EndSign parse = EndSign.parse(endSignString);
+        SignParamsComponent.EndSign parse = EndSign.parse(signParamsString);
         System.out.println(parse.toJsonString());
     }
 }
