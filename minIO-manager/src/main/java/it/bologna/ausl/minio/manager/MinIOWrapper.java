@@ -153,7 +153,7 @@ public class MinIOWrapper {
 //            Sql2o sql2o = new Sql2o(hikariDataSource);
 //            Sql2o sql2o = new Sql2o(hikariDataSource, new PostgresQuirks());
             Sql2o sql2o = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());
-            sql2oConnection = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());;
+            sql2oConnection = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());
         }
     }
 
