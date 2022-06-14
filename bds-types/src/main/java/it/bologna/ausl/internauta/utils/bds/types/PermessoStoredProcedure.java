@@ -17,10 +17,13 @@ public class PermessoStoredProcedure implements Serializable {
 
     //private static final long serialVersionUID = 1L;
     private Integer id;
+    private EntitaStoredProcedure soggetto;
+    private EntitaStoredProcedure oggetto;
     private String predicato;
     private Boolean propagaSoggetto;
     private Boolean propagaOggetto;
     private Boolean virtuale;
+    private Boolean virtualeOggetto;
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private LocalDateTime dataInserimentoRiga;
@@ -44,6 +47,14 @@ public class PermessoStoredProcedure implements Serializable {
         this.virtuale = virtuale;
         this.dataInserimentoRiga = dataInserimentoRiga;
     }
+    public PermessoStoredProcedure(String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, Boolean virtuale, Boolean virtualeOggetto, String ambito, LocalDateTime dataInserimentoRiga, String tipo) {
+        this.predicato = predicato;
+        this.propagaSoggetto = propagaSoggetto;
+        this.propagaOggetto = propagaOggetto;
+        this.virtuale = virtuale;
+        this.virtualeOggetto = virtualeOggetto;
+        this.dataInserimentoRiga = dataInserimentoRiga;
+    }
 
     public PermessoStoredProcedure(String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, String originePermesso, Integer idPermessoBloccato, LocalDateTime attivoDal, LocalDateTime attivoAl) {
         this.predicato = predicato;
@@ -55,12 +66,41 @@ public class PermessoStoredProcedure implements Serializable {
         this.attivoAl = attivoAl;
     }
 
+    public PermessoStoredProcedure(EntitaStoredProcedure soggetto, EntitaStoredProcedure oggetto, String predicato, Boolean propagaSoggetto, Boolean propagaOggetto, String originePermesso, Integer idPermessoBloccato, LocalDateTime attivoDal, LocalDateTime attivoAl, EntitaStoredProcedure entitaVeicolante) {
+        this.soggetto = soggetto;
+        this.oggetto = oggetto;
+        this.predicato = predicato;
+        this.propagaSoggetto = propagaSoggetto;
+        this.propagaOggetto = propagaOggetto;
+        this.originePermesso = originePermesso;
+        this.idPermessoBloccato = idPermessoBloccato;
+        this.attivoDal = attivoDal;
+        this.attivoAl = attivoAl;
+        this.entitaVeicolante = entitaVeicolante;
+    }
+
     public Integer getId() {
         return id;
     }
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public EntitaStoredProcedure getSoggetto() {
+        return soggetto;
+    }
+
+    public void setSoggetto(EntitaStoredProcedure soggetto) {
+        this.soggetto = soggetto;
+    }
+
+    public EntitaStoredProcedure getOggetto() {
+        return oggetto;
+    }
+
+    public void setOggetto(EntitaStoredProcedure oggetto) {
+        this.oggetto = oggetto;
     }
     
     public String getPredicato() {
@@ -98,6 +138,15 @@ public class PermessoStoredProcedure implements Serializable {
 
     public void setVirtuale(Boolean virtuale) {
         this.virtuale = virtuale;
+    }
+    
+    @JsonProperty("virtuale_oggetto")
+    public Boolean getVirtualeOggetto() {
+        return virtualeOggetto;
+    }
+    @JsonProperty("virtuale_oggetto")
+    public void setVirtualeOggetto(Boolean virtualeOggetto) {
+        this.virtualeOggetto = virtualeOggetto;
     }
 
     @JsonProperty("data_inserimento_riga")
