@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -66,18 +67,25 @@ public class MinIOWrapper {
     }
 
     // nome del bucket cestino
-    private final String TRASH_BUCKET = "trash";
+    private String trashBucket = "trash";
 
     // ci possono essere più minIO server, per cui creo una mappa contenente il serverId(campo della tabella servers) e il client associato
     private static final Map<Integer, MinioClient> minIOServerClientMap = new HashMap<>();
 
     // mappo anche il serverId di ogni azienda (serve solo per l'upload, per il resto prendo il serverId presente in tabella repo.files)
     private static final Map<String, Integer> minIOServerAziendaMap = new HashMap<>();
+    
+    // Mappa dei parametri di configurazione per il repository S3
+    private static final Map<String, String> repositoryConfigurations = new HashMap<>();
 
     // connection al Db con Connection Pool
     private static Sql2o sql2oConnection = null;
 
     private final ObjectMapper objectMapper;
+    
+    public Map<String, String> getRepositoryConfigurations() {
+        return repositoryConfigurations;
+    }
 
     /**
      * Costruisce l'oggetto MinIOWrapper per l'interazione con il repository
@@ -125,6 +133,8 @@ public class MinIOWrapper {
     private synchronized void initialize(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
         initializeDBConnectionPool(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize);
         buildConnectionsMap();
+        loadConfigurations();
+        trashBucket = getBucketName(trashBucket);
     }
 
     private void initializeDBConnectionPool(String minIODBDriver, String minIODBUrl, String minIODBUsername, String minIODBPassword, Integer maxPoolSize) {
@@ -143,7 +153,7 @@ public class MinIOWrapper {
 //            Sql2o sql2o = new Sql2o(hikariDataSource);
 //            Sql2o sql2o = new Sql2o(hikariDataSource, new PostgresQuirks());
             Sql2o sql2o = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());
-            sql2oConnection = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());;
+            sql2oConnection = new Sql2o(hikariDataSource, ArrayConverter.arrayConvertingQuirksForPostgres());
         }
     }
 
@@ -164,6 +174,7 @@ public class MinIOWrapper {
                     String endPointUrl = (String) row.get("urls");
 //                    endPointUrl = "http://babelminioprod02.avec.emr.it:9000";
 //                    endPointUrl = "http://babelminiotest01-auslbo.avec.emr.it:9001";
+//                    endPointUrl = "https://s3.eu-west-1.amazonaws.com";
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
 //                    System.out.println("aaaaaaaaaa");
@@ -187,6 +198,39 @@ public class MinIOWrapper {
                     minIOServerClientMap.put(serverId, minioClient);
                 }
             }
+        }
+    }
+    
+    /**
+     * Carica i parametri di configurazione del repository S3 e popola la mappa statica.
+     */
+    private void loadConfigurations() {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            List<Map<String, Object>> res = conn.createQuery("select c.key, c.value from repo.configurations c")
+                    .executeAndFetchTable().asList();
+            for (Map<String, Object> row : res) {
+                try {
+                    repositoryConfigurations.put((String) row.get("key"), getJsonField(row.get("value"), String.class));
+                } catch (MinIOWrapperException ex) {
+                    logger.error("Error reading configurations.");
+                }
+            }
+        }
+    }
+    
+    /**
+     * Il metodo restituisce il nome del bucket aggiungendo un prefisso se presente nella configurazione
+     * al parametro passato altrimenti restituisce il parametro stesso.
+     * @param bucketName Il nome del bucket al quale verrà aggiunto il prefisso.
+     * @return il nome del bucket.
+     */
+    public String getBucketName(String bucketName) {
+        // Controlla se il bucket ha già il prefisso.
+        String prefixBucket = repositoryConfigurations.get("prefix-bucket");
+        if (prefixBucket != null && (!bucketName.startsWith(prefixBucket) || bucketName.equals(prefixBucket))) {
+            return prefixBucket + bucketName;
+        } else {
+            return bucketName;
         }
     }
 
@@ -417,9 +461,9 @@ public class MinIOWrapper {
             // il nome del bucket sul quale andrà fatto l'upload del file (se non passato è il codiceAzienda)
             String bucketName;
             if (StringUtils.hasText(bucket)) {
-                bucketName = bucket;
+                bucketName = getBucketName(bucket);
             } else {
-                bucketName = codiceAzienda;
+                bucketName = getBucketName(codiceAzienda);
             }
 
             // se il bucket ancora non esiste lo crea
@@ -1102,13 +1146,13 @@ public class MinIOWrapper {
                 queryString = queryString.replace("[WHERE]", "where file_id = :file_id and deleted = false");
                 query = conn.createQuery(queryString, true)
                         .addParameter("file_id", fileId)
-                        .addParameter("bucket", TRASH_BUCKET);
+                        .addParameter("bucket", trashBucket);
             } else if (mongoUuid != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
                 queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid and deleted = false");
                 query = conn.createQuery(queryString, true)
                         .addParameter("mongo_uuid", mongoUuid)
-                        .addParameter("bucket", TRASH_BUCKET);
+                        .addParameter("bucket", trashBucket);
             } else if (path != null && fileName != null && codiceAzienda != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
                 path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
@@ -1117,7 +1161,7 @@ public class MinIOWrapper {
                         .addParameter("path", path)
                         .addParameter("filename", fileName)
                         .addParameter("codice_azienda", codiceAzienda)
-                        .addParameter("bucket", TRASH_BUCKET);
+                        .addParameter("bucket", trashBucket);
             }
             logger.info("query eliminazione: " + query.toString());
             PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
@@ -1248,15 +1292,15 @@ public class MinIOWrapper {
         // dato che minIO non supporta lo postamento, prima copiamo il file nel nuovo bucket e poi eliminiamo dal vecchio
         try {
             MinioClient minIOClient = minIOServerClientMap.get(serverId);
-            boolean trashBucketExists = minIOClient.bucketExists(BucketExistsArgs.builder().bucket(TRASH_BUCKET).build());
+            boolean trashBucketExists = minIOClient.bucketExists(BucketExistsArgs.builder().bucket(trashBucket).build());
             if (!trashBucketExists) {
-                minIOClient.makeBucket(MakeBucketArgs.builder().bucket(TRASH_BUCKET).build());
+                minIOClient.makeBucket(MakeBucketArgs.builder().bucket(trashBucket).build());
             }
-            minIOClient.copyObject(CopyObjectArgs.builder().bucket(TRASH_BUCKET).object(fileId)
+            minIOClient.copyObject(CopyObjectArgs.builder().bucket(trashBucket).object(fileId)
                     .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
             minIOClient.removeObject(RemoveObjectArgs.builder().bucket(srcBucket).object(fileId).build());
         } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nello spostamento del file all'interno del bucket " + TRASH_BUCKET, ex);
+            throw new MinIOWrapperException("errore nello spostamento del file all'interno del bucket " + trashBucket, ex);
         }
     }
 
@@ -1277,10 +1321,10 @@ public class MinIOWrapper {
                 minIOClient.makeBucket(MakeBucketArgs.builder().bucket(srcBucket).build());
             }
             minIOClient.copyObject(CopyObjectArgs.builder().bucket(srcBucket).object(fileId)
-                    .source(CopySource.builder().bucket(TRASH_BUCKET).object(fileId).build()).build());
-            minIOClient.removeObject(RemoveObjectArgs.builder().bucket(TRASH_BUCKET).object(fileId).build());
+                    .source(CopySource.builder().bucket(trashBucket).object(fileId).build()).build());
+            minIOClient.removeObject(RemoveObjectArgs.builder().bucket(trashBucket).object(fileId).build());
         } catch (Exception ex) {
-            throw new MinIOWrapperException("errore nello ripristino del file dal bucket " + TRASH_BUCKET, ex);
+            throw new MinIOWrapperException("errore nello ripristino del file dal bucket " + trashBucket, ex);
         }
     }
 
@@ -1537,14 +1581,14 @@ public class MinIOWrapper {
             if (includeSubDir) {
                 queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("bucket", TRASH_BUCKET)
+                        .addParameter("bucket", trashBucket)
                         .addParameter("path_array", pathsArray)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
             } else {
                 queryString = queryString.replace("[WHERE]", "where path = :path and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("bucket", TRASH_BUCKET)
+                        .addParameter("bucket", trashBucket)
                         .addParameter("path", path)
                         .addParameter("codice_azienda", codiceAzienda);
             }
@@ -1672,6 +1716,15 @@ public class MinIOWrapper {
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei metadati", ex);
         }
+    }
+    
+    private <T> T getJsonField(Object field, Class<T> type) throws MinIOWrapperException {
+        return getJsonField(field, new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return type;
+            }
+        });
     }
 
     private ZonedDateTime getZonedDateTime(Object timestamptzField) throws MinIOWrapperException {
