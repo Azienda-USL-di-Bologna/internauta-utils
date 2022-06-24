@@ -29,6 +29,7 @@ public class PermessoStoredProcedure implements Serializable {
     private LocalDateTime dataInserimentoRiga;
     private String originePermesso;
     private Integer idPermessoBloccato;
+    private PermessoStoredProcedure permessoBloccato;
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private LocalDateTime attivoDal;
@@ -177,6 +178,16 @@ public class PermessoStoredProcedure implements Serializable {
     @JsonProperty("id_permesso_bloccato")
     public void setIdPermessoBloccato(Integer idPermessoBloccato) {
         this.idPermessoBloccato = idPermessoBloccato;
+    }
+    
+    @JsonProperty("permesso_bloccato")
+    public PermessoStoredProcedure getPermessoBloccato() {
+        return permessoBloccato;
+    }
+
+    @JsonProperty("permesso_bloccato")
+    public void setPermessoBloccato(PermessoStoredProcedure permessoBloccato) {
+        this.permessoBloccato = permessoBloccato;
     }
 
     @JsonProperty("attivo_dal")
