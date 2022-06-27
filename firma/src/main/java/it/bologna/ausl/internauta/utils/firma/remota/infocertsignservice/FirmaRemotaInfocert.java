@@ -243,6 +243,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                     case "PRS-0002":
                     case "PRS-0009":
                     case "PRS-0010":
+                    case "PRS-0011":
                     case "PRS-0012":
                     case "PRS-0017":
                         throw new InvalidCredentialException("invalid credential" + descriptionString);
