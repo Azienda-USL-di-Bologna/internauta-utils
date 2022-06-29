@@ -5,9 +5,8 @@ import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.X509CertUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.sun.org.slf4j.internal.Logger;
-import com.sun.org.slf4j.internal.LoggerFactory;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -22,6 +21,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -72,7 +73,7 @@ public class AuthorizationUtilityFunctions {
     }
     
     /**
-     * Controlla che il token sia valido secondo i nostri meccanismi di sicurezza e lo rutorna sotto forma di SignedJWT 
+     * Controlla che il token sia valido secondo i nostri meccanismi di sicurezza e torna i claims
      * Controlli:
      *  - sia firmato con il certificato incluso nel campo x5c del token
      *  - il certificato incluso nel campo x5c sia emesso dalla CA di cui si passa il certificato (parametro CACertificate)
@@ -85,7 +86,7 @@ public class AuthorizationUtilityFunctions {
      * @return
      * @throws AuthorizationUtilsException 
      */
-    public static SignedJWT getSignedJWT(String token, X509Certificate CACertificate, Integer maxLimitTokenSeconds, String applicationMode) throws AuthorizationUtilsException {
+    public static JWTClaimsSet checkJWTAndGetClaims(String token, X509Certificate CACertificate, Integer maxLimitTokenSeconds, String applicationMode) throws AuthorizationUtilsException {
 
         try {
             JWSObject signedToken = JWSObject.parse(token);
@@ -110,17 +111,17 @@ public class AuthorizationUtilityFunctions {
             // lo estraggo e lo uso per trovare la chiave pubblica nella mia mappa "hashPublicKeyMap"
             String cn = AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(cert);
         
-            SignedJWT signedJWT = signedToken.getPayload().toSignedJWT();
+            JWTClaimsSet jWTClaimsSet = JWTClaimsSet.parse(signedToken.getPayload().toJSONObject());
             
-            // controllo che il subject del token sia uguale common name del certificato dal quale ho estratto la chiave pubblica
-            String subject = signedJWT.getJWTClaimsSet().getSubject();
-            if (!cn.equalsIgnoreCase(subject)) {
-                String errorMessage = "il subject del token non corrisponde al common name del certificato";
-                logger.error(String.format(errorMessage + " subject: %s - common name: %s", subject, cn));
-                throw new AuthorizationUtilsException(errorMessage);
-            }
+//            // controllo che il subject del token sia uguale common name del certificato dal quale ho estratto la chiave pubblica
+//            String subject = jWTClaimsSet.getSubject();
+//            if (!cn.equalsIgnoreCase(subject)) {
+//                String errorMessage = "il subject del token non corrisponde al common name del certificato";
+//                logger.error(String.format(errorMessage + " subject: %s - common name: %s", subject, cn));
+//                throw new AuthorizationUtilsException(errorMessage);
+//            }
             
-            String tokenMode = (String) signedJWT.getJWTClaimsSet().getClaim("mode");
+            String tokenMode = (String) jWTClaimsSet.getClaim("mode");
             String certRole = getRoleFromX509Certificate(cert);
             if (!tokenMode.equalsIgnoreCase(applicationMode))  {
                 String errorMessage = String.format("il token mode e l'application mode non corrispondono: tokenMode=%s applicationMode=%s", tokenMode, applicationMode);
@@ -135,18 +136,18 @@ public class AuthorizationUtilityFunctions {
             }
 
             // controllo che il token non sia scaduto oppure che la data di scadenza sia troppo elevata
-            Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            Date expirationTime = jWTClaimsSet.getExpirationTime();
             Date maxLimitTokenTime = Date.from(LocalDateTime.now().plusSeconds(maxLimitTokenSeconds).atZone(ZoneId.systemDefault()).toInstant());
             if (expirationTime == null || new Date().after(expirationTime)) {
                 String errorMessage = "il token è scaduto";
                 logger.error(errorMessage);
-                throw new AuthorizationUtilsException(errorMessage);
+//                throw new AuthorizationUtilsException(errorMessage);
             } else if (expirationTime.after(maxLimitTokenTime)) {
                 String errorMessage = String.format("la scadenza del token è troppo lunga, il limite massimo è %s secondi", maxLimitTokenSeconds);
                 logger.error(errorMessage);
                 throw new AuthorizationUtilsException(errorMessage);
             }
-            return signedJWT;
+            return jWTClaimsSet;
             
         } catch (ParseException ex) {
             String errorMessage = "errore nel parsing del token";
