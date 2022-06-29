@@ -1,6 +1,9 @@
 package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 
@@ -9,16 +12,24 @@ import java.util.Map;
  * @author gdm
  */
 public class SignParamsComponent {
+    
+    @JsonIgnore
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    public static ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+    
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class EndSign {
-        public static enum SignResult {
+        public static enum EndSignResults {
             ALL_SIGNED, PARTIALLY_SIGNED, ERROR, ABORT
         }
         
         private String callBackUrl;
         private Map<String, Object> endSignParams;
         private List<SignDocument> signedFileList;
-        private SignResult signResult;
+        private EndSignResults endSignResult;
 
         public EndSign() {
         }
@@ -47,19 +58,34 @@ public class SignParamsComponent {
             this.signedFileList = signedFileList;
         }
 
-        public SignResult getSignResult() {
-            return signResult;
+        public EndSignResults getEndSignResult() {
+            return endSignResult;
         }
 
-        public void setSignResult(SignResult signResult) {
-            this.signResult = signResult;
+        public void setEndSignResult(EndSignResults endSignResult) {
+            this.endSignResult = endSignResult;
+        }
+        
+        public static EndSign parse(String str) throws JsonProcessingException {
+            return getObjectMapper().readValue(str, EndSign.class);
+        }
+        
+         public String toJsonString() throws JsonProcessingException {
+            return SignParamsComponent.getObjectMapper().writeValueAsString(this);
+        }
+    
+        public byte[] toJsonByte() throws JsonProcessingException {
+            return SignParamsComponent.getObjectMapper().writeValueAsBytes(this);
         }
     } 
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class SignDocument {
-        public static enum SignTypes {CADES, PADES}
+        public static enum SignTypes {CADES, PADES, XADES}
         public static enum Sources {URI, FILE_SYSTEM, BASE_64}
+         public static enum SignDocumentResults {
+            SIGNED, ERROR, SKIPPED
+        }
         private String file;
 	private Sources source;
         private String name;
@@ -69,6 +95,8 @@ public class SignParamsComponent {
         private String mimeType;
         private SignTypes signType;
         private SignFileAttributes signAttributes;
+        private SignDocumentResults signDocumentResult;
+        private Map<String, Object> additionalData;
 
         public SignDocument() {
         }
@@ -144,6 +172,22 @@ public class SignParamsComponent {
         public void setSignAttributes(SignFileAttributes signAttributes) {
             this.signAttributes = signAttributes;
         }
+
+        public SignDocumentResults getSignDocumentResult() {
+            return signDocumentResult;
+        }
+
+        public void setSignDocumentResult(SignDocumentResults signDocumentResult) {
+            this.signDocumentResult = signDocumentResult;
+        }
+
+        public Map<String, Object> getAdditionalData() {
+            return additionalData;
+        }
+
+        public void setAdditionalData(Map<String, Object> additionalData) {
+            this.additionalData = additionalData;
+        }
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -189,7 +233,7 @@ public class SignParamsComponent {
         private Integer fieldOriginX;
         private Integer fieldOriginY;
         private Integer fieldWidth;
-        private Integer fieldtHeight;
+        private Integer fieldHeight;
         private Integer page;  // from 1 to n..., 0 not allowed, -1 is the last page
 
         public SignFileAttributesPosition() {
@@ -235,12 +279,12 @@ public class SignParamsComponent {
             this.fieldWidth = fieldWidth;
         }
 
-        public Integer getFieldtHeight() {
-            return fieldtHeight;
+        public Integer getFieldHeight() {
+            return fieldHeight;
         }
 
-        public void setFieldtHeight(Integer fieldtHeight) {
-            this.fieldtHeight = fieldtHeight;
+        public void setFieldHeight(Integer fieldHeight) {
+            this.fieldHeight = fieldHeight;
         }
 
         public Integer getPage() {
