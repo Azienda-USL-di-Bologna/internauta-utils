@@ -141,7 +141,7 @@ public class AuthorizationUtilityFunctions {
             if (expirationTime == null || new Date().after(expirationTime)) {
                 String errorMessage = "il token è scaduto";
                 logger.error(errorMessage);
-//                throw new AuthorizationUtilsException(errorMessage);
+                throw new AuthorizationUtilsException(errorMessage);
             } else if (expirationTime.after(maxLimitTokenTime)) {
                 String errorMessage = String.format("la scadenza del token è troppo lunga, il limite massimo è %s secondi", maxLimitTokenSeconds);
                 logger.error(errorMessage);
