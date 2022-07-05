@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
@@ -14,6 +16,7 @@ import java.util.Map;
  * @author gdm
  */
 public class SignParams {
+       
     private String serverUrl;
     private String signSessionId;
     private String userId;
@@ -87,11 +90,25 @@ public class SignParams {
         try {
             Field[] declaredFields = getClass().getDeclaredFields();
             for (Field declaredField : declaredFields) {
-                res.put(declaredField.getName(), declaredField.get(this));
+                if (declaredField.getAnnotation(JsonIgnore.class) == null) {
+                    res.put(declaredField.getName(), declaredField.get(this));
+                }
             }
         } catch (Exception ex) {
             throw new SignParamsException("errore nella trasformazione dei signparams in mappa", ex);
         }
         return res;
+    }
+    
+    public static SignParams parse(String str) throws JsonProcessingException {
+        return SignParamsComponent.getObjectMapper().readValue(str, SignParams.class);
+    }
+    
+    public String toJsonString() throws JsonProcessingException {
+        return SignParamsComponent.getObjectMapper().writeValueAsString(this);
+    }
+    
+    public byte[] toJsonByte() throws JsonProcessingException {
+        return SignParamsComponent.getObjectMapper().writeValueAsBytes(this);
     }
 }

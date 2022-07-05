@@ -188,7 +188,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
         configurationList.stream().forEach(c -> {
             Map<String, String> row = new HashMap();
             row.put("hostId", c.getHostId());
-            row.put("provider", c.getProvider());
+            row.put("provider", c.getProvider().getId());
             row.put("descrizione", c.getDescrizione());
             providersInfo.add(row);
         });

@@ -3,26 +3,14 @@ package it.bologna.ausl.internauta.utils.firma.jnj.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParams;
-import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent;
-import it.bologna.ausl.internauta.utils.firma.remota.controllers.*;
-import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
-import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
-import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
-import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJException;
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterExpiredException;
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterNotFoundException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepository;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.model.entities.firma.RequestParameter;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
@@ -66,14 +54,28 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
         return "ciao " + nome + cognome;
     }
     
+    /**
+     * torna i parametri (settati con la setParameters) per la sessione di firma jnj
+     * @param token il token che identifica i parametri, tornato dalla setParameters
+     * @param extendedValidity se true, prolunga la validità dei parametri di mezzora (serve per quando l'applicazione jnj-client riparte dopo un aggiornamento)
+     * @param request
+     * @return
+     * @throws FirmaJnJException 
+     */
     @RequestMapping(value = "/getParameters", method = RequestMethod.GET)
-    public SignParams getParameters(@RequestParam(required = true) String token, HttpServletRequest request) throws FirmaJnJException {
+    public SignParams getParameters(
+            @RequestParam(required = true) String token, 
+            @RequestParam(required = false, defaultValue = "false") Boolean extendedValidity, 
+            HttpServletRequest request) throws FirmaJnJException {
         Optional<RequestParameter> requestParamOptional = requestParameterRepository.findById(token);
         
         SignParams res = null;
         if (requestParamOptional.isPresent()) {
             RequestParameter requestParameter = requestParamOptional.get();
-            if (requestParameter.getExpireOn().isAfter(ZonedDateTime.now())) {
+            if (
+                    (requestParameter.getExpireOn().isAfter(ZonedDateTime.now())) || 
+                    (extendedValidity && requestParameter.getExpireOn().plusMinutes(30).isAfter(ZonedDateTime.now()))
+                ) {
                 res = objectMapper.convertValue(requestParameter.getData(), SignParams.class);
                 res.setServerUrl(getFirmaJnJServerUrl(request));
             } else {

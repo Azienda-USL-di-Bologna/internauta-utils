@@ -47,7 +47,7 @@ public class FirmaRemotaFactory {
     public void initFirmaRemotaFactory() throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         configurations = configurationRepository.findAll();
         for (it.bologna.ausl.model.entities.firma.Configuration configuration : configurations) {
-            FirmaRemotaProviders provider = FirmaRemotaProviders.valueOf(configuration.getProvider());
+            FirmaRemotaProviders provider = FirmaRemotaProviders.valueOf(configuration.getProvider().getId());
             FirmaRemota firmaRemotaInstance;
             switch (provider) {
                 case ARUBA:
