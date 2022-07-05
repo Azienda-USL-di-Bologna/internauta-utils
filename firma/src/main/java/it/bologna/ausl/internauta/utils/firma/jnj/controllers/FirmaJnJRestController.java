@@ -54,14 +54,28 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
         return "ciao " + nome + cognome;
     }
     
+    /**
+     * torna i parametri (settati con la setParameters) per la sessione di firma jnj
+     * @param token il token che identifica i parametri, tornato dalla setParameters
+     * @param extendedValidity se true, prolunga la validità dei parametri di mezzora (serve per quando l'applicazione jnj-client riparte dopo un aggiornamento)
+     * @param request
+     * @return
+     * @throws FirmaJnJException 
+     */
     @RequestMapping(value = "/getParameters", method = RequestMethod.GET)
-    public SignParams getParameters(@RequestParam(required = true) String token, HttpServletRequest request) throws FirmaJnJException {
+    public SignParams getParameters(
+            @RequestParam(required = true) String token, 
+            @RequestParam(required = false, defaultValue = "false") Boolean extendedValidity, 
+            HttpServletRequest request) throws FirmaJnJException {
         Optional<RequestParameter> requestParamOptional = requestParameterRepository.findById(token);
         
         SignParams res = null;
         if (requestParamOptional.isPresent()) {
             RequestParameter requestParameter = requestParamOptional.get();
-            if (requestParameter.getExpireOn().isAfter(ZonedDateTime.now())) {
+            if (
+                    (requestParameter.getExpireOn().isAfter(ZonedDateTime.now())) || 
+                    (extendedValidity && requestParameter.getExpireOn().plusMinutes(30).isAfter(ZonedDateTime.now()))
+                ) {
                 res = objectMapper.convertValue(requestParameter.getData(), SignParams.class);
                 res.setServerUrl(getFirmaJnJServerUrl(request));
             } else {
