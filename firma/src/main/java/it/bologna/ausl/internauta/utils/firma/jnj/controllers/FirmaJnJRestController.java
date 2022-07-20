@@ -131,7 +131,7 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
                 File msiInstallerFile = new File(msiInstallerFileName);
                 Files.copy(msiInstallerFile.toPath(), outputStream);
             } else {
-                response.setStatus(HttpStatus.CREATED.value());
+                response.setStatus(HttpStatus.OK.value());
             }
         } else {
             log.warn(String.format("client info file not found in path: %s", clientInfoFile.getAbsolutePath()));
