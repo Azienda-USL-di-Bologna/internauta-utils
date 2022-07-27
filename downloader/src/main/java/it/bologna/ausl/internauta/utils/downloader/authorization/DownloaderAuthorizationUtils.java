@@ -6,6 +6,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.SignedJWT;
+import it.bologna.ausl.internauta.utils.authorizationutils.AuthorizationUtilityFunctions;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderSecurityException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,11 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
-import org.bouncycastle.asn1.x500.RDN;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.asn1.x500.style.IETFUtils;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.slf4j.Logger;
@@ -91,9 +87,9 @@ public class DownloaderAuthorizationUtils {
 //                X509Certificate publicCertBabelTest = getX509CertificateFromFile(new File("downloader/DOWNLOADER_TEST.crt"));
                 X509Certificate publicCertBabelTest = getX509CertificateFromFile(this.downloaderPublicCertBabelTest.getInputStream());
                 hashPublicKeyMap.put("FDB1F11965344A44DB32C4FE1D53C4A5104453BAEFB58F106BD6ABDD4736537B", 
-                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
+                        Pair.of(AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 hashPublicKeyMap.put("546B45E5E5190F9909467052C63FAD59067DE9B6AEC45E7D8E4BDE742FF2F195", 
-                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
+                        Pair.of(AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 break;
             case "prod": // se sono in modalità di prod, prendo al chiave di prod per decrittare il token e il certificato di prod per controllare la firma
 //                this.tokenDecripterPrivateKey = this.tokenDecripterPrivateKeyProd;
@@ -103,7 +99,7 @@ public class DownloaderAuthorizationUtils {
                 // certificato interno nostro per prod
                 X509Certificate publicCertBabelProd = getX509CertificateFromFile(this.downloaderPublicCertBabelProd.getInputStream());
                 this.hashPublicKeyMap.put("819EE5A635FA45FBCED93BEE6ED0B9721C02A9B933328806DDFF84CD5AA9DD42",
-                        Pair.of(getCommonNameFromX509Certificate(publicCertBabelProd), publicCertBabelProd.getPublicKey()));
+                        Pair.of(AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCertBabelProd), publicCertBabelProd.getPublicKey()));
                 break;
             default:
                 String errorMessage = String.format("downloader mode deve essere \"%s\" o \"%s\". Valore trovato \"%s\"", "test", "prod", downloaderMode);
@@ -151,20 +147,6 @@ public class DownloaderAuthorizationUtils {
             X509Certificate cert = X509CertUtils.parse(pemReader.readPemObject().getContent());
             return cert;
         }
-    }
-
-    /**
-     * Estrae il common name dal certificato
-     * @param cert
-     * @return
-     * @throws CertificateEncodingException 
-     */
-    private String getCommonNameFromX509Certificate(X509Certificate cert) throws CertificateEncodingException {
-        X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
-        RDN cn = x500name.getRDNs(BCStyle.CN)[0];
-
-        String cnString = IETFUtils.valueToString(cn.getFirst().getValue());
-        return cnString;
     }
     
     /**

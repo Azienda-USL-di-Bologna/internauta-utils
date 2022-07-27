@@ -16,6 +16,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+
 /**
  *
  * @author gdm
@@ -25,23 +26,29 @@ public class FirmaRemotaFactory {
 
     // contiene per ogni istallazione (identificata dal suo hostId), una istanza di FirmaRemota
     private final static Map<String, FirmaRemota> hostIdFirmaInstansceMap = new HashMap<>();
-    
+
     @Autowired
     private ConfigParams configParams;
-    
+
     @Autowired
     private FirmaRemotaDownloaderUtils firmaRemotaUtils;
-    
+
     @Autowired
     private ConfigurationRepository configurationRepository;
-    
+
     @Autowired
     private InternalCredentialManager internalCredentialManager;
-    
+
     List<it.bologna.ausl.model.entities.firma.Configuration> configurations;
 
     @Value("${arubasignservice.dominio_firma:FRauslbo}")
     private String dominioFirmaDefault;
+
+    @Value("${firma.remota.infocert.ssl.certpath:#{null}}")
+    private String firmaRemotaInfocertSslCertpath;
+
+    @Value("${firma.remota.infocert.ssl.certpassword:#{null}}")
+    private String firmaRemotaInfocertSslCertpassword;
 
     @PostConstruct
     public void initFirmaRemotaFactory() throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
@@ -54,7 +61,7 @@ public class FirmaRemotaFactory {
                     firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, dominioFirmaDefault);
                     break;
                 case INFOCERT:
-                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager);
+                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaRemotaInfocertSslCertpath, firmaRemotaInfocertSslCertpassword);
                     break;
                 default:
                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not found");
@@ -63,15 +70,18 @@ public class FirmaRemotaFactory {
         }
     }
 
-    /** 
-     * Torna l'istanza corretta dell'implementazione di FirmaRemota relativa all'hostId passato.
-     * 
-     * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+    /**
+     * Torna l'istanza corretta dell'implementazione di FirmaRemota relativa
+     * all'hostId passato.
+     *
+     * @param hostId l'hostId della tabella Configurations che identifica
+     * l'installazione della firma remota da utilizzare
      * @return l'istanza della classe giusta in base all'hostId passato
-     * @throws FirmaRemotaHttpException 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
+     * @throws FirmaRemotaHttpException
+     * @throws
+     * it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException
      */
-    public FirmaRemota getFirmaRemotaInstance(String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {        
+    public FirmaRemota getFirmaRemotaInstance(String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         // tramite l'hostId recupero dalla mappa l'istanza creta in fase di inizializzazione
         FirmaRemota firmaRemotaInstance = hostIdFirmaInstansceMap.get(hostId);
         return firmaRemotaInstance;
