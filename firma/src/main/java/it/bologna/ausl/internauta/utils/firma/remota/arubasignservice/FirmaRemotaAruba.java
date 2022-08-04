@@ -51,6 +51,7 @@ import java.util.Map;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.ws.BindingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,7 +121,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * @throws FirmaRemotaHttpException 
      */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
         logger.info("in firma...");
 
         // prendo i file da firmare
@@ -167,7 +168,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                     logger.info(String.format("uploading fileId %s...", file.getFileId()));
 
                     // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
-                    super.upload(file, signedFileIs, codiceAzienda);
+                    super.upload(file, signedFileIs, codiceAzienda, request);
                 }
                 logger.info(String.format("file %s completed", file.getFileId()));
             }

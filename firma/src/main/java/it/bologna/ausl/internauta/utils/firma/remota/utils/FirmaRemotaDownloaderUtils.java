@@ -7,6 +7,7 @@ import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.Authorizat
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 import okhttp3.Call;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -122,12 +124,11 @@ public class FirmaRemotaDownloaderUtils {
      * @param file il file da inviare
      * @param filename il nome che il file dovrà avere sul repository
      * @param mimeType il mimeType del file
-     * @param codiceAzienda il codice azienda alla quale il file appartiene
      * @param forceDownload se "true" l'url tornato forzerà il download
      * @return l'url per poter scaricare il file attraverso la funzione download del Downloader
      * @throws FirmaRemotaHttpException 
      */
-    public String uploadToUploader(InputStream file, String filename, String mimeType, String codiceAzienda, Boolean forceDownload) throws FirmaRemotaHttpException {
+    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, HttpServletRequest request) throws FirmaRemotaHttpException {
         String res;
         String token;
         
@@ -152,22 +153,26 @@ public class FirmaRemotaDownloaderUtils {
                 throw new FirmaRemotaHttpException(errorMessage, ex);
             }
             
+            String scheme = request.getScheme();
+            String hostname = CommonUtils.getHostname(request);
+            Integer port = request.getServerPort();
+            
             // reperisco l'url del downloader dell'azienda a cui il file fa riferimento
-            String uploadUrl = this.configParams.getDownloaderParams(codiceAzienda).get("uploadUrl");
+            String uploadUrl = this.configParams.getUploaderUrl(scheme, hostname, port);
             
             // creo la richiesta multipart mettendo il token nei query-params
             RequestBody dataBody = RequestBody.create(okhttp3.MultipartBody.FORM, tmpFileToUpload);
             MultipartBody multipartBody = new MultipartBody.Builder()
                 .addPart(MultipartBody.Part.createFormData("file", filename, dataBody))
                 .build();
-            Request request = new Request.Builder()
+            Request uploadRequest = new Request.Builder()
                 .url(String.format("%s?token=%s", uploadUrl, token))
                 .post(multipartBody)
                 .build();
 
             // eseguo la chiamata all'upload
             OkHttpClient httpClient = getHttpClient();
-            Call call = httpClient.newCall(request);
+            Call call = httpClient.newCall(uploadRequest);
             Response response = call.execute();
 
             ResponseBody content = response.body();
@@ -181,7 +186,7 @@ public class FirmaRemotaDownloaderUtils {
                 if (content != null) {
                     // se tutto ok creo l'url per il download e lo torno
                     Map<String, Object> downloadParams = objectMapper.readValue(content.byteStream(), new TypeReference<Map<String, Object>>(){});
-                    res = buildDownloadUrl(codiceAzienda, filename, mimeType, downloadParams, forceDownload);
+                    res = buildDownloadUrl(filename, mimeType, downloadParams, forceDownload, request);
                 }
                 else {
                     throw new FirmaRemotaHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
@@ -232,8 +237,12 @@ public class FirmaRemotaDownloaderUtils {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException 
      */
-    private String buildDownloadUrl(String codiceAzienda, String fileName, String mimeType, Map<String, Object> downloadParams, Boolean forceDownload) throws FirmaRemotaConfigurationException, IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
-        String downloadUrl = this.configParams.getDownloaderParams(codiceAzienda).get("downloadUrl");
+    private String buildDownloadUrl(String fileName, String mimeType, Map<String, Object> downloadParams, Boolean forceDownload, HttpServletRequest request) throws FirmaRemotaConfigurationException, IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
+        String scheme = request.getScheme();
+        String hostname = CommonUtils.getHostname(request);
+        Integer port = request.getServerPort();
+        
+        String downloadUrl = this.configParams.getDownloaderUrl(scheme, hostname, port);
         Map<String, Object> downloaderContext = getDownloaderContext(downloadParams, fileName, mimeType);
         String token = buildToken(downloaderContext);
         return String.format("%s?token=%s&forceDownload=%s", downloadUrl, token, forceDownload);
