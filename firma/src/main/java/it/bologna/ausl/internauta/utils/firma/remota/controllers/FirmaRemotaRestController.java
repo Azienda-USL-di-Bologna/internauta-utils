@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota.controllers;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
-import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
@@ -16,8 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -127,13 +125,13 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
         return res;
     }
     
-    @RequestMapping(value = "/firmaRemotaMultpart", method = RequestMethod.POST)
+    @RequestMapping(value = "/firmaRemotaMultpart", consumes = "multipart/form-data", method = RequestMethod.POST)
     public FirmaRemotaInformation firmaRemotaMultipart(
-                @RequestBody MultipartFile[] files, 
-                @RequestBody FirmaRemotaInformation firmaRemotaInformation, 
+                @RequestPart("files") MultipartFile[] files, 
+                @RequestPart("firmaRemotaInformation") FirmaRemotaInformation firmaRemotaInformation, 
                 @RequestParam(required = true) String hostId,
                 HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
-       
+       //MultipartHttpServletRequest
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         FirmaRemotaInformation res = firmaRemotaInstance.firmaMultipart(files, firmaRemotaInformation, hostId, request);
         return res;

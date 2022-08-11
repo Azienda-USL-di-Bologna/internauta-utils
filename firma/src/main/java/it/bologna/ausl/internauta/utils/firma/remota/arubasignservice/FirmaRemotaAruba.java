@@ -4,7 +4,6 @@ package it.bologna.ausl.internauta.utils.firma.remota.arubasignservice;
 import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation;
 import com.sun.xml.ws.developer.JAXWSProperties;
 import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
-
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
@@ -27,7 +26,6 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wscli
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeTransport;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
-
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
