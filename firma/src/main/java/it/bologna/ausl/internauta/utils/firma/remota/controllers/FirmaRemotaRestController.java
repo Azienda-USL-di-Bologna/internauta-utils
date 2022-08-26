@@ -15,15 +15,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Controller che implementa le API per la firma remota
@@ -85,6 +86,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param firmaRemotaInformation le informazioni che identificano i file da firmare
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @param codiceAzienda codice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
+     * @param request
      * @return
      * @throws FirmaRemotaHttpException
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException
@@ -95,9 +97,10 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     public FirmaRemotaInformation firma(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation,
                 @RequestParam(required = true) String hostId,
-                @RequestParam(required = true) String codiceAzienda) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String codiceAzienda,
+                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda);
+        FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
         return res;
     }
     
@@ -106,6 +109,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param firmaRemotaInformation le informazioni che identificano i file da firmare
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @param codiceAzienda codice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
+     * @param request
      * @return
      * @throws FirmaRemotaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
@@ -114,9 +118,22 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     public FirmaRemotaInformation firmaRemota(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation, 
                 @RequestParam(required = true) String hostId,
-                @RequestParam(required = true) String codiceAzienda) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String codiceAzienda,
+                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda);
+        FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
+        return res;
+    }
+    
+    @RequestMapping(value = "/firmaRemotaMultpart", consumes = "multipart/form-data", method = RequestMethod.POST)
+    public FirmaRemotaInformation firmaRemotaMultipart(
+                @RequestPart("files") MultipartFile[] files, 
+                @RequestPart("firmaRemotaInformation") FirmaRemotaInformation firmaRemotaInformation, 
+                @RequestParam(required = true) String hostId,
+                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+       //MultipartHttpServletRequest
+        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
+        FirmaRemotaInformation res = firmaRemotaInstance.firmaMultipart(files, firmaRemotaInformation, hostId, request);
         return res;
     }
 

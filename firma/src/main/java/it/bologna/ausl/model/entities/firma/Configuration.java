@@ -21,7 +21,7 @@ import org.hibernate.annotations.TypeDefs;
 
 /**
  *
- * @author solidus83
+ * @author gdm
  */
 @TypeDefs({
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
