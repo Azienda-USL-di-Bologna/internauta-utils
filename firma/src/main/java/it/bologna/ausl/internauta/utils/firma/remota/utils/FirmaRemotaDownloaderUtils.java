@@ -218,8 +218,8 @@ public class FirmaRemotaDownloaderUtils {
     private String buildToken(Map<String,Object> context) throws IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
         DownloaderTokenCreator downloaderTokenCreator = new DownloaderTokenCreator();
         PrivateKey signTokenPrivateKey = downloaderTokenCreator.getSignTokenPrivateKey(signTokenPrivateKeyFileLocation, signTokenPrivateKeyAlias, signTokenPrivateKeyPassword);
-        RSAPublicKey encryptionPublicKey = downloaderTokenCreator.getEncryptionPublicKey(this.downloaderEncryptionPublicKey.getFile());
-        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel.getFile(), signTokenPrivateKey, encryptionPublicKey, this.tokenExpireSeconds, "firma-internauta");
+        RSAPublicKey encryptionPublicKey = downloaderTokenCreator.getEncryptionPublicKey(this.downloaderEncryptionPublicKey.getInputStream());
+        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel.getInputStream(), signTokenPrivateKey, encryptionPublicKey, this.tokenExpireSeconds, "firma-internauta");
     }
     
     /**
