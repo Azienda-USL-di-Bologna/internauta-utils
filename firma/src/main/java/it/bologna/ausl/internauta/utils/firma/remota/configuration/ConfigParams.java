@@ -2,17 +2,13 @@ package it.bologna.ausl.internauta.utils.firma.remota.configuration;
 
 
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
+import it.bologna.ausl.internauta.utils.firma.repositories.ParameterRepository;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
-import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
+import it.bologna.ausl.model.entities.firma.Parameter;
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
@@ -34,24 +30,27 @@ public class ConfigParams {
 
     private static Logger logger = LoggerFactory.getLogger(ConfigParams.class);
 
+    public enum ParameterIds {
+        downloader,
+        minIOConfig,
+    }
+    
+    public enum DownloaderParamsKey {
+        uploadUrl,
+        downloadUrl,
+        uploaderBucket
+    }
+    
     @Autowired
     private ObjectMapper objectMapper;
     
     @Autowired
-    private ParametriAziendeReader parametriAziendeReader;
+    private ParameterRepository parameterRepository;
     
     private MinIOWrapper minIOWrapper;
-    
-    /*
-    * Questa mappa è un Bean di parameters-manager e viene popolata dall'applicazione contenitore (es. internauta) implementando it.bologna.ausl.internauta.utils.parameters.manager.configuration.ParametersManagerConfiguration
-    * Contiene la mappa codice-azienda->id-azienda
-    */
-    @Resource
-    @Qualifier("codiceAziendaIdAziendaMap")
-    private Map<String, Object> codiceAziendaIdAziendaMap;
-    
-    private List<ParametroAziende> downloaderParams;
-    
+        
+    private Map<String, Object> downloaderParams;
+       
     /**
      * Questo metodo viene eseguito in fase di boot dell'applicazione.
      * Inizializza il tutto
@@ -61,37 +60,60 @@ public class ConfigParams {
      */
     @PostConstruct
     public void init() throws UnknownHostException, IOException, FirmaRemotaConfigurationException {
-        List<ParametroAziende> parametersMinIO = parametriAziendeReader.getParameters(ParametriAziendeReader.ParametriAzienda.minIOConfig.toString());
-        if (parametersMinIO == null || parametersMinIO.isEmpty() || parametersMinIO.size() > 1) {
-            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nei parametri_aziende, oppure è presente più volte per la stessa azienda", ParametriAziendeReader.ParametriAzienda.minIOConfig.toString()));
+        
+        // lettura dei parametr di MinIO
+        Optional<Parameter> minIOParameterOp = parameterRepository.findById(ParameterIds.minIOConfig.toString());
+        if (!minIOParameterOp.isPresent() || minIOParameterOp.get().getValue().isEmpty()) {
+            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.minIOConfig.toString()));
         }
-        Map<String, Object> minIOConfig = parametriAziendeReader.getValue(parametersMinIO.get(0), new TypeReference<Map<String, Object>>() {});
-
+        Map<String, Object> minIOConfig = minIOParameterOp.get().getValue();
+        
         initMinIO(minIOConfig);
         
-        // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
-        this.downloaderParams = parametriAziendeReader.getParameters(ParametriAziendeReader.ParametriAzienda.downloader.toString());
-        if (this.downloaderParams == null || this.downloaderParams.isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("parametro %s non presente", ParametriAziendeReader.ParametriAzienda.downloader.toString()));
+        // lettura dei parametri del downloader
+        Optional<Parameter> downloaderParameterOp = parameterRepository.findById(ParameterIds.downloader.toString());
+        if (!downloaderParameterOp.isPresent() || downloaderParameterOp.get().getValue().isEmpty()) {
+            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.downloader.toString()));
         }
+        
+        // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
+        this.downloaderParams = downloaderParameterOp.get().getValue();
     }
     
     /**
-     * Torna i parametri Downloader relativi all'azienda passata (uploadUrl e downloadUrl)
-     * @param codiceAzienda l'azienda di cui si vogliono conoscere i parametri
+     * Torna l'url del downloder sostituendo ai segnaposto (se ci sono) lo schema, l'hostname e la porta passati
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
      * @return
      */
-    public Map<String, String> getDownloaderParams(String codiceAzienda) {
-        Integer idAzienda = (Integer) this.codiceAziendaIdAziendaMap.get(codiceAzienda);
-        Optional<ParametroAziende> paramOp = this.downloaderParams.stream().filter(p -> Arrays.stream(p.getIdAziende()).anyMatch(idAzienda::equals)).findFirst();
-        ParametroAziende param;
-        if (paramOp.isPresent()) {
-            param = paramOp.get();
-        } else {
-            param = this.downloaderParams.get(0);
-        }
-        Map<String, String> paramValue = this.parametriAziendeReader.getValue(param, new TypeReference<Map<String, String>>(){});
-        return paramValue;
+    public String getDownloaderUrl(String scheme, String hostname, Integer port) {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrl.toString()))
+                .replace("{scheme}", scheme)
+                .replace("{hostname}", hostname)
+                .replace("{port}", port.toString());
+    }
+    
+    /**
+     * Torna l'url dell'uploader sostituendo ai segnaposto (se ci sono) lo schema, l'hostname e la porta passati
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
+     * @return
+     */
+    public String getUploaderUrl(String scheme, String hostname, Integer port) {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrl.toString()))
+                .replace("{scheme}", scheme)
+                .replace("{hostname}", hostname)
+                .replace("{port}", port.toString());
+    }
+    
+    /**
+     * Torna il nome del bucket dell'uploader
+     * @return il nome del bucket dell'uploader
+     */
+    public String getUploaderUrlBucket() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploaderBucket.toString()));
     }
     
     /**

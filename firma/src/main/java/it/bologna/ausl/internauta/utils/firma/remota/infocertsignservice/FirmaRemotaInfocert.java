@@ -50,6 +50,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import okhttp3.Call;
@@ -102,7 +103,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
      * @throws FirmaRemotaHttpException Errore durante l'upload del file.
      */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
 
         List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
 
@@ -172,12 +173,12 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 MultipartBody multipartBody = formData.addFormDataPart("contentToSign-0", filename, dataBody)
                         .build();
 
-                Request request = new Request.Builder().header("Content-Type", "multipart/form-data")
+                Request uploaderRequest = new Request.Builder().header("Content-Type", "multipart/form-data")
                         .url(signServiceEndPointUri + endPointFirmaURI)
                         .post(multipartBody)
                         .build();
 
-                OkHttpClient httpClient = null;
+                OkHttpClient httpClient;
                 // eseguo la chiamata all'upload
                 if (sslCertPath != null && sslCertPswd != null) {
                     httpClient = buildSSLHttpClient();
@@ -186,7 +187,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                     httpClient = builder.connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS).build();
                 }
 
-                Call call = httpClient.newCall(request);
+                Call call = httpClient.newCall(uploaderRequest);
                 okhttp3.Response response = call.execute();
 
                 try (ResponseBody responseBody = response.body()) {
@@ -194,7 +195,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         try {
                             InputStream signedFileIs = responseBody.byteStream();
                             // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
-                            super.upload(file, signedFileIs, codiceAzienda);
+                            super.upload(file, signedFileIs, codiceAzienda, request);
                             logger.info("File firmato");
                         } catch (MinIOWrapperException e) {
                             logger.error("error", e);

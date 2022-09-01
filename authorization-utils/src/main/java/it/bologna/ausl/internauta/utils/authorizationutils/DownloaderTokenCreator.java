@@ -19,6 +19,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyStore;
@@ -88,9 +90,9 @@ public class DownloaderTokenCreator {
      * @throws FileNotFoundException
      * @throws IOException 
      */
-    public X509Certificate getX509Certificate(File certFile) throws FileNotFoundException, IOException {
+    public X509Certificate getX509Certificate(InputStream certFile) throws FileNotFoundException, IOException {
         // 
-        X509Certificate cert = X509CertUtils.parse(new PemReader(new FileReader(certFile)).readPemObject().getContent());
+        X509Certificate cert = X509CertUtils.parse(new PemReader(new InputStreamReader(certFile)).readPemObject().getContent());
 //        X509Certificate cert = X509CertUtils.parse(new PemReader(new FileReader("DOWNLOADER_TEST.crt")).readPemObject().getContent());
          
 //        X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
@@ -124,9 +126,9 @@ public class DownloaderTokenCreator {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException 
      */
-    public RSAPublicKey getEncryptionPublicKey(File publicKeyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public RSAPublicKey getEncryptionPublicKey(InputStream publicKeyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         try (
-            FileReader keyReader = new FileReader(publicKeyFile);
+            InputStreamReader keyReader = new InputStreamReader(publicKeyFile);
             PemReader pemReader = new PemReader(keyReader)) {
             PemObject pemObject = pemReader.readPemObject();
             byte[] content = pemObject.getContent();
@@ -136,6 +138,7 @@ public class DownloaderTokenCreator {
             return (RSAPublicKey) publicKey;
         }
     }
+
     
     /**
      * Crea il token di autorizzazione per il downloader.
@@ -150,7 +153,13 @@ public class DownloaderTokenCreator {
      * @return il token da passare come query-param nella chiamata al downloader
      * @throws it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException
      */
-    public String getToken(Map<String, Object> context, File publicCertFile, PrivateKey singTokenPrivateKey, RSAPublicKey tokenEncryptionPublickey, Integer expirationSeconds, String issuer) throws AuthorizationUtilsException {
+    public String getToken(
+            Map<String, Object> context, 
+            InputStream publicCertFile, 
+            PrivateKey singTokenPrivateKey, 
+            RSAPublicKey tokenEncryptionPublickey, 
+            Integer expirationSeconds, 
+            String issuer) throws AuthorizationUtilsException {
         X509Certificate publicCert;
         Key jwsPublicKey;
         String commonName;
