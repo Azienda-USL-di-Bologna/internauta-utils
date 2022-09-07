@@ -7,14 +7,15 @@ import java.lang.reflect.Field;
  * @author Giuseppe De Marco (gdm)
  */
 public class ExtractorResult {
-private String fileName;
-private String mimeType;
-private long size;
-private String hash;
-private String path;
-private int level;
-private String padre;
-private String antenati;
+    private String fileName;
+    private String mimeType;
+    private long size;
+    private String hash;
+    private String path;
+    private int level;
+    private String padre;
+    private String antenati;
+    private boolean isExtractable;
 
     public ExtractorResult(String fileName, String mimeType, long size, String hash, String path, int level, String padre,String antenati) {
         this.fileName = fileName;
@@ -25,6 +26,18 @@ private String antenati;
         this.level = level;
         this.padre = padre;
         this.antenati = antenati;
+    }
+    
+    public ExtractorResult(String fileName, String mimeType, long size, String hash, String path, int level, String padre,String antenati, boolean isExtractable) {
+        this.fileName = fileName;
+        this.mimeType = mimeType;
+        this.size = size;
+        this.hash = hash;
+        this.path = path;
+        this.level = level;
+        this.padre = padre;
+        this.antenati = antenati;
+        this.isExtractable = isExtractable;
     }
 
     public String getAntenati() {
@@ -92,7 +105,14 @@ private String antenati;
         this.level = level;
     }
 
-    
+    public boolean getIsExtractable() {
+        return isExtractable;
+    }
+
+    public void setIsExtractable(boolean isExtractable) {
+        this.isExtractable = isExtractable;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
