@@ -84,41 +84,6 @@ public class DownloaderTokenCreator {
     }
     
     /**
-     * Torna un X509Certificate dal file passato in input
-     * @param certFile il file del certificato
-     * @return
-     * @throws FileNotFoundException
-     * @throws IOException 
-     */
-    public X509Certificate getX509Certificate(InputStream certFile) throws FileNotFoundException, IOException {
-        // 
-        X509Certificate cert = X509CertUtils.parse(new PemReader(new InputStreamReader(certFile)).readPemObject().getContent());
-//        X509Certificate cert = X509CertUtils.parse(new PemReader(new FileReader("DOWNLOADER_TEST.crt")).readPemObject().getContent());
-         
-//        X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
-//        RDN cn = x500name.getRDNs(BCStyle.CN)[0];
-//
-//        String valueToString = IETFUtils.valueToString(cn.getFirst().getValue());
-//        System.out.println("common name: " + valueToString); 
-        
-        return cert;
-    }
-    
-    /**
-     * Estrae il common name dal certificato
-     * @param cert il certificato dal quale etrarre il common-name
-     * @return il common name estratto dal certificato passato in input
-     * @throws CertificateEncodingException 
-     */
-    private String getCommonNameFromX509Certificate(X509Certificate cert) throws CertificateEncodingException {
-        X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
-        RDN cn = x500name.getRDNs(BCStyle.CN)[0];
-
-        String cnString = IETFUtils.valueToString(cn.getFirst().getValue());
-        return cnString;
-    }
-    
-    /**
      * Torna l'oggetto RSAPublicKey dal file in input. Da usare per la cifratura del token
      * @param publicKeyFile
      * @return
@@ -164,9 +129,9 @@ public class DownloaderTokenCreator {
         Key jwsPublicKey;
         String commonName;
         try {
-            publicCert = getX509Certificate(publicCertFile);
+            publicCert = AuthorizationUtilityFunctions.getX509CertificatePEMEconded(publicCertFile);
             jwsPublicKey = publicCert.getPublicKey();
-            commonName = getCommonNameFromX509Certificate(publicCert);
+            commonName = AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCert);
         } catch (IOException | CertificateEncodingException ex) {
             throw new AuthorizationUtilsException("errore nel parsing del certificato", ex);
         }

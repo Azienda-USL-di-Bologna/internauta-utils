@@ -3,7 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;

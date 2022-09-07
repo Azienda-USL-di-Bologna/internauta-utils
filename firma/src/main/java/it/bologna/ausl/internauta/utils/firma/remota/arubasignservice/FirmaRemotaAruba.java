@@ -3,7 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota.arubasignservice;
 
 import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation;
 import com.sun.xml.ws.developer.JAXWSProperties;
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;

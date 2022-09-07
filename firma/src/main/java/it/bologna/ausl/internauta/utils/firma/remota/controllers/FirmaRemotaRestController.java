@@ -127,8 +127,8 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     
     @RequestMapping(value = "/firmaRemotaMultpart", consumes = "multipart/form-data", method = RequestMethod.POST)
     public FirmaRemotaInformation firmaRemotaMultipart(
-                @RequestPart("files") MultipartFile[] files, 
-                @RequestPart("firmaRemotaInformation") FirmaRemotaInformation firmaRemotaInformation, 
+                @RequestPart("files") MultipartFile[] files,
+                @RequestPart("firmaRemotaInformation") FirmaRemotaInformation firmaRemotaInformation,
                 @RequestParam(required = true) String hostId,
                 HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
        //MultipartHttpServletRequest
