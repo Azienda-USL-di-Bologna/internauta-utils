@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreator;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;

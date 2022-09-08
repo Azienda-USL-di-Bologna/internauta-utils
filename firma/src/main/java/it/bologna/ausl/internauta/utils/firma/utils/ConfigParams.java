@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.firma.remota.configuration;
+package it.bologna.ausl.internauta.utils.firma.utils;
 
 
 
@@ -12,16 +12,14 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.stereotype.Service;
 
 /**
- * Questa classe legge, tramite il modulo parameters-manager, i parametri di configurazione dal database (tabella configurazione.parametri_azienda)
+ * Questa classe legge, i parametri di configurazione dal database (tabella firma.parameters)
  * 
  * @author gdm
  */
@@ -33,12 +31,17 @@ public class ConfigParams {
     public enum ParameterIds {
         downloader,
         minIOConfig,
+        externalCheckCertificate,
     }
     
     public enum DownloaderParamsKey {
         uploadUrl,
         downloadUrl,
         uploaderBucket
+    }
+    
+    public enum ExternalCheckCertificateParamsKey {
+        url
     }
     
     @Autowired
@@ -50,6 +53,7 @@ public class ConfigParams {
     private MinIOWrapper minIOWrapper;
         
     private Map<String, Object> downloaderParams;
+    private Map<String, Object> externalCheckCertificateParams;
        
     /**
      * Questo metodo viene eseguito in fase di boot dell'applicazione.
@@ -78,6 +82,13 @@ public class ConfigParams {
         
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
+        
+        // lettura del parametro externalCheckCertificate
+        Optional<Parameter> externalCheckCertificateOp = parameterRepository.findById(ParameterIds.externalCheckCertificate.toString());
+        if (!externalCheckCertificateOp.isPresent() || externalCheckCertificateOp.get().getValue().isEmpty()) {
+            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.externalCheckCertificate.toString()));
+        }
+        this.externalCheckCertificateParams = externalCheckCertificateOp.get().getValue();
     }
     
     /**
@@ -114,6 +125,20 @@ public class ConfigParams {
      */
     public String getUploaderUrlBucket() {
         return ((String)this.downloaderParams.get(DownloaderParamsKey.uploaderBucket.toString()));
+    }
+    
+    /**
+     * Torna l'url del servizio esterno di controllo del certificato
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
+     * @return l'url del servizio esterno di controllo del certificato
+     */
+    public String getExternalCheckCertificateUrl(String scheme, String hostname, Integer port) {
+        return ((String) this.externalCheckCertificateParams.get(ExternalCheckCertificateParamsKey.url.toString()))
+                .replace("{scheme}", scheme)
+                .replace("{hostname}", hostname)
+                .replace("{port}", port.toString());
     }
     
     /**

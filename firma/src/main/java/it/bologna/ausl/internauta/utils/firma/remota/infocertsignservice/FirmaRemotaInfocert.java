@@ -8,7 +8,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.In
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfocertUserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
