@@ -16,10 +16,7 @@ import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepos
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.model.entities.firma.RequestParameter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
@@ -31,28 +28,23 @@ import java.util.UUID;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okio.ByteString;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -149,14 +141,14 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
         if (clientInfoFile.exists()) {
             Map<String, Object> clientInfo = objectMapper.readValue(clientInfoFile, new TypeReference<Map<String, Object>>(){});
             String actualVersion = (String) clientInfo.get("version");
-            String msiInstallerFileName = (String) clientInfo.get("msi-file");
+            String msiInstallerFilePath = (String) clientInfo.get("msi-file");
             DefaultArtifactVersion versionObject = new DefaultArtifactVersion(version);
             DefaultArtifactVersion actualVersionObject = new DefaultArtifactVersion(actualVersion);
             if (actualVersionObject.compareTo(versionObject) > 0) {
                 response.setStatus(HttpStatus.CREATED.value());
                 log.info(String.format("new version detected: client: %s server %s", version, actualVersion));
                 ServletOutputStream outputStream = response.getOutputStream();
-                File msiInstallerFile = new File(msiInstallerFileName);
+                File msiInstallerFile = new File(msiInstallerFilePath);
                 Files.copy(msiInstallerFile.toPath(), outputStream);
             } else {
                 response.setStatus(HttpStatus.OK.value());
@@ -165,6 +157,17 @@ public class FirmaJnJRestController implements ControllerHandledExceptions {
             log.warn(String.format("client info file not found in path: %s", clientInfoFile.getAbsolutePath()));
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
+    }
+    
+    @RequestMapping(value = "/downloadJnJClientSetup", method = RequestMethod.GET, produces = "application/octet-stream")
+    public void downloadJnjClientSetup(HttpServletResponse response) throws IOException {
+        File clientInfoFile = new File(this.clientInfoFilePath);
+        Map<String, Object> clientInfo = objectMapper.readValue(clientInfoFile, new TypeReference<Map<String, Object>>(){});
+        String msiInstallerFilePath = (String) clientInfo.get("msi-file");
+        File msiInstallerFile = new File(msiInstallerFilePath);
+        response.addHeader("Content-disposition", "attachment;filename=" + "\"" + msiInstallerFile.getName() + "\"");
+        ServletOutputStream outputStream = response.getOutputStream();
+        Files.copy(msiInstallerFile.toPath(), outputStream);
     }
     
     @RequestMapping(value = "/checkCertificateStatus", consumes = "multipart/form-data", method = RequestMethod.POST, produces = "text/plain")
