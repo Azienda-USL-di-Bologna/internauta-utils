@@ -105,7 +105,17 @@ public class ExtractorCreator {
                 resultFileName = file.getName();
             }
             
-            ExtractorResult extractorResult = new ExtractorResult(resultFileName, mimeType != null ? mimeType : Extractor.getMimeType(file), file.length(), Extractor.getHashFromFile(file, "SHA-256"), file.getAbsolutePath(), level,padre ,antenati);
+            ExtractorResult extractorResult = new ExtractorResult(
+                    resultFileName, 
+                    mimeType != null ? mimeType : Extractor.getMimeType(file), 
+                    file.length(), 
+                    Extractor.getHashFromFile(file, "SHA-256"), 
+                    file.getAbsolutePath(), 
+                    level,
+                    padre ,
+                    antenati,
+                    isExtractable(file)
+            );
             partialRes.add(extractorResult);
 //            }
             if (extractorClass != null) {
@@ -116,7 +126,7 @@ public class ExtractorCreator {
                     ArrayList<ExtractorResult> res = extractor.extract(outputDir, nameForCreatedFile);
                     for (ExtractorResult er : res) {
                         File fileToExtract = new File(er.getPath());
-                        if (antenati != null && !antenati.isEmpty() && !antenati.equals("null")){
+                        if (antenati != null && !antenati.isEmpty() && !antenati.equals("null")) {
                             antenati = antenati + "\\";
                         }
                         else

@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
@@ -16,12 +15,16 @@ import java.util.Map;
  * @author gdm
  */
 public class SignParams {
-       
+    
+    public static enum CertificateStatus {GOOD, UNKNOWN, REVOKED, EXPIRED, NOT_YET_VALID};
+    
     private String serverUrl;
     private String signSessionId;
     private String userId;
     private Boolean testMode;
     private String signedFileUploaderUrl;
+    private Boolean signWithCertificateProblem;
+    private String checkCertificateUrl;
     private EndSign endSign;
     private List<SignDocument> signFileList;
 
@@ -66,6 +69,22 @@ public class SignParams {
 
     public void setSignedFileUploaderUrl(String signedFileUploaderUrl) {
         this.signedFileUploaderUrl = signedFileUploaderUrl;
+    }
+
+    public Boolean getSignWithCertificateProblem() {
+        return signWithCertificateProblem;
+    }
+
+    public void setSignWithCertificateProblem(Boolean signWithCertificateProblem) {
+        this.signWithCertificateProblem = signWithCertificateProblem;
+    }
+
+    public String getCheckCertificateUrl() {
+        return checkCertificateUrl;
+    }
+
+    public void setCheckCertificateUrl(String checkCertificateUrl) {
+        this.checkCertificateUrl = checkCertificateUrl;
     }
 
     public EndSign getEndSign() {
