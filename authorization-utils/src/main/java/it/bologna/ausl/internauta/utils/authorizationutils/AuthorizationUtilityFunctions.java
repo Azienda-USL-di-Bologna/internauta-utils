@@ -6,8 +6,11 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -29,6 +32,7 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
+import org.bouncycastle.util.io.pem.PemReader;
 
 /**
  *
@@ -36,6 +40,30 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
  */
 public class AuthorizationUtilityFunctions {
     private static Logger logger = LoggerFactory.getLogger(AuthorizationUtilityFunctions.class);
+    
+    /**
+     * Torna un X509Certificate dal file passato in input
+     * @param certFile il file del certificato
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    public static X509Certificate getX509CertificatePEMEconded(InputStream certFile) throws FileNotFoundException, IOException {
+        X509Certificate cert = X509CertUtils.parse(new PemReader(new InputStreamReader(certFile)).readPemObject().getContent());
+        return cert;
+    }
+    
+    /**
+     * Torna un X509Certificate dal file passato in input
+     * @param certFile il file del certificato
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    public static X509Certificate getX509CertificateDEREconded(byte[] certFile) throws FileNotFoundException, IOException {
+        X509Certificate cert = X509CertUtils.parse(certFile);
+        return cert;
+    }
     
     /**
      * Estrae dal subject di un certificato X509 l'identificatore passato

@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota;
 
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders;
 import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders.ARUBA;
 import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemotaAruba;

@@ -16,3 +16,4 @@ minIO-manager/target/
 parameters-manager/target/
 repository-wrapper/target/
 rubrica-client/target/
+nb-configuration.xml

@@ -8,7 +8,7 @@ import org.springframework.util.StringUtils;
  * @author gdm
  */
 public class CommonUtils {
-        public static String getHostname(HttpServletRequest request) {
+    public static String getHostname(HttpServletRequest request) {
 
         String res;
         String header = request.getHeader("X-Forwarded-Host");

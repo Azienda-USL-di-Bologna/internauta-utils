@@ -3,7 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
-import it.bologna.ausl.internauta.utils.firma.remota.configuration.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
@@ -15,10 +15,16 @@ import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  *
@@ -43,6 +49,7 @@ public abstract class FirmaRemota {
      * Questo metodo firma uno o più files all'interno di "files" in firmaRemotaInformation e ritorna lo stesso oggetto con il risultato per ogni file
      * @param firmaRemotaInformation contiene tutto il necessatio per firmare (i files da firmare e tutte le inforazioni che servono per firmarli)
      * @param codiceAzienda l'azienda per la quale si sta firmando
+     * @param request la request presa dal controller
      * @return lo stesso oggetto in input, ma che per ogni file all'interno del campo files ha scritto anche il risultato
      * @throws FirmaRemotaHttpException
      * @throws RemoteFileNotFoundException
@@ -50,7 +57,29 @@ public abstract class FirmaRemota {
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
-    public abstract FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda) throws FirmaRemotaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException;
+    public abstract FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException;
+    
+    public FirmaRemotaInformation firmaMultipart(MultipartFile[] files, FirmaRemotaInformation firmaRemotaInformation, String hostId, HttpServletRequest request) throws FirmaRemotaHttpException {
+        List<FirmaRemotaFile> firmaRemotaFiles = firmaRemotaInformation.getFiles();
+        int i = 0;
+        for (MultipartFile file : files) {
+            String fileName = file.getOriginalFilename();
+            if (!StringUtils.hasText(fileName)) {
+                fileName = UUID.randomUUID().toString();
+            }
+            String uploadedFileUrl;
+            try {
+                uploadedFileUrl = firmaRemotaDownloaderUtils.uploadToUploader(file.getInputStream(), fileName, null, false, request);
+            } catch (Exception ex) {
+                String errorMessage = "errore nell'upload sull'uploader dei file multipart";
+                logger.error(errorMessage, ex);
+                throw new FirmaRemotaHttpException(errorMessage, ex);
+            }
+            firmaRemotaFiles.get(i).setUrl(uploadedFileUrl);
+            i++;
+        }
+        return firma(firmaRemotaInformation, null, request);
+    }
     
     /**
      * Carica il file passato sul repository
@@ -59,10 +88,11 @@ public abstract class FirmaRemota {
      * @param file le informazioni del file
      * @param signedFileInputStream lo stream del file firmato
      * @param codiceAzienda l'azienda per la quale si sta agendo
+     * @param request
      * @throws MinIOWrapperException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException 
      */
-    public void upload(FirmaRemotaFile file, InputStream signedFileInputStream, String codiceAzienda) throws MinIOWrapperException, FirmaRemotaHttpException {
+    public void upload(FirmaRemotaFile file, InputStream signedFileInputStream, String codiceAzienda, HttpServletRequest request) throws MinIOWrapperException, FirmaRemotaHttpException {
         MinIOWrapper minIOWrapper = this.configParams.getMinIOWrapper();
         
         logger.info(String.format("OutputType %s ...", file.getOutputType().toString()));
@@ -71,7 +101,14 @@ public abstract class FirmaRemota {
         // con questa modalità di output è la firma stessa a caricare il file firmato sul repository (minIO).
         if (file.getOutputType() == FirmaRemotaFile.OutputType.UUID) {
             logger.info(String.format("putting file %s on temp repository...", file.getFileId()));
-            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.putWithBucket(signedFileInputStream, codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), codiceAzienda + "t");
+            String bucket;
+            if (StringUtils.hasText(codiceAzienda)) {
+                bucket = codiceAzienda + "t";
+            } else {
+                bucket = this.configParams.getUploaderUrlBucket();
+                codiceAzienda = bucket;
+            }
+            MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.putWithBucket(signedFileInputStream, codiceAzienda, "/temp", "signed_" + UUID.randomUUID(), null, false, UUID.randomUUID().toString(), bucket);
             String signedUuid = uploadedFileInfo.getMongoUuid();
             logger.info(String.format("file %s written on temp repository", file.getFileId()));
 
@@ -90,7 +127,7 @@ public abstract class FirmaRemota {
             logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
             
             // invio il file all'uploader e ottengo l'url per il suo scaricamento
-            String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, codiceAzienda, false);
+            String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, false, request);
             
             // una volta ottenuto l'url, lo setto
             file.setUrlFirmato(res);
