@@ -7,7 +7,9 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -48,9 +50,13 @@ public class AuthorizationUtilityFunctions {
      * @throws FileNotFoundException
      * @throws IOException 
      */
-    public static X509Certificate getX509CertificatePEMEconded(InputStream certFile) throws FileNotFoundException, IOException {
-        X509Certificate cert = X509CertUtils.parse(new PemReader(new InputStreamReader(certFile)).readPemObject().getContent());
-        return cert;
+    public static X509Certificate getX509CertificatePEMEconded(File certFile) throws FileNotFoundException, IOException {
+        try(FileReader fileReader = new FileReader(certFile)) {
+            try(PemReader pemReader = new PemReader(fileReader)) {
+                X509Certificate cert = X509CertUtils.parse(pemReader.readPemObject().getContent());
+                return cert;
+            }
+        }
     }
     
     /**
