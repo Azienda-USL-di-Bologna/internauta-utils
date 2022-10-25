@@ -5,6 +5,7 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import org.apache.tika.mime.MediaType;
 
@@ -13,10 +14,6 @@ import org.apache.tika.mime.MediaType;
  * @author Giuseppe De Marco (gdm)
  */
 public class ExtractorCreator {
-
-    public Object stream() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
     public enum MimeTypeSetOperation {
         ALLOWED, DENIED
@@ -114,7 +111,8 @@ public class ExtractorCreator {
                     level,
                     padre ,
                     antenati,
-                    isExtractable(file)
+                    isExtractable(file),
+                    Extractor.getHashFromFile(file, "MD5").toLowerCase()
             );
             partialRes.add(extractorResult);
 //            }

@@ -91,9 +91,9 @@ public class DownloaderTokenCreator {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException 
      */
-    public RSAPublicKey getEncryptionPublicKey(InputStream publicKeyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public RSAPublicKey getEncryptionPublicKey(File publicKeyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         try (
-            InputStreamReader keyReader = new InputStreamReader(publicKeyFile);
+            FileReader keyReader = new FileReader(publicKeyFile);
             PemReader pemReader = new PemReader(keyReader)) {
             PemObject pemObject = pemReader.readPemObject();
             byte[] content = pemObject.getContent();
@@ -120,7 +120,7 @@ public class DownloaderTokenCreator {
      */
     public String getToken(
             Map<String, Object> context, 
-            InputStream publicCertFile, 
+            File publicCertFile, 
             PrivateKey singTokenPrivateKey, 
             RSAPublicKey tokenEncryptionPublickey, 
             Integer expirationSeconds, 
