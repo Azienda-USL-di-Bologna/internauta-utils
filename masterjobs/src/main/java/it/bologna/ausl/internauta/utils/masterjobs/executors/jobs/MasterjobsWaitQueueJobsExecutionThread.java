@@ -27,13 +27,18 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
     public String getExecutorName() {
         return "WaitQueueManager";
     }
+
+    @Override
+    public String getQueueAffinity() {
+        return super.waitQueue;
+    }
     
     @Override
     public void runExecutor() throws MasterjobsInterruptException {
         while (true) {
             try {
+                checkCommand();
                 manageWaitQueue();
-                checkStop();
                 Thread.sleep(super.sleepMillis);
             } catch (MasterjobsInterruptException ex) {
                 throw ex;

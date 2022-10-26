@@ -42,6 +42,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import java.util.logging.Level;
+import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.connection.stream.StreamReadOptions;
 
 /**
  *
@@ -49,6 +54,10 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInt
  */
 public abstract class MasterjobsJobsExecutionThread implements Runnable, MasterjobsJobsExecutionThreadBuilder {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsExecutionThread.class);
+    private static final String COMMAND_KEY = "command";
+    public static final String STOP_COMMAND = "stop";
+    public static final String PAUSE_COMMAND = "freeze";
+    public static final String RESUME_COMMAND = "resume";
     
     @PersistenceContext
     protected EntityManager entityManager;
@@ -69,6 +78,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     protected MasterjobsJobsExecutionThread self;
     
     protected String activeThreadsSetName;
+    protected String commandsStreamName;
+    protected Integer commandsExpireSeconds;
     protected String inQueueNormal;
     protected String inQueueHigh;
     protected String inQueueHighest;
@@ -82,6 +93,9 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     protected boolean stopped = false;
     protected boolean paused = false;
 
+    private String lastStreamId = "0";
+    private String currentCommand = null;
+    
     @Override
     public MasterjobsJobsExecutionThread self(MasterjobsJobsExecutionThread self) {
         this.self = self;
@@ -91,6 +105,12 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     @Override
     public MasterjobsJobsExecutionThread activeThreadsSetName(String activeThreadsSetName) {
         this.activeThreadsSetName = activeThreadsSetName;
+        return this;
+    }
+    
+    @Override
+    public MasterjobsJobsExecutionThread commandsStreamName(String commandsStreamName) {
+        this.commandsStreamName = commandsStreamName;
         return this;
     }
     
@@ -149,10 +169,27 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
+     * da implementare tornando a quale coda è affine l'executor
+     * i possibili valori sono: inQueueNormal, inQueueHigh, inQueueHighest, waitQueue
+     * @return priorità alla quale è affine l'executor 
+     */
+    public abstract String getQueueAffinity();
+    
+    /**
      * da implementare con l'esecuzione dei job vera e propria
      * @throws MasterjobsInterruptException 
      */
     public abstract void runExecutor() throws MasterjobsInterruptException;
+    
+    /**
+     * Viene chiamata all'avvio del thread.
+     * Sposta il job che era rimasto in esecuzione nella coda alla quale il thread è affine
+     */
+    protected void moveWorkQueueinInQueue() {
+        redisTemplate.opsForList().move(
+            this.workQueue, RedisListCommands.Direction.LEFT, 
+            getQueueAffinity(), RedisListCommands.Direction.RIGHT);
+    }
     
     /**
      * inserisce il riferimento del thread nella mappa dei threads attivi
@@ -162,28 +199,45 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
+     * inserisce il riferimento del thread nella mappa dei threads attivi
+     */
+    protected void clearInActiveThreadsSet() {
+        redisTemplate.delete(activeThreadsSetName);
+    }
+    
+    /**
      * rimuove il riferimento del thread nella mappa dei threads attivi
      */
     protected void removeFromActiveThreadsSet() {
         redisTemplate.opsForHash().delete(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+        if (redisTemplate.opsForHash().size(activeThreadsSetName) == 0) {
+            redisTemplate.delete(commandsStreamName);
+        }
     }
     
     @Override
-    @Transactional
     public void run() {
         while (!stopped && !paused) {
+//            boolean isInterrupted = Thread.currentThread().isInterrupted();
             insertInActiveThreadsSet();
             try {
                 log.info(String.format("executor %s started", getUniqueName()));
-                self.buildWorkQueue();
-                this.runExecutor();
+                buildWorkQueue();
+                moveWorkQueueinInQueue();
+                checkCommand();
+                transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                transactionTemplate.executeWithoutResult(a -> {
+                    this.runExecutor();
+                });
+               
             } catch (MasterjobsInterruptException ex) {
                 if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE) {
                     removeFromActiveThreadsSet();
                     while (paused) {
                         try {
+                            log.info(String.format("i'm paused, launch a %s command to resume me...", RESUME_COMMAND));
                             Thread.sleep(5000);
-                            checkStop();
+                            checkCommand();
                         } catch (InterruptedException | MasterjobsInterruptException subEx) {
                         }
                     }
@@ -197,18 +251,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         log.info(String.format("executor %s ended", getUniqueName()));
     }
     
-    public void stop() {
-        this.stopped = true;
-    }
-    
-    public void pause() {
-        this.paused = true;
-    }
-    
-    public void resume() {
-        this.paused= false;
-    }
-    
     protected abstract String getExecutorName();
     
     protected String getUniqueName() {
@@ -219,33 +261,54 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         this.workQueue = this.workQueue.replace("[thread_name]", getUniqueName());
     }
     
-    protected void checkStop() throws MasterjobsInterruptException {
-        if (stopped) {
-            Thread.currentThread().interrupt();
-            throw new MasterjobsInterruptException(MasterjobsInterruptException.InterruptType.STOP);
+    public void executeCommand(String command) throws MasterjobsInterruptException {
+        this.currentCommand = command;
+    }
+    
+    protected void checkCommand() throws MasterjobsInterruptException {
+        List<MapRecord> commandsList = (List<MapRecord>) redisTemplate.opsForStream().read(StreamReadOptions.empty().count(1), 
+                StreamOffset.create(commandsStreamName, ReadOffset.from(lastStreamId)));
+        if (commandsList != null && !commandsList.isEmpty()) {
+            MapRecord commandRecord = commandsList.get(0);
+            lastStreamId = commandRecord.getId().getValue();
+            Map commandMap = (Map) commandRecord.getValue();
+            executeCommand((String) commandMap.get(COMMAND_KEY));
         }
-        if (paused) {
+
+        if (currentCommand != null) {
+            log.warn(String.format("command %s detected", currentCommand));
+            log.warn(String.format("executing %s command...", currentCommand));
             try {
-                Thread.sleep(5000);
-            } catch (InterruptedException ex) {
-                throw new MasterjobsInterruptException(MasterjobsInterruptException.InterruptType.STOP);
+                switch (currentCommand) {
+                    case STOP_COMMAND:
+                        log.warn("i'm going to stop myself...");
+                        stopped = true;
+                        throw new MasterjobsInterruptException(MasterjobsInterruptException.InterruptType.STOP);
+                    case PAUSE_COMMAND:
+                        log.warn("i'm going to pause myself...");
+                        paused = true;
+                        throw new MasterjobsInterruptException(MasterjobsInterruptException.InterruptType.PAUSE);
+                    case RESUME_COMMAND:
+                        log.warn("i'm going to resume myself...");
+                        paused = false;
+                        break;
+                    default:
+                        log.warn(String.format("command %s not recognized, it will be ignored", currentCommand));
+                }
+            } finally {
+                currentCommand = null;
             }
-            throw new MasterjobsInterruptException(MasterjobsInterruptException.InterruptType.PAUSE);
         }
     }
     
     public void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
         try {
-            checkStop();
+            checkCommand();
             readFromQueueAndManageJobs(masterjobsObjectsFactory.getQueueBySetPriority(priority));
         } catch (MasterjobsBadDataException ex) {
             String errorMessage = "error on selecting queue";
             log.error(errorMessage, ex);
             throw new MasterjobsExecutionThreadsException(errorMessage, ex);
-        } catch (MasterjobsInterruptException ex) {
-            if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE)
-                log.warn("i'm on pause, waiting for resume()");
-            else throw ex;
         }
     }
     

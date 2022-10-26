@@ -28,34 +28,37 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorke
 public class MasterjobsObjectsFactory {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsObjectsFactory.class);
     
-    @Value("${masterjobs.manager.redis-active-threads-set-name}")
+    @Value("${masterjobs.manager.jobs-executor.redis-active-threads-set-name}")
     private String activeThreadsSetName;
     
-    @Value("${masterjobs.manager.in-redis-queue-normal}")
+    @Value("${masterjobs.manager.jobs-executor.commands-stream-name}")
+    private String commandsStreamName;
+    
+    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-normal}")
     private String inQueueNormal;
     
-    @Value("${masterjobs.manager.in-redis-queue-high}")
+    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-high}")
     private String inQueueHigh;
     
-    @Value("${masterjobs.manager.in-redis-queue-highest}")
+    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-highest}")
     private String inQueueHighest;
     
-    @Value("${masterjobs.manager.work-redis-queue}")
+    @Value("${masterjobs.manager.jobs-executor.work-redis-queue}")
     private String workQueue;
     
-    @Value("${masterjobs.manager.error-redis-queue}")
+    @Value("${masterjobs.manager.jobs-executor.error-redis-queue}")
     private String errorQueue;
     
-    @Value("${masterjobs.manager.wait-redis-queue}")
+    @Value("${masterjobs.manager.jobs-executor.wait-redis-queue}")
     private String waitQueue;
     
-    @Value("${masterjobs.manager.out-redis-queue}")
+    @Value("${masterjobs.manager.jobs-executor.out-redis-queue}")
     private String outQueue;
     
-    @Value("${masterjobs.manager.sleep-millis}")
+    @Value("${masterjobs.manager.jobs-executor.sleep-millis}")
     private int sleepMillis;
     
-    @Value("${masterjobs.manager.queue-read-timeout-millis}")
+    @Value("${masterjobs.manager.jobs-executor.queue-read-timeout-millis}")
     private int queueReadTimeoutMillis;
     
     @Autowired
@@ -84,6 +87,7 @@ public class MasterjobsObjectsFactory {
         T executionThreadObject = beanFactory.getBean(classz);
         executionThreadObject
             .activeThreadsSetName(activeThreadsSetName)
+            .commandsStreamName(commandsStreamName)
             .inQueueNormal(inQueueNormal)
             .inQueueHigh(inQueueHigh)
             .inQueueHighest(inQueueHighest)

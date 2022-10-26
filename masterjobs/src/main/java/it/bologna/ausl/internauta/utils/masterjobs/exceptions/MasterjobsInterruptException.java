@@ -4,7 +4,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.exceptions;
  *
  * @author gdm
  */
-public class MasterjobsInterruptException extends Exception {
+public class MasterjobsInterruptException extends RuntimeException {
 
     public static enum InterruptType{
         PAUSE, STOP

@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsReadQueueTimeout;
 import it.bologna.ausl.model.entities.masterjobs.Set;
@@ -9,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -23,6 +21,11 @@ public class MasterjobsNormalPriorityJobsExecutionThread extends MasterjobsJobsE
     @Override
     public String getExecutorName() {
         return "NormalPriorityExecutor";
+    }
+    
+    @Override
+    public String getQueueAffinity() {
+        return super.inQueueNormal;
     }
     
     @Override
@@ -40,8 +43,8 @@ public class MasterjobsNormalPriorityJobsExecutionThread extends MasterjobsJobsE
                 
                 priority = Set.SetPriority.NORMAL;
                 Thread.sleep(super.sleepMillis);
-            } catch (InterruptedException ex) {
-                log.error("sleep error", ex);
+            } catch (MasterjobsInterruptException ex) {
+                throw ex;
             } catch (MasterjobsReadQueueTimeout ex) { // se non c'è nulla nella coda
                 String queue = ex.getQueue();
                 if (queue.equals(inQueueNormal)) {  // se non c'è nulla nella coda normal vado a guardare la higest
@@ -51,8 +54,6 @@ public class MasterjobsNormalPriorityJobsExecutionThread extends MasterjobsJobsE
                 } else { // se non c'è nulla nella coda high vado a guardare la normal
                     priority = Set.SetPriority.NORMAL;
                 }
-            } catch (MasterjobsInterruptException ex) {
-                throw ex;
             } catch (Exception ex) {
                 log.error("execution error, moving next...", ex);
             }

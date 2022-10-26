@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,6 +30,10 @@ public class MasterjobsServicesExecutionScheduler {
     
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
+    @Autowired
+    @Qualifier("masterjobsScheduledThreadPoolExecutor")
+    private ScheduledThreadPoolExecutor scheduledExecutorService;
     
     
     public void scheduleServiceThreads() {
@@ -56,8 +62,7 @@ public class MasterjobsServicesExecutionScheduler {
                     // se il servizio non è mai girato oppure non è mai terminato
                     if (!isToday(startDate, now) || !startDate.isBefore(now.with(activeService.getEveryDayAt()))
                     ) { // se la startAt è prima di oggi oppure è oggi e l'ora di avvio è già passata, il servizio deve partire subito
-                        ExecutorService sigleExecutor = Executors.newSingleThreadExecutor();
-                        sigleExecutor.submit(masterjobsObjectsFactory.getServiceWorker(activeService.getName()));
+                        scheduledExecutorService.schedule(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), 0, TimeUnit.SECONDS);
                         // il prossimo partire domani all'ora indicata, per cui aggiungo 24 ore
                         secondsToStart = now.toLocalTime().until(startDate.toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
                     } else {
@@ -76,8 +81,7 @@ public class MasterjobsServicesExecutionScheduler {
                     }
                 }
                 // poi schedulo la prossima partenza
-                ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-                executor.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, 60*60*24, TimeUnit.SECONDS);
+                scheduledExecutorService.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, 60*60*24, TimeUnit.SECONDS);
                 
             } else if (activeService.getEverySeconds() != null) { // se è un servizio periodico (ogni N secondi)
                 long secondsToStart = 0;
@@ -101,8 +105,7 @@ public class MasterjobsServicesExecutionScheduler {
                 } else { // se la data di avvio è nel futuro il thread sarà schedulato per partire in quella data
                     secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt());
                 }
-                ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-                executor.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, activeService.getEverySeconds(), TimeUnit.SECONDS);
+                scheduledExecutorService.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, activeService.getEverySeconds(), TimeUnit.SECONDS);
             } else { // è un servizio una tantum
                 // // se non è mai girato, oppure non è mai finito
                 if (activeService.getTimeInterval() == null || !activeService.getTimeInterval().hasUpperBound()) {
@@ -112,8 +115,7 @@ public class MasterjobsServicesExecutionScheduler {
                     if (activeService.getStartAt().isAfter(now)) {
                         secondsToStart = ChronoUnit.SECONDS.between(activeService.getStartAt(), now);
                     }
-                    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-                    executor.schedule(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, TimeUnit.SECONDS);
+                    scheduledExecutorService.schedule(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, TimeUnit.SECONDS);
                 }
             }
         }

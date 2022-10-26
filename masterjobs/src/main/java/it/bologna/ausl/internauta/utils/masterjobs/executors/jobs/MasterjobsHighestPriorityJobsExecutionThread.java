@@ -23,6 +23,11 @@ public class MasterjobsHighestPriorityJobsExecutionThread extends MasterjobsJobs
         return "HighestPriorityExecutor";
     }
     
+@Override
+    public String getQueueAffinity() {
+        return super.inQueueHighest;
+    }
+    
     @Override
     public void runExecutor() throws MasterjobsInterruptException {
         Set.SetPriority priority = Set.SetPriority.HIGHEST;

@@ -22,6 +22,11 @@ public class MasterjobsHighPriorityJobsExecutionThread extends MasterjobsJobsExe
     public String getExecutorName() {
         return "HighPriorityExecutor";
     }
+
+    @Override
+    public String getQueueAffinity() {
+        return super.inQueueHigh;
+    }
     
     @Override
     public void runExecutor() throws MasterjobsInterruptException {

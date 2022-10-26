@@ -6,6 +6,9 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHigh
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsNormalPriorityJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWaitQueueJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -24,16 +27,16 @@ public class MasterjobsThreadsManager {
     
     private static Logger log = LoggerFactory.getLogger(MasterjobsThreadsManager.class);
     
-    @Value("${masterjobs.manager.normal-priority-threads-number}")
+    @Value("${masterjobs.manager.jobs-executor.normal-priority-threads-number}")
     private int normalPriorityThreadsNumber;
     
-    @Value("${masterjobs.manager.high-priority-threads-number}")
+    @Value("${masterjobs.manager.jobs-executor.high-priority-threads-number}")
     private int highPriorityThreadsNumber;
     
-    @Value("${masterjobs.manager.highest-priority-threads-number}")
+    @Value("${masterjobs.manager.jobs-executor.highest-priority-threads-number}")
     private int highestPriorityThreadsNumber;
     
-    @Value("${masterjobs.manager.wait-queue-threads-number}")
+    @Value("${masterjobs.manager.jobs-executor.wait-queue-threads-number}")
     private Integer waitQueueThreadsNumber;
     
     @Autowired
@@ -44,6 +47,10 @@ public class MasterjobsThreadsManager {
     
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
+    private ExecutorService executorService;
+    
+    private List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
 
 //    @Autowired
 //    TransactionTemplate transactionTemplate;
@@ -54,15 +61,17 @@ public class MasterjobsThreadsManager {
     public void scheduleThreads(){
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
-        ExecutorService executor = Executors.newFixedThreadPool(
+        executorService = Executors.newFixedThreadPool(
                 normalPriorityThreadsNumber + 
                 highPriorityThreadsNumber + 
                 highestPriorityThreadsNumber +
                 waitQueueThreadsNumber);
-        scheduleExecutionThreads(normalPriorityThreadsNumber, executor, MasterjobsNormalPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(highPriorityThreadsNumber, executor, MasterjobsHighPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(highestPriorityThreadsNumber, executor, MasterjobsHighestPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(waitQueueThreadsNumber, executor, MasterjobsWaitQueueJobsExecutionThread.class);
+//        executorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+//        executorService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+        scheduleExecutionThreads(normalPriorityThreadsNumber, executorService, MasterjobsNormalPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(highPriorityThreadsNumber, executorService, MasterjobsHighPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(highestPriorityThreadsNumber, executorService, MasterjobsHighestPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(waitQueueThreadsNumber, executorService, MasterjobsWaitQueueJobsExecutionThread.class);
         
         // schedula i ServiceThreads attivi
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
@@ -72,6 +81,15 @@ public class MasterjobsThreadsManager {
         for (int i = 0; i < threadsNumber; i++) {
             MasterjobsJobsExecutionThread executionThreadObject = masterjobsObjectsFactory.getJobsExecutionThreadObject(classz);
             executor.execute(executionThreadObject);
+            masterjobsJobsExecutionThreadsList.add(executionThreadObject);
         }
+    }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public List<MasterjobsJobsExecutionThread> getMasterjobsJobsExecutionThreadsList() {
+        return masterjobsJobsExecutionThreadsList;
     }
 }
