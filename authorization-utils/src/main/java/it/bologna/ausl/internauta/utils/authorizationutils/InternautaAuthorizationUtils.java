@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.Key;
 import java.security.KeyStore;
@@ -40,8 +42,8 @@ public class InternautaAuthorizationUtils {
     @Value("${test-mode:true}")
     private Boolean testMode;
 
-    @Value("classpath:BABEL_TEST.p12")
-    private Resource babelP12Test;
+    @Value("${internauta.authorizations-utils.private-key-file-babel-test.location}")
+    private String babelP12Test;
 
     @Value("${babel-p12-test-alias:alias}")
     private String babelP12TestAlias;
@@ -49,8 +51,8 @@ public class InternautaAuthorizationUtils {
     @Value("${babel-p12-test-password:password}")
     private String babelP12TestPassword;
 
-    @Value("classpath:BABEL_PROD.p12")
-    private Resource babelP12Prod;
+    @Value("${internauta.authorizations-utils.private-key-file-babel-prod.location}")
+    private String babelP12Prod;
 
     @Value("${babel-p12-prod-alias:alias}")
     private String babelP12ProdAlias;
@@ -69,41 +71,43 @@ public class InternautaAuthorizationUtils {
     
     private String generatePreToken(String subject, String codiceAzienda, String codiceRegioneAzienda, String mode) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException {
         KeyStore p12 = KeyStore.getInstance("pkcs12");
-        Resource p12Path;
+        File p12Path;
         String p12Alias;
         String p12Psw;
         if (!testMode) {
-            p12Path = babelP12Prod;
+            p12Path = new File(babelP12Prod);
             p12Alias = babelP12ProdAlias;
             p12Psw = babelP12ProdPassword;
         } else {
-            p12Path = babelP12Test;
+            p12Path = new File(babelP12Test);
             p12Alias = babelP12TestAlias;
             p12Psw = babelP12TestPassword;
         }
 
-        p12.load(p12Path.getInputStream(), p12Psw.toCharArray());
-        Key secretKey = p12.getKey(p12Alias, p12Psw.toCharArray());
+        try (FileInputStream fis = new FileInputStream(p12Path)) {
+            p12.load(fis, p12Psw.toCharArray());
+            Key secretKey = p12.getKey(p12Alias, p12Psw.toCharArray());
 
-        Claims claims = Jwts.claims();
-        claims.setSubject(subject);
-//        claims.put("REAL_USER", realUser);
-        claims.put("COMPANY", codiceAzienda);
-        claims.put("codiceRegioneAzienda", codiceRegioneAzienda);
-        claims.put("mode", mode);
-        claims.put("FROM_INTERNET", false);
+            Claims claims = Jwts.claims();
+            claims.setSubject(subject);
+    //        claims.put("REAL_USER", realUser);
+            claims.put("COMPANY", codiceAzienda);
+            claims.put("codiceRegioneAzienda", codiceRegioneAzienda);
+            claims.put("mode", mode);
+            claims.put("FROM_INTERNET", false);
 
-        claims.put("sub", subject);
-        claims.put("iss", "internauta-bridge");
-//        claims.put("context", context);
+            claims.put("sub", subject);
+            claims.put("iss", "internauta-bridge");
+    //        claims.put("context", context);
 
-        String token = Jwts.builder()
-                .setClaims(claims)
-                //                .setHeaderParam("x5c", x5c)
-                .signWith(SIGNATURE_ALGORITHM, secretKey)
-                .compact();
+            String token = Jwts.builder()
+                    .setClaims(claims)
+                    //                .setHeaderParam("x5c", x5c)
+                    .signWith(SIGNATURE_ALGORITHM, secretKey)
+                    .compact();
 
-        return token;
+            return token;
+        }
     }
 
     public String getTokenInternauta(String subject, String codiceAzienda, String codiceRegioneAzienda, String mode, String applicazione, boolean useCaching) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, InternautaAuthorizationHttpException {

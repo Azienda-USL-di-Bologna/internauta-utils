@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 
 import org.springframework.stereotype.Component;
 
@@ -49,26 +48,26 @@ public class FirmaRemotaDownloaderUtils {
     private String firmaMode;
     
     // certificato con la chiave pubblica corrispondente alla chiave privata per la firma del token (prod)
-    @Value("${firma.downloader.public-cert-babel-prod}")
-    private Resource downloaderPublicCertBabelProd;
+    @Value("${firma.downloader.public-cert-babel-prod.location}")
+    private String downloaderPublicCertBabelProdLocation;
 
     // certificato con la chiave pubblica corrispondente alla chiave privata per la firma del token (test)
-    @Value("${firma.downloader.public-cert-babel-test}")
-    private Resource downloaderPublicCertBabelTest;
+    @Value("${firma.downloader.public-cert-babel-test.location}")
+    private String downloaderPublicCertBabelTestLocation;
     
     // nell'inizializzazione viene settato con il certificato di test o di prod a seconda del mode
-    private Resource downloaderPublicCertBabel;
+    private File downloaderPublicCertBabel;
     
     // chiave pubblica per la cifratura del token (prod)
-    @Value("${firma.downloader.encrypt-token-public-key-prod}")
-    private Resource downloaderEncryptionPublicKeyProd;
+    @Value("${firma.downloader.encrypt-token-public-key-prod.location}")
+    private String downloaderEncryptionPublicKeyProdLocation;
     
     // chiave pubblica per la cifratura del token (test)
-    @Value("${firma.downloader.encrypt-token-public-key-test}")
-    private Resource downloaderEncryptionPublicKeyTest;
+    @Value("${firma.downloader.encrypt-token-public-key-test.location}")
+    private String downloaderEncryptionPublicKeyTestLocation;
     
     // nell'inizializzazione viene settato con la chiave di test o di prod a seconda del mode
-    private Resource downloaderEncryptionPublicKey;
+    private File downloaderEncryptionPublicKey;
     
     
     // chiave privata per la firma del token
@@ -105,12 +104,12 @@ public class FirmaRemotaDownloaderUtils {
     public void initialize() throws FirmaRemotaConfigurationException {
          switch (firmaMode.toLowerCase()) {
             case "test": // se sono in modalità di test prendo il certificato con la chiave pubblica di test e la chiave per cifrare il token di test
-                this.downloaderPublicCertBabel = this.downloaderPublicCertBabelTest;
-                this.downloaderEncryptionPublicKey = this.downloaderEncryptionPublicKeyTest;
+                this.downloaderPublicCertBabel = new File(this.downloaderPublicCertBabelTestLocation);
+                this.downloaderEncryptionPublicKey = new File(this.downloaderEncryptionPublicKeyTestLocation);
                 break;
             case "prod": // se sono in modalità di test prendo il certificato con la chiave pubblica di prod e la chiave per cifrare il token di prod
-                this.downloaderPublicCertBabel = this.downloaderPublicCertBabelProd;
-                this.downloaderEncryptionPublicKey = this.downloaderEncryptionPublicKeyProd;
+                this.downloaderPublicCertBabel = new File(this.downloaderPublicCertBabelProdLocation);
+                this.downloaderEncryptionPublicKey = new File(this.downloaderEncryptionPublicKeyProdLocation);
                 break;
             default:
                 String errorMessage = String.format("firma mode deve essere \"%s\" o \"%s\". Valore trovato \"%s\"", "test", "prod", firmaMode);
@@ -218,8 +217,8 @@ public class FirmaRemotaDownloaderUtils {
     private String buildToken(Map<String,Object> context) throws IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
         DownloaderTokenCreator downloaderTokenCreator = new DownloaderTokenCreator();
         PrivateKey signTokenPrivateKey = downloaderTokenCreator.getSignTokenPrivateKey(signTokenPrivateKeyFileLocation, signTokenPrivateKeyAlias, signTokenPrivateKeyPassword);
-        RSAPublicKey encryptionPublicKey = downloaderTokenCreator.getEncryptionPublicKey(this.downloaderEncryptionPublicKey.getInputStream());
-        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel.getInputStream(), signTokenPrivateKey, encryptionPublicKey, this.tokenExpireSeconds, "firma-internauta");
+        RSAPublicKey encryptionPublicKey = downloaderTokenCreator.getEncryptionPublicKey(this.downloaderEncryptionPublicKey);
+        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel, signTokenPrivateKey, encryptionPublicKey, this.tokenExpireSeconds, "firma-internauta");
     }
     
     /**

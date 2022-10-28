@@ -66,7 +66,7 @@ public class ZipExtractor extends Extractor {
         }
         ZipFile zip = null;
         try {
-            zip = new ZipFile(file);
+            zip = new ZipFile(file, "utf-8");
             Enumeration<ZipArchiveEntry> entries = zip.getEntries();
 
             String fileName = null;
@@ -78,13 +78,18 @@ public class ZipExtractor extends Extractor {
                 zipEntry = entries.nextElement();
                 fileName = zipEntry.getName().replace("\ufffd", "");
 
+                // a volte capita che nel path, le directory abbiano "\" al posto di "/", le uniformo
+                if (fileName.contains("\\")) {
+                    fileName = fileName.replace("\\", "/");
+                }
+                
                 // caso degli zip strani che non hanno le directory come entries, se trovo una barra nel nome dell'entry creo la struttura di cartelle
                 if (fileName.contains("/")) {
                     File dirs = new File(outputDir, fileName.substring(0, fileName.lastIndexOf("/")));
                     dirs.mkdirs();
 //                    fileName = new File(outputDir, fileName).getName();
                 }
-
+                
                 InputStream zipEntryInputStream = null;
                 try {
                     zipEntryInputStream = zip.getInputStream(zipEntry);

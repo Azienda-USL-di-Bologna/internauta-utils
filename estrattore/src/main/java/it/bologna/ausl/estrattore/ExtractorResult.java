@@ -11,6 +11,7 @@ public class ExtractorResult {
     private String mimeType;
     private long size;
     private String hash;
+    private String md5;
     private String path;
     private int level;
     private String padre;
@@ -38,6 +39,19 @@ public class ExtractorResult {
         this.padre = padre;
         this.antenati = antenati;
         this.isExtractable = isExtractable;
+    }
+    
+    public ExtractorResult(String fileName, String mimeType, long size, String hash, String path, int level, String padre,String antenati, boolean isExtractable, String md5) {
+        this.fileName = fileName;
+        this.mimeType = mimeType;
+        this.size = size;
+        this.hash = hash;
+        this.path = path;
+        this.level = level;
+        this.padre = padre;
+        this.antenati = antenati;
+        this.isExtractable = isExtractable;
+        this.md5 = md5;
     }
 
     public String getAntenati() {
@@ -87,6 +101,14 @@ public class ExtractorResult {
 
     public void setHash(String hash) {
         this.hash = hash;
+    }
+
+    public String getMd5() {
+        return md5;
+    }
+
+    public void setMd5(String md5) {
+        this.md5 = md5;
     }
 
     public long getSize() {
