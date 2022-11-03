@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighPriorityJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighestPriorityJobsExecutionThread;
@@ -40,9 +41,6 @@ public class MasterjobsThreadsManager {
     private Integer waitQueueThreadsNumber;
     
     @Autowired
-    private BeanFactory beanFactory;
-    
-    @Autowired
     private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
     
     @Autowired
@@ -50,15 +48,16 @@ public class MasterjobsThreadsManager {
     
     private ExecutorService executorService;
     
-    private List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
+    private final List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
 
 //    @Autowired
 //    TransactionTemplate transactionTemplate;
     
     /**
      * lancia tutti i threads del Masterjobs
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void scheduleThreads(){
+    public void scheduleThreads() throws MasterjobsWorkerException {
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
         executorService = Executors.newFixedThreadPool(

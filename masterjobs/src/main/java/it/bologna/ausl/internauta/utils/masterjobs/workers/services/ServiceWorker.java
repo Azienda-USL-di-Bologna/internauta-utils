@@ -2,9 +2,11 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.vladmihalcea.hibernate.type.range.Range;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.model.entities.masterjobs.QService;
-import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -22,13 +24,24 @@ import org.springframework.transaction.support.TransactionTemplate;
 public abstract class ServiceWorker implements Runnable, Worker {
     private static final Logger log = LoggerFactory.getLogger(ServiceWorker.class);
 
-    private Service service;
+//    private Service service;
     
     @PersistenceContext
     protected EntityManager entityManager;
     
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    
+    protected MasterjobsObjectsFactory masterjobsObjectsFactory;
+    protected MasterjobsJobsQueuer masterjobsJobsQueuer;
+    
+    public void init(
+            MasterjobsObjectsFactory masterjobsObjectsFactory,
+            MasterjobsJobsQueuer masterjobsJobsQueuer) throws MasterjobsWorkerException {
+        
+        this.masterjobsObjectsFactory = masterjobsObjectsFactory;
+        this.masterjobsJobsQueuer = masterjobsJobsQueuer;
+    }
     
     @Override
     public void run() {
@@ -74,12 +87,12 @@ public abstract class ServiceWorker implements Runnable, Worker {
             .execute();
     }
     
-    public Service getService() {
-        return service;
-    }
-
-    public void setService(Service service) {
-        this.service = service;
-    }
+//    public Service getService() {
+//        return service;
+//    }
+//
+//    public void setService(Service service) {
+//        this.service = service;
+//    }
     
 }

@@ -6,6 +6,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsDataBaseException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
@@ -42,7 +43,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
-import java.util.logging.Level;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
@@ -74,6 +74,9 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     
     @Autowired
     protected MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
+    @Autowired
+    protected MasterjobsUtils masterjobsUtils;
     
     protected MasterjobsJobsExecutionThread self;
     
@@ -304,7 +307,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     public void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
         try {
             checkCommand();
-            readFromQueueAndManageJobs(masterjobsObjectsFactory.getQueueBySetPriority(priority));
+            readFromQueueAndManageJobs(masterjobsUtils.getQueueBySetPriority(priority));
         } catch (MasterjobsBadDataException ex) {
             String errorMessage = "error on selecting queue";
             log.error(errorMessage, ex);
@@ -362,7 +365,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
         } catch (Throwable t) {
             try {
-                t.printStackTrace();
+                log.error("error managing queueData", t);
                 if (!(t.getClass().isAssignableFrom(MasterjobsWorkerException.class))) {
                     /*
                     * se c'è un errore nell'esecuzione del job:
@@ -478,18 +481,24 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             .from(qJob)
             .where(qJob.set.id.eq(setId))
             .fetchOne();
+        
         // se non ci sono più job attaccati al set, elimino sia il set che l'object_status
         if (jobSetCount == 0) {
             // eliminazione set
             queryFactory.delete(qSet).where(qSet.id.eq(job.getSet().getId())).execute();
             
-            // eliminazione object_status
-            BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
-            if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
-                filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));
-            if (job.getSet().getApp() != null)  // app potrebbe non esserci
-                filter = filter.and(qObjectStatus.app.eq(job.getSet().getApp()));
-            queryFactory.delete(qObjectStatus).where(filter).execute();
+            /* se il set è attaccato a un oggetto lo elimino
+            * se il set non è attaccato a un oggetto allora objectId sarà null
+            */
+            if (job.getSet().getObjectId() != null) {
+                // eliminazione object_status
+                BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
+                if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
+                    filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));
+                if (job.getSet().getApp() != null)  // app potrebbe non esserci
+                    filter = filter.and(qObjectStatus.app.eq(job.getSet().getApp()));
+                queryFactory.delete(qObjectStatus).where(filter).execute();
+            }
         }
         
     }

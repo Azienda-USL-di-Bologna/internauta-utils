@@ -2,14 +2,14 @@ package it.bologna.ausl.internauta.utils.masterjobs.executors.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.QService;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManager;
@@ -32,11 +32,13 @@ public class MasterjobsServicesExecutionScheduler {
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
     
     @Autowired
+    private MasterjobsJobsQueuer masterjobsJobsQueuer;
+ 
+    @Autowired
     @Qualifier("masterjobsScheduledThreadPoolExecutor")
     private ScheduledThreadPoolExecutor scheduledExecutorService;
     
-    
-    public void scheduleServiceThreads() {
+    public void scheduleServiceThreads() throws MasterjobsWorkerException {
         ZonedDateTime now = ZonedDateTime.now();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QService qService = QService.service;
@@ -62,7 +64,7 @@ public class MasterjobsServicesExecutionScheduler {
                     // se il servizio non è mai girato oppure non è mai terminato
                     if (!isToday(startDate, now) || !startDate.isBefore(now.with(activeService.getEveryDayAt()))
                     ) { // se la startAt è prima di oggi oppure è oggi e l'ora di avvio è già passata, il servizio deve partire subito
-                        scheduledExecutorService.schedule(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), 0, TimeUnit.SECONDS);
+                        scheduledExecutorService.schedule(getServiceWorkerAndInit(activeService.getName()), 0, TimeUnit.SECONDS);
                         // il prossimo partire domani all'ora indicata, per cui aggiungo 24 ore
                         secondsToStart = now.toLocalTime().until(startDate.toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
                     } else {
@@ -81,7 +83,7 @@ public class MasterjobsServicesExecutionScheduler {
                     }
                 }
                 // poi schedulo la prossima partenza
-                scheduledExecutorService.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, 60*60*24, TimeUnit.SECONDS);
+                scheduledExecutorService.scheduleAtFixedRate(getServiceWorkerAndInit(activeService.getName()), secondsToStart, 60*60*24, TimeUnit.SECONDS);
                 
             } else if (activeService.getEverySeconds() != null) { // se è un servizio periodico (ogni N secondi)
                 long secondsToStart = 0;
@@ -105,7 +107,7 @@ public class MasterjobsServicesExecutionScheduler {
                 } else { // se la data di avvio è nel futuro il thread sarà schedulato per partire in quella data
                     secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt());
                 }
-                scheduledExecutorService.scheduleAtFixedRate(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, activeService.getEverySeconds(), TimeUnit.SECONDS);
+                scheduledExecutorService.scheduleAtFixedRate(getServiceWorkerAndInit(activeService.getName()), secondsToStart, activeService.getEverySeconds(), TimeUnit.SECONDS);
             } else { // è un servizio una tantum
                 // // se non è mai girato, oppure non è mai finito
                 if (activeService.getTimeInterval() == null || !activeService.getTimeInterval().hasUpperBound()) {
@@ -115,7 +117,7 @@ public class MasterjobsServicesExecutionScheduler {
                     if (activeService.getStartAt().isAfter(now)) {
                         secondsToStart = ChronoUnit.SECONDS.between(activeService.getStartAt(), now);
                     }
-                    scheduledExecutorService.schedule(masterjobsObjectsFactory.getServiceWorker(activeService.getName()), secondsToStart, TimeUnit.SECONDS);
+                    scheduledExecutorService.schedule(getServiceWorkerAndInit(activeService.getName()), secondsToStart, TimeUnit.SECONDS);
                 }
             }
         }
@@ -123,5 +125,11 @@ public class MasterjobsServicesExecutionScheduler {
     
     private boolean isToday(ZonedDateTime zonedDateTime, ZonedDateTime now) {
         return zonedDateTime.toLocalDate().equals(now.toLocalDate());
+    }
+    
+    private ServiceWorker getServiceWorkerAndInit(String name) throws MasterjobsWorkerException {
+        ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
+        serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
+        return serviceWorker;
     }
 }

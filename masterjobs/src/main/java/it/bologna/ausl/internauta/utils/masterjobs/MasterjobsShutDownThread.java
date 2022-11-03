@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.executors.services;
+package it.bologna.ausl.internauta.utils.masterjobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsThreadsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MasterjobsShutDownThread extends Thread {
-    private static Logger log = LoggerFactory.getLogger(MasterjobsThreadsManager.class);
+    private static Logger log = LoggerFactory.getLogger(MasterjobsShutDownThread.class);
     
     @Autowired
     @Qualifier("masterjobsScheduledThreadPoolExecutor")

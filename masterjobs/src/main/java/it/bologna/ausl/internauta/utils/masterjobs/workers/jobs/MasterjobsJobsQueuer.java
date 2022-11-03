@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
 import it.bologna.ausl.model.entities.masterjobs.Job;
@@ -45,18 +46,17 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
     @Qualifier(value = "redisMaterjobs")
     private RedisTemplate redisTemplate;
     
-    @Autowired
-    private BeanFactory beanFactory;
-    
 //    private PlatformTransactionManager transactionManager;
     
     @Autowired 
     private TransactionTemplate transactionTemplate;
     
-//    private MasterjobsQueuer self;
+    @Autowired
+    private MasterjobsUtils masterjobsUtils;
     
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
     
 //    @PostConstruct
 //    public void init() {
@@ -76,9 +76,6 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
     public void queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
-//        MasterjobsQueuer self = beanFactory.getBean(MasterjobsQueuer.class);
-//        MasterjobsQueueData queueData = self.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
-//        transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
@@ -104,7 +101,7 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
      * @throws MasterjobsBadDataException 
      */
     private void insertInQueue(MasterjobsQueueData queueData, Set.SetPriority priority) throws JsonProcessingException, MasterjobsBadDataException {
-        String queue = masterjobsObjectsFactory.getQueueBySetPriority(priority);
+        String queue = masterjobsUtils.getQueueBySetPriority(priority);
         redisTemplate.opsForList().rightPush(queue, queueData.dump());
     }
     
