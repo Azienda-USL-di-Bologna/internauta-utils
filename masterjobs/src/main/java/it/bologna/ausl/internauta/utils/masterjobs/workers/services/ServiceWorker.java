@@ -25,7 +25,7 @@ public abstract class ServiceWorker implements Runnable, Worker {
     private Service service;
     
     @PersistenceContext
-    private EntityManager entityManager;
+    protected EntityManager entityManager;
     
     @Autowired
     protected TransactionTemplate transactionTemplate;
