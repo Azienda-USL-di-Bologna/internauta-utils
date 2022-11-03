@@ -17,3 +17,4 @@ parameters-manager/target/
 repository-wrapper/target/
 rubrica-client/target/
 nb-configuration.xml
+/masterjobs/target/

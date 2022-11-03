@@ -12,6 +12,7 @@ import it.bologna.ausl.estrattore.exception.ExtractorException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 /**
  *
@@ -20,14 +21,19 @@ import java.nio.file.Files;
 public class Main {
     public static void main(String[] args) throws ExtractorException, IOException, EmlHandlerException{
         
-    File folder = new File("prova");
-    File file = new File("bbb.eml");
-    String actual = new String(Files.readAllBytes(file.toPath()));
-    EmlHandler emlHandler = new EmlHandler();
-    emlHandler.setParameters(actual, null);
-    EmlHandlerResult res = emlHandler.handleRawEml();
-    System.out.println("res: " + res);
-    System.out.println("res: " + res.getMessageId());
+    File folder = new File("D:\\tmp\\2_gdm\\prova");
+    if (!folder.exists())
+        folder.mkdir();
+    File file = new File("D:\\tmp\\2_gdm\\aaa.zip");
+    ExtractorCreator ec = new ExtractorCreator(file);
+    ArrayList<ExtractorResult> extractAll = ec.extractAll(folder);
+    extractAll.stream().forEach(er -> System.out.println(er.toString()));
+//    String actual = new String(Files.readAllBytes(file.toPath()));
+//    EmlHandler emlHandler = new EmlHandler();
+//    emlHandler.setParameters(actual, null);
+//    EmlHandlerResult res = emlHandler.handleRawEml();
+//    System.out.println("res: " + res);
+//    System.out.println("res: " + res.getMessageId());
 //    ExtractorCreator zip = new ExtractorCreator(file);
 //    zip.extractAll(folder);//        ExtractorCreator<InputStream> toMerge = new ArrayList();
 //        for (File file : folder.listFiles()) {

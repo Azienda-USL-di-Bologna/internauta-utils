@@ -307,12 +307,38 @@ public class MinIOWrapper {
      * come nuovo file
      * @return un oggetto contenente tutte le informazioni sul file caricato
      * @throws MinIOWrapperException
+     * @throws java.io.FileNotFoundException
      */
     public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
         try ( FileInputStream fis = new FileInputStream(file)) {
-            MinIOWrapperFileInfo res = putWithBucket(fis, codiceAzienda, path, fileName, metadata, overWrite, null, null);
-            return res;
+            return put(fis, codiceAzienda, path, fileName, metadata, overWrite);
         }
+    }
+    
+    /**
+     * Carica un file sul repository
+     *
+     * @param obj il file da cariare sul repository
+     * @param codiceAzienda es. 105, 902, 908, ecc. Corrisponde anche al nome
+     * del bucket
+     * @param path il path che il file dovrà avere (path logico, quello fisico
+     * sul repository verrà generato random)
+     * @param fileName il nome che il file dovrà avere (NB: in caso
+     * overwrite=false e path logico e nome file già esistente, questo verrà
+     * cambiato aggiungendo un numero alla fine)
+     * @param metadata eventuali metadati da inserite, se non si vogliono
+     * inserire passare null
+     * @param overWrite se esiste già un file con lo stesso path logico e nome
+     * file e overwrite=true, questo viene sovrascritto, se overwrite=false,
+     * viene cambiato il nome file aggiungendo un numero alla fine e inserito
+     * come nuovo file
+     * @return un oggetto contenente tutte le informazioni sul file caricato
+     * @throws MinIOWrapperException
+     * @throws java.io.FileNotFoundException
+     */
+    public MinIOWrapperFileInfo put(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
+        MinIOWrapperFileInfo res = putWithBucket(obj, codiceAzienda, path, fileName, metadata, overWrite, null, null);
+        return res;
     }
 
     /**

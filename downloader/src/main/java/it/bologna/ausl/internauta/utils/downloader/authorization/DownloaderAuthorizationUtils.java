@@ -64,11 +64,11 @@ public class DownloaderAuthorizationUtils {
 //    @Value("classpath:downloader/Internauta_Downloader_Encription_Private_Key_Test.pk8")
 //    private Resource tokenDecripterPrivateKeyTest;
     
-    @Value("${downloader.public-cert-babel-prod}")
-    private Resource downloaderPublicCertBabelProd;
+    @Value("${downloader.public-cert-babel-prod.location}")
+    private String downloaderPublicCertBabelProd;
 
-    @Value("${downloader.public-cert-babel-test}")
-    private Resource downloaderPublicCertBabelTest;
+    @Value("${downloader.public-cert-babel-test.location}")
+    private String downloaderPublicCertBabelTest;
 
     @Value("${downloader.max-limit-token-seconds:30}")
     private Integer maxLimitTokenSeconds = 86400; 
@@ -85,7 +85,7 @@ public class DownloaderAuthorizationUtils {
                 
                 // certificato di test
 //                X509Certificate publicCertBabelTest = getX509CertificateFromFile(new File("downloader/DOWNLOADER_TEST.crt"));
-                X509Certificate publicCertBabelTest = getX509CertificateFromFile(this.downloaderPublicCertBabelTest.getInputStream());
+                X509Certificate publicCertBabelTest = AuthorizationUtilityFunctions.getX509CertificatePEMEconded(new File(this.downloaderPublicCertBabelTest));
                 hashPublicKeyMap.put("FDB1F11965344A44DB32C4FE1D53C4A5104453BAEFB58F106BD6ABDD4736537B", 
                         Pair.of(AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCertBabelTest), publicCertBabelTest.getPublicKey()));
                 hashPublicKeyMap.put("546B45E5E5190F9909467052C63FAD59067DE9B6AEC45E7D8E4BDE742FF2F195", 
@@ -97,7 +97,7 @@ public class DownloaderAuthorizationUtils {
                 // qui ci vanno tutti i certificati di prod
                 
                 // certificato interno nostro per prod
-                X509Certificate publicCertBabelProd = getX509CertificateFromFile(this.downloaderPublicCertBabelProd.getInputStream());
+                X509Certificate publicCertBabelProd = AuthorizationUtilityFunctions.getX509CertificatePEMEconded(new File(this.downloaderPublicCertBabelProd));
                 this.hashPublicKeyMap.put("819EE5A635FA45FBCED93BEE6ED0B9721C02A9B933328806DDFF84CD5AA9DD42",
                         Pair.of(AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(publicCertBabelProd), publicCertBabelProd.getPublicKey()));
                 break;
@@ -129,23 +129,6 @@ public class DownloaderAuthorizationUtils {
             PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(content);
             PrivateKey privateKey = factory.generatePrivate(privKeySpec);
             return privateKey;
-        }
-    }
-    
-    /**
-     * Legge dal file il certificato per il controllo della firma del token
-     * @param certFile
-     * @return
-     * @throws FileNotFoundException
-     * @throws IOException 
-     */
-    private X509Certificate getX509CertificateFromFile(InputStream certFile) throws FileNotFoundException, IOException {
-        try (
-            InputStreamReader keyReader = new InputStreamReader(certFile);
-            PemReader pemReader = new PemReader(keyReader)) {
-            
-            X509Certificate cert = X509CertUtils.parse(pemReader.readPemObject().getContent());
-            return cert;
         }
     }
     
