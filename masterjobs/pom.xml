@@ -6,6 +6,7 @@
         <artifactId>internauta-utils</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
+    <groupId>it.bologna.ausl.internauta.utils</groupId>
     <artifactId>masterjobs</artifactId>
     <version>1.1</version>
     <properties>
