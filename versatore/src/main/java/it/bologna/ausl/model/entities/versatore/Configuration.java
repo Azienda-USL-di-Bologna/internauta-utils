@@ -6,9 +6,13 @@ import java.io.Serializable;
 import java.util.Map;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
@@ -35,6 +39,10 @@ public class Configuration implements Serializable {
     @Column(name = "host_id")
     private String hostId;
     
+    @JoinColumn(name = "provider", referencedColumnName = "id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Provider provider;
+    
     @Type(type = "jsonb")
     @Column(name = "params", columnDefinition = "jsonb")
     private Map<String, Object> params;
@@ -52,6 +60,14 @@ public class Configuration implements Serializable {
 
     public void setHostId(String hostId) {
         this.hostId = hostId;
+    }
+    
+    public Provider getProvider() {
+        return provider;
+    }
+
+    public void setProvider(Provider provider) {
+        this.provider = provider;
     }
 
     public Map<String, Object> getParams() {
