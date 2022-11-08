@@ -13,7 +13,7 @@ import org.hibernate.annotations.DynamicUpdate;
  *
  * @author utente
  */
-@Entity
+@Entity(name = "VersatoreProvider")
 @Table(name = "providers", schema = "versatore")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)

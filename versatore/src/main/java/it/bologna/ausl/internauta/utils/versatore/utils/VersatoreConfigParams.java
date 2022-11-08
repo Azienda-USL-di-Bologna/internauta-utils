@@ -52,7 +52,7 @@ public class VersatoreConfigParams {
     @PostConstruct
     public void init() throws UnknownHostException, IOException, VersatoreConfigurationException {
         
-        // lettura dei parametr di MinIO
+        // lettura dei parametri
         List<Parameter> parameters = parameterRepository.findAll();
         if (!parameters.isEmpty()) {
             this.versatoreParams = new ArrayList<>();

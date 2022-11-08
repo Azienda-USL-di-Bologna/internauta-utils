@@ -22,7 +22,7 @@ import org.hibernate.annotations.TypeDefs;
 @TypeDefs({
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 })
-@Entity(name = "versatoreconfiguration")
+@Entity(name = "VersatoreConfiguration")
 @Table(name = "configurations", schema = "versatore")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
