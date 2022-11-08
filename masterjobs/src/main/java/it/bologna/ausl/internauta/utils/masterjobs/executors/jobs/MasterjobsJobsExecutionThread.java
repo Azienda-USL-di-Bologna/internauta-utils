@@ -365,7 +365,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
         } catch (Throwable t) {
             try {
-                log.error("error managing queueData", t);
+                t.printStackTrace();
                 if (!(t.getClass().isAssignableFrom(MasterjobsWorkerException.class))) {
                     /*
                     * se c'è un errore nell'esecuzione del job:
@@ -481,7 +481,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             .from(qJob)
             .where(qJob.set.id.eq(setId))
             .fetchOne();
-        
         // se non ci sono più job attaccati al set, elimino sia il set che l'object_status
         if (jobSetCount == 0) {
             // eliminazione set
@@ -491,7 +490,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             * se il set non è attaccato a un oggetto allora objectId sarà null
             */
             if (job.getSet().getObjectId() != null) {
-                // eliminazione object_status
+            // eliminazione object_status
                 BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
                 if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
                     filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));

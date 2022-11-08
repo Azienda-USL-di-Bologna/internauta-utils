@@ -79,12 +79,14 @@ public abstract class ServiceWorker implements Runnable, Worker {
             .from(qService)
             .where(qService.name.eq(getName()))
             .fetchOne();
-        Range<ZonedDateTime> newTimeInterval = Range.open(timeInterval.lower(), ZonedDateTime.now());
-        queryFactory
-            .update(qService)
-            .set(qService.timeInterval, newTimeInterval)
-            .where(qService.name.eq(getName()))
-            .execute();
+        if (timeInterval != null) {
+            Range<ZonedDateTime> newTimeInterval = Range.open(timeInterval.lower(), ZonedDateTime.now());
+            queryFactory
+                .update(qService)
+                .set(qService.timeInterval, newTimeInterval)
+                .where(qService.name.eq(getName()))
+                .execute();
+        }
     }
     
 //    public Service getService() {

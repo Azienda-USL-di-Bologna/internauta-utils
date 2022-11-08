@@ -73,6 +73,7 @@ public class MasterjobsThreadsManager {
         scheduleExecutionThreads(waitQueueThreadsNumber, executorService, MasterjobsWaitQueueJobsExecutionThread.class);
         
         // schedula i ServiceThreads attivi
+        masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
     }
     
