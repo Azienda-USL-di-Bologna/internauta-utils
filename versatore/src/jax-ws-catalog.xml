@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <system systemId="https://lcare-ts.linkverse.com:443/protocolli/GenericDocumentService?wsdl" uri="wsdl/lcare-ts.linkverse.com_443/protocolli/GenericDocumentService.wsdl"/>
+    <system systemId="https://lcare-ts.linkverse.com:443/protocolli/GenericDocumentService?xsd=1" uri="wsdl/lcare-ts.linkverse.com_443/protocolli/GenericDocumentService.xsd_1.xsd"/>
+    <system systemId="http://www.w3.org/2005/05/xmlmime" uri="wsdl/www.w3.org/2005/05/xmlmime.xsd"/>
+</catalog>

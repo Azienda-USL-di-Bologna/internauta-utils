@@ -127,6 +127,45 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxws-maven-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>wsimport</goal>
+                        </goals>
+                        <configuration>
+                            <wsdlFiles>
+                                <wsdlFile>lcare-ts.linkverse.com_443/protocolli/GenericDocumentService.wsdl</wsdlFile>
+                            </wsdlFiles>
+                            <packageName>it.bologna.ausl.utils.versatore.infocert.wsclient</packageName>
+                            <vmArgs>
+                                <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                            </vmArgs>
+                            <wsdlLocation>https://lcare-ts.linkverse.com:443/protocolli/GenericDocumentService?wsdl</wsdlLocation>
+                            <staleFile>${project.build.directory}/jaxws/stale/GenericDocumentService.stale</staleFile>
+                        </configuration>
+                        <id>wsimport-generate-GenericDocumentService</id>
+                        <phase>generate-sources</phase>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.xml</groupId>
+                        <artifactId>webservices-api</artifactId>
+                        <version>2.0</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <sourceDestDir>${project.build.directory}/generated-sources/jaxws-wsimport</sourceDestDir>
+                    <xnocompile>true</xnocompile>
+                    <verbose>true</verbose>
+                    <extension>true</extension>
+                    <catalog>${basedir}/src/jax-ws-catalog.xml</catalog>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
