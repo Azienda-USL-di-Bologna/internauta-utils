@@ -26,10 +26,12 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author gdm
+ * 
+ * Classe che si occupa dello scheduling dei servizi
  */
 @Component
-public class MasterjobsServicesExecutionScheduler {    
-        
+public class MasterjobsServicesExecutionScheduler {   
+
     @PersistenceContext
     private EntityManager entityManager;
     
@@ -44,7 +46,11 @@ public class MasterjobsServicesExecutionScheduler {
     private ScheduledThreadPoolExecutor scheduledExecutorService;
     
     private final Map<String, List<ScheduledFuture>> activeServiceMap = new HashMap<>();
-    
+
+    /**
+     * Stoppa un servizio, se è presente nella mappa dei servizi in esecuzione e lo rimuove dalla mappa
+     * @param serviceName il nome del servizio da stoppare
+     */    
     public void stopService(String serviceName) {
         List<ScheduledFuture> scheduledServices = activeServiceMap.get(serviceName);
         if (scheduledServices != null && !scheduledServices.isEmpty()) {
@@ -53,19 +59,6 @@ public class MasterjobsServicesExecutionScheduler {
             }
         }
         activeServiceMap.remove(serviceName);
-    }
-    
-    public void stopAndDisableService(String serviceName, boolean removeFromDB) {
-        stopService(serviceName);
-        Service service = entityManager.find(Service.class, serviceName);
-        if (service.getActive()) {
-            service.setActive(false);
-        }
-        if (removeFromDB) {
-            entityManager.remove(service);
-        } else {
-            entityManager.merge(service);
-        }
     }
     
     public void scheduleServiceThreads() throws MasterjobsWorkerException {

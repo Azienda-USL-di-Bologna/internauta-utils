@@ -1,11 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.masterjobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
-import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWaitQueueJobsExecutionThread;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

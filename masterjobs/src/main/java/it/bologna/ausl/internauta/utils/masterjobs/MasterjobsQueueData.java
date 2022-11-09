@@ -8,6 +8,8 @@ import java.util.List;
 /**
  *
  * @author gdm
+ * 
+ * Classe che rappresenta un messaggio letto da redis per l'esecuzione di un set di jobs
  */
 public class MasterjobsQueueData {
     private Long set;
@@ -47,6 +49,11 @@ public class MasterjobsQueueData {
         this.objectMapper = objectMapper;
     }
     
+    /**
+     * trasforma l'oggetto in una stringa json (per scriverla nella coda redis)
+     * @return
+     * @throws JsonProcessingException 
+     */
     public String dump() throws JsonProcessingException {
         return this.objectMapper.writeValueAsString(this);
     }
