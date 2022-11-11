@@ -8,15 +8,12 @@ import com.vladmihalcea.hibernate.type.range.PostgreSQLRangeType;
 import com.vladmihalcea.hibernate.type.range.Range;
 import it.nextsw.common.annotations.GenerateProjections;
 import java.io.Serializable;
-import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
@@ -72,6 +69,10 @@ public class Service implements Serializable {
     @Column(name = "every_day_at")
     private LocalTime everyDayAt;
     
+    @Basic(optional = true)
+    @Column(name = "schedule_on_start")
+    private Boolean scheduleOnStart;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "active")
@@ -122,6 +123,14 @@ public class Service implements Serializable {
 
     public void setEveryDayAt(LocalTime everyDayAt) {
         this.everyDayAt = everyDayAt;
+    }
+
+    public Boolean getScheduleOnStart() {
+        return scheduleOnStart;
+    }
+
+    public void setScheduleOnStart(Boolean scheduleOnStart) {
+        this.scheduleOnStart = scheduleOnStart;
     }
 
     public Boolean getActive() {

@@ -43,6 +43,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import java.util.UUID;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
@@ -51,6 +52,14 @@ import org.springframework.data.redis.connection.stream.StreamReadOptions;
 /**
  *
  * @author gdm
+ * 
+ * Classe astratta che rappresenta un executor
+ * Un executor è un thread in grado di eseguire i job
+ * Gli executor esistenti e che estendono questa classe ad oggi sono: 
+ *  - MasterjobsHighPriorityJobsExecutionThread
+ *  - MasterjobsHighestPriorityJobsExecutionThread
+ *  - MasterjobsNormalPriorityJobsExecutionThread
+ *  - MasterjobsWaitQueueJobsExecutionThread
  */
 public abstract class MasterjobsJobsExecutionThread implements Runnable, MasterjobsJobsExecutionThreadBuilder {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsExecutionThread.class);
@@ -98,6 +107,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
 
     private String lastStreamId = "0";
     private String currentCommand = null;
+    
+    /*
+    * Metodi builder
+    */
     
     @Override
     public MasterjobsJobsExecutionThread self(MasterjobsJobsExecutionThread self) {
@@ -218,6 +231,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         }
     }
     
+    /**
+     * viene lanciato all'avvio del thread.
+     * Inizializza il tutto e lancia runExecutor sulla classe concreta
+     */
     @Override
     public void run() {
         while (!stopped && !paused) {
@@ -228,14 +245,19 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                 buildWorkQueue();
                 moveWorkQueueinInQueue();
                 checkCommand();
+                
+                // lancia runExecutor() sulla classe concreta in una nuova transazione
                 transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 transactionTemplate.executeWithoutResult(a -> {
                     this.runExecutor();
                 });
                
-            } catch (MasterjobsInterruptException ex) {
-                if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE) {
+            } catch (MasterjobsInterruptException ex) { // se viene mandato un comando di stop o di pausa
+                if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE) { // se rilvea un comando pausa
+                    // ri rimuove dai threads attivi
                     removeFromActiveThreadsSet();
+                    
+                    // rimane in pausa facendo uno sleep di 5 secondi fino a che non viene lanciato un resume
                     while (paused) {
                         try {
                             log.info(String.format("i'm paused, launch a %s command to resume me...", RESUME_COMMAND));
@@ -244,30 +266,58 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                         } catch (InterruptedException | MasterjobsInterruptException subEx) {
                         }
                     }
+                    // al resume esce da dal ciclo e ricomincia dall'inizio
                 }
             } catch (Throwable ex) {
                 log.error("fatal error", ex);
                 // TODO: vedere cosa fare
             }
         }
+        // arrivati qui il ciclo principale è finito, prima di terminare si rimuove dai thread attivi
         removeFromActiveThreadsSet();
         log.info(String.format("executor %s ended", getUniqueName()));
     }
     
+    /**
+     * deve essere implementato tornando il nome dell'executor (Es. HighPriorityExecutor)
+     * viene usato per la creazione del nome univoco del thread
+     * @return il nome dell'executor 
+     */
     protected abstract String getExecutorName();
     
+    /**
+     * Costruisce un nome univoco che indetifica l'executor.
+     * Viene inserita anche una parte random per assicurarsi che sia univoco anche nel caso ci siano più istanze dell'applicazione
+     * @return 
+     */
     protected String getUniqueName() {
-        return getExecutorName() + "_" + Thread.currentThread().getName();
+        return getExecutorName() +"_" + UUID.randomUUID().toString() + "_" + Thread.currentThread().getName();
     }
     
+    /**
+     * Crea la workqueue dell'executor
+     */
     protected void buildWorkQueue() {
         this.workQueue = this.workQueue.replace("[thread_name]", getUniqueName());
     }
     
+    /**
+     * imposta un comando da eseguire.
+     * Non viene eseguito immediatamente, ma appena possibile
+     * @param command il comando da eseguire
+     * @throws MasterjobsInterruptException 
+     */
     public void executeCommand(String command) throws MasterjobsInterruptException {
         this.currentCommand = command;
     }
     
+    /**
+     * verifica il comando da eseguire e lo esegue effettivamente
+     * come prima cosa controlla se è stato inserito un comando sullo stream redis dei comandi
+     * altrimenti esegue il comando settato con la executeCommand()
+     * se nessun comando viene rilevato, la funzione non fa nulla
+     * @throws MasterjobsInterruptException viene lanciata quando viene rilevato un comando di Interrupt (stop o pause)
+     */
     protected void checkCommand() throws MasterjobsInterruptException {
         List<MapRecord> commandsList = (List<MapRecord>) redisTemplate.opsForStream().read(StreamReadOptions.empty().count(1), 
                 StreamOffset.create(commandsStreamName, ReadOffset.from(lastStreamId)));
@@ -304,9 +354,19 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         }
     }
     
+    /**
+     * Gestisce la coda redis dei job da eseguire
+     * @param priority la priorità che gestisce l'executor
+     * @throws MasterjobsReadQueueTimeout lanciata quando non c'è nulla da eseguire nella coda dei job per un tempo definito nei parametri
+     * @throws MasterjobsExecutionThreadsException se c'è un errore nella gestione dei job da eseguire
+     * @throws MasterjobsInterruptException lanciata nel caso rileva un comando di stop o pause
+     */
     public void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
         try {
+            // come prima cosa verifica se ci sono comandi da eseguire e nel caso gli esegue
             checkCommand();
+            
+            // legge dalla coda della priorità passata e se ci sono, esegue i job
             readFromQueueAndManageJobs(masterjobsUtils.getQueueBySetPriority(priority));
         } catch (MasterjobsBadDataException ex) {
             String errorMessage = "error on selecting queue";
@@ -315,37 +375,55 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         }
     }
     
-//    @Transactional
+    /**
+     * Legge dalla coda passata e esegue i job rilevati
+     * @param queue
+     * @throws MasterjobsReadQueueTimeout lanciata se non ci sono job da eseguire nella coda passata per unt empo definito nei parametri
+     * @throws MasterjobsExecutionThreadsException se c'è un errore nella gestione dei job
+     */
     public void readFromQueueAndManageJobs(String queue) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException {
+        // legge dalla coda indicata e sposta atomicamente i job nella coda di work
         String queueDataString = (String) redisTemplate.opsForList().move(
             queue, RedisListCommands.Direction.LEFT, 
             this.workQueue, RedisListCommands.Direction.RIGHT, 
             this.queueReadTimeoutMillis, TimeUnit.MILLISECONDS);
-        //log.info(String.format("readed: %s", queueDataString));
-        if (queueDataString != null) {
+        
+        if (queueDataString != null) { // se legge qualcosa dalla coda, allora lo gestisco
             manageQueueData(queueDataString);
-        } else {
+        } else { // se va qui vuol dire che è scaduto il timeout perché non c'era nulla nella coda
+            // lancio l'eccezione per indicare che non c'è nulla nelal coda
             throw new MasterjobsReadQueueTimeout(queue, this.queueReadTimeoutMillis);
         }
     }
     
-//    @Transactional
+    /**
+     * Gestisce quanto letto dalla coda
+     * @param queueDataString quello che è stato letto dalla coda
+     * @throws MasterjobsExecutionThreadsException 
+     */
     public void manageQueueData(String queueDataString) throws MasterjobsExecutionThreadsException {
         MasterjobsQueueData queueData = null;
         Set set = null;
         ObjectStatus objectStatus = null;
         try {
+            // contruisce l'oggetto che rappresenta i job da eseguire e il set al quale appartengono
             queueData = masterjobsObjectsFactory.getMasterjobsQueueDataFromString(queueDataString);
             
+            // carica i dati necessati all'esecuzione dei job
             set = self.getSet(queueData.getSet());
             String objectId = set.getObjectId();
             String objectType = set.getObjectType();
             String app = set.getApp();
             ObjectStatus.ObjectState objectState;
+            
+            /* solo se il set deve attendere il completamento dei job di set precedenti, 
+            * devo scrivere nella tabella ObjectStatus lo stato dell'oggetto a cui il set è attaccato
+            * nel caso l'ogetto era già presente nella tabella, allora ne leggo lo stato
+            */
             if (set.getWaitObject()) {
                 objectStatus = self.getAndUpdateObjectState(objectId, objectType, app);
                 objectState = objectStatus.getState();
-            } else {
+            } else { // se il set non deve attendere altri set allora non scrivo nulla in tabella e considero l'oggetto libero (IDLE)
                 objectState = ObjectStatus.ObjectState.IDLE;
             }
             switch (objectState) {
@@ -365,7 +443,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
         } catch (Throwable t) {
             try {
-                log.error("error managing queueData", t);
+                t.printStackTrace();
                 if (!(t.getClass().isAssignableFrom(MasterjobsWorkerException.class))) {
                     /*
                     * se c'è un errore nell'esecuzione del job:
@@ -400,18 +478,44 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         }
     }
     
+    /**
+     * Esegue i job presenti all'interno di MasterjobsQueueData passato
+     * @param queueData l'oggetto costruito da quanto letto dalla coda redis
+     * @param objectStatus l'ObjectStatus a cui il set è associato (può essere anche null)
+     * @param set il set a cui i job fanno riferimento
+     * @throws MasterjobsParsingException
+     * @throws MasterjobsExecutionThreadsException
+     * @throws MasterjobsWorkerException 
+     */
     protected void executejobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
+        
+        /* per prima cosa controllo se posso eseguire i job
+        * I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
+        * se la funzione isExecutable() mi torna true. 
+        *  Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
+        */
         if (!set.getWaitObject() || this.isExecutable(set)) {
+            /* tengo una lista dei job completati.
+            * Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
+            */
             List<Long> jobsCompleted = new ArrayList();
+            // se il set può essere eseguito allora ciclo su tutti i job e li eseguo uno ad uno
             for (Long jobId : queueData.getJobs()) {
                 Job job = this.getJob(jobId);
                 if (job != null) {
                     try {
+                        // carico i dati del job
                         Map<String, Object> data = job.getData();
                         JobWorkerDataInterface workerData = JobWorkerDataInterface.parseFromJobData(objectMapper, data);
+                        // istanzio il worker in grado eseguire il job passandogli i suoi dati
                         JobWorker worker = masterjobsObjectsFactory.getJobWorker(job.getName(), workerData, job.getDeferred());
+                        // eseguo il job tramite il worker
                         JobWorkerResult res = worker.doWork();
+                        /* se l'esecuzione è andata a buon fine cancello il job dal DB (se il job è l'ultimo verrà cancellato
+                        * anche il set e l'ObjectStatus (se presente)
+                        */
                         self.deleteJob(job);
+                        // aggiungo il job alla lista dei completati
                         jobsCompleted.add(job.getId());
                     } catch (Throwable ex) {
                         /*
@@ -446,23 +550,41 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         }
     }
     
+    /**
+     * rimuove i jobs completati dalla lista dei job in MasterjobsQueueData
+     * @param masterjobsQueueData
+     * @param jobsCompleted la lista dei job completati
+     */
     private void removeJobsCompletedFromQueueData(MasterjobsQueueData masterjobsQueueData, List<Long> jobsCompleted) {
         List<Long> jobs = masterjobsQueueData.getJobs();
         jobs.removeAll(jobsCompleted);
     }
     
-//    @Transactional
+    /**
+     * Legge e torna un Job dalla tabella dei job
+     * @param jobId
+     * @return 
+     */
     public Job getJob(Long jobId) {
         Job job = entityManager.find(Job.class, jobId);
         return job;
     }
     
-//    @Transactional
+    /**
+     * Legge e torna un Set dalla tabella dei set
+     * @param setId
+     * @return 
+     */
     public Set getSet(Long setId) {
         Set set = entityManager.find(Set.class, setId);
         return set;
     }
     
+    /**
+     * Cancella un job dalla tabella dei job.
+     * se il job è l'ultimo del set, cancella anche il set dalla tabella dei set e l'oggetto dalla tabella ObjectStatus (se presente)
+     * @param job il job da cancellare
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void deleteJob(Job job) {
         QJob qJob = QJob.job;
@@ -481,7 +603,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             .from(qJob)
             .where(qJob.set.id.eq(setId))
             .fetchOne();
-        
         // se non ci sono più job attaccati al set, elimino sia il set che l'object_status
         if (jobSetCount == 0) {
             // eliminazione set
@@ -491,7 +612,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             * se il set non è attaccato a un oggetto allora objectId sarà null
             */
             if (job.getSet().getObjectId() != null) {
-                // eliminazione object_status
+            // eliminazione object_status
                 BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
                 if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
                     filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));
@@ -503,6 +624,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         
     }
     
+    /**
+     * setta in ERROR sul database sia il job, che l'ObjectStatus associato (se presente)
+     * @param job
+     * @param objectStatus 
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void setInError(Job job, ObjectStatus objectStatus) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
@@ -526,6 +652,12 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
     }
     
+    /**
+     * cerca (tramite una select for update) un ObjectStatus e se lo trova ed è in IDLE lo setta a PENDING
+     * @param filter
+     * @return un oggetto Optional con all'interno l'ObjectStatus trovato. Se non lo trova torna un Optional empty
+     * @throws MasterjobsDataBaseException 
+     */
     private Optional<ObjectStatus> getObjectStatusAndSetIdleIfFound(BooleanExpression filter) throws MasterjobsDataBaseException {
         Optional<ObjectStatus> res = null;
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
@@ -558,6 +690,13 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return res;
     }
     
+    /**
+     * costruisce un filtro per carcare un ObjectStatus con i prametri non null passati
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @return 
+     */
     private BooleanExpression getObjectStatusFilter(String objectId, String objectType, String app) {
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus; 
         BooleanExpression filter = qObjectStatus.objectId.eq(objectId).and(qObjectStatus.objectType.eq(objectType));
@@ -567,10 +706,26 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return filter;
     }
     
+    /**
+     * legge lo stato dell'oggetto passato, se non esiste lo crea, se esiste ed è IDLE lo setta in PENDING
+     * l'oggetto viene cercato solo per i parametri non null passati
+     * NB: la funzione crea una nuova transazione e committa al termine
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @return lo status corrente dell'oggetto
+     * @throws MasterjobsDataBaseException 
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public ObjectStatus getAndUpdateObjectState(String objectId, String objectType, String app) throws MasterjobsDataBaseException {
         ObjectStatus objectStatus;
+        
+        // crea il filtro per cercare l'oggetto in base ai paramettri non null passati
         BooleanExpression filter = getObjectStatusFilter(objectId, objectType, app);
+        
+        /* in una nuova transazione, con commit al temine,
+        * legge (tramite una select for update) l'oggetto e se è in IDLE lo setta in PENDING
+        */
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         Optional<ObjectStatus> objectStatusOp = transactionTemplate.execute(action -> {
             Optional<ObjectStatus> res;
@@ -581,14 +736,22 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
             return res;
         });
-        if (objectStatusOp == null) {
+        if (objectStatusOp == null) { // non dovrebbe mai essere null, se non trova l'oggetto objectStatusOp viene settato a empty
             throw new MasterjobsDataBaseException("error managing objectStatus");
         }
         if (objectStatusOp.isPresent()) {
             objectStatus = objectStatusOp.get();
-        } else {
+        } else { // se non c'è l'ggetto cercato allora viene inserito
+            /* per inserirlo viene preso un lock, in modo che solo questo thread lo inserisca
+            * il lock viene preso tramite la funzione pg_advisory_xact_lock di postgres su un numero ottenuto calcolando
+            * l'hash del filtro utilizzato per cercare l'oggetto
+            */
             String query = String.format("SELECT pg_advisory_xact_lock(%s)", filter.toString().hashCode());
             
+            /* dopo aver preso il lock per prima cosa controllo se qualche altro thread (che aveva preso il lock prima di me)
+            * ha già creato l'oggetto e nel caso lo ritorno.
+            * se ancora non esiste lo inserisco
+            */
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             objectStatus = transactionTemplate.execute(action -> {
                 entityManager.createNativeQuery(query).getSingleResult();
@@ -612,6 +775,13 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return objectStatus;
     }
     
+    /**
+     * inserisce un oggetto nella tabella ObjectStatus
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @return 
+     */
     private ObjectStatus insertObjectStatus(String objectId, String objectType, String app) {
         ObjectStatus objectStatus = new ObjectStatus();
         objectStatus.setObjectId(objectId);
