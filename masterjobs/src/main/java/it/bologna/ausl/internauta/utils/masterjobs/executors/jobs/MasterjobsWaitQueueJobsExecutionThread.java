@@ -70,7 +70,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                 // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
                 String destinationQueue;
                 try {
-                    destinationQueue = masterjobsObjectsFactory.getQueueBySetPriority(set.getPriority());
+                    destinationQueue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
                 } catch (MasterjobsBadDataException ex) {
                     String errorMessage = String.format("error getting queue name from set priority", ex);
                     log.error(errorMessage);

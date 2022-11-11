@@ -1,6 +1,5 @@
-package it.bologna.ausl.internauta.utils.masterjobs.executors.services;
+package it.bologna.ausl.internauta.utils.masterjobs;
 
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsThreadsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -13,10 +12,12 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author gdm
+ * 
+ * Classe che rappresenta un thread che si occupa di terminare tutti i threads di masterjobs allo spegnimento dell'applicazione
  */
 @Component
 public class MasterjobsShutDownThread extends Thread {
-    private static Logger log = LoggerFactory.getLogger(MasterjobsThreadsManager.class);
+    private static Logger log = LoggerFactory.getLogger(MasterjobsShutDownThread.class);
     
     @Autowired
     @Qualifier("masterjobsScheduledThreadPoolExecutor")
@@ -29,15 +30,19 @@ public class MasterjobsShutDownThread extends Thread {
     public void run() {
         log.info("Masterjobs shutdown initiated");
         boolean terminated = false;
+        /* come prima cosa spegne il thread pool dei servizi e degli executor, questo fa in modo che quelli attivi finiscano il loro lavoro, 
+        * ma non ne vengono schedulati altri
+        */
         scheduledThreadPoolExecutor.shutdown();
         masterjobsThreadsManager.getExecutorService().shutdown();
+        
+        // poi manda un comando di stop a tutti gli executor in modo da fargli terminare, altrimenti non terminerebbero
         for (MasterjobsJobsExecutionThread masterjobsJobsExecutionThread : masterjobsThreadsManager.getMasterjobsJobsExecutionThreadsList()) {
             masterjobsJobsExecutionThread.executeCommand(MasterjobsJobsExecutionThread.STOP_COMMAND);
         }
-        //DataSource dataSource = DbConnectionFactory.getDataSource();
-        //if (dataSource != null) {}
         while (!terminated) {
             try {
+                // attende la terminazione per 5 minuti, dopo di che la forza
                 terminated = 
                         scheduledThreadPoolExecutor.awaitTermination(5, TimeUnit.MINUTES) && 
                         masterjobsThreadsManager.getExecutorService().awaitTermination(5, TimeUnit.MINUTES);

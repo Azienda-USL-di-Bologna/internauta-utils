@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighPriorityJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighestPriorityJobsExecutionThread;
@@ -8,12 +9,10 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWait
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,6 +20,8 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author gdm
+ * 
+ * Si occupa di far partire tutti i threads degli executor, per tutte le priorità e per la coda di wait
  */
 @Component
 public class MasterjobsThreadsManager {
@@ -40,9 +41,6 @@ public class MasterjobsThreadsManager {
     private Integer waitQueueThreadsNumber;
     
     @Autowired
-    private BeanFactory beanFactory;
-    
-    @Autowired
     private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
     
     @Autowired
@@ -50,15 +48,13 @@ public class MasterjobsThreadsManager {
     
     private ExecutorService executorService;
     
-    private List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
+    private final List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
 
-//    @Autowired
-//    TransactionTemplate transactionTemplate;
-    
     /**
      * lancia tutti i threads del Masterjobs
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void scheduleThreads(){
+    public void scheduleThreads() throws MasterjobsWorkerException {
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
         executorService = Executors.newFixedThreadPool(
@@ -74,6 +70,7 @@ public class MasterjobsThreadsManager {
         scheduleExecutionThreads(waitQueueThreadsNumber, executorService, MasterjobsWaitQueueJobsExecutionThread.class);
         
         // schedula i ServiceThreads attivi
+        masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
     }
     

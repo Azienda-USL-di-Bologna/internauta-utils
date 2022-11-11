@@ -2,6 +2,8 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,6 +34,9 @@ public abstract class JobWorker implements Worker {
     protected JobWorkerData workerData;
     protected JobWorkerDeferredData workerDeferredData;
     protected boolean deferred;
+    
+    @PersistenceContext
+    protected EntityManager entityManager;
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
