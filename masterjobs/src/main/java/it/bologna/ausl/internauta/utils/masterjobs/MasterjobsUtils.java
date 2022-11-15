@@ -1,9 +1,11 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +18,8 @@ public class MasterjobsUtils {
     
     private static final Logger log = LoggerFactory.getLogger(MasterjobsUtils.class);
     
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-normal}")
-    private String inQueueNormal;
-    
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-high}")
-    private String inQueueHigh;
-    
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-highest}")
-    private String inQueueHighest;
+    @Autowired
+    private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
     /**
      * Torna il nome della coda relativa alla priorità passata
@@ -35,13 +31,13 @@ public class MasterjobsUtils {
         String destinationQueue;
         switch (setPriority) {
             case NORMAL:
-                destinationQueue = this.inQueueNormal;
+                destinationQueue = masterjobsApplicationConfig.getInQueueNormal();
                 break;
             case HIGH:
-                destinationQueue = this.inQueueHigh;
+                destinationQueue = masterjobsApplicationConfig.getInQueueHigh();
                 break;
             case HIGHEST:
-                destinationQueue = this.inQueueHighest;
+                destinationQueue = masterjobsApplicationConfig.getInQueueHighest();
                 break;
             default:
                 String errorMessage = String.format("priority %s not excepted", setPriority);

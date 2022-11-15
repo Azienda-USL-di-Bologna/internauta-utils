@@ -1,7 +1,9 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
@@ -27,45 +29,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class MasterjobsObjectsFactory {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsObjectsFactory.class);
-    
-    @Value("${masterjobs.manager.jobs-executor.redis-active-threads-set-name}")
-    private String activeThreadsSetName;
-    
-    @Value("${masterjobs.manager.jobs-executor.commands-stream-name}")
-    private String commandsStreamName;
-    
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-normal}")
-    private String inQueueNormal;
-    
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-high}")
-    private String inQueueHigh;
-    
-    @Value("${masterjobs.manager.jobs-executor.in-redis-queue-highest}")
-    private String inQueueHighest;
-    
-    @Value("${masterjobs.manager.jobs-executor.work-redis-queue}")
-    private String workQueue;
-    
-    @Value("${masterjobs.manager.jobs-executor.error-redis-queue}")
-    private String errorQueue;
-    
-    @Value("${masterjobs.manager.jobs-executor.wait-redis-queue}")
-    private String waitQueue;
-    
-    @Value("${masterjobs.manager.jobs-executor.out-redis-queue}")
-    private String outQueue;
-    
-    @Value("${masterjobs.manager.jobs-executor.sleep-millis}")
-    private int sleepMillis;
-    
-    @Value("${masterjobs.manager.jobs-executor.queue-read-timeout-millis}")
-    private int queueReadTimeoutMillis;
-    
+
     @Autowired
     private BeanFactory beanFactory;
     
     @Autowired
     private ObjectMapper objectMapper;
+    
+    @Autowired
+    private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
     // mappa che ha come chiave il nome del Worker (il nome è quello che ritorna la getName e come valore la classe del worker
     @Autowired
@@ -87,12 +59,14 @@ public class MasterjobsObjectsFactory {
      * Crea un oggetto MasterjobsQueueData con i dati passati
      * @param jobsId lista dei jobId da inserire
      * @param setId il set a cui i job fanno riferimento
+     * @param queue la coda in cui la QueueData andrà inserita
      * @return 
      */
-    public MasterjobsQueueData buildMasterjobsQueueData(List<Long> jobsId, Long setId) {
+    public MasterjobsQueueData buildMasterjobsQueueData(List<Long> jobsId, Long setId, String queue) {
         MasterjobsQueueData queueData = new MasterjobsQueueData(objectMapper);
         queueData.setJobs(jobsId);
         queueData.setSet(setId);
+        queueData.setQueue(queue);
         return queueData;
     }
 
@@ -105,16 +79,16 @@ public class MasterjobsObjectsFactory {
     public <T extends MasterjobsJobsExecutionThread> T getJobsExecutionThreadObject(Class<T> classz) {
         T executionThreadObject = beanFactory.getBean(classz);
         executionThreadObject
-            .activeThreadsSetName(activeThreadsSetName)
-            .commandsStreamName(commandsStreamName)
-            .inQueueNormal(inQueueNormal)
-            .inQueueHigh(inQueueHigh)
-            .inQueueHighest(inQueueHighest)
-            .workQueue(workQueue)
-            .errorQueue(errorQueue)
-            .waitQueue(waitQueue)
-            .sleepMillis(sleepMillis)
-            .queueReadTimeoutMillis(queueReadTimeoutMillis)
+            .activeThreadsSetName(masterjobsApplicationConfig.getActiveThreadsSetName())
+            .commandsStreamName(masterjobsApplicationConfig.getCommandsStreamName())
+            .inQueueNormal(masterjobsApplicationConfig.getInQueueNormal())
+            .inQueueHigh(masterjobsApplicationConfig.getInQueueHigh())
+            .inQueueHighest(masterjobsApplicationConfig.getInQueueHighest())
+            .workQueue(masterjobsApplicationConfig.getWorkQueue())
+            .errorQueue(masterjobsApplicationConfig.getErrorQueue())
+            .waitQueue(masterjobsApplicationConfig.getWaitQueue())
+            .sleepMillis(masterjobsApplicationConfig.getSleepMillis())
+            .queueReadTimeoutMillis(masterjobsApplicationConfig.getQueueReadTimeoutMillis())
             .self(executionThreadObject);
         return executionThreadObject;
     }
