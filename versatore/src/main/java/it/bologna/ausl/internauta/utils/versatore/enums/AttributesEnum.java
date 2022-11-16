@@ -92,62 +92,145 @@ public enum AttributesEnum {
     CODICE_REGISTRO("datregid_s"),
     
     /**
-     * Testo libero. Es. fattura attiva<br>
+     * Testo libero. Es. fattura attiva.<br>
      * <b>Required</b>
      */
     OGGETTO("ogg_s"),
     
     /**
-     * Valori ammessi:<br>
-     * • assegnatario<br>
-     * • autore<br>
-     * • mittente<br>
-     * • destinatario<br>
-     * • operatore<br>
-     * • produttore<br>
-     * • RGD (Responsabile della Gestione Documentale)<br>
-     * • RSP (Responsabile del Servizio di Protocollo)<br>
-     * • Soggetto che effettua la registrazione<br>
-     * • altro<br>
-     * Almeno un soggetto che effettua la registrazione del documento (tipicamente l’Organizzazione che protocolla) 
-     * e un autore o un mittente va indicato obbligatoriamente.<br>
-     * Può essere ricorsivo.<br>
-     * In questo caso, il set di metadati ripetuto dovrà essere distinto con numeri progressivi.<br>
-     * es. &lt;field label="Soggetti Ruolo 2 " name="soggru_2_s">Destinatario&gt;<br>
-     * <b>Required</b>
+     * Amministrazione che effettua la registrazione.
      */
-    RUOLO("soggru_s"),
+    RUOLO_1("soggru_1_s"),
+    /**
+     * Valore da inserire: PAI.
+     */
+    TIPO_SOGGETTO_1("soggtip_1_s"),
+    /**
+     * Riferimento Azienda Zero.
+     */
+    DENOMINAZIONE_1("denominazione_1_s"),
     
     /**
-     * Valori ammessi:<br>
-     * • PF per persona fisica<br>
-     * • PG per organizzazione<br>
-     * • PAI per amministrazione pubblica italiana<br>
-     * • PAE per le Amministrazioni Pubbliche estere<br>
-     * • SW per i documenti prodotti automaticamente (Se Ruolo = Produttore)<br>
-     * Può essere un default.<br>
+     * assegnatario.
      */
-    TIPO_SOGGETTO("soggtip_s"),
+    RUOLO_2("soggru_2_s"),
+    /**
+     * Valore da inserire: PAI.
+     */
+    TIPO_SOGGETTO_2("soggtip_2_s"),
+    /**
+     * Denominazione UOR/Struttura dell'Ente a cui si assegna il protocollo in Entrata (AS).
+     */
+    DENOMINAZIONE_2("denominazione_2_s"),
+  
+    /**
+     * mittente.
+     */
+    RUOLO_3("soggru_3_s"),
+    /**
+     * Valori per tipologia: 
+     * • PU: PAI
+     * • PE: PAI-PAE (per enti), PF (per persone fisiche), PG (per persone giuridiche)
+     * • GIRI-INTERNI: PAI
+     */
+    TIPO_SOGGETTO_3("soggtip_3_s"),
+    /**
+     * Se TIPO_SOGGETTO_3 è PG o PAI inseriamo la denominazione.
+     * Per il Protocolli in Uscita sarà Denominazione Ente (A0 o AOUIVR) - Codice iPA di A0 o AOUIVR (PAI).
+     */
+    DENOMINAZIONE_3("denominazione_3_s"), 
+    /**
+     * Se TIPO_SOGGETTO_3 è PF è obbligatorio.
+     */
+    COGNOME_3("cognome_3_s"),
+    /**
+     * Se TIPO_SOGGETTO_3 è PF è obbligatorio.
+     */
+    NOME_3("nome_3_s"),
     
     /**
-     * Obbligatorio se Tipo soggetto: PF<br>
-     * <i>Optional</i>
+     * Per giri interni.
+     * Redattore.
      */
-    COGNOME("cognome_s"),
+    RUOLO_4("soggru_4_s"),
+    /**
+     * Per giri interni.
+     * PF
+     */
+    TIPO_SOGGETTO_4("soggtip_4_s"),
+    /**
+     * Per giri interni.
+     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
+     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
+     */
+    COGNOME_4("cognome_4_s"),
+    /**
+     * Per giri interni.
+     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
+     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
+     */
+    NOME_4("nome_4_s"),
     
     /**
-     * Obbligatorio se Tipo soggetto: PF<br>
-     * <i>Optional</i>
+     * Per giri interni.
+     * Destinatario.
      */
-    NOME("nome_s"),
+    RUOLO_5("soggru_5_s"),
+    /**
+     * Per giri interni.
+     * Sono riportati persone fisiche (PF) , persone giuridiche (PG) ed enti (PAI - PAE).
+     */
+    TIPO_SOGGETTO_5("soggtip_5_s"),
+    /**
+     * Per giri interni.
+     * Per i Protocolli Interni saranno riportate le denominazioni delle UOR aziendali destinatarie.
+     */
+    DENOMINAZIONE_5("denominazione_5_s"),
     
     /**
-     * Obbligatorio se Tipo soggetto: PG, PAI, PAE, AS, SW.<br>
-     * Per le PA può essere ricorsivo e riferito al Codice IPA dell’Amministrazione, dell’AOO, dell’UOR, o all’Ufficio.<br>
-     * <i>Optional</i>
+     * Per giri interni.
+     * responsabile procedimento
      */
-    DEMONIMAZIONE("denominazione_s"),
+    RUOLO_6("soggru_6_s"),
+    /**
+     * Per giri interni.
+     * PF
+     */
+    TIPO_SOGGETTO_6("soggtip_6_s"),
+    /**
+     * Per giri interni.
+     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
+     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
+     */
+    COGNOME_6("cognome_6_s"),
+    /**
+     * Per giri interni.
+     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
+     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
+     */
+    NOME_6("nome_6_s"),
     
+    /**
+     * Per giri interni.
+     * direttore uo mittente
+     */
+    RUOLO_7("soggru_7_s"),
+    /**
+     * Per giri interni.
+     * PF
+     */
+    TIPO_SOGGETTO_7("soggtip_7_s"),
+    /**
+     * Per giri interni.
+     * nome del direttore di UO mittente espresso nella forma NOME COGNOME MATRICOLA (PF).
+     */
+    COGNOME_7("cognome_7_s"),
+    /**
+     * Per giri interni.
+     * nome del direttore di UO mittente espresso nella forma NOME COGNOME MATRICOLA (PF).
+     */
+    NOME_7("nome_7_s"),
+
     /**
      * O Partita Iva.<br>
      * <i>Optional</i>
@@ -180,6 +263,13 @@ public enum AttributesEnum {
      * <i>Optional</i>
      */
     DESCRIZIONE_ALLEGATI("allegdesc_s"),
+    
+    /**
+     * Campo testuale che si riferisce alle classificazioni del protocollo. 
+     * Espresso in formato [CODICE] NOME (ad esempio [01-01-01] nome del titolo). 
+     * Se presenti più classificazioni saranno concatenate tra loro e separate da carattere ','
+     */
+    CLASSIFICAZIONE("classificazione_s"),
     
     /**
      * Codifica del documento secondo il Piano di classificazione utilizzato (obbligatorio per le PA).<br>
@@ -274,6 +364,13 @@ public enum AttributesEnum {
     ID_AGGREGAZIONE("idagg_s"),
     
     /**
+     * Campo testuale che si riferisce ai fascicoli contenenti il documento. 
+     * Espresso in formato [NUMERO/ANNO FASCICOLO] NOME FASCICOLO. 
+     * Se presenti più fascicoli saranno concatenati tra loro separati dal carattere ','
+     */
+    FASCICOLO("fascicolo_s"),
+    
+    /**
      * Identificativo univoco e persistente del documento principale, da popolare nel versamento 
      * di un documento allegato al documento principale, per creare un vincolo tra i due.<br>
      * <i>Optional</i>
@@ -352,6 +449,7 @@ public enum AttributesEnum {
         return attributo.equals(otherName);
     }
 
+    @Override
     public String toString() {
        return this.attributo;
     }
