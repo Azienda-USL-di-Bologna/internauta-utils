@@ -51,12 +51,13 @@ public class MasterjobsThreadsManager {
     private final List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
 
     /**
-     * lancia tutti i threads del Masterjobs
+     * lancia tutti i threads esecutori dei jobs
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void scheduleThreads() throws MasterjobsWorkerException {
+    public void scheduleJobsExecutorThreads() throws MasterjobsWorkerException {
         
-        moveWorkQueueinWaitQueue();
+        // sposta le eventuali code di work rimaste appese nella wait queue, in modo che i job vengano ripresi in considerazione
+        moveWorkQueueInWaitQueue();
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
         executorService = Executors.newFixedThreadPool(
@@ -70,7 +71,13 @@ public class MasterjobsThreadsManager {
         scheduleExecutionThreads(masterjobsApplicationConfig.getHighPriorityThreadsNumber(), executorService, MasterjobsHighPriorityJobsExecutionThread.class);
         scheduleExecutionThreads(masterjobsApplicationConfig.getHighestPriorityThreadsNumber(), executorService, MasterjobsHighestPriorityJobsExecutionThread.class);
         scheduleExecutionThreads(masterjobsApplicationConfig.getWaitQueueThreadsNumber(), executorService, MasterjobsWaitQueueJobsExecutionThread.class);
-        
+    }
+    
+    /**
+     * lancia i treads dei servizi
+     * @throws MasterjobsWorkerException 
+     */
+    public void scheduleServiceExecutorThreads() throws MasterjobsWorkerException {
         // schedula i ServiceThreads attivi
         masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
@@ -97,7 +104,7 @@ public class MasterjobsThreadsManager {
      * Sposta i job che erano rimasti in esecuzione nelle work queue nella coda di wait, 
      * in modo che vengano smistati nelle loro code di appartenenza
     */
-    private void moveWorkQueueinWaitQueue() {
+    private void moveWorkQueueInWaitQueue() {
         // prendo tutte le code di work (viene eseguito il comando redis keys masterjobsWork_*)
         Set workQueues = redisTemplate.keys(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", "*"));
         if (workQueues != null && ! workQueues.isEmpty()) {
