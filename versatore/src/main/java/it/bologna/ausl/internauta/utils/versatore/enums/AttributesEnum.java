@@ -98,138 +98,44 @@ public enum AttributesEnum {
     OGGETTO("ogg_s"),
     
     /**
-     * Amministrazione che effettua la registrazione.
-     */
-    RUOLO_1("soggru_1_s"),
-    /**
-     * Valore da inserire: PAI.
-     */
-    TIPO_SOGGETTO_1("soggtip_1_s"),
-    /**
-     * Riferimento Azienda Zero.
-     */
-    DENOMINAZIONE_1("denominazione_1_s"),
-    
-    /**
-     * assegnatario.
-     */
-    RUOLO_2("soggru_2_s"),
-    /**
-     * Valore da inserire: PAI.
-     */
-    TIPO_SOGGETTO_2("soggtip_2_s"),
-    /**
-     * Denominazione UOR/Struttura dell'Ente a cui si assegna il protocollo in Entrata (AS).
-     */
-    DENOMINAZIONE_2("denominazione_2_s"),
-  
-    /**
      * mittente.
      */
-    RUOLO_3("soggru_3_s"),
+    RUOLO_N("soggru_x_s"),
     /**
      * Valori per tipologia: 
      * • PU: PAI
      * • PE: PAI-PAE (per enti), PF (per persone fisiche), PG (per persone giuridiche)
      * • GIRI-INTERNI: PAI
      */
-    TIPO_SOGGETTO_3("soggtip_3_s"),
+    TIPO_SOGGETTO_N("soggtip_x_s"),
     /**
-     * Se TIPO_SOGGETTO_3 è PG o PAI inseriamo la denominazione.
+     * Se TIPO_SOGGETTO è PG o PAI inseriamo la denominazione.
      * Per il Protocolli in Uscita sarà Denominazione Ente (A0 o AOUIVR) - Codice iPA di A0 o AOUIVR (PAI).
      */
-    DENOMINAZIONE_3("denominazione_3_s"), 
+    DENOMINAZIONE_N("denominazione_x_s"), 
     /**
-     * Se TIPO_SOGGETTO_3 è PF è obbligatorio.
+     * Se TIPO_SOGGETTO è PF è obbligatorio.
      */
-    COGNOME_3("cognome_3_s"),
+    COGNOME_N("cognome_x_s"),
     /**
-     * Se TIPO_SOGGETTO_3 è PF è obbligatorio.
+     * Se TIPO_SOGGETTO è PF è obbligatorio.
      */
-    NOME_3("nome_3_s"),
+    NOME_N("nome_x_s"),
+        
+    /**
+     * Valore predefinito "PROTOCOLLO".
+     */
+    NATURA("natura_docu_s"),
     
     /**
-     * Per giri interni.
-     * Redattore.
+     * Catena delle persone coinvolte nel Parere di un protocollo.
      */
-    RUOLO_4("soggru_4_s"),
-    /**
-     * Per giri interni.
-     * PF
-     */
-    TIPO_SOGGETTO_4("soggtip_4_s"),
-    /**
-     * Per giri interni.
-     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
-     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
-     */
-    COGNOME_4("cognome_4_s"),
-    /**
-     * Per giri interni.
-     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
-     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
-     */
-    NOME_4("nome_4_s"),
+    PARERE("parere_s"),
     
     /**
-     * Per giri interni.
-     * Destinatario.
+     * Si indicano tutti i firmatari del documento, se presenti più firmatari verranno separati da virgola.
      */
-    RUOLO_5("soggru_5_s"),
-    /**
-     * Per giri interni.
-     * Sono riportati persone fisiche (PF) , persone giuridiche (PG) ed enti (PAI - PAE).
-     */
-    TIPO_SOGGETTO_5("soggtip_5_s"),
-    /**
-     * Per giri interni.
-     * Per i Protocolli Interni saranno riportate le denominazioni delle UOR aziendali destinatarie.
-     */
-    DENOMINAZIONE_5("denominazione_5_s"),
-    
-    /**
-     * Per giri interni.
-     * responsabile procedimento
-     */
-    RUOLO_6("soggru_6_s"),
-    /**
-     * Per giri interni.
-     * PF
-     */
-    TIPO_SOGGETTO_6("soggtip_6_s"),
-    /**
-     * Per giri interni.
-     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
-     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
-     */
-    COGNOME_6("cognome_6_s"),
-    /**
-     * Per giri interni.
-     * Campo che riporta il redattore del documento, ovvero chi crea materialmente e predispone il documento; 
-     * espresso come NOME COGNOME MATRICOLA (Nota: per Azienda Zero verrà inserito il referente di istruttoria).
-     */
-    NOME_6("nome_6_s"),
-    
-    /**
-     * Per giri interni.
-     * direttore uo mittente
-     */
-    RUOLO_7("soggru_7_s"),
-    /**
-     * Per giri interni.
-     * PF
-     */
-    TIPO_SOGGETTO_7("soggtip_7_s"),
-    /**
-     * Per giri interni.
-     * nome del direttore di UO mittente espresso nella forma NOME COGNOME MATRICOLA (PF).
-     */
-    COGNOME_7("cognome_7_s"),
-    /**
-     * Per giri interni.
-     * nome del direttore di UO mittente espresso nella forma NOME COGNOME MATRICOLA (PF).
-     */
-    NOME_7("nome_7_s"),
+    FIRMATARIO("firmatario_s"),
 
     /**
      * O Partita Iva.<br>
@@ -443,7 +349,7 @@ public enum AttributesEnum {
     private AttributesEnum(String s) {
         attributo = s;
     }
-
+    
     public boolean equalsName(String otherName) {
         // (otherName == null) check is not needed because name.equals(null) returns false 
         return attributo.equals(otherName);
