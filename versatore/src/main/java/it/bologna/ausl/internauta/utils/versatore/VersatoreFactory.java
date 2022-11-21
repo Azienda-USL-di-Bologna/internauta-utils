@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
-import it.bologna.ausl.internauta.utils.versatore.repositories.ConfigurationRepository;
 import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import java.util.HashMap;
@@ -15,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
+import it.bologna.ausl.internauta.utils.versatore.repositories.VersatoreConfigurationRepository;
 
 /**
  *
@@ -39,10 +39,10 @@ public class VersatoreFactory {
     
     @Autowired
     @Qualifier("VersatoreConfigurationRepository")
-    private ConfigurationRepository configurationRepository;
+    private VersatoreConfigurationRepository configurationRepository;
     
     
-    List<it.bologna.ausl.model.entities.versatore.Configuration> configurations;
+    List<it.bologna.ausl.model.entities.versatore.VersatoreConfiguration> configurations;
     
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
     
@@ -50,7 +50,7 @@ public class VersatoreFactory {
     public void initVersatoreFactory() throws VersatoreConfigurationException {
         configurations = configurationRepository.findAll();
         VersatoreDocs versatoreDocsInstance;
-        for (it.bologna.ausl.model.entities.versatore.Configuration configuration : configurations) {
+        for (it.bologna.ausl.model.entities.versatore.VersatoreConfiguration configuration : configurations) {
             VersatoreProviders provider = VersatoreProviders.valueOf(configuration.getProvider().getId());
             switch (provider) {
                 case PARER:

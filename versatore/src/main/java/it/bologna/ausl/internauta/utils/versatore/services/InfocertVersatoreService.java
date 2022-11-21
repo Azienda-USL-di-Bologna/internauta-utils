@@ -21,7 +21,7 @@ import it.bologna.ausl.model.entities.scripta.QRegistroDoc;
 import it.bologna.ausl.model.entities.scripta.QTitolo;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Titolo;
-import it.bologna.ausl.model.entities.versatore.Configuration;
+import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocumentService;
@@ -36,6 +36,7 @@ import javax.xml.ws.BindingProvider;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -48,7 +49,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
     private final String infocertVersatoreServiceEndPointUri;
 
-    public InfocertVersatoreService(EntityManager entityManager, VersatoreConfigParams versatoreConfigParams, Configuration configuration) {
+    public InfocertVersatoreService(EntityManager entityManager, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
         super(entityManager, versatoreConfigParams, configuration);
 
         Map<String, Object> versatoreConfiguration = configuration.getParams();
@@ -103,7 +104,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                     addNewAttribute(attributi, AttributesEnum.PARERE, pareratori);
                 }
                 // Se il PU ha il campo mittente è in smistamento
-                if (docDetail.getMittente() == null || docDetail.getMittente().isBlank()) {
+                if (docDetail.getMittente() == null || !StringUtils.hasLength(docDetail.getMittente())) {
                    addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, doc.getIdAzienda().getDescrizione()); // Codice IPA?
                 } else {
                     addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, docDetail.getMittente()) // Codice IPA?

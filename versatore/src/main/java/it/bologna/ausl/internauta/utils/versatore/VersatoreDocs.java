@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
-import it.bologna.ausl.model.entities.versatore.Configuration;
+import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import javax.persistence.EntityManager;
 
 /**
@@ -12,9 +12,9 @@ public abstract class VersatoreDocs {
     
     protected final EntityManager entityManager;
     protected final VersatoreConfigParams configParams;
-    protected final Configuration configuration;
+    protected final VersatoreConfiguration configuration;
 
-    protected VersatoreDocs(EntityManager entityManager, VersatoreConfigParams configParams, Configuration configuration) {
+    protected VersatoreDocs(EntityManager entityManager, VersatoreConfigParams configParams, VersatoreConfiguration configuration) {
         this.entityManager = entityManager;
         this.configParams = configParams;
         this.configuration = configuration;
