@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
+import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
@@ -27,6 +28,9 @@ public class VersatoreFactory {
     public static enum VersatoreProviders {
         PARER, INFOCERT
     };
+    
+    @Autowired
+    private VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     
     @Autowired
     private VersatoreConfigParams versatoreConfigParams;
@@ -58,7 +62,11 @@ public class VersatoreFactory {
                     versatoreDocsInstance = null;
                     break;
                 case INFOCERT:
-                    versatoreDocsInstance = new InfocertVersatoreService(entityManager, versatoreConfigParams, configuration);
+                    versatoreDocsInstance = new InfocertVersatoreService(
+                            entityManager, 
+                            versatoreRepositoryConfiguration, 
+                            versatoreConfigParams, 
+                            configuration);
                     logger.info(configuration.getParams().toString());
                     break;
                 default:

@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.versatore.controllers;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,7 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     public VersamentoInformation versa(
                 @RequestBody VersamentoInformation versamentoInformation, 
                 @RequestParam(required = true) String hostId,
-                HttpServletRequest request) {
+                HttpServletRequest request) throws VersatoreConfigurationException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
         VersamentoInformation res = versatoreDocsInstance.versa(versamentoInformation);
         return res;

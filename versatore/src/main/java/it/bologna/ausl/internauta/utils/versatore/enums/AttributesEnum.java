@@ -287,7 +287,7 @@ public enum AttributesEnum {
      * Nome alfanumerico del documento/file così come riconosciuto all’esterno.<br>
      * <b>Required</b>
      */
-    NOME_FILE("nomefile_s"),
+    NOME_FILE("nome_file_s"),
     
     /**
      * 1, 2, 3, può essere per es. un default: 1.<br>

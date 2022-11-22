@@ -3,16 +3,18 @@ package it.bologna.ausl.internauta.utils.versatore.services;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.enums.AttributesEnum;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
-import it.bologna.ausl.model.entities.baborg.Ruolo;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.QAllegato;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
@@ -25,6 +27,8 @@ import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocumentService;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.activation.DataHandler;
+import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
@@ -49,8 +54,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
     private final String infocertVersatoreServiceEndPointUri;
 
-    public InfocertVersatoreService(EntityManager entityManager, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
-        super(entityManager, versatoreConfigParams, configuration);
+    public InfocertVersatoreService(EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
+        super(entityManager, versatoreRepositoryConfiguration, versatoreConfigParams, configuration);
 
         Map<String, Object> versatoreConfiguration = configuration.getParams();
         Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) versatoreConfiguration.get(INFOCERT_VERSATORE_SERVICE);
@@ -59,13 +64,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
 
     @Override
-    public VersamentoInformation versa(VersamentoInformation versamentoInformation) {
+    public VersamentoInformation versa(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException {
 
         Integer idDoc = versamentoInformation.getIdDoc();
 
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         Struttura strutturaRegistrazione = docDetail.getIdStrutturaRegistrazione();
+        String docID = doc.getId().toString();
 
         List<DocumentAttribute> attributi = new ArrayList();
         addNewAttribute(attributi, AttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
@@ -77,7 +83,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(attributi, AttributesEnum.NUMERO_DOCUMENTO,
                         String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
                 .addNewAttribute(attributi, AttributesEnum.OGGETTO, docDetail.getOggetto())
-                .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 1, "Amministrazione che effettua la registrazione")
+                .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 1, "produttore")
                 .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 1, "PAI")
                 .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 1, strutturaRegistrazione.getNome())
                 .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 2, "assegnatario")
@@ -105,7 +111,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 }
                 // Se il PU ha il campo mittente è in smistamento
                 if (docDetail.getMittente() == null || !StringUtils.hasLength(docDetail.getMittente())) {
-                   addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, doc.getIdAzienda().getDescrizione()); // Codice IPA?
+                    addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, doc.getIdAzienda().getDescrizione()); // Codice IPA?
                 } else {
                     addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, docDetail.getMittente()) // Codice IPA?
                             .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 4, "redattore")
@@ -131,54 +137,81 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 3, "mittente")
                         .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 3, "PAI")
                         .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, docDetail.getIdStrutturaRegistrazione().getNome());
-                
+
                 break;
         }
 
-        List<Allegato> allegati = doc.getAllegati();
-        List<DocumentAttribute> fileAttributes;
-        GenericDocumentService iss;
-        for (Allegato allegato : allegati) {
-            try {
+        try {
+            GenericDocumentService iss = new GenericDocumentService(new URL(infocertVersatoreServiceEndPointUri));
+
+            GenericDocument is = iss.getGenericDocumentPort();
+            BindingProvider bp = (BindingProvider) is;
+            bp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
+                    infocertVersatoreServiceEndPointUri);
+
+            List<Allegato> allegati = doc.getAllegati();
+            List<DocumentAttribute> fileAttributes;
+            List<DocumentAttribute> mergedAttributes;
+            for (int i = 0; i < allegati.size(); i++) {
+
+                Allegato allegato = allegati.get(i);
+
                 fileAttributes = new ArrayList();
+                Allegato.DettaglioAllegato dettaglioAllegato;
 
-                addNewAttribute(attributi, AttributesEnum.IDENTIFICATIVO_DEL_FORMATO, "application/pdf")
-                        //TODO: Gestire le tipologie di allegati. TESTO
-                        .addNewAttribute(attributi, AttributesEnum.NOME_FILE, allegato.getDettagli().getOriginaleFirmato().getNome());
+                if (allegato.getDettagli().getConvertitoFirmato() != null) {
+                    dettaglioAllegato = allegato.getDettagli().getConvertitoFirmato();
+                } else if (allegato.getDettagli().getConvertito() != null) {
+                    dettaglioAllegato = allegato.getDettagli().getConvertito();
+                } else if (allegato.getDettagli().getOriginaleFirmato() != null) {
+                    dettaglioAllegato = allegato.getDettagli().getOriginaleFirmato();
+                } else {
+                    dettaglioAllegato = allegato.getDettagli().getOriginale();
+                }
 
-                addNewAttribute(fileAttributes, AttributesEnum.IMPRONTA, allegato.getDettagli().getOriginaleFirmato().getHashMd5());
-                addNewAttribute(fileAttributes, AttributesEnum.ALGORITMO, "md5");
+                String idFormatoFile = "application/pdf";
+                if (dettaglioAllegato.getMimeType() != null) {
+                    idFormatoFile = dettaglioAllegato.getMimeType();
+                }
+                MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
 
-                addNewAttribute(fileAttributes, AttributesEnum.ALLEGATI_NUMERO, "b");
-                addNewAttribute(fileAttributes, AttributesEnum.ID_DOC_INDICE_ALLEGATI, "b");
-                addNewAttribute(fileAttributes, AttributesEnum.DESCRIZIONE_ALLEGATI, "b");
+                try ( InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
+                    if (fileStream != null) {
+                        addNewAttribute(fileAttributes, AttributesEnum.IDENTIFICATIVO_DEL_FORMATO, idFormatoFile)
+                                .addNewAttribute(fileAttributes, AttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
+                                .addNewAttribute(fileAttributes, AttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
+                                .addNewAttribute(fileAttributes, AttributesEnum.ALGORITMO, "md5")
+                                .addNewAttribute(fileAttributes, AttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
+                                .addNewAttribute(fileAttributes, AttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
+                                .addNewAttribute(fileAttributes, AttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
 
-                String docID = doc.getId().toString();
+                        ByteArrayDataSource byteArrayDataSource = new ByteArrayDataSource(fileStream, idFormatoFile);
+                        DataHandler data = new DataHandler(byteArrayDataSource);
+                        mergedAttributes = new ArrayList();
+                        mergedAttributes.addAll(attributi);
+                        mergedAttributes.addAll(fileAttributes);
+                        is.submitDocument(docID, mergedAttributes, data);
 
-                iss = new GenericDocumentService(new URL(infocertVersatoreServiceEndPointUri));
-
-                GenericDocument is = iss.getGenericDocumentPort();
-                BindingProvider bp = (BindingProvider) is;
-                bp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
-                        infocertVersatoreServiceEndPointUri);
-//            DataHandler data = new DataHandler(new FileDataSource(arg[1]));
-                DataHandler data = null;
-//            is.submitDocument(docID, fileAttributes, data);
-
-            } catch (MalformedURLException e) {
-                log.error(e.getMessage());
+                    } else {
+                        log.error("file stream is null");
+                    }
+                } catch (MinIOWrapperException | IOException ex) {
+                    log.error(ex.getMessage());
+                }
             }
-
+        } catch (MalformedURLException e) {
+            log.error(e.getMessage());
+            throw new VersatoreConfigurationException(e.getMessage());
         }
 
         return versamentoInformation;
     }
-    
+
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, final AttributesEnum name, final String value) {
         return addNewAttribute(fileAttributes, name, null, value);
-    } 
+    }
 
-    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, 
+    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes,
             final AttributesEnum name, final Integer index, final String value) {
         DocumentAttribute attr = new DocumentAttribute();
         attr.setName(index != null ? name.toString().replace("x", index.toString()) : name.toString());
@@ -198,7 +231,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .innerJoin(qRegistroDoc.idRegistro, qRegistro)
                 .where(qRegistroDoc.idDoc.eq(doc)
                         .and(qRegistro.idAzienda.eq(doc.getIdAzienda())
-                        .and(qRegistro.ufficiale.eq(true)))
+                                .and(qRegistro.ufficiale.eq(true)))
                         .and(qRegistro.attivo.eq(true)))
                 .fetchFirst();
         if (registroDoc != null) {
@@ -218,7 +251,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.eq(ruolo)))
                 .fetch();
         if (attoriDoc.isEmpty()) {
-            return null;
+            log.error(String.format("Attori %s not found", ruolo));
         }
         List<String> attori = new ArrayList();
         attoriDoc.stream().forEach(a -> attori.add(a.getIdPersona().getDescrizione()));
@@ -226,7 +259,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
 
     /**
-     * Restituisce la concatenazione delle classificazioni del documento passato.
+     * Restituisce la concatenazione delle classificazioni del documento
+     * passato.
      *
      * @param doc Il Documento.
      * @return La stringa concatenata nel formato [CODICE] NOME separate da ",".
@@ -285,16 +319,18 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
         return String.join(",", archiviazioni);
     }
-    
+
     /**
-     * Restituisce la concatenazione dei destinatari del documento detail passato.
+     * Restituisce la concatenazione dei destinatari del documento detail
+     * passato.
+     *
      * @param docDetail Il documento.
      * @return La stringa concatenata dei destinatari separati da ','.
      */
     private String getDestinatari(DocDetail docDetail) {
         List<String> destinatari = new ArrayList();
         docDetail.getDestinatari().stream().forEach(d -> destinatari.add(d.getNome() != null ? d.getNome() : d.getIndirizzo()));
-        
+
         return String.join(",", destinatari);
     }
 }
