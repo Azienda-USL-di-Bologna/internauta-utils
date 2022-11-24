@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.controllers;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
-import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import javax.persistence.EntityManager;
