@@ -13,6 +13,8 @@ public class VersamentoInformation {
     private Integer idArchivio;
     
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
+    
+    private String risultato;
 
     public VersamentoInformation() {
     }
@@ -39,5 +41,13 @@ public class VersamentoInformation {
 
     public void setTipologiaVersamento(SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
         this.tipologiaVersamento = tipologiaVersamento;
-    }    
+    }  
+
+    public String getRisultato() {
+        return risultato;
+    }
+
+    public void setRisultato(String risultato) {
+        this.risultato = risultato;
+    }
 }

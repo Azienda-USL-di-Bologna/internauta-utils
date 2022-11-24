@@ -7,6 +7,8 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurat
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,7 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     }
     
     @RequestMapping(value = "/versaDocumento", method = RequestMethod.POST)
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
     public VersamentoInformation versa(
                 @RequestBody VersamentoInformation versamentoInformation, 
                 @RequestParam(required = true) String hostId,

@@ -18,11 +18,13 @@ import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
+import it.bologna.ausl.model.entities.scripta.QDoc;
 import it.bologna.ausl.model.entities.scripta.QRegistro;
 import it.bologna.ausl.model.entities.scripta.QRegistroDoc;
 import it.bologna.ausl.model.entities.scripta.QTitolo;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Titolo;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
@@ -41,6 +43,8 @@ import javax.xml.ws.BindingProvider;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -54,8 +58,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
     private final String infocertVersatoreServiceEndPointUri;
 
-    public InfocertVersatoreService(EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
-        super(entityManager, versatoreRepositoryConfiguration, versatoreConfigParams, configuration);
+    public InfocertVersatoreService(EntityManager entityManager, TransactionTemplate transactionTemplate, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
+        super(entityManager, transactionTemplate, versatoreRepositoryConfiguration, versatoreConfigParams, configuration);
 
         Map<String, Object> versatoreConfiguration = configuration.getParams();
         Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) versatoreConfiguration.get(INFOCERT_VERSATORE_SERVICE);
@@ -64,12 +68,18 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
 
     @Override
-    public VersamentoInformation versa(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException {
-
+    public VersamentoInformation versaAbstract(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException {
+              
         Integer idDoc = versamentoInformation.getIdDoc();
-
         Doc doc = entityManager.find(Doc.class, idDoc);
-        DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
+        versamentoInformation.setRisultato(versaDoc(doc));
+        
+        return versamentoInformation;
+    }
+    
+    private String versaDoc(Doc doc) throws VersatoreConfigurationException {
+        
+        DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
         Struttura strutturaRegistrazione = docDetail.getIdStrutturaRegistrazione();
         String docID = doc.getId().toString();
 
@@ -148,78 +158,84 @@ public class InfocertVersatoreService extends VersatoreDocs {
             BindingProvider bp = (BindingProvider) is;
             bp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
                     infocertVersatoreServiceEndPointUri);
-
+            
+            MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
+            
             List<Allegato> allegati = doc.getAllegati();
             List<DocumentAttribute> fileAttributes;
             List<DocumentAttribute> mergedAttributes;
-            for (int i = 0; i < allegati.size(); i++) {
-
-                Allegato allegato = allegati.get(i);
-
-                fileAttributes = new ArrayList();
-                Allegato.DettaglioAllegato dettaglioAllegato;
-
-                if (allegato.getDettagli().getConvertitoFirmato() != null) {
-                    dettaglioAllegato = allegato.getDettagli().getConvertitoFirmato();
-                } else if (allegato.getDettagli().getConvertito() != null) {
-                    dettaglioAllegato = allegato.getDettagli().getConvertito();
-                } else if (allegato.getDettagli().getOriginaleFirmato() != null) {
-                    dettaglioAllegato = allegato.getDettagli().getOriginaleFirmato();
-                } else {
-                    dettaglioAllegato = allegato.getDettagli().getOriginale();
-                }
-
-                String idFormatoFile = "application/pdf";
-                if (dettaglioAllegato.getMimeType() != null) {
-                    idFormatoFile = dettaglioAllegato.getMimeType();
-                }
-                MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
-
-                try ( InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
-                    if (fileStream != null) {
-                        addNewAttribute(fileAttributes, AttributesEnum.IDENTIFICATIVO_DEL_FORMATO, idFormatoFile)
-                                .addNewAttribute(fileAttributes, AttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
-                                .addNewAttribute(fileAttributes, AttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
-                                .addNewAttribute(fileAttributes, AttributesEnum.ALGORITMO, "md5")
-                                .addNewAttribute(fileAttributes, AttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
-                                .addNewAttribute(fileAttributes, AttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
-                                .addNewAttribute(fileAttributes, AttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
-
-                        ByteArrayDataSource byteArrayDataSource = new ByteArrayDataSource(fileStream, idFormatoFile);
-                        DataHandler data = new DataHandler(byteArrayDataSource);
-                        mergedAttributes = new ArrayList();
-                        mergedAttributes.addAll(attributi);
-                        mergedAttributes.addAll(fileAttributes);
-                        is.submitDocument(docID, mergedAttributes, data);
-
-                    } else {
-                        log.error("file stream is null");
+            for (Allegato allegato: allegati) {
+                log.info("Allegato: " + allegato.getId().toString());
+                List<Allegato.DettaglioAllegato> dettagliAllegati = allegato.getDettagli().getAllTipiDettagliAllegati();
+                        
+                for (int i = 0; i < dettagliAllegati.size(); i++) {
+                    Allegato.DettaglioAllegato dettaglioAllegato = dettagliAllegati.get(i);
+                    fileAttributes = new ArrayList();
+                    String mimeType = "application/pdf";
+                    if (dettaglioAllegato.getMimeType() != null) {
+                        mimeType = dettaglioAllegato.getMimeType();
                     }
-                } catch (MinIOWrapperException | IOException ex) {
-                    log.error(ex.getMessage());
+
+                    try ( InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
+                        if (fileStream != null) {
+                            addNewAttribute(fileAttributes, AttributesEnum.IDENTIFICATIVO_DEL_FORMATO, mimeType)
+                                    .addNewAttribute(fileAttributes, AttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
+                                    .addNewAttribute(fileAttributes, AttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
+                                    .addNewAttribute(fileAttributes, AttributesEnum.ALGORITMO, "md5")
+                                    .addNewAttribute(fileAttributes, AttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
+                                    .addNewAttribute(fileAttributes, AttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
+                                    .addNewAttribute(fileAttributes, AttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
+
+                            ByteArrayDataSource byteArrayDataSource = new ByteArrayDataSource(fileStream, mimeType);
+                            DataHandler data = new DataHandler(byteArrayDataSource);
+                            mergedAttributes = new ArrayList();
+                            mergedAttributes.addAll(attributi);
+                            mergedAttributes.addAll(fileAttributes);
+
+                            return is.submitDocument(docID, mergedAttributes, data);
+
+                        } else {
+                            log.error("file stream is null");
+                        }
+                    } catch (MinIOWrapperException | IOException ex) {
+                        log.error(ex.getMessage());
+                    }
                 }
+                
             }
         } catch (MalformedURLException e) {
             log.error(e.getMessage());
             throw new VersatoreConfigurationException(e.getMessage());
         }
-
-        return versamentoInformation;
+        return null;
     }
 
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, final AttributesEnum name, final String value) {
         return addNewAttribute(fileAttributes, name, null, value);
     }
 
-    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes,
+    /**
+     * Aggiunge un nuovo attributo alla lista di attributi passata in ingresso.
+     * @param attributes La lista di attributi a cui aggiungere il nuovo attributo.
+     * @param name Il nome dell'attributo (metadato).
+     * @param index Indice (Opzionale) utilizzato per gli i metadati ricorsivi.
+     * @param value Il valore dell'attributo.
+     * @return Restituisce l'oggetto corrente.
+     */
+    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> attributes,
             final AttributesEnum name, final Integer index, final String value) {
         DocumentAttribute attr = new DocumentAttribute();
         attr.setName(index != null ? name.toString().replace("x", index.toString()) : name.toString());
         attr.setValue(value);
-        fileAttributes.add(attr);
+        attributes.add(attr);
         return this;
     }
 
+    /**
+     * Restituisce il numero del registro in cui il documento è registrato.
+     * @param doc Il documento.
+     * @return Il numero registro.
+     */
     private String getNumeroRegistro(final Doc doc) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QRegistroDoc qRegistroDoc = QRegistroDoc.registroDoc;
@@ -240,8 +256,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
             return "";
         }
     }
-
-    private String getAttoriDoc(final Doc doc, String ruolo) {
+    
+    /**
+     * Restituisce la concatenazione degli attori del doc filtrati per il ruolo passato.
+     * @param doc Il documento.
+     * @param ruolo Il ruolo.
+     * @return La stringa concatenata degli attori, descrizione (nome e cognome) separati da ','.
+     */
+    private String getAttoriDoc(final Doc doc, final String ruolo) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
 

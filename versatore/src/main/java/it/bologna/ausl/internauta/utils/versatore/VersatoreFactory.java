@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import it.bologna.ausl.internauta.utils.versatore.repositories.VersatoreConfigurationRepository;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -35,17 +36,19 @@ public class VersatoreFactory {
     @Autowired
     private VersatoreConfigParams versatoreConfigParams;
     
-    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
-    private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
-    
-    @PersistenceContext
-    private EntityManager entityManager;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     
     @Autowired
     @Qualifier("VersatoreConfigurationRepository")
     private VersatoreConfigurationRepository configurationRepository;
+     
+    @PersistenceContext
+    private EntityManager entityManager;
     
-    
+    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
+    private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
+   
     List<it.bologna.ausl.model.entities.versatore.VersatoreConfiguration> configurations;
     
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
@@ -63,7 +66,8 @@ public class VersatoreFactory {
                     break;
                 case INFOCERT:
                     versatoreDocsInstance = new InfocertVersatoreService(
-                            entityManager, 
+                            entityManager,
+                            transactionTemplate,
                             versatoreRepositoryConfiguration, 
                             versatoreConfigParams, 
                             configuration);
