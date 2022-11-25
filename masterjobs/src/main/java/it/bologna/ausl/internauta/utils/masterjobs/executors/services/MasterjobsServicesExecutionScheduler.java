@@ -29,21 +29,19 @@ import org.springframework.stereotype.Component;
  * 
  * Classe che si occupa dello scheduling dei servizi
  */
-@Component
 public class MasterjobsServicesExecutionScheduler {   
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    public MasterjobsServicesExecutionScheduler(EntityManager entityManager, MasterjobsObjectsFactory masterjobsObjectsFactory, ScheduledThreadPoolExecutor scheduledExecutorService) {
+        this.entityManager = entityManager;
+        this.masterjobsObjectsFactory = masterjobsObjectsFactory;
+        this.scheduledExecutorService = scheduledExecutorService;
+    }
     
-    @Autowired
-    private MasterjobsObjectsFactory masterjobsObjectsFactory;
+    private final EntityManager entityManager;
     
-    @Autowired
-    private MasterjobsJobsQueuer masterjobsJobsQueuer;
+    private final MasterjobsObjectsFactory masterjobsObjectsFactory;
  
-    @Autowired
-    @Qualifier("masterjobsScheduledThreadPoolExecutor")
-    private ScheduledThreadPoolExecutor scheduledExecutorService;
+    private final ScheduledThreadPoolExecutor scheduledExecutorService;
     
     private final Map<String, List<ScheduledFuture>> activeServiceMap = new HashMap<>();
 
@@ -186,7 +184,7 @@ public class MasterjobsServicesExecutionScheduler {
     
     private ServiceWorker getServiceWorkerAndInit(String name) throws MasterjobsWorkerException {
         ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
-        serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
+        // serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
         return serviceWorker;
     }
     

@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -37,14 +39,18 @@ public class MasterjobsThreadsManager {
     private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
     @Autowired
-    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
-    
-    @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
     
     @Autowired
     @Qualifier(value = "redisMaterjobs")
     protected RedisTemplate redisTemplate;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+ 
+    @Autowired
+    @Qualifier("masterjobsScheduledThreadPoolExecutor")
+    private ScheduledThreadPoolExecutor scheduledExecutorService;
     
     private ExecutorService executorService;
     
@@ -79,6 +85,7 @@ public class MasterjobsThreadsManager {
      */
     public void scheduleServiceExecutorThreads() throws MasterjobsWorkerException {
         // schedula i ServiceThreads attivi
+        MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler = new MasterjobsServicesExecutionScheduler(entityManager, masterjobsObjectsFactory, scheduledExecutorService);
         masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
     }

@@ -1,15 +1,20 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers;
 
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 
 /**
  *
  * @author gdm
  * 
  */
-public interface Worker {
+public abstract class Worker {  
+        
+    protected MasterjobsObjectsFactory masterjobsObjectsFactory;
+    protected MasterjobsJobsQueuer masterjobsJobsQueuer;
     
-    public WorkerResult doWork() throws MasterjobsWorkerException;
+    public abstract WorkerResult doWork() throws MasterjobsWorkerException;
 
     /**
      * torna il nome del job/service che il worker sa eseguire.
@@ -18,4 +23,16 @@ public interface Worker {
      * @return il nome del job/service che il worker sa eseguire.
      */
     public abstract String getName();
+    
+    /**
+     * eseguire l'inizializzazione, nello specifico pass i bean MasterjobsObjectsFactory e MasterjobsJobsQueuer.
+     * Eventualmente si può estendere per eseguire alche altra inizializzazione
+     * @param masterjobsObjectsFactory
+     * @param masterjobsJobsQueuer
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     */
+    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer) throws MasterjobsWorkerException {
+        this.masterjobsObjectsFactory = masterjobsObjectsFactory;
+        this.masterjobsJobsQueuer = masterjobsJobsQueuer;
+    }
 }
