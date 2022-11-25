@@ -1,6 +1,5 @@
 package it.bologna.ausl.eml.handler;
 
-import com.sun.media.sound.EmergencySoundbank;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

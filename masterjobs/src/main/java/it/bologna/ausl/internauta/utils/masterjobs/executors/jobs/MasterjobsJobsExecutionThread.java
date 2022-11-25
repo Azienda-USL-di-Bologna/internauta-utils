@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsDataBaseException;
@@ -63,7 +62,7 @@ import org.springframework.data.redis.connection.stream.StreamReadOptions;
  */
 public abstract class MasterjobsJobsExecutionThread implements Runnable, MasterjobsJobsExecutionThreadBuilder {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsExecutionThread.class);
-    private static final String COMMAND_KEY = "command";
+    public static final String COMMAND_KEY = "command";
     public static final String STOP_COMMAND = "stop";
     public static final String PAUSE_COMMAND = "freeze";
     public static final String RESUME_COMMAND = "resume";
@@ -198,16 +197,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     public abstract void runExecutor() throws MasterjobsInterruptException;
     
     /**
-     * Viene chiamata all'avvio del thread.
-     * Sposta il job che era rimasto in esecuzione nella coda alla quale il thread è affine
-     */
-    protected void moveWorkQueueinInQueue() {
-        redisTemplate.opsForList().move(
-            this.workQueue, RedisListCommands.Direction.LEFT, 
-            getQueueAffinity(), RedisListCommands.Direction.RIGHT);
-    }
-    
-    /**
      * inserisce il riferimento del thread nella mappa dei threads attivi
      */
     protected void insertInActiveThreadsSet() {
@@ -243,7 +232,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             try {
                 log.info(String.format("executor %s started", getUniqueName()));
                 buildWorkQueue();
-                moveWorkQueueinInQueue();
                 checkCommand();
                 
                 // lancia runExecutor() sulla classe concreta in una nuova transazione
@@ -434,7 +422,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     break;
                 case IDLE:
                 case PENDING:
-                    executejobs(queueData, objectStatus, set);
+                    executeJobs(queueData, objectStatus, set);
                     break;
                 default:
                     String errorMessage = String.format("object state %s not excepted", objectState);
@@ -487,7 +475,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @throws MasterjobsExecutionThreadsException
      * @throws MasterjobsWorkerException 
      */
-    protected void executejobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
+    protected void executeJobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
         
         /* per prima cosa controllo se posso eseguire i job
         * I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
@@ -590,7 +578,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         QJob qJob = QJob.job;
         QSet qSet = QSet.set;
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager); 
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
        
         Long setId = job.getSet().getId();
         

@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import javax.persistence.EntityManager;
@@ -28,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker implements Worker {
+public abstract class JobWorker extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
     protected JobWorkerData workerData;
@@ -81,6 +82,16 @@ public abstract class JobWorker implements Worker {
             return workerDeferredData;
         else
             return workerData;
+    }
+    
+    /**
+     * Torna i parametri del job.
+     * @param <T>
+     * @param workerDataClass la classe dei parametri del woker in cui castare
+     * @return 
+     */
+    protected <T extends JobWorkerData> T getWorkerData(Class<T> workerDataClass) {
+        return (T) workerData;
     }
 
     /**

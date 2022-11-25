@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.controllers;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
-import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -28,7 +28,16 @@ public class MasterjobsController {
     private EntityManager entityManager;
     
     @Autowired
-    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
+    private MasterjobsJobsQueuer masterjobsJobsQueuer;
+    
+//    @Autowired
+//    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
+//    
+    @RequestMapping(value = "relauchJobsInError", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional(rollbackFor = {Error.class})
+    public void relauchJobsInError() {
+        masterjobsJobsQueuer.relaunchJobsInError();
+    }
     
     @RequestMapping(value = "getService/{name}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(rollbackFor = {Error.class})

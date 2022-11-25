@@ -3,22 +3,14 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.vladmihalcea.hibernate.type.range.Range;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
-import static it.bologna.ausl.internauta.utils.masterjobs.workers.services.changeservicedetector.ChangeServiceDetectorWorker.CHANGE_SERVICE_NOTIFY;
 import it.bologna.ausl.model.entities.masterjobs.QService;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import org.hibernate.Session;
-import org.hibernate.jdbc.Work;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * @author gdm
  */
-public abstract class ServiceWorker implements Runnable, Worker {
+public abstract class ServiceWorker extends Worker implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ServiceWorker.class);
 
     @PersistenceContext
@@ -40,17 +32,6 @@ public abstract class ServiceWorker implements Runnable, Worker {
     protected TransactionTemplate transactionTemplate;
 
     protected ScheduledFuture scheduledFuture;
-    
-    protected MasterjobsObjectsFactory masterjobsObjectsFactory;
-    protected MasterjobsJobsQueuer masterjobsJobsQueuer;
-    
-    public void init(
-            MasterjobsObjectsFactory masterjobsObjectsFactory,
-            MasterjobsJobsQueuer masterjobsJobsQueuer) throws MasterjobsWorkerException {
-        
-        this.masterjobsObjectsFactory = masterjobsObjectsFactory;
-        this.masterjobsJobsQueuer = masterjobsJobsQueuer;
-    }
 
     public void setScheduledFuture(ScheduledFuture scheduledFuture) {
         this.scheduledFuture = scheduledFuture;

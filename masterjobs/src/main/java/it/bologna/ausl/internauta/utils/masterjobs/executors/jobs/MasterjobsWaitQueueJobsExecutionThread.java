@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
@@ -68,14 +67,14 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
             // controllo se il set può essere eseguito
             if (!set.getWaitObject() || super.isExecutable(set)) {
                 // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
-                String destinationQueue;
-                try {
-                    destinationQueue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
-                } catch (MasterjobsBadDataException ex) {
-                    String errorMessage = String.format("error getting queue name from set priority", ex);
-                    log.error(errorMessage);
-                    throw new MasterjobsExecutionThreadsException(errorMessage);
-                }
+                String destinationQueue = queueData.getQueue();
+//                try {
+//                    destinationQueue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
+//                } catch (MasterjobsBadDataException ex) {
+//                    String errorMessage = String.format("error getting queue name from set priority", ex);
+//                    log.error(errorMessage);
+//                    throw new MasterjobsExecutionThreadsException(errorMessage);
+//                }
                 redisTemplate.opsForList().move(
                 this.workQueue, RedisListCommands.Direction.LEFT, 
                 destinationQueue, RedisListCommands.Direction.LEFT);
