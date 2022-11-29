@@ -74,6 +74,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.vladmihalcea</groupId>
+            <artifactId>hibernate-types-52</artifactId>
+            <version>2.10.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>authorization-utils</artifactId>
             <version>1.0</version>
@@ -86,15 +92,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.10.2</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>it.bologna.ausl.internauta.model</groupId>
             <artifactId>internauta-model</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>masterjobs</artifactId>
+            <version>1.1</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>

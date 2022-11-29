@@ -4,7 +4,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.enums.AttributesEnum;
+import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -84,69 +84,69 @@ public class InfocertVersatoreService extends VersatoreDocs {
         String docID = doc.getId().toString();
 
         List<DocumentAttribute> attributi = new ArrayList();
-        addNewAttribute(attributi, AttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
-                .addNewAttribute(attributi, AttributesEnum.MODALITA_DI_FORMAZIONE, "b")
-                .addNewAttribute(attributi, AttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli") // BOOOOH
-                .addNewAttribute(attributi, AttributesEnum.DATA_REGISTRAZIONE, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
-                .addNewAttribute(attributi, AttributesEnum.TIPO_REGISTRO, "Registro_PG") // Protocollo emergenza??
-                .addNewAttribute(attributi, AttributesEnum.CODICE_REGISTRO, getNumeroRegistro(doc)) // Protocollo emergenza??
-                .addNewAttribute(attributi, AttributesEnum.NUMERO_DOCUMENTO,
+        addNewAttribute(attributi, InfocertAttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
+                .addNewAttribute(attributi, InfocertAttributesEnum.MODALITA_DI_FORMAZIONE, "b")
+                .addNewAttribute(attributi, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli") // BOOOOH
+                .addNewAttribute(attributi, InfocertAttributesEnum.DATA_REGISTRAZIONE, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_REGISTRO, "Registro_PG") // Protocollo emergenza??
+                .addNewAttribute(attributi, InfocertAttributesEnum.CODICE_REGISTRO, getNumeroRegistro(doc)) // Protocollo emergenza??
+                .addNewAttribute(attributi, InfocertAttributesEnum.NUMERO_DOCUMENTO,
                         String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                .addNewAttribute(attributi, AttributesEnum.OGGETTO, docDetail.getOggetto())
-                .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 1, "produttore")
-                .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 1, "PAI")
-                .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 1, strutturaRegistrazione.getNome())
-                .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 2, "assegnatario")
-                .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 2, "PAI")
-                .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 2, "//TODO")
-                .addNewAttribute(attributi, AttributesEnum.CLASSIFICAZIONE, getClassificazioni(doc))
-                .addNewAttribute(attributi, AttributesEnum.RISERVATO, docDetail.getRiservato().toString())
-                .addNewAttribute(attributi, AttributesEnum.VERSIONE_DEL_DOCUMENTO, "booh")
-                .addNewAttribute(attributi, AttributesEnum.FASCICOLO, getArchivi(doc))
-                .addNewAttribute(attributi, AttributesEnum.TEMPO_DI_CONSERVAZIONE, "999") //TODO: Da chiarire
-                .addNewAttribute(attributi, AttributesEnum.SEGNATURA, "b"); //TODO: Da chiarire
+                .addNewAttribute(attributi, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto())
+                .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 1, "produttore")
+                .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 1, "PAI")
+                .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 1, strutturaRegistrazione.getNome())
+                .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 2, "assegnatario")
+                .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 2, "PAI")
+                .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 2, "//TODO")
+                .addNewAttribute(attributi, InfocertAttributesEnum.CLASSIFICAZIONE, getClassificazioni(doc))
+                .addNewAttribute(attributi, InfocertAttributesEnum.RISERVATO, docDetail.getRiservato().toString())
+                .addNewAttribute(attributi, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, "booh")
+                .addNewAttribute(attributi, InfocertAttributesEnum.FASCICOLO, getArchivi(doc))
+                .addNewAttribute(attributi, InfocertAttributesEnum.TEMPO_DI_CONSERVAZIONE, "999") //TODO: Da chiarire
+                .addNewAttribute(attributi, InfocertAttributesEnum.SEGNATURA, "b"); //TODO: Da chiarire
 
         //TODO: Questa parte è tutta da rivedere
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
-                addNewAttribute(attributi, AttributesEnum.DATA_DOCUMENTO, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                        .addNewAttribute(attributi, AttributesEnum.TIPOLOGIA_DI_FLUSSO, "U")
-                        .addNewAttribute(attributi, AttributesEnum.NATURA, "PROTOCOLLO")
-                        .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 3, "mittente")
-                        .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 3, "PAI")
-                        .addNewAttribute(attributi, AttributesEnum.FIRMATARIO, getAttoriDoc(doc, "FIRMA"));
+                addNewAttribute(attributi, InfocertAttributesEnum.DATA_DOCUMENTO, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                        .addNewAttribute(attributi, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.NATURA, "PROTOCOLLO")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 3, "mittente")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 3, "PAI")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.FIRMATARIO, getAttoriDoc(doc, "FIRMA"));
                 String pareratori = getAttoriDoc(doc, "PARERI");
                 if (pareratori != null) {
-                    addNewAttribute(attributi, AttributesEnum.PARERE, pareratori);
+                    addNewAttribute(attributi, InfocertAttributesEnum.PARERE, pareratori);
                 }
                 // Se il PU ha il campo mittente è in smistamento
                 if (docDetail.getMittente() == null || !StringUtils.hasLength(docDetail.getMittente())) {
-                    addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, doc.getIdAzienda().getDescrizione()); // Codice IPA?
+                    addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 3, doc.getIdAzienda().getDescrizione()); // Codice IPA?
                 } else {
-                    addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, docDetail.getMittente()) // Codice IPA?
-                            .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 4, "redattore")
-                            .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 4, "PF")
-                            .addNewAttribute(attributi, AttributesEnum.COGNOME_N, 4, docDetail.getIdPersonaRedattrice().getCognome())
-                            .addNewAttribute(attributi, AttributesEnum.NOME_N, 4, docDetail.getIdPersonaRedattrice().getNome())
-                            .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 5, "destinatario")
-                            .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 5, "PG")
-                            .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 5, getDestinatari(docDetail))
-                            .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 6, "responsabile procedimento")
-                            .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 6, "PF")
-                            .addNewAttribute(attributi, AttributesEnum.COGNOME_N, 6, docDetail.getIdPersonaResponsabileProcedimento().getCognome())
-                            .addNewAttribute(attributi, AttributesEnum.NOME_N, 6, docDetail.getIdPersonaResponsabileProcedimento().getNome())
-                            .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 7, "direttore uo mittente")
-                            .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 7, "PF")
-                            .addNewAttribute(attributi, AttributesEnum.COGNOME_N, 7, "Direttore uo")
-                            .addNewAttribute(attributi, AttributesEnum.NOME_N, 7, "Direttore uo");
+                    addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 3, docDetail.getMittente()) // Codice IPA?
+                            .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 4, "redattore")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 4, "PF")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.COGNOME_N, 4, docDetail.getIdPersonaRedattrice().getCognome())
+                            .addNewAttribute(attributi, InfocertAttributesEnum.NOME_N, 4, docDetail.getIdPersonaRedattrice().getNome())
+                            .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 5, "destinatario")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 5, "PG")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 5, getDestinatari(docDetail))
+                            .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 6, "responsabile procedimento")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 6, "PF")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.COGNOME_N, 6, docDetail.getIdPersonaResponsabileProcedimento().getCognome())
+                            .addNewAttribute(attributi, InfocertAttributesEnum.NOME_N, 6, docDetail.getIdPersonaResponsabileProcedimento().getNome())
+                            .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 7, "direttore uo mittente")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 7, "PF")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.COGNOME_N, 7, "Direttore uo")
+                            .addNewAttribute(attributi, InfocertAttributesEnum.NOME_N, 7, "Direttore uo");
                 }
                 break;
 
             case PROTOCOLLO_IN_ENTRATA:
-                addNewAttribute(attributi, AttributesEnum.TIPOLOGIA_DI_FLUSSO, "E")
-                        .addNewAttribute(attributi, AttributesEnum.RUOLO_N, 3, "mittente")
-                        .addNewAttribute(attributi, AttributesEnum.TIPO_SOGGETTO_N, 3, "PAI")
-                        .addNewAttribute(attributi, AttributesEnum.DENOMINAZIONE_N, 3, docDetail.getIdStrutturaRegistrazione().getNome());
+                addNewAttribute(attributi, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "E")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 3, "mittente")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 3, "PAI")
+                        .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 3, docDetail.getIdStrutturaRegistrazione().getNome());
 
                 break;
         }
@@ -178,13 +178,13 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
                     try ( InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
                         if (fileStream != null) {
-                            addNewAttribute(fileAttributes, AttributesEnum.IDENTIFICATIVO_DEL_FORMATO, mimeType)
-                                    .addNewAttribute(fileAttributes, AttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
-                                    .addNewAttribute(fileAttributes, AttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
-                                    .addNewAttribute(fileAttributes, AttributesEnum.ALGORITMO, "md5")
-                                    .addNewAttribute(fileAttributes, AttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
-                                    .addNewAttribute(fileAttributes, AttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
-                                    .addNewAttribute(fileAttributes, AttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
+                            addNewAttribute(fileAttributes, InfocertAttributesEnum.IDENTIFICATIVO_DEL_FORMATO, mimeType)
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5")
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
 
                             ByteArrayDataSource byteArrayDataSource = new ByteArrayDataSource(fileStream, mimeType);
                             DataHandler data = new DataHandler(byteArrayDataSource);
@@ -210,7 +210,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         return null;
     }
 
-    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, final AttributesEnum name, final String value) {
+    public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, final InfocertAttributesEnum name, final String value) {
         return addNewAttribute(fileAttributes, name, null, value);
     }
 
@@ -223,7 +223,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @return Restituisce l'oggetto corrente.
      */
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> attributes,
-            final AttributesEnum name, final Integer index, final String value) {
+            final InfocertAttributesEnum name, final Integer index, final String value) {
         DocumentAttribute attr = new DocumentAttribute();
         attr.setName(index != null ? name.toString().replace("x", index.toString()) : name.toString());
         attr.setValue(value);

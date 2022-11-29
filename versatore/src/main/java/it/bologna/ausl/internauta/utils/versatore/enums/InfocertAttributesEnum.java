@@ -5,7 +5,7 @@ package it.bologna.ausl.internauta.utils.versatore.enums;
  * 
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
-public enum AttributesEnum {
+public enum InfocertAttributesEnum {
     /**
      * gg-mm-aa<br>
      * Metadato mantenuto indipendentemente dalle Linee Guida.<br>
@@ -346,7 +346,7 @@ public enum AttributesEnum {
 
     private final String attributo;       
 
-    private AttributesEnum(String s) {
+    private InfocertAttributesEnum(String s) {
         attributo = s;
     }
     
