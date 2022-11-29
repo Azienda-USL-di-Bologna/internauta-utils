@@ -1,7 +1,8 @@
 package it.bologna.ausl.internauta.utils.versatore.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
@@ -18,13 +19,11 @@ import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
-import it.bologna.ausl.model.entities.scripta.QDoc;
 import it.bologna.ausl.model.entities.scripta.QRegistro;
 import it.bologna.ausl.model.entities.scripta.QRegistroDoc;
 import it.bologna.ausl.model.entities.scripta.QTitolo;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Titolo;
-import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
@@ -43,7 +42,6 @@ import javax.xml.ws.BindingProvider;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
@@ -68,16 +66,15 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
 
     @Override
-    public VersamentoInformation versaAbstract(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
               
         Integer idDoc = versamentoInformation.getIdDoc();
         Doc doc = entityManager.find(Doc.class, idDoc);
-        versamentoInformation.setRisultato(versaDoc(doc));
-        
+        versamentoInformation = versaDoc(doc, versamentoInformation);
         return versamentoInformation;
     }
     
-    private String versaDoc(Doc doc) throws VersatoreConfigurationException {
+    private VersamentoDocInformation versaDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreConfigurationException {
         
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
         Struttura strutturaRegistrazione = docDetail.getIdStrutturaRegistrazione();
@@ -161,10 +158,13 @@ public class InfocertVersatoreService extends VersatoreDocs {
             
             MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
             
-            List<Allegato> allegati = doc.getAllegati();
             List<DocumentAttribute> fileAttributes;
             List<DocumentAttribute> mergedAttributes;
-            for (Allegato allegato: allegati) {
+            
+            List<VersamentoAllegatoInformation> veramentiAllegatiInformations = versamentoDocInformation.getVeramentiAllegatiInformations();
+            
+            for (VersamentoAllegatoInformation allegatoInformation: veramentiAllegatiInformations) {
+                final Allegato allegato = allegatoInformation.getAllegato();
                 log.info("Allegato: " + allegato.getId().toString());
                 List<Allegato.DettaglioAllegato> dettagliAllegati = allegato.getDettagli().getAllTipiDettagliAllegati();
                         
@@ -192,8 +192,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                             mergedAttributes.addAll(attributi);
                             mergedAttributes.addAll(fileAttributes);
 
-                            return is.submitDocument(docID, mergedAttributes, data);
-
+                            String hash = is.submitDocument(docID, mergedAttributes, data);
+                            allegatoInformation.setRapporto(hash);
+                            
                         } else {
                             log.error("file stream is null");
                         }
@@ -207,7 +208,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             log.error(e.getMessage());
             throw new VersatoreConfigurationException(e.getMessage());
         }
-        return null;
+        return versamentoDocInformation;
     }
 
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> fileAttributes, final InfocertAttributesEnum name, final String value) {

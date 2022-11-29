@@ -30,7 +30,7 @@ public abstract class VersatoreDocs {
     }
     
 
-    public VersamentoInformation versa(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation versa(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return transactionTemplate.execute(a -> {
             try {
@@ -41,5 +41,5 @@ public abstract class VersatoreDocs {
         });
     }
     
-    public abstract VersamentoInformation versaAbstract(VersamentoInformation versamentoInformation) throws VersatoreConfigurationException;
+    public abstract VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
 }

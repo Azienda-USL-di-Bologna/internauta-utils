@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.controllers;
 
-import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
@@ -35,12 +35,12 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     
     @RequestMapping(value = "/versaDocumento", method = RequestMethod.POST)
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
-    public VersamentoInformation versa(
-                @RequestBody VersamentoInformation versamentoInformation, 
+    public VersamentoDocInformation versa(
+                @RequestBody VersamentoDocInformation versamentoInformation, 
                 @RequestParam(required = true) String hostId,
                 HttpServletRequest request) throws VersatoreConfigurationException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
-        VersamentoInformation res = versatoreDocsInstance.versa(versamentoInformation);
+        VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoInformation);
         return res;
     } 
     

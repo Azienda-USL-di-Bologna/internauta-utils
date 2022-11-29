@@ -1,22 +1,21 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
+import java.util.List;
 
 /**
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
-public class VersamentoInformation {
+public class VersamentoDocInformation {
     
     private Integer idDoc;
-    
     private Integer idArchivio;
-    
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
-    
-    private String risultato;
+    private String rapporto;
+    private List<VersamentoAllegatoInformation> veramentiAllegatiInformations;
 
-    public VersamentoInformation() {
+    public VersamentoDocInformation() {
     }
 
     public Integer getIdDoc() {
@@ -44,10 +43,18 @@ public class VersamentoInformation {
     }  
 
     public String getRisultato() {
-        return risultato;
+        return rapporto;
     }
 
     public void setRisultato(String risultato) {
-        this.risultato = risultato;
+        this.rapporto = risultato;
+    }
+
+    public List<VersamentoAllegatoInformation> getVeramentiAllegatiInformations() {
+        return veramentiAllegatiInformations;
+    }
+
+    public void setVeramentiAllegatiInformations(List<VersamentoAllegatoInformation> veramentiAllegatiInformations) {
+        this.veramentiAllegatiInformations = veramentiAllegatiInformations;
     }
 }
