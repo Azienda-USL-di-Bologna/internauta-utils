@@ -41,5 +41,5 @@ public abstract class VersatoreDocs {
         });
     }
     
-    public abstract VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
+    protected abstract VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
 }

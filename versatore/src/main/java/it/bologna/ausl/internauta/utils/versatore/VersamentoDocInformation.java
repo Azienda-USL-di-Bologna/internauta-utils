@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
+import it.bologna.ausl.model.entities.versatore.Versamento;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
@@ -13,7 +15,13 @@ public class VersamentoDocInformation {
     private Integer idArchivio;
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
     private String rapporto;
+    private String metadatiVersati;
+    private String codiceErrore;
+    private String descrizioneErrore;
+    private ZonedDateTime dataVersamento;
+    private Integer versamentoPrecedente;
     private List<VersamentoAllegatoInformation> veramentiAllegatiInformations;
+    private Versamento.StatoVersamento statoVersamento;
 
     public VersamentoDocInformation() {
     }
@@ -40,14 +48,54 @@ public class VersamentoDocInformation {
 
     public void setTipologiaVersamento(SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
         this.tipologiaVersamento = tipologiaVersamento;
-    }  
+    }
 
-    public String getRisultato() {
+    public String getRapporto() {
         return rapporto;
     }
 
-    public void setRisultato(String risultato) {
-        this.rapporto = risultato;
+    public void setRapporto(String rapporto) {
+        this.rapporto = rapporto;
+    }
+
+    public String getMetadatiVersati() {
+        return metadatiVersati;
+    }
+
+    public void setMetadatiVersati(String metadatiVersati) {
+        this.metadatiVersati = metadatiVersati;
+    }
+
+    public String getCodiceErrore() {
+        return codiceErrore;
+    }
+
+    public void setCodiceErrore(String codiceErrore) {
+        this.codiceErrore = codiceErrore;
+    }
+
+    public String getDescrizioneErrore() {
+        return descrizioneErrore;
+    }
+
+    public void setDescrizioneErrore(String descrizioneErrore) {
+        this.descrizioneErrore = descrizioneErrore;
+    }
+
+    public ZonedDateTime getDataVersamento() {
+        return dataVersamento;
+    }
+
+    public Integer getVersamentoPrecedente() {
+        return versamentoPrecedente;
+    }
+
+    public void setVersamentoPrecedente(Integer versamentoPrecedente) {
+        this.versamentoPrecedente = versamentoPrecedente;
+    }
+
+    public void setDataVersamento(ZonedDateTime dataVersamento) {
+        this.dataVersamento = dataVersamento;
     }
 
     public List<VersamentoAllegatoInformation> getVeramentiAllegatiInformations() {
@@ -56,5 +104,13 @@ public class VersamentoDocInformation {
 
     public void setVeramentiAllegatiInformations(List<VersamentoAllegatoInformation> veramentiAllegatiInformations) {
         this.veramentiAllegatiInformations = veramentiAllegatiInformations;
+    }
+
+    public Versamento.StatoVersamento getStatoVersamento() {
+        return statoVersamento;
+    }
+
+    public void setStatoVersamento(Versamento.StatoVersamento statoVersamento) {
+        this.statoVersamento = statoVersamento;
     }
 }

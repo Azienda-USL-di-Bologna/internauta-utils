@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -29,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker extends Worker {
+public abstract class JobWorker<T extends JobWorkerData> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
     protected JobWorkerData workerData;
@@ -38,6 +39,9 @@ public abstract class JobWorker extends Worker {
     
     @PersistenceContext
     protected EntityManager entityManager;
+    
+    @PersistenceContext
+    protected TransactionTemplate transactionTemplate;
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
@@ -90,7 +94,7 @@ public abstract class JobWorker extends Worker {
      * @param workerDataClass la classe dei parametri del woker in cui castare
      * @return 
      */
-    protected <T extends JobWorkerData> T getWorkerData(Class<T> workerDataClass) {
+    protected T getWorkerData() {
         return (T) workerData;
     }
 

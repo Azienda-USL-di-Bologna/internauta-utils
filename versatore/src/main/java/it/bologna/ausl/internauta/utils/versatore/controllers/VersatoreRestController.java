@@ -1,5 +1,8 @@
 package it.bologna.ausl.internauta.utils.versatore.controllers;
 
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorkerData;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
@@ -41,6 +44,7 @@ public class VersatoreRestController implements ControllerHandledExceptions {
                 HttpServletRequest request) throws VersatoreConfigurationException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
         VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoInformation);
+        
         return res;
     } 
     
