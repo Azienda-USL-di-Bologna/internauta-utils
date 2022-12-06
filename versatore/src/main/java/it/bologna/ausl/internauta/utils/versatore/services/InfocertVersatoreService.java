@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
@@ -24,6 +25,7 @@ import it.bologna.ausl.model.entities.scripta.QRegistroDoc;
 import it.bologna.ausl.model.entities.scripta.QTitolo;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Titolo;
+import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,9 +80,11 @@ public class InfocertVersatoreService extends VersatoreDocs {
     private VersamentoDocInformation versaDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreConfigurationException {
         
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
+        Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+        
         Struttura strutturaRegistrazione = docDetail.getIdStrutturaRegistrazione();
         String docID = doc.getId().toString();
-
+       
         List<DocumentAttribute> attributi = new ArrayList();
         addNewAttribute(attributi, InfocertAttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
                 .addNewAttribute(attributi, InfocertAttributesEnum.MODALITA_DI_FORMAZIONE, "b")
@@ -90,19 +95,24 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(attributi, InfocertAttributesEnum.NUMERO_DOCUMENTO,
                         String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
                 .addNewAttribute(attributi, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto())
-                .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 1, "produttore")
-                .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 1, "PAI")
-                .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 1, strutturaRegistrazione.getNome())
+                .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO, "produttore")
+                .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO, "PAI")
+                .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE, strutturaRegistrazione.getNome())
                 .addNewAttribute(attributi, InfocertAttributesEnum.RUOLO_N, 2, "assegnatario")
                 .addNewAttribute(attributi, InfocertAttributesEnum.TIPO_SOGGETTO_N, 2, "PAI")
                 .addNewAttribute(attributi, InfocertAttributesEnum.DENOMINAZIONE_N, 2, "//TODO")
-                .addNewAttribute(attributi, InfocertAttributesEnum.CLASSIFICAZIONE, getClassificazioni(doc))
                 .addNewAttribute(attributi, InfocertAttributesEnum.RISERVATO, docDetail.getRiservato().toString())
-                .addNewAttribute(attributi, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, "booh")
-                .addNewAttribute(attributi, InfocertAttributesEnum.FASCICOLO, getArchivi(doc))
-                .addNewAttribute(attributi, InfocertAttributesEnum.TEMPO_DI_CONSERVAZIONE, "999") //TODO: Da chiarire
+                .addNewAttribute(attributi, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, "1")
+                .addNewAttribute(attributi, InfocertAttributesEnum.ID_AGGREGAZIONE, archivio.getNumerazioneGerarchica())
+//                .addNewAttribute(attributi, InfocertAttributesEnum.TEMPO_DI_CONSERVAZIONE, archivio.getAnniTenuta().toString())
                 .addNewAttribute(attributi, InfocertAttributesEnum.SEGNATURA, "b"); //TODO: Da chiarire
 
+         Titolo titolo = getTitolo(doc, archivio);
+         if (titolo != null) {
+            addNewAttribute(attributi, InfocertAttributesEnum.INDICE_DI_CLASSIFICAZIONE, titolo.getClassificazione())
+                    .addNewAttribute(attributi, InfocertAttributesEnum.DESCRIZIONE_CLASSIFICAZIONE, titolo.getNome());
+         }
+        
         //TODO: Questa parte è tutta da rivedere
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
@@ -158,18 +168,20 @@ public class InfocertVersatoreService extends VersatoreDocs {
             
             MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
             
+            ObjectMapper objectMapper = new ObjectMapper();
+            
+            List<Allegato> allegati = doc.getAllegati();
             List<DocumentAttribute> fileAttributes;
             List<DocumentAttribute> mergedAttributes;
+            List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
+            int i = 1;
             
-            List<VersamentoAllegatoInformation> veramentiAllegatiInformations = versamentoDocInformation.getVeramentiAllegatiInformations();
-            
-            for (VersamentoAllegatoInformation allegatoInformation: veramentiAllegatiInformations) {
-                final Allegato allegato = allegatoInformation.getAllegato();
-                log.info("Allegato: " + allegato.getId().toString());
-                List<Allegato.DettaglioAllegato> dettagliAllegati = allegato.getDettagli().getAllTipiDettagliAllegati();
-                        
-                for (int i = 0; i < dettagliAllegati.size(); i++) {
-                    Allegato.DettaglioAllegato dettaglioAllegato = dettagliAllegati.get(i);
+            for (Allegato allegato: allegati) {
+                for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
+                    Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
+                    
+                    if (dettaglioAllegato == null) continue;
+           
                     fileAttributes = new ArrayList();
                     String mimeType = "application/pdf";
                     if (dettaglioAllegato.getMimeType() != null) {
@@ -182,7 +194,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                                     .addNewAttribute(fileAttributes, InfocertAttributesEnum.NOME_FILE, dettaglioAllegato.getNome()) // Metadato sconosciuto
                                     .addNewAttribute(fileAttributes, InfocertAttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
                                     .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5")
-                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(i + 1))
+                                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(i++))
                                     .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, docID)
                                     .addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
 
@@ -191,19 +203,26 @@ public class InfocertVersatoreService extends VersatoreDocs {
                             mergedAttributes = new ArrayList();
                             mergedAttributes.addAll(attributi);
                             mergedAttributes.addAll(fileAttributes);
-
+                            
+                            VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
+                            allegatoInformation.setIdAllegato(allegato.getId());
+                            allegatoInformation.setDataVersamento(ZonedDateTime.now());
+                            allegatoInformation.setTipoDettaglioAllegato(tipoDettaglioAllegato);
+                            allegatoInformation.setMetadatiVersati(objectMapper.writeValueAsString(mergedAttributes));
+                            
                             String hash = is.submitDocument(docID, mergedAttributes, data);
                             allegatoInformation.setRapporto(hash);
-                            
+                            allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                            versamentiAllegatiInfo.add(allegatoInformation);
                         } else {
                             log.error("file stream is null");
                         }
                     } catch (MinIOWrapperException | IOException ex) {
                         log.error(ex.getMessage());
                     }
-                }
-                
+                }                
             }
+            versamentoDocInformation.setVeramentiAllegatiInformations(versamentiAllegatiInfo);
         } catch (MalformedURLException e) {
             log.error(e.getMessage());
             throw new VersatoreConfigurationException(e.getMessage());
@@ -288,59 +307,26 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @param doc Il Documento.
      * @return La stringa concatenata nel formato [CODICE] NOME separate da ",".
      */
-    private String getClassificazioni(final Doc doc) {
+    private Titolo getTitolo(final Doc doc, final Archivio archivio) {
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QTitolo qTitoli = QTitolo.titolo;
         QArchivioDoc qArchivioDoc = QArchivioDoc.archivioDoc;
         QArchivio qArchivio = QArchivio.archivio;
 
-        List<Titolo> titoli = queryFactory
+        Titolo titolo = queryFactory
                 .select(qTitoli)
                 .from(qArchivioDoc)
                 .innerJoin(qArchivioDoc.idArchivio, qArchivio)
                 .innerJoin(qArchivio.idTitolo, qTitoli)
-                .where(qArchivioDoc.idDoc.eq(doc))
-                .fetch();
+                .where(qArchivioDoc.idDoc.eq(doc).and(qArchivioDoc.idArchivio.eq(archivio)))
+                .fetchOne();
 
-        if (titoli.isEmpty()) {
+        if (titolo == null) {
             //TODO: Handle exception
             log.error("Titoli not found");
         }
-        List<String> classificazioni = new ArrayList();
-        titoli.stream().forEach(t -> classificazioni.add(String.format("[%s] %s", t.getClassificazione(), t.getNome().replace(",", ""))));
-
-        return String.join(",", classificazioni);
-    }
-
-    /**
-     * Restituisce la concatenazione degli archivi del documento passato.
-     *
-     * @param doc Il Documento.
-     * @return La stringa concatenata nel formato [CODICE] NOME, separate da
-     * ",".
-     */
-    private String getArchivi(final Doc doc) {
-
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QArchivioDoc qArchivioDoc = QArchivioDoc.archivioDoc;
-        QArchivio qArchivio = QArchivio.archivio;
-
-        List<Archivio> archivi = queryFactory
-                .select(qArchivio)
-                .from(qArchivioDoc)
-                .innerJoin(qArchivioDoc.idArchivio, qArchivio)
-                .where(qArchivioDoc.idDoc.eq(doc))
-                .fetch();
-
-        if (archivi.isEmpty()) {
-            //TODO: Handle exception
-            log.error("Archivi not found");
-        }
-        List<String> archiviazioni = new ArrayList();
-        archivi.stream().forEach(t -> archiviazioni.add(String.format("[%s] %s", t.getNumerazioneGerarchica(), t.getOggetto().replace(",", " "))));
-
-        return String.join(",", archiviazioni);
+        return titolo;
     }
 
     /**

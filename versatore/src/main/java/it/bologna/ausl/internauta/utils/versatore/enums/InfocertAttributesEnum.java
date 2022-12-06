@@ -11,7 +11,7 @@ public enum InfocertAttributesEnum {
      * Metadato mantenuto indipendentemente dalle Linee Guida.<br>
      * <b>Required</b>
      */
-    DATA_DOCUMENTO("data_documento_dt"),
+    DATA_DOCUMENTO("__data_documento_dt"),
     
     /**
      * documentID o identificativo SdI per le fatture o ID SAP o ID del sistema 
@@ -100,6 +100,11 @@ public enum InfocertAttributesEnum {
     /**
      * mittente.
      */
+    RUOLO("soggru_s"),
+    /**
+     * mittente ricorsivo.
+     * Sostituire il carattere x con un indice.
+     */
     RUOLO_N("soggru_x_s"),
     /**
      * Valori per tipologia: 
@@ -107,18 +112,42 @@ public enum InfocertAttributesEnum {
      * • PE: PAI-PAE (per enti), PF (per persone fisiche), PG (per persone giuridiche)
      * • GIRI-INTERNI: PAI
      */
+    TIPO_SOGGETTO("soggtip_s"),
+    /**
+     * Valori per tipologia: 
+     * • PU: PAI
+     * • PE: PAI-PAE (per enti), PF (per persone fisiche), PG (per persone giuridiche)
+     * • GIRI-INTERNI: PAI
+     * Ricorsivo, sostituire il carattere x con un indice.
+     */
     TIPO_SOGGETTO_N("soggtip_x_s"),
     /**
      * Se TIPO_SOGGETTO è PG o PAI inseriamo la denominazione.
      * Per il Protocolli in Uscita sarà Denominazione Ente (A0 o AOUIVR) - Codice iPA di A0 o AOUIVR (PAI).
      */
+    DENOMINAZIONE("denominazione_s"), 
+    /**
+     * Se TIPO_SOGGETTO è PG o PAI inseriamo la denominazione.
+     * Per il Protocolli in Uscita sarà Denominazione Ente (A0 o AOUIVR) - Codice iPA di A0 o AOUIVR (PAI).
+     * Ricorsivo, sostituire il carattere x con un indice.
+     */
     DENOMINAZIONE_N("denominazione_x_s"), 
     /**
      * Se TIPO_SOGGETTO è PF è obbligatorio.
      */
+    COGNOME("cognome_s"),
+    /**
+     * Se TIPO_SOGGETTO è PF è obbligatorio.
+     * Ricorsivo, sostituire il carattere x con un indice.
+     */
     COGNOME_N("cognome_x_s"),
     /**
      * Se TIPO_SOGGETTO è PF è obbligatorio.
+     */
+    NOME("nome_s"),
+    /**
+     * Se TIPO_SOGGETTO è PF è obbligatorio.
+     * Ricorsivo, sostituire il carattere x con un indice.
      */
     NOME_N("nome_x_s"),
         
@@ -169,14 +198,7 @@ public enum InfocertAttributesEnum {
      * <i>Optional</i>
      */
     DESCRIZIONE_ALLEGATI("allegdesc_s"),
-    
-    /**
-     * Campo testuale che si riferisce alle classificazioni del protocollo. 
-     * Espresso in formato [CODICE] NOME (ad esempio [01-01-01] nome del titolo). 
-     * Se presenti più classificazioni saranno concatenate tra loro e separate da carattere ','
-     */
-    CLASSIFICAZIONE("classificazione_s"),
-    
+        
     /**
      * Codifica del documento secondo il Piano di classificazione utilizzato (obbligatorio per le PA).<br>
      * <i>Optional</i>
@@ -268,13 +290,6 @@ public enum InfocertAttributesEnum {
      * <i>Optional</i>
      */
     ID_AGGREGAZIONE("idagg_s"),
-    
-    /**
-     * Campo testuale che si riferisce ai fascicoli contenenti il documento. 
-     * Espresso in formato [NUMERO/ANNO FASCICOLO] NOME FASCICOLO. 
-     * Se presenti più fascicoli saranno concatenati tra loro separati dal carattere ','
-     */
-    FASCICOLO("fascicolo_s"),
     
     /**
      * Identificativo univoco e persistente del documento principale, da popolare nel versamento 

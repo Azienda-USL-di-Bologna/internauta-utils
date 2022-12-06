@@ -7,6 +7,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -40,7 +41,7 @@ public abstract class JobWorker<T extends JobWorkerData> extends Worker {
     @PersistenceContext
     protected EntityManager entityManager;
     
-    @PersistenceContext
+    @Autowired
     protected TransactionTemplate transactionTemplate;
     
     /**
