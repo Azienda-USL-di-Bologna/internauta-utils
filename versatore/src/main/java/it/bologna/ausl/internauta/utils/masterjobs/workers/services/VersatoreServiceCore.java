@@ -23,9 +23,9 @@ public class VersatoreServiceCore {
         this.masterjobsObjectsFactory = masterjobsObjectsFactory;
     }
     
-    public void queueVersatoreJob(String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app) {
+    public void queueVersatoreJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app) {
         
-        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(hostId, forzatura, poolsize, idPersonaForzatura);
+        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura);
         VersatoreJobWorker jobWorker = null;
         try {
             jobWorker = masterjobsObjectsFactory.getJobWorker(VersatoreJobWorker.class, versatoreJobWorkerData, false);

@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
-import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,27 +13,29 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
     @JsonIgnore
     private static final Logger log = LoggerFactory.getLogger(VersatoreJobWorkerData.class);
 
+    private Integer idAzienda;
     private String hostId;
-    private Boolean forzatura;
+    private Boolean forzatura = false;
     private Integer poolSize;
     private Integer idPersonaForzatura;
     
     public VersatoreJobWorkerData() {
     }
-    
-    public VersatoreJobWorkerData(String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura) {
+
+    public VersatoreJobWorkerData(Integer idAzienda, String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura) {
+        this.idAzienda = idAzienda;
         this.hostId = hostId;
         this.forzatura = forzatura;
         this.poolSize = poolSize;
         this.idPersonaForzatura = idPersonaForzatura;
     }
 
-    public Boolean getForzatura() {
-        return forzatura;
+    public Integer getIdAzienda() {
+        return idAzienda;
     }
 
-    public void setForzatura(Boolean forzatura) {
-        this.forzatura = forzatura;
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public String getHostId() {
@@ -43,6 +44,14 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
 
     public void setHostId(String hostId) {
         this.hostId = hostId;
+    }
+    
+    public Boolean getForzatura() {
+        return forzatura;
+    }
+
+    public void setForzatura(Boolean forzatura) {
+        this.forzatura = forzatura;
     }
 
     public Integer getPoolSize() {

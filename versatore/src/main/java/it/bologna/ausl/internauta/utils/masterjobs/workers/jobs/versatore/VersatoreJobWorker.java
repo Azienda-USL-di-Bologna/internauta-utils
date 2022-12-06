@@ -11,11 +11,13 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QDoc;
+import it.bologna.ausl.model.entities.versatore.QSessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento.StatoSessioneVersamento;
@@ -249,9 +251,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     }
     
     private SessioneVersamento buildSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
+        Azienda azienda = entityManager.find(Azienda.class, getWorkerData().getIdAzienda());
         SessioneVersamento sessioneVersamento = new SessioneVersamento();
         sessioneVersamento.setStato(StatoSessioneVersamento.RUNNING);
         sessioneVersamento.setTipologia(tipologiaVersamento);
+        sessioneVersamento.setIdAzienda(azienda);
         Range<ZonedDateTime> timeInterval = Range.openInfinite(startSessioneVersamento);
         sessioneVersamento.setTimeInterval(timeInterval);
         return sessioneVersamento;
@@ -261,8 +265,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     List<Tuple> versamentiRitentabili = queryFactory
         .select(QVersamento.versamento.id, QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
         .from(QVersamento.versamento)
-        .where(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()).and(
-            QVersamento.versamento.ignora.eq(false))
+        .join(QSessioneVersamento.sessioneVersamento).on(
+                QVersamento.versamento.idSessioneVersamento.id.eq(QSessioneVersamento.sessioneVersamento.id)
+        )
+        .where(
+                QVersamento.versamento.stato.eq(Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()).and(
+                QVersamento.versamento.ignora.eq(false)).and(
+                QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()))
         ).fetch();
         for (Tuple versamentoRitentabile : versamentiRitentabili) {
             Integer idVersamento = versamentoRitentabile.get(QVersamento.versamento.id);
@@ -301,6 +310,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                     Arrays.asList(
                             Versamento.StatoVersamento.VERSARE.toString(), 
                             Versamento.StatoVersamento.AGGIORNARE.toString()))
+            ).and(
+                qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
             );
         List<Integer> docsIdDaVersare = queryFactory.select(qDoc.id).from(qDoc).where(filter).fetch();
         
@@ -326,6 +337,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                             Versamento.StatoVersamento.VERSARE.toString(), 
                             Versamento.StatoVersamento.AGGIORNARE.toString(), 
                             Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()))
+            ).and(
+                qArchivio.idAzienda.id.eq(getWorkerData().getIdAzienda())
             );
         
         List<Integer> archiviIdDaVersare = queryFactory.select(qArchivio.id).from(qArchivio).where(filterArchiviDaVersare).fetch();

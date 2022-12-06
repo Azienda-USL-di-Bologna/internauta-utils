@@ -84,6 +84,11 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 versamentoDocInformation.setStatoVersamento(statoVersamentoDoc);
             }
             versamento.setStato(statoVersamentoDoc);
+            if (statoVersamentoDoc == Versamento.StatoVersamento.VERSATO || 
+                    statoVersamentoDoc == Versamento.StatoVersamento.IN_CARICO ||
+                    statoVersamentoDoc == Versamento.StatoVersamento.ANNULLATO) {
+                versamento.setIgnora(true);
+            }
             entityManager.persist(versamento);
             doc.setStatoVersamento(null);
             entityManager.persist(doc);
