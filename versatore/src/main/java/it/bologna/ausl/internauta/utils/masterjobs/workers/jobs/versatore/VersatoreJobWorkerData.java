@@ -15,22 +15,26 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
     private static final Logger log = LoggerFactory.getLogger(VersatoreJobWorkerData.class);
 
     private String hostId;
-    private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
+    private Boolean forzatura;
+    private Integer poolSize;
+    private Integer idPersonaForzatura;
     
     public VersatoreJobWorkerData() {
     }
     
-    public VersatoreJobWorkerData(String hostId, SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
+    public VersatoreJobWorkerData(String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura) {
         this.hostId = hostId;
-        this.tipologiaVersamento = tipologiaVersamento;
+        this.forzatura = forzatura;
+        this.poolSize = poolSize;
+        this.idPersonaForzatura = idPersonaForzatura;
     }
 
-    public SessioneVersamento.TipologiaVersamento getTipologiaVersamento() {
-        return tipologiaVersamento;
+    public Boolean getForzatura() {
+        return forzatura;
     }
 
-    public void setTipologiaVersamento(SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
-        this.tipologiaVersamento = tipologiaVersamento;
+    public void setForzatura(Boolean forzatura) {
+        this.forzatura = forzatura;
     }
 
     public String getHostId() {
@@ -39,5 +43,21 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
 
     public void setHostId(String hostId) {
         this.hostId = hostId;
+    }
+
+    public Integer getPoolSize() {
+        return poolSize;
+    }
+
+    public void setPoolSize(Integer poolSize) {
+        this.poolSize = poolSize;
+    }
+
+    public Integer getIdPersonaForzatura() {
+        return idPersonaForzatura;
+    }
+
+    public void setIdPersonaForzatura(Integer idPersonaForzatura) {
+        this.idPersonaForzatura = idPersonaForzatura;
     }
 }

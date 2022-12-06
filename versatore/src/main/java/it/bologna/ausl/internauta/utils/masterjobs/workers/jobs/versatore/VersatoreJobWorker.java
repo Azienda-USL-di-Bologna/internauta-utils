@@ -3,30 +3,34 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.vladmihalcea.hibernate.type.range.Range;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
-import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
-import it.bologna.ausl.model.entities.scripta.Allegato;
-import it.bologna.ausl.model.entities.scripta.QAllegato;
+import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
+import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QDoc;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento.StatoSessioneVersamento;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento.TipologiaVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
+import it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +47,15 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     @Autowired
     private VersatoreFactory versatoreFactory;
     
+    private ZonedDateTime startSessioneVersamento;
+    
+    /* mappa che ha come chiave l'idArchivio e
+     * come valore una mappa che contiene tutti i docs con il loro rispettivo VersamentoDocInformation.
+     * Serve per poter calcolare lo statoUltimoVersamento del fascicolo, 
+     * dopo che sono stati effettuati tutti i versamenti dei suoi docs
+    */
+    private Map<Integer, Map<Integer, VersamentoDocInformation>> archiviDocs;
+    
     @Override
     public String getName() {
         return this.getClass().getSimpleName();
@@ -51,24 +64,206 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     @Override
     public JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info("sono in doWork()");
+        startSessioneVersamento = ZonedDateTime.now();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
+        
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         
+        TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
+        
         Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare = new HashMap<>();
-        versamentiDaEffettuare = addDocsDaVersareDaArchivi(versamentiDaEffettuare, queryFactory);
-        versamentiDaEffettuare = addDocsDaVersareDaDocs(versamentiDaEffettuare, queryFactory);
-        versamentiDaEffettuare = addDocsDaRitentare(versamentiDaEffettuare, queryFactory);
+        versamentiDaEffettuare = addDocsDaVersareDaArchivi(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
+        versamentiDaEffettuare = addDocsDaVersareDaDocs(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
+        versamentiDaEffettuare = addDocsDaRitentare(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
+        
+        if (versamentiDaEffettuare != null && !versamentiDaEffettuare.isEmpty()) {
+        
+            SessioneVersamento sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
+
+            List<VersatoreDocThread> versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaEffettuare, sessioneVersamento);
+            StatoSessioneVersamento statoSessioneVersamento = executeAllVersatoreDocThreads(versatoreDocThreads);
+
+            updateStatoVersamentoFascicoli(queryFactory);
+
+            closeSessioneVersamento(statoSessioneVersamento, sessioneVersamento);
+        }
+        
+        return null;
     }
     
-    private Map<Integer, List<VersamentoDocInformation>> addDocsDaRitentare(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, JPAQueryFactory queryFactory) {
+    private SessioneVersamento openNewSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
+        SessioneVersamento sessioneVersamento = transactionTemplate.execute(a -> {
+            SessioneVersamento newSessioneVersamento = buildSessioneVersamento(tipologiaVersamento);
+                entityManager.persist(newSessioneVersamento);
+                return newSessioneVersamento;
+            });
+        return sessioneVersamento;
+    }
+    
+    private void closeSessioneVersamento(StatoSessioneVersamento statoSessioneVersamento, SessioneVersamento sessioneVersamento) {
+        sessioneVersamento.setStato(statoSessioneVersamento);
+        sessioneVersamento.setTimeInterval(Range.open(sessioneVersamento.getTimeInterval().lower(), ZonedDateTime.now()));
+        transactionTemplate.executeWithoutResult(a -> entityManager.persist(statoSessioneVersamento));
+    }
+    
+    private StatoSessioneVersamento executeAllVersatoreDocThreads(List<VersatoreDocThread> versatoreDocThreads) throws MasterjobsWorkerException {
+        Integer poolSize = getWorkerData().getPoolSize();
+        ExecutorService executoreService = Executors.newFixedThreadPool(poolSize);
+        
+        List<VersamentoDocInformation> allResults = new ArrayList<>();
+        try {
+            List<Future<List<VersamentoDocInformation>>> threadsResult = executoreService.invokeAll(versatoreDocThreads);
+            for (Future<List<VersamentoDocInformation>> threadResult : threadsResult) {
+                // la lista conterrà i versamenti effettuati per il doc in questa sessione (per infocert sarà solo 1)
+                List<VersamentoDocInformation> versamentiThread = threadResult.get();
+                for (VersamentoDocInformation versamentoThread : versamentiThread) {
+                    // aggiungo il versamento nella lista di tutti i versamenti effettuati nella sessione
+                    allResults.add(versamentoThread);
+                    /* se il versamento è associato a un archivio, popolo la mappa degli archiviDocs
+                     * la chiave è l'idArchivio
+                     * il valore è la mappa con tutti i docs:
+                     * - se è il primo doc per quell'archivio la mappa sarà vuota per cui la creo
+                     * - poi ci metto dentro il doc corrispondente
+                    */
+                    if (versamentoThread.getIdArchivio() != null) {
+                        // estraggo la mappa dei doc per questo archivio
+                        Map<Integer, VersamentoDocInformation> docsArchivio = archiviDocs.get(versamentoThread.getIdArchivio());
+                        // se è null è il primo doc dell'archivio, creo la mappa e la inserisco nella mappa superiore
+                        if (docsArchivio == null) {
+                            docsArchivio = new HashMap<>();
+                            archiviDocs.put(versamentoThread.getIdArchivio(), docsArchivio);
+                        }
+                        // inserisco il doc nella mappa
+                        docsArchivio.put(versamentoThread.getIdDoc(), versamentoThread);
+                    }
+                }
+            }
+            allResults.stream().map(v -> v.getIdArchivio());
+            StatoSessioneVersamento statoSessioneVersamento = getStatoSessioneVersamentoFromVersamenti(allResults);
+            return statoSessioneVersamento;
+        } catch (InterruptedException ex) {
+            String errorMessage = "ricevuto un InterruptedException errore nell'attesa del completamento dei thread di versamento";
+            log.error(errorMessage, ex);
+            throw new MasterjobsWorkerException(errorMessage, ex);
+        } catch (Throwable ex) {
+            String errorMessage = "errore nell'attesa del completamento dei thread di versamento";
+            log.error(errorMessage, ex);
+            throw new MasterjobsWorkerException(errorMessage, ex);
+        }
+    }
+    
+    private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) {
+        VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
+        
+        Persona personaForzatura = getPersonaForzatura();
+        
+        List<VersatoreDocThread> versatoreDocThreads = new ArrayList<>();
+        for (Integer idDocVersamentoDaEffettuare : versamentiDaEffettuare.keySet()) {
+            List<VersamentoDocInformation> versamentoDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoDaEffettuare);
+            
+            VersatoreDocThread versatoreDocThread = new VersatoreDocThread(
+                    versamentoDaEffettuare,
+                    sessioneVersamento,
+                    personaForzatura,
+                    versatoreDocsInstance,
+                    transactionTemplate,
+                    entityManager);
+            versatoreDocThreads.add(versatoreDocThread);
+        }
+        return versatoreDocThreads;
+    }
+    
+    private Persona getPersonaForzatura() {
+        Persona personaForzatura = null;
+        if (getWorkerData().getIdPersonaForzatura() != null) {
+            personaForzatura = transactionTemplate.execute(a -> {
+                return entityManager.find(Persona.class, getWorkerData().getIdPersonaForzatura());
+            });
+        }
+        return personaForzatura;
+    }
+    
+    /**
+     * Per ogni fascicolo versato, fa un update con commit dello statoUltimoVersamento, calcolandolo dagli stati dei doc versati
+     * Viene anche settato a null lo statoVersamento, che sta ad indicare lo stato del prossimo versamento:
+     *  dato che il versamento è finito lo stato del prossimo non c'è
+     * @param queryFactory 
+     */
+    private void updateStatoVersamentoFascicoli(JPAQueryFactory queryFactory) {
+        for (Integer idArchivio : archiviDocs.keySet()) {
+            Map<Integer, VersamentoDocInformation> versamentoDocs = archiviDocs.get(idArchivio);
+            StatoVersamento statoVersamentoFascicolo = getStatoVersamentoFascicoloFromStatoVersamentiDocs(versamentoDocs);
+            transactionTemplate.executeWithoutResult(a -> {
+                queryFactory
+                    .update(QArchivio.archivio)
+                    .setNull(QArchivio.archivio.statoVersamento)
+                    .where(QArchivio.archivio.id.eq(idArchivio))
+                    .execute();
+                queryFactory
+                    .update(QArchivioDetail.archivioDetail)
+                    .set(QArchivioDetail.archivioDetail.statoUltimoVersamento, statoVersamentoFascicolo.toString())
+                    .set(QArchivioDetail.archivioDetail.dataUltimoVersamento, startSessioneVersamento)
+                    .where(QArchivioDetail.archivioDetail.id.eq(idArchivio))
+                    .execute();
+            });
+        }
+    }
+    
+    private StatoVersamento getStatoVersamentoFascicoloFromStatoVersamentiDocs(Map<Integer, VersamentoDocInformation> versamentoDocs) {
+        StatoVersamento res = null;
+        for (Integer idDoc : versamentoDocs.keySet()) {
+            VersamentoDocInformation versamentoDoc = versamentoDocs.get(idDoc);
+            if (res == null) {
+                res = versamentoDoc.getStatoVersamento();
+            } else if (versamentoDoc.getStatoVersamento() == StatoVersamento.ERRORE_RITENTABILE) {
+                res = StatoVersamento.ERRORE_RITENTABILE;
+            } else if (res == StatoVersamento.IN_CARICO) {
+                if (versamentoDoc.getStatoVersamento() == StatoVersamento.ERRORE) {
+                    res = Versamento.StatoVersamento.IN_CARICO_CON_ERRORI;
+                }
+            } else if (versamentoDoc.getStatoVersamento() == StatoVersamento.ERRORE || versamentoDoc.getStatoVersamento() == StatoVersamento.ERRORE_FORZABILE) {
+                res = versamentoDoc.getStatoVersamento();
+            }
+        }
+        
+        return res;
+    }
+    
+    private StatoSessioneVersamento getStatoSessioneVersamentoFromVersamenti(List<VersamentoDocInformation> versamenti) {
+        StatoSessioneVersamento res;
+        boolean allVersatoOrInCarico = !versamenti.stream().anyMatch(p -> 
+                p.getStatoVersamento() == Versamento.StatoVersamento.PARZIALE ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.AGGIORNARE ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.VERSARE ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.IN_CARICO_CON_ERRORI ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE_RITENTABILE ||
+                        p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE_FORZABILE);
+        
+        if (allVersatoOrInCarico) {
+            res = StatoSessioneVersamento.DONE;
+        } else {
+            res = StatoSessioneVersamento.PARTIALLY;
+        }
+        return res;
+    }
+    
+    private SessioneVersamento buildSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
+        SessioneVersamento sessioneVersamento = new SessioneVersamento();
+        sessioneVersamento.setStato(StatoSessioneVersamento.RUNNING);
+        sessioneVersamento.setTipologia(tipologiaVersamento);
+        Range<ZonedDateTime> timeInterval = Range.openInfinite(startSessioneVersamento);
+        sessioneVersamento.setTimeInterval(timeInterval);
+        return sessioneVersamento;
+    }
+    
+    private Map<Integer, List<VersamentoDocInformation>> addDocsDaRitentare(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
     List<Tuple> versamentiRitentabili = queryFactory
-                .select(QVersamento.versamento.id, QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
-                .from(QVersamento.versamento)
-                .where(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()).and(
-                    QVersamento.versamento.ignora.eq(false))
-                )
-                .fetch();
+        .select(QVersamento.versamento.id, QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
+        .from(QVersamento.versamento)
+        .where(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()).and(
+            QVersamento.versamento.ignora.eq(false))
+        ).fetch();
         for (Tuple versamentoRitentabile : versamentiRitentabili) {
             Integer idVersamento = versamentoRitentabile.get(QVersamento.versamento.id);
             Integer idDoc = versamentoRitentabile.get(QVersamento.versamento.idDoc.id);
@@ -90,7 +285,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             }
             
             if (versamentoDaInserire) {
-                VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(idDoc, idArchivio, SessioneVersamento.TipologiaVersamento.GIORNALIERO_DOCUMENTI);
+                VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(idDoc, idArchivio, tipologiaVersamento);
                 versamenti.add(versamentoDocInformation);
             }
         }
@@ -98,7 +293,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
-    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, JPAQueryFactory queryFactory) {
+    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
         QDoc qDoc = QDoc.doc;
         BooleanExpression filter = 
             qDoc.statoVersamento.isNotNull().and(
@@ -110,7 +305,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         List<Integer> docsIdDaVersare = queryFactory.select(qDoc.id).from(qDoc).where(filter).fetch();
         
         for (Integer docIdDaVersare : docsIdDaVersare) {
-            VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaVersare, null, SessioneVersamento.TipologiaVersamento.GIORNALIERO_DOCUMENTI);
+            VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaVersare, null, tipologiaVersamento);
             List<VersamentoDocInformation> versamenti = versamentiDaEffettuare.get(docIdDaVersare);
             if (versamenti == null) {
                 versamenti = new ArrayList<>();
@@ -121,7 +316,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
-    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaArchivi(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, JPAQueryFactory queryFactory) {
+    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaArchivi(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
         
         QArchivio qArchivio = QArchivio.archivio;
         BooleanExpression filterArchiviDaVersare = 
@@ -137,11 +332,12 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         for (Integer idArchivioDaVersare : archiviIdDaVersare) {
             QArchivioDoc qArchivioDoc = QArchivioDoc.archivioDoc;
             List<Integer> docsIdDaVersare = queryFactory
-                    .select(qArchivioDoc.idDoc.id)
-                    .from(qArchivioDoc)
-                    .where(qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare)).fetch();
+                .select(qArchivioDoc.idDoc.id)
+                .from(qArchivioDoc)
+                .where(qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare)).fetch();
+//            archiviDocs.put(idArchivioDaVersare, docsIdDaVersare.stream().collect(Collectors.toMap(Function.identity(), null)));
             for (Integer docIdDaVersare : docsIdDaVersare) {
-                VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaVersare, idArchivioDaVersare, SessioneVersamento.TipologiaVersamento.GIORNALIERO_FASCICOLI);
+                VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaVersare, idArchivioDaVersare, tipologiaVersamento);
                 List<VersamentoDocInformation> versamentiDoc = versamentiDaEffettuare.get(docIdDaVersare);
                 if (versamentiDoc == null) {
                     versamentiDoc = new ArrayList<>();
@@ -156,62 +352,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
-    private VersamentoDocInformation buildVersamentoDocInformation(Integer idDoc, Integer idArchivio, SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
+    private VersamentoDocInformation buildVersamentoDocInformation(Integer idDoc, Integer idArchivio, TipologiaVersamento tipologiaVersamento) {
         VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
         versamentoDocInformation.setTipologiaVersamento(tipologiaVersamento);
         versamentoDocInformation.setIdDoc(idDoc);
         versamentoDocInformation.setIdArchivio(idArchivio);
         return versamentoDocInformation;
-    }
-    
-    private VersamentoDocInformation versaDoc(VersatoreDocs versatoreDocsInstance, JPAQueryFactory queryFactory, Integer idDoc, Integer idArchivio, SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
-        VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
-        versamentoDocInformation.setTipologiaVersamento(tipologiaVersamento);
-        versamentoDocInformation.setIdDoc(idDoc);
-        versamentoDocInformation.setIdArchivio(idArchivio);
-        
-        VersamentoDocInformation statoVersamentoRes;
-        try {
-            statoVersamentoRes = versatoreDocsInstance.versa(versamentoDocInformation);
-        } catch (Throwable ex) {
-            statoVersamentoRes = versamentoDocInformation;
-            statoVersamentoRes.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-        }
-        updateStatoDoc(queryFactory, idDoc, statoVersamentoRes);
-        return statoVersamentoRes;
-    }
-    
-    private void updateStatoDoc(JPAQueryFactory queryFactory, Integer idDoc, VersamentoDocInformation versamentoDocInformation) {       
-        transactionTemplate.executeWithoutResult(a -> {
-            Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
-            for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVeramentiAllegatiInformations()) {
-                Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
-                Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
-                dettaglioAllegato.setStatoVersamento(versamentoAllegatoInformation.getStatoVersamento());
-                statoVersamentoDoc = getStatoVersamentoDocFromStatoVersamentoAllegato(statoVersamentoDoc, versamentoAllegatoInformation.getStatoVersamento());
-                entityManager.persist(allegato);
-            }
-        
-            queryFactory
-                .update(QDoc.doc)
-                .set(QDoc.doc.statoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
-                .where(QDoc.doc.id.eq(idDoc));
-            });
-    }
-    
-    private Versamento.StatoVersamento getStatoVersamentoDocFromStatoVersamentoAllegato(Versamento.StatoVersamento statoVersamentoDocAttuale, Versamento.StatoVersamento statoVersamentoAllegato) {
-        if (statoVersamentoDocAttuale == null) {
-            statoVersamentoDocAttuale = statoVersamentoAllegato;
-        } else if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE_RITENTABILE) {
-            statoVersamentoDocAttuale = Versamento.StatoVersamento.ERRORE_RITENTABILE;
-        } else if (statoVersamentoDocAttuale == Versamento.StatoVersamento.IN_CARICO) {
-            if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE) {
-                statoVersamentoDocAttuale = Versamento.StatoVersamento.IN_CARICO_CON_ERRORI;
-            }
-        } else if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE || statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE_FORZABILE) {
-            statoVersamentoDocAttuale = statoVersamentoAllegato;
-        }
-        
-        return statoVersamentoDocAttuale;
     }
 }

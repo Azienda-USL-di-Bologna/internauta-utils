@@ -5,16 +5,17 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
+import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersamentoAllegato;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.concurrent.Callable;
 import javax.persistence.EntityManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -22,8 +23,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * @author gdm
  */
-public class VersatoreDocThread implements Runnable {
+public class VersatoreDocThread implements Callable<List<VersamentoDocInformation>> {
 
+    
     private final List<VersamentoDocInformation> vesamentiDoc;
     private final VersatoreDocs versatoreDocsInstance;
     private final TransactionTemplate transactionTemplate;
@@ -40,8 +42,9 @@ public class VersatoreDocThread implements Runnable {
         this.personaForzatura = personaForzatura;
     }
     
+    
     @Override
-    public void run() {
+    public List<VersamentoDocInformation> call() throws Exception {
         if (vesamentiDoc != null && !vesamentiDoc.isEmpty()) {
             for (VersamentoDocInformation versamentoDocInformation : vesamentiDoc) {
                 try {
@@ -54,6 +57,7 @@ public class VersatoreDocThread implements Runnable {
                 updateStatoDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, personaForzatura, now);
             }
         }
+        return vesamentiDoc;
     }
     
     private void updateStatoDoc(JPAQueryFactory queryFactory, Integer idDoc, VersamentoDocInformation versamentoDocInformation, Persona personaForzatura, ZonedDateTime now) {       
@@ -66,17 +70,19 @@ public class VersatoreDocThread implements Runnable {
             Versamento versamento = buildVersamento(queryFactory, versamentoDocInformation, doc, personaForzatura, archivio, now);
             entityManager.persist(versamento);
             Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
-            for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVeramentiAllegatiInformations()) {
-                Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
-                Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
-                dettaglioAllegato.setStatoVersamento(null);
-                dettaglioAllegato.setStatoUltimoVersamento(versamentoAllegatoInformation.getStatoVersamento());
-                statoVersamentoDoc = getStatoVersamentoDocFromStatoVersamentoAllegato(statoVersamentoDoc, versamentoAllegatoInformation.getStatoVersamento());
-                VersamentoAllegato versamentoAllegato = buildVersamentoAllegato(queryFactory, versamentoAllegatoInformation, versamento, allegato, now);
-                entityManager.persist(allegato);
-                entityManager.persist(versamentoAllegato);
+            if (versamentoDocInformation.getVeramentiAllegatiInformations() != null) {
+                for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVeramentiAllegatiInformations()) {
+                    Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
+                    Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
+                    dettaglioAllegato.setStatoVersamento(null);
+                    dettaglioAllegato.setStatoUltimoVersamento(versamentoAllegatoInformation.getStatoVersamento());
+                    statoVersamentoDoc = getStatoVersamentoDocFromStatoVersamentoAllegato(statoVersamentoDoc, versamentoAllegatoInformation.getStatoVersamento());
+                    VersamentoAllegato versamentoAllegato = buildVersamentoAllegato(queryFactory, versamentoAllegatoInformation, versamento, allegato, now);
+                    entityManager.persist(allegato);
+                    entityManager.persist(versamentoAllegato);
+                }
+                versamentoDocInformation.setStatoVersamento(statoVersamentoDoc);
             }
-            versamentoDocInformation.setStatoVersamento(statoVersamentoDoc);
             versamento.setStato(statoVersamentoDoc);
             entityManager.persist(versamento);
             doc.setStatoVersamento(null);
@@ -85,7 +91,16 @@ public class VersatoreDocThread implements Runnable {
             queryFactory
                 .update(QDocDetail.docDetail)
                 .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
-                .where(QDocDetail.docDetail.id.eq(idDoc));
+                .set(QDocDetail.docDetail.dataUltimoVersamento, now)
+                .where(QDocDetail.docDetail.id.eq(idDoc))
+                .execute();
+            if (versamentoDocInformation.getVersamentoPrecedente() != null) {
+            queryFactory
+                .update(QVersamento.versamento)
+                .set(QVersamento.versamento.ignora, true)
+                .where(QVersamento.versamento.id.eq(versamentoDocInformation.getVersamentoPrecedente()))
+                .execute();
+            }
         });
     }
     
@@ -104,8 +119,10 @@ public class VersatoreDocThread implements Runnable {
     
     private Versamento buildVersamento(JPAQueryFactory queryFactory, VersamentoDocInformation versamentoDocInformation, Doc doc, Persona personaForzatura, Archivio archivio, ZonedDateTime now) {
         Versamento versamento = new Versamento();
-//        if () {
-//        }
+        if (versamentoDocInformation.getVersamentoPrecedente() != null) {
+            Versamento versamentoPrecedente = entityManager.find(Versamento.class, versamentoDocInformation.getVersamentoPrecedente());
+            versamento.setIdVersamentoRitentato(versamentoPrecedente);
+        }
         versamento.setCodiceErrore(versamentoDocInformation.getCodiceErrore());
         versamento.setDescrizioneErrore(versamentoDocInformation.getDescrizioneErrore());
         versamento.setData(versamentoDocInformation.getDataVersamento());
@@ -119,7 +136,7 @@ public class VersatoreDocThread implements Runnable {
         versamento.setRapporto(versamentoDocInformation.getRapporto());
         versamento.setStato(versamentoDocInformation.getStatoVersamento());
         versamento.setDataInserimento(now);
-        
+
         return versamento;
     }
     
