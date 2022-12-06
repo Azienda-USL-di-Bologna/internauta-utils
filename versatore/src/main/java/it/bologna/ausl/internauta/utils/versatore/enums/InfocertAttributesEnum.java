@@ -150,21 +150,6 @@ public enum InfocertAttributesEnum {
      * Ricorsivo, sostituire il carattere x con un indice.
      */
     NOME_N("nome_x_s"),
-        
-    /**
-     * Valore predefinito "PROTOCOLLO".
-     */
-    NATURA("natura_docu_s"),
-    
-    /**
-     * Catena delle persone coinvolte nel Parere di un protocollo.
-     */
-    PARERE("parere_s"),
-    
-    /**
-     * Si indicano tutti i firmatari del documento, se presenti più firmatari verranno separati da virgola.
-     */
-    FIRMATARIO("firmatario_s"),
 
     /**
      * O Partita Iva.<br>
@@ -302,7 +287,7 @@ public enum InfocertAttributesEnum {
      * Nome alfanumerico del documento/file così come riconosciuto all’esterno.<br>
      * <b>Required</b>
      */
-    NOME_FILE("nome_file_s"),
+    NOME_FILE("nomefile_s"),
     
     /**
      * 1, 2, 3, può essere per es. un default: 1.<br>
