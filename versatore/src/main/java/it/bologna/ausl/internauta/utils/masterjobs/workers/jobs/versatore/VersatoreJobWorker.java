@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
@@ -33,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,19 +81,52 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         versamentiDaEffettuare = addDocsDaVersareDaDocs(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
         versamentiDaEffettuare = addDocsDaRitentare(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
         
+        SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
         if (versamentiDaEffettuare != null && !versamentiDaEffettuare.isEmpty()) {
         
-            SessioneVersamento sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
-
+            // se c'è una sessione in corso, mi devo attaccare a quella, altrimenti ne apro una nuova
+            SessioneVersamento sessioneVersamento;
+            if (sessioneInCorso != null) {
+                sessioneVersamento = sessioneInCorso;
+                versamentiDaEffettuare = removeDocGiaVersati(versamentiDaEffettuare, sessioneInCorso.getId(), queryFactory);
+            } else {
+                sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
+            }
+            
             List<VersatoreDocThread> versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaEffettuare, sessioneVersamento);
             StatoSessioneVersamento statoSessioneVersamento = executeAllVersatoreDocThreads(versatoreDocThreads);
 
             updateStatoVersamentoFascicoli(queryFactory);
 
             closeSessioneVersamento(statoSessioneVersamento, sessioneVersamento);
+        } else {
+            // se c'è una sessione in corso, ma non ci sono versamenti (caso molto strano) chiudo semplicemente la sessione
+            if (sessioneInCorso != null) {
+                closeSessioneVersamento(StatoSessioneVersamento.DONE, sessioneInCorso);
+            }
         }
         
         return null;
+    }
+    
+    /**
+     * torna un'eventuale sessione non ancora terminata (ad esempio se è andato giù internauta durante il versamento)
+     * @param queryFactory
+     * @return la sessione in corso, se c'è, altrimenti null
+     */
+    private SessioneVersamento getSessioneInCorso(JPAQueryFactory queryFactory) {
+        return transactionTemplate.execute(a -> {
+            return queryFactory
+                .select(QSessioneVersamento.sessioneVersamento)
+                .from(QSessioneVersamento.sessioneVersamento)
+                .where(
+                        QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()).and(
+                        QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING.toString())
+                    )
+                )
+                .fetchOne();
+            }
+        );
     }
     
     private SessioneVersamento openNewSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
@@ -106,6 +142,40 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         sessioneVersamento.setStato(statoSessioneVersamento);
         sessioneVersamento.setTimeInterval(Range.open(sessioneVersamento.getTimeInterval().lower(), ZonedDateTime.now()));
         transactionTemplate.executeWithoutResult(a -> entityManager.persist(statoSessioneVersamento));
+    }
+    
+    private Map<Integer, List<VersamentoDocInformation>> removeDocGiaVersati(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, Integer idSessioneVersamento, JPAQueryFactory queryFactory) {
+        List<Tuple> versamentiEffettuati = transactionTemplate.execute(a -> {
+            return queryFactory
+                    .select(QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
+                    .from(QVersamento.versamento)
+                    .where(QVersamento.versamento.idSessioneVersamento.id.eq(idSessioneVersamento))
+                    .fetch();
+        });
+        if (versamentiEffettuati != null && !versamentiEffettuati.isEmpty()) {
+            for (Tuple versamentoEffettuato : versamentiEffettuati) {
+                Integer idDocVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idDoc.id);
+                Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
+                List<VersamentoDocInformation> versamentiDocDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoEffettuato);
+                if (versamentiDocDaEffettuare != null) {
+                    List<VersamentoDocInformation> versamentiDocDaEffettuareFiltrati = 
+                            versamentiDocDaEffettuare.stream().filter(versamentoDocDaEffettuare -> 
+                                !versamentoDocDaEffettuare.getIdDoc().equals(idDocVersamentoEffettuato) ||
+                                versamentoDocDaEffettuare.getIdArchivio() == null && idArchivioVersamentoEffettuato != null ||
+                                versamentoDocDaEffettuare.getIdArchivio() != null && idArchivioVersamentoEffettuato == null || (
+                                    versamentoDocDaEffettuare.getIdArchivio() != null && idArchivioVersamentoEffettuato != null && 
+                                    !versamentoDocDaEffettuare.getIdArchivio().equals(idArchivioVersamentoEffettuato)
+                                )    
+                    ).collect(Collectors.toList());
+                    if (versamentiDocDaEffettuareFiltrati == null || versamentiDocDaEffettuareFiltrati.isEmpty()) {
+                        versamentiDaEffettuare.remove(idDocVersamentoEffettuato);
+                    } else {
+                        versamentiDaEffettuare.put(idDocVersamentoEffettuato, versamentiDocDaEffettuareFiltrati);
+                    }
+                }
+            }
+        }
+        return versamentiDaEffettuare;
     }
     
     private StatoSessioneVersamento executeAllVersatoreDocThreads(List<VersatoreDocThread> versatoreDocThreads) throws MasterjobsWorkerException {
