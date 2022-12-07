@@ -98,7 +98,18 @@ public enum InfocertAttributesEnum {
     OGGETTO("ogg_s"),
     
     /**
-     * mittente.
+     * Valori ammessi:
+     * • assegnatario
+     * • autore
+     * • mittente
+     * • destinatario
+     * • operatore
+     * • produttore
+     * • RGD (Responsabile della Gestione Documentale)
+     * • RSP (Responsabile del Servizio di Protocollo)
+     * • Soggetto che effettua la registrazione
+     * Almeno un soggetto che effettua la registrazione del documento (tipicamente l’Organizzazione
+     * che protocolla) e un autore o un mittente va indicato obbligatoriamente.
      */
     RUOLO("soggru_s"),
     /**

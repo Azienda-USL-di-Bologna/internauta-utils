@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
+import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatus;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -30,10 +31,18 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     @Autowired
     private VersatoreFactory versatoreFactory;
     
-     @RequestMapping(value = "/test/{variable}", method = RequestMethod.GET)
+    @RequestMapping(value = "/test/{variable}", method = RequestMethod.GET)
     public String test(@PathVariable String variable) {
 
         return "It works!\n" + variable;
+    }
+    
+    @RequestMapping(value = "/getDocumentStatus", method = RequestMethod.GET)
+    public DocumentStatus getDocumentStatus(@RequestParam(required = true) String hash, @RequestParam(required = true) String hostId) {
+
+        VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
+        DocumentStatus res = versatoreDocsInstance.getDocumentStatus(hash);
+        return res;
     }
     
     @RequestMapping(value = "/versaDocumento", method = RequestMethod.POST)
