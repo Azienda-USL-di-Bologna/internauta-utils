@@ -46,7 +46,7 @@ public enum InfocertAttributesEnum {
     MODALITA_DI_FORMAZIONE("modform_s"),
     
     /**
-     * Fatture attive, passive, notifiche, libro giornale, registro.<br>
+     * Fatture attive, passive, notifiche, libro giornale, registro, delibere, determine.<br>
      * Può essere un default.<br>
      * <b>Required</b>
      */

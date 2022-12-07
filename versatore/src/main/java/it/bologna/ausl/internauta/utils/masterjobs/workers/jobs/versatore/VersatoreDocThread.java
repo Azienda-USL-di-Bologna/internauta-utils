@@ -70,8 +70,8 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             Versamento versamento = buildVersamento(queryFactory, versamentoDocInformation, doc, personaForzatura, archivio, now);
             entityManager.persist(versamento);
             Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
-            if (versamentoDocInformation.getVeramentiAllegatiInformations() != null) {
-                for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVeramentiAllegatiInformations()) {
+            if (versamentoDocInformation.getVersamentiAllegatiInformations() != null) {
+                for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVersamentiAllegatiInformations()) {
                     Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
                     Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
                     dettaglioAllegato.setStatoVersamento(null);

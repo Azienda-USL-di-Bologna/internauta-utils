@@ -20,7 +20,7 @@ public class VersamentoDocInformation {
     private String descrizioneErrore;
     private ZonedDateTime dataVersamento;
     private Integer versamentoPrecedente;
-    private List<VersamentoAllegatoInformation> veramentiAllegatiInformations;
+    private List<VersamentoAllegatoInformation> versamentiAllegatiInformations;
     private Versamento.StatoVersamento statoVersamento;
 
     public VersamentoDocInformation() {
@@ -98,12 +98,12 @@ public class VersamentoDocInformation {
         this.dataVersamento = dataVersamento;
     }
 
-    public List<VersamentoAllegatoInformation> getVeramentiAllegatiInformations() {
-        return veramentiAllegatiInformations;
+    public List<VersamentoAllegatoInformation> getVersamentiAllegatiInformations() {
+        return versamentiAllegatiInformations;
     }
 
-    public void setVeramentiAllegatiInformations(List<VersamentoAllegatoInformation> veramentiAllegatiInformations) {
-        this.veramentiAllegatiInformations = veramentiAllegatiInformations;
+    public void setVersamentiAllegatiInformations(List<VersamentoAllegatoInformation> versamentiAllegatiInformations) {
+        this.versamentiAllegatiInformations = versamentiAllegatiInformations;
     }
 
     public Versamento.StatoVersamento getStatoVersamento() {
