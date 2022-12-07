@@ -34,7 +34,7 @@ public class VersatoreServiceCore {
             log.error(errorMessage, ex);
         }
         try {
-            masterjobsJobsQueuer.queue(jobWorker, "versatore", "Versatore", app, false, Set.SetPriority.NORMAL);
+            masterjobsJobsQueuer.queue(jobWorker, "versatore_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL);
         } catch (Exception ex) {
             String errorMessage = "errore nell'accodamento del job Versatore";
             log.error(errorMessage, ex);
