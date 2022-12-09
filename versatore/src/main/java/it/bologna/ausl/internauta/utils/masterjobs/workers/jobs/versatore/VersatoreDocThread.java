@@ -12,6 +12,7 @@ import it.bologna.ausl.model.entities.scripta.QDocDetail;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
+import it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento;
 import it.bologna.ausl.model.entities.versatore.VersamentoAllegato;
 import java.time.ZonedDateTime;
 import java.util.List;
