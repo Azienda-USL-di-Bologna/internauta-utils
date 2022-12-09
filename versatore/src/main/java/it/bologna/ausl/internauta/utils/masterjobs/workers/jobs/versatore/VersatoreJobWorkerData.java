@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * Dati del job Versatore
+ * 
  * @author gdm
  */
 public class VersatoreJobWorkerData  extends JobWorkerData {
@@ -22,6 +24,14 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
     public VersatoreJobWorkerData() {
     }
 
+    /**
+     * Costruisce i dati per il job di Versamento
+     * @param idAzienda azienda per la quale effettuare i versamenti
+     * @param hostId hostId della configurazione del versatore (tabella versatore.configurations)
+     * @param forzatura indica se il job si sta eseguendo per una forzatura utente
+     * @param poolSize dimensione del pool di threads (numero massimo di threads contemporanei di versamento)
+     * @param idPersonaForzatura persona che effettua la forzatura
+     */
     public VersatoreJobWorkerData(Integer idAzienda, String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura) {
         this.idAzienda = idAzienda;
         this.hostId = hostId;

@@ -13,7 +13,6 @@ import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
@@ -35,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +42,10 @@ import org.springframework.transaction.TransactionDefinition;
 /**
  *
  * @author gdm
+ * 
+ * Job che effettua tutti i versamenti dell'azienda
+ * I parametri per effettuare il versamento sono definiti nella classe VersatoreJobWorkerData
+ * reperisce i documenti da versare da tutti gli archivi da varsare, i docs stessi da versare e i versamenti in errore ritentabile
  */
 @MasterjobsWorker
 public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
@@ -129,6 +131,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         );
     }
     
+    /**
+     * Costruisce e salva su DB una nuova sessione di versamento della tipologia passata
+     * @param tipologiaVersamento la tipologia del versamento
+     * @return l'entità SessioneVersamento salvata
+     */
     private SessioneVersamento openNewSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
         SessioneVersamento sessioneVersamento = transactionTemplate.execute(a -> {
             SessioneVersamento newSessioneVersamento = buildSessioneVersamento(tipologiaVersamento);
@@ -138,13 +145,29 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return sessioneVersamento;
     }
     
+    /**
+     * Chiude la sessione di versamento aggiornando lo stato e il time_interval settandoci la data di fine
+     * @param statoSessioneVersamento lo stato da settare sulla sessione versamento
+     * @param sessioneVersamento la sessione da chiudere
+     */
     private void closeSessioneVersamento(StatoSessioneVersamento statoSessioneVersamento, SessioneVersamento sessioneVersamento) {
         sessioneVersamento.setStato(statoSessioneVersamento);
         sessioneVersamento.setTimeInterval(Range.open(sessioneVersamento.getTimeInterval().lower(), ZonedDateTime.now()));
         transactionTemplate.executeWithoutResult(a -> entityManager.persist(statoSessioneVersamento));
     }
     
+    /**
+     * Rimuove, dalla mappa dei doc da versare, quelli già versati nella sessione.
+     * Se un doc ha più versamenti (es. è in 2 fascicoli che vengono chiusi), allora si controlla ognuno e nel caso si tiene
+     * sono quello non fatto
+     * @param versamentiDaEffettuare i doc da versare estrapolati con le query
+     * @param idSessioneVersamento l'id della sessione in corso
+     * @param queryFactory
+     * @return la mappa dei versamenti da effettuare, alla quale sono stati rimossi quelli già versati (è la stessa mappa  che viene passata come paraemtro)
+     */
     private Map<Integer, List<VersamentoDocInformation>> removeDocGiaVersati(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, Integer idSessioneVersamento, JPAQueryFactory queryFactory) {
+        
+        // prendo i versamenti effettuati nella sessione
         List<Tuple> versamentiEffettuati = transactionTemplate.execute(a -> {
             return queryFactory
                     .select(QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
@@ -152,13 +175,22 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                     .where(QVersamento.versamento.idSessioneVersamento.id.eq(idSessioneVersamento))
                     .fetch();
         });
+        
+        // se ne trovo qualcuno lo devo rimuovere da quelli da effettuare
         if (versamentiEffettuati != null && !versamentiEffettuati.isEmpty()) {
+            
+            // per ogni versamento trovato, devo controllare se è presente in quelli da effettuare e nel caso rimuoverlo
             for (Tuple versamentoEffettuato : versamentiEffettuati) {
                 Integer idDocVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idDoc.id);
                 Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
+                // per prima cosa estraggo dalla mappa i versamenti del doc del versamento effettuati
                 List<VersamentoDocInformation> versamentiDocDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoEffettuato);
+                // dovrei trovarne almeno uno, mi aspetto di entrare sempre in questo if
                 if (versamentiDocDaEffettuare != null) {
+                    // rimuovo dalla lista dei versamenti del doc, quelli già fatti
                     List<VersamentoDocInformation> versamentiDocDaEffettuareFiltrati = 
+                            // quelli già fatti sono quelli che hanno lo stesso idDoc e lo stesso idArchivio
+                            // siccome l'idArchivio può non esserci, devo controllare i null
                             versamentiDocDaEffettuare.stream().filter(versamentoDocDaEffettuare -> 
                                 !versamentoDocDaEffettuare.getIdDoc().equals(idDocVersamentoEffettuato) ||
                                 versamentoDocDaEffettuare.getIdArchivio() == null && idArchivioVersamentoEffettuato != null ||
@@ -167,6 +199,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                                     !versamentoDocDaEffettuare.getIdArchivio().equals(idArchivioVersamentoEffettuato)
                                 )    
                     ).collect(Collectors.toList());
+                    // se ho rimosso tutti i versamento per il doc, rimuovo completamente il doc dalla mappa
                     if (versamentiDocDaEffettuareFiltrati == null || versamentiDocDaEffettuareFiltrati.isEmpty()) {
                         versamentiDaEffettuare.remove(idDocVersamentoEffettuato);
                     } else {
@@ -178,13 +211,23 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
+    /**
+     * Lancia i threads per il versamento e attende che tutti abbiamo finito
+     * NB: il massimo di threads contemporanei è indicato del parametro "poolSize" del job
+     * @param versatoreDocThreads
+     * @return torna lo stato finale della sessione, dopo che tutti i threads hanno terminato di versare
+     * @throws MasterjobsWorkerException 
+     */
     private StatoSessioneVersamento executeAllVersatoreDocThreads(List<VersatoreDocThread> versatoreDocThreads) throws MasterjobsWorkerException {
         Integer poolSize = getWorkerData().getPoolSize();
         ExecutorService executoreService = Executors.newFixedThreadPool(poolSize);
         
         List<VersamentoDocInformation> allResults = new ArrayList<>();
         try {
+            // fa partire tutti i threads (massimo poolSize in contemporanea) e attende il risultato
             List<Future<List<VersamentoDocInformation>>> threadsResult = executoreService.invokeAll(versatoreDocThreads);
+            
+            // tutti i threads hanno finito, ciclo tutti i risultati
             for (Future<List<VersamentoDocInformation>> threadResult : threadsResult) {
                 // la lista conterrà i versamenti effettuati per il doc in questa sessione (per infocert sarà solo 1)
                 List<VersamentoDocInformation> versamentiThread = threadResult.get();
@@ -210,7 +253,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                     }
                 }
             }
-            allResults.stream().map(v -> v.getIdArchivio());
+            // calcolo lo stato della sessione, basandomi sugli stati dei versamenti effettuati
             StatoSessioneVersamento statoSessioneVersamento = getStatoSessioneVersamentoFromVersamenti(allResults);
             return statoSessioneVersamento;
         } catch (InterruptedException ex) {
@@ -224,12 +267,24 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         }
     }
     
+    /**
+     * Costruisce i threads capaci di effettuare i versamenti
+     * @param versamentiDaEffettuare mappa contenente tutti i doc da versare
+     * @param sessioneVersamento la sessione a cui attaccare i versamenti
+     * @return la lista dei threads costruiti
+     */
     private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
         
         Persona personaForzatura = getPersonaForzatura();
         
         List<VersatoreDocThread> versatoreDocThreads = new ArrayList<>();
+        
+        /* cicla sulla mappa dei doc da versare e per ognuno costruisce un thread.
+         * Nella mappa, per ogni documento c'è la lista dei suoi versamenti.
+         *  è una lista perché un documento può essere versato più volte, ad esempio se si stanno versando 2 fascicoli
+         *  in cui lo stesso doc è presente. In questo caso i versamenti li effettuerà lo stesso thread
+        */
         for (Integer idDocVersamentoDaEffettuare : versamentiDaEffettuare.keySet()) {
             List<VersamentoDocInformation> versamentoDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoDaEffettuare);
             
@@ -245,6 +300,10 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versatoreDocThreads;
     }
     
+    /**
+     * Reperisce l'entità Persona che forza il versamento
+     * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
+     */
     private Persona getPersonaForzatura() {
         Persona personaForzatura = null;
         if (getWorkerData().getIdPersonaForzatura() != null) {
@@ -281,6 +340,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         }
     }
     
+    /**
+     * Calcola lo stato del versamento del fascicolo in base agli stati dei versamenti dei documenti al suo interno
+     * @param versamentoDocs la mappa dei soli doc all'interno del fascicolo
+     * @return lo stato del versamento del fascicolo
+     */
     private StatoVersamento getStatoVersamentoFascicoloFromStatoVersamentiDocs(Map<Integer, VersamentoDocInformation> versamentoDocs) {
         StatoVersamento res = null;
         for (Integer idDoc : versamentoDocs.keySet()) {
@@ -301,6 +365,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return res;
     }
     
+    /**
+     * Calcola lo stato della sessione in base agli stati dei versamenti effettuati
+     * La sessionesarà completa se tutti i versamenti sono andati a buon fine (o sono stati presi in carico), negli altri casi
+     * sarà parziale
+     * @param versamenti
+     * @return lo stato della sessione in base agli stati dei versamenti effettuati
+     */
     private StatoSessioneVersamento getStatoSessioneVersamentoFromVersamenti(List<VersamentoDocInformation> versamenti) {
         StatoSessioneVersamento res;
         boolean allVersatoOrInCarico = !versamenti.stream().anyMatch(p -> 
@@ -320,6 +391,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return res;
     }
     
+    /**
+     * Costruisce l'entità SessioneVersamento della tipologia passata
+     * @param tipologiaVersamento la tipologia della SessioneVersamento da costruire
+     * @return l'entità SessioneVersamento
+     */
     private SessioneVersamento buildSessioneVersamento(TipologiaVersamento tipologiaVersamento) {
         Azienda azienda = entityManager.find(Azienda.class, getWorkerData().getIdAzienda());
         SessioneVersamento sessioneVersamento = new SessioneVersamento();
@@ -331,7 +407,23 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return sessioneVersamento;
     }
     
+    /**
+     * Prende tutti i docs che nella sessione passata sono andati in stato ERRORE_RITENTABILE e li aggiunge alla mappa
+     * versamentiDaEffettuare passata in input
+     * Vengono reperiti basandosi sui versamenti precedenti, che sono in ERRORE_RITENTABILE.
+     * Viene anche settato il versamento precedente, sul nuovo versamento da effettuare
+     * NB: Vengono presi i versamenti solo dell'azienda a cui il job fa riferimento
+     * @param versamentiDaEffettuare la mappa che contiene i docs da versare
+     * @param tipologiaVersamento la tipologia del versamento che si vuole effettuare
+     * @param queryFactory
+     * @return la mappa dei versamentiDaEffettuare (è la stessa passata in input)
+     */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaRitentare(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
+    
+    /*
+     * Prende tutti i versamenti in stato ERRORE_RITENTABILE delle sessioni dell'azienda del job
+     * Per ogni versamento ne estrae l'id, l'id del doc e l'id del fascicolo  
+    */    
     List<Tuple> versamentiRitentabili = queryFactory
         .select(QVersamento.versamento.id, QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
         .from(QVersamento.versamento)
@@ -344,15 +436,27 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()))
         ).fetch();
         for (Tuple versamentoRitentabile : versamentiRitentabili) {
+            /*
+             * per ognuno dei versamenti estratti, controllo se il doc era già presente nei versamenti da effettuare
+             *  per lo stesso fasciolo.
+             *  Se lo trovo allora non lo inserisco nuovamente, ma setto il versamento estratto come VersamentoPrecedente
+             *   In questo modo, così da evere l'informazione per attaccare il nuovo versamento al precedente e settare il
+             *   precedente da ignorare
+             *  Se non lo trovo, allora lo aggiungo, settandoci sempre il VersamentoPrecedente
+            */
             Integer idVersamento = versamentoRitentabile.get(QVersamento.versamento.id);
             Integer idDoc = versamentoRitentabile.get(QVersamento.versamento.idDoc.id);
             Integer idArchivio = versamentoRitentabile.get(QVersamento.versamento.idArchivio.id);
             List<VersamentoDocInformation> versamenti = versamentiDaEffettuare.get(idDoc);
             boolean versamentoDaInserire = true;
-            if (versamenti == null) {
+            if (versamenti == null) { // se non trovo versamenti per il doc, creo la lista vuota
                 versamenti = new ArrayList<>();
                 versamentiDaEffettuare.put(idDoc, versamenti);
             } else {
+                /*
+                 * se trovo dei versamenti, controllo se c'è il versamento con lo stesso fascicolo
+                 * se lo trovo, setto solo il versamento precedente, altrimenti setto che è da inserire
+                */
                 for (VersamentoDocInformation v : versamenti) {
                     if ((idArchivio == null && v.getIdArchivio() == null) || 
                         (idArchivio != null && v.getIdArchivio() != null && v.getIdArchivio().equals(idArchivio))) {
@@ -363,8 +467,10 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 }
             }
             
+            // se il versamento è da inserire lo inserisco nella lista
             if (versamentoDaInserire) {
                 VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(idDoc, idArchivio, tipologiaVersamento);
+                versamentoDocInformation.setVersamentoPrecedente(idVersamento);
                 versamenti.add(versamentoDocInformation);
             }
         }
@@ -372,6 +478,15 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
+    /**
+     * aggiunge alla mappa dei versamenti da effettuare i doc da versare:
+     *  i doc da versare sono quelli in stato VERSARE o AGGIORNARE.
+     *  Prende solo i doc dell'azienda a cui il job fa riferimento
+     * @param versamentiDaEffettuare la mappa dei versamenti da effettuare
+     * @param tipologiaVersamento la tipologia del versamento
+     * @param queryFactory
+     * @return la mappa dei versamentiDaEffettuare (è la stessa passata in input)
+     */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
         QDoc qDoc = QDoc.doc;
         BooleanExpression filter = 
@@ -397,28 +512,40 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         return versamentiDaEffettuare;
     }
     
+    /**
+     * aggiunge alla mappa dei versamenti da effettuare i doc all'interno dei fascicoli da versare:
+     *  Verranno aggiunti tutti i doc all'interno dei fascicolo da versare, indipendentemente dal loro sato versamento.
+     *  I fascicolo da versare sono tutti i fascicoli in stato VERSARE o AGGIORNARE
+     *  Prende solo i doc dell'azienda a cui il fascicolo fa riferimento
+     * @param versamentiDaEffettuare la mappa dei versamentiDaEffettuare
+     * @param tipologiaVersamento la tipologia del versamento
+     * @param queryFactory
+     * @return la mappa dei versamentiDaEffettuare (è la stessa passata in input)
+     */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersareDaArchivi(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {
-        
         QArchivio qArchivio = QArchivio.archivio;
+        
+        // filtro per estrarre i fascicoli
         BooleanExpression filterArchiviDaVersare = 
             qArchivio.statoVersamento.isNotNull().and(
             qArchivio.statoVersamento.in(
                     Arrays.asList(
                             Versamento.StatoVersamento.VERSARE.toString(), 
-                            Versamento.StatoVersamento.AGGIORNARE.toString(), 
-                            Versamento.StatoVersamento.ERRORE_RITENTABILE.toString()))
+                            Versamento.StatoVersamento.AGGIORNARE.toString()))
             ).and(
                 qArchivio.idAzienda.id.eq(getWorkerData().getIdAzienda())
             );
         
+        // estrae prima tutti i fascicoli stato da versare dell'azienda indicata nel job
         List<Integer> archiviIdDaVersare = queryFactory.select(qArchivio.id).from(qArchivio).where(filterArchiviDaVersare).fetch();
+        
+        // per ogno fascicolo estrae i doc al suo interno e inserisce il versamento nella mappa, indipendentemente dallo stato del doc
         for (Integer idArchivioDaVersare : archiviIdDaVersare) {
             QArchivioDoc qArchivioDoc = QArchivioDoc.archivioDoc;
             List<Integer> docsIdDaVersare = queryFactory
                 .select(qArchivioDoc.idDoc.id)
                 .from(qArchivioDoc)
                 .where(qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare)).fetch();
-//            archiviDocs.put(idArchivioDaVersare, docsIdDaVersare.stream().collect(Collectors.toMap(Function.identity(), null)));
             for (Integer docIdDaVersare : docsIdDaVersare) {
                 VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaVersare, idArchivioDaVersare, tipologiaVersamento);
                 List<VersamentoDocInformation> versamentiDoc = versamentiDaEffettuare.get(docIdDaVersare);
@@ -427,14 +554,21 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                     versamentiDaEffettuare.put(docIdDaVersare, versamentiDoc);
                 }
                 versamentiDoc.add(versamentoDocInformation);
-//versaDoc(versatoreDocsInstance, queryFactory, docIdDaVersare, idArchivioDaVersare, SessioneVersamento.TipologiaVersamento.GIORNALIERO_FASCICOLI);
-;
             }
         }
         
         return versamentiDaEffettuare;
     }
     
+    /**
+     * Crea l'oggetto VersamentoDocInformation, necessario al versatore per poter effettuare il versamento
+     * E' possibile passare un archivio per poter legare il doc a quell'archivio. 
+     *  Sarà poi il plugin del versatore a decidere come trattare l'informazione.
+     * @param idDoc il doc da versare
+     * @param idArchivio l'archivio a cui associare il doc (possibile anche null)
+     * @param tipologiaVersamento la tipologia del versamento da effettuare
+     * @return l'oggetto VersamentoDocInformation
+     */
     private VersamentoDocInformation buildVersamentoDocInformation(Integer idDoc, Integer idArchivio, TipologiaVersamento tipologiaVersamento) {
         VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
         versamentoDocInformation.setTipologiaVersamento(tipologiaVersamento);
