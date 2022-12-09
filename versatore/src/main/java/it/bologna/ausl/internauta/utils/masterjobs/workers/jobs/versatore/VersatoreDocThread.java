@@ -100,8 +100,8 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             // per ogni allegato salva il versamento_allegato e aggiorna lo stato ultimo versamento sull'allegato
             // inoltre svuoto lo stato prossimo versamento (stato_versamento)
             Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
-            if (versamentoDocInformation.getVeramentiAllegatiInformations() != null) {
-                for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVeramentiAllegatiInformations()) {
+            if (versamentoDocInformation.getVersamentiAllegatiInformations() != null) {
+                for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVersamentiAllegatiInformations()) {
                     Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
                     Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
                     dettaglioAllegato.setStatoVersamento(null);

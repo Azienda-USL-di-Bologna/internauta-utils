@@ -4,6 +4,7 @@ import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreReposit
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
+import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatus;
 import javax.persistence.EntityManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -29,7 +30,8 @@ public abstract class VersatoreDocs {
         this.configuration = configuration;
     }
     
-
+    public abstract DocumentStatus getDocumentStatus(String hashDocumento);
+    
     public VersamentoDocInformation versa(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return transactionTemplate.execute(a -> {
