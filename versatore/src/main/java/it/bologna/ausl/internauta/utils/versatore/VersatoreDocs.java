@@ -36,12 +36,25 @@ public abstract class VersatoreDocs {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return transactionTemplate.execute(a -> {
             try {
-                return versaAbstract(versamentoInformation);
+                return versaImpl(versamentoInformation);
             } catch (VersatoreConfigurationException ex) {
                throw new RuntimeException(ex);
             }
         });
     }
     
-    protected abstract VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
+    public VersamentoDocInformation controllaStatoVersamento(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return transactionTemplate.execute(a -> {
+            try {
+                return controllaStatoVersamentoImpl(versamentoInformation);
+            } catch (VersatoreConfigurationException ex) {
+               throw new RuntimeException(ex);
+            }
+        });
+    }
+    
+    protected abstract VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
+    
+    protected abstract VersamentoDocInformation controllaStatoVersamentoImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
 }

@@ -122,9 +122,9 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 .select(QSessioneVersamento.sessioneVersamento)
                 .from(QSessioneVersamento.sessioneVersamento)
                 .where(
-                        QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()).and(
-                        QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING.toString())
-                    )
+                    QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()).and(
+                    QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING.toString())).and(
+                    QSessioneVersamento.sessioneVersamento.azione.eq(getWorkerData().getAzioneVersamento().toString()))
                 )
                 .fetchOne();
             }
@@ -401,6 +401,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         SessioneVersamento sessioneVersamento = new SessioneVersamento();
         sessioneVersamento.setStato(StatoSessioneVersamento.RUNNING);
         sessioneVersamento.setTipologia(tipologiaVersamento);
+        sessioneVersamento.setAzione(getWorkerData().getAzioneVersamento());
         sessioneVersamento.setIdAzienda(azienda);
         Range<ZonedDateTime> timeInterval = Range.openInfinite(startSessioneVersamento);
         sessioneVersamento.setTimeInterval(timeInterval);

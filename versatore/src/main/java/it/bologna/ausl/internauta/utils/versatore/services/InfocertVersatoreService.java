@@ -100,7 +100,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @throws VersatoreConfigurationException Eccezioni.
      */
     @Override
-    public VersamentoDocInformation versaAbstract(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
               
         Integer idDoc = versamentoInformation.getIdDoc();
         Doc doc = entityManager.find(Doc.class, idDoc);
