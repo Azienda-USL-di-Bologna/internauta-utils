@@ -14,6 +14,7 @@ public class VersamentoDocInformation {
     private Integer idDoc;
     private Integer idArchivio;
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
+    private Boolean forzabile = false;
     private String rapporto;
     private String metadatiVersati;
     private String codiceErrore;
@@ -48,6 +49,14 @@ public class VersamentoDocInformation {
 
     public void setTipologiaVersamento(SessioneVersamento.TipologiaVersamento tipologiaVersamento) {
         this.tipologiaVersamento = tipologiaVersamento;
+    }
+
+    public Boolean getForzabile() {
+        return forzabile;
+    }
+
+    public void setForzabile(Boolean forzabile) {
+        this.forzabile = forzabile;
     }
 
     public String getRapporto() {

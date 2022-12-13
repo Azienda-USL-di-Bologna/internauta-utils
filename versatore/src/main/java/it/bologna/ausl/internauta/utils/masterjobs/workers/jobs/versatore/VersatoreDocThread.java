@@ -11,6 +11,7 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento.AzioneVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento;
 import it.bologna.ausl.model.entities.versatore.VersamentoAllegato;
@@ -27,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class VersatoreDocThread implements Callable<List<VersamentoDocInformation>> {
     
     private final List<VersamentoDocInformation> vesamentiDoc;
+    private final AzioneVersamento azioneVersamento;
     private final VersatoreDocs versatoreDocsInstance;
     private final TransactionTemplate transactionTemplate;
     private final EntityManager entityManager;
@@ -37,14 +39,16 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
      * Costruisce il thread che effettua la chiamata del versamento
      * @param vesamentiDoc contiene una lista di versamenti che il thread effettuerà.
      *  Sono tutti i versamenti per lo stesso doc
+     * @param azioneVersamento indica se il thread farà il versamento o il controllo del versamento
      * @param sessioneVersamento la sessione alla quale attaccare il versamento
      * @param personaForzatura la persona che effettua la forzatura, se non è una forzatura passare null
      * @param versatoreDocsInstance l'istanza del versatore dell'azienda
      * @param transactionTemplate
      * @param entityManager 
      */
-    public VersatoreDocThread(List<VersamentoDocInformation> vesamentiDoc, SessioneVersamento sessioneVersamento, Persona personaForzatura, VersatoreDocs versatoreDocsInstance, TransactionTemplate transactionTemplate, EntityManager entityManager) {
+    public VersatoreDocThread(List<VersamentoDocInformation> vesamentiDoc, AzioneVersamento azioneVersamento, SessioneVersamento sessioneVersamento, Persona personaForzatura, VersatoreDocs versatoreDocsInstance, TransactionTemplate transactionTemplate, EntityManager entityManager) {
         this.vesamentiDoc = vesamentiDoc;
+        this.azioneVersamento = azioneVersamento;
         this.sessioneVersamento = sessioneVersamento;
         this.versatoreDocsInstance = versatoreDocsInstance;
         this.transactionTemplate = transactionTemplate;
@@ -63,7 +67,11 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
         if (vesamentiDoc != null && !vesamentiDoc.isEmpty()) {
             for (VersamentoDocInformation versamentoDocInformation : vesamentiDoc) {
                 try {
-                    versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
+                    if (azioneVersamento == AzioneVersamento.VERSAMENTO) {
+                        versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
+                    } else {
+                        versamentoDocInformation = versatoreDocsInstance.controllaStatoVersamento(versamentoDocInformation);
+                    }
                 } catch (Throwable ex) {
                     versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
                 }
@@ -98,28 +106,58 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             Versamento versamento = buildVersamento(versamentoDocInformation, doc, personaForzatura, archivio, now);
             entityManager.persist(versamento);
             
-            // per ogni allegato salva il versamento_allegato e aggiorna lo stato ultimo versamento sull'allegato
-            // inoltre svuoto lo stato prossimo versamento (stato_versamento)
+            /* 
+            se lo stato del versamento è errore ritentabile, allora lo stato del versamento lo setto in modo che al prossimo giro
+            venga ricontrollato. Per farlo lo setto a VERSARE o IN_CARICO a seconda dell'azione versamento
+            */
+            if (versamentoDocInformation.getStatoVersamento() == StatoVersamento.ERRORE_RITENTABILE) {
+                if (azioneVersamento == AzioneVersamento.VERSAMENTO) {
+                    versamentoDocInformation.setStatoVersamento(StatoVersamento.VERSARE);
+                } else {
+                    versamentoDocInformation.setStatoVersamento(StatoVersamento.IN_CARICO);
+                }
+            }
             Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
+            /* 
+            per ogni allegato salva il versamento_allegato e aggiorna lo stato ultimo versamento sull'allegato
+            inoltre svuoto lo stato prossimo versamento (stato_versamento)
+            */
+            boolean forzabile = versamentoDocInformation.getForzabile();
             if (versamentoDocInformation.getVersamentiAllegatiInformations() != null) {
                 for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVersamentiAllegatiInformations()) {
+                    /* 
+                    anche per gli allegati, se lo stato del versamento è errore ritentabile, allora lo stato del versamento lo setto 
+                    in modo che al prossimo giro venga ricontrollato. Per farlo lo setto a VERSARE o IN_CARICO a seconda dell'azione versamento
+                    */
+                    if (versamentoAllegatoInformation.getStatoVersamento() == StatoVersamento.ERRORE_RITENTABILE) {
+                        if (azioneVersamento == AzioneVersamento.VERSAMENTO) {
+                            versamentoAllegatoInformation.setStatoVersamento(StatoVersamento.VERSARE);
+                        } else {
+                            versamentoAllegatoInformation.setStatoVersamento(StatoVersamento.IN_CARICO);
+                        }
+                    }
                     Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
                     Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(versamentoAllegatoInformation.getTipoDettaglioAllegato());
                     dettaglioAllegato.setStatoVersamento(null);
                     dettaglioAllegato.setStatoUltimoVersamento(versamentoAllegatoInformation.getStatoVersamento());
+                    dettaglioAllegato.setVersamentoForzabile(versamentoAllegatoInformation.getForzabile());
                     
                     /* per ogni allegato calcola lo stato versamento del doc.
                      * Lo stato cambia a seconda dello stato dell'allegato
                     */
                     statoVersamentoDoc = getStatoVersamentoDocFromStatoVersamentoAllegato(statoVersamentoDoc, versamentoAllegatoInformation.getStatoVersamento());
                     VersamentoAllegato versamentoAllegato = buildVersamentoAllegato(versamentoAllegatoInformation, versamento, allegato, now);
+                    forzabile = forzabile || versamentoAllegatoInformation.getForzabile();
                     entityManager.persist(allegato);
                     entityManager.persist(versamentoAllegato);
                 }
                 versamentoDocInformation.setStatoVersamento(statoVersamentoDoc);
+                versamentoDocInformation.setForzabile(forzabile);
             }
             // alla fine scrive lo stato del doc (calcolato in base allo stato degli allegati) sul versamento
             versamento.setStato(statoVersamentoDoc);
+            
+            versamento.setForzabile(forzabile);
             
             // se il versamento è andato a buon fine, allora il versamento viene settato da ignorare
             if (statoVersamentoDoc == Versamento.StatoVersamento.VERSATO || 
@@ -138,6 +176,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 .update(QDocDetail.docDetail)
                 .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
                 .set(QDocDetail.docDetail.dataUltimoVersamento, now)
+                .set(QDocDetail.docDetail.versamentoForzabile, forzabile)
                 .where(QDocDetail.docDetail.id.eq(idDoc))
                 .execute();
             
@@ -166,6 +205,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
         versamentoAllegato.setDescrizioneErrore(versamentoAllegatoInformation.getDescrizioneErrore());
         versamentoAllegato.setDettaglioAllegato(versamentoAllegatoInformation.getTipoDettaglioAllegato());
         versamentoAllegato.setStato(versamentoAllegatoInformation.getStatoVersamento());
+        versamentoAllegato.setForzabile(versamentoAllegatoInformation.getForzabile());
         versamentoAllegato.setIdVersamento(versamento);
         versamentoAllegato.setIdAllegato(allegato);
         versamentoAllegato.setDataInserimento(now);
@@ -215,14 +255,41 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
     private StatoVersamento getStatoVersamentoDocFromStatoVersamentoAllegato(StatoVersamento statoVersamentoDocAttuale, StatoVersamento statoVersamentoAllegato) {
         if (statoVersamentoDocAttuale == null) {
             statoVersamentoDocAttuale = statoVersamentoAllegato;
-        } else if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE_RITENTABILE) {
-            statoVersamentoDocAttuale = Versamento.StatoVersamento.ERRORE_RITENTABILE;
-        } else if (statoVersamentoDocAttuale == Versamento.StatoVersamento.IN_CARICO) {
-            if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE) {
-                statoVersamentoDocAttuale = Versamento.StatoVersamento.IN_CARICO_CON_ERRORI;
+        } else {
+            switch (statoVersamentoAllegato) {
+                case ERRORE:
+                    switch (statoVersamentoDocAttuale) {
+                        case IN_CARICO:
+                            statoVersamentoDocAttuale = StatoVersamento.IN_CARICO_CON_ERRORI;
+                            break;
+                        case VERSATO:
+                            statoVersamentoDocAttuale = StatoVersamento.ERRORE;
+                            break;
+                    }
+                    break;
+                case VERSARE:
+                    switch (statoVersamentoDocAttuale) {
+                        case ERRORE:
+                        case VERSATO:
+                            statoVersamentoDocAttuale = StatoVersamento.ERRORE_RITENTABILE;
+                            break;
+                    }
+                    break;
+                case IN_CARICO:
+                    switch (statoVersamentoDocAttuale) {
+                        case ERRORE:
+                            statoVersamentoDocAttuale = StatoVersamento.IN_CARICO_CON_ERRORI;
+                            break;
+                        case ERRORE_RITENTABILE:
+                            statoVersamentoDocAttuale = StatoVersamento.IN_CARICO_CON_ERRORI_RITENTABILI;
+                            break;
+                        case VERSARE:
+                        case VERSATO:
+                            statoVersamentoDocAttuale = StatoVersamento.IN_CARICO;
+                            break;
+                    }
+                    break;
             }
-        } else if (statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE || statoVersamentoAllegato == Versamento.StatoVersamento.ERRORE_FORZABILE) {
-            statoVersamentoDocAttuale = statoVersamentoAllegato;
         }
         
         return statoVersamentoDocAttuale;

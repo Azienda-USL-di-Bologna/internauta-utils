@@ -14,6 +14,8 @@ public class VersamentoAllegatoInformation {
     
     private Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato;
     
+    private Boolean forzabile = false;
+    
     private String metadatiVersati;
     
     private String rapporto;
@@ -43,6 +45,14 @@ public class VersamentoAllegatoInformation {
 
     public void setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato) {
         this.tipoDettaglioAllegato = tipoDettaglioAllegato;
+    }
+
+    public Boolean getForzabile() {
+        return forzabile;
+    }
+
+    public void setForzabile(Boolean forzabile) {
+        this.forzabile = forzabile;
     }
     
     public String getMetadatiVersati() {

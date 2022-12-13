@@ -5,6 +5,8 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorkerData;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento.AzioneVersamento;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +29,12 @@ public class VersatoreServiceCore {
     
     /**
      * accoda il job di versamento per ogni idAzienda chiave della mappa, con i parametri indicati nel valore della mappa
+     * @param azioneVersamento indica se è un versamento o un controllo versamento
      * @param aziendeAttiveConParametri mappa che ha come chiave l'idAzienda e come valore i parametri del versatore 
      * (letti dalla tabella configurazione.parametri_azienda)
      * @param app applicazione a cui è legato il job da inserire
      */
-    public void queueVersatoreJobs(Map<Integer, Map<String, Object>> aziendeAttiveConParametri, String app) {
+    public void queueVersatoreJobs(AzioneVersamento azioneVersamento, Map<Integer, Map<String, Object>> aziendeAttiveConParametri, String app) {
         // per tutte le aziende in cui il versatore è attivo, ne legge i paramentri accoda mestiere di versamento
         for (Integer idAzienda : aziendeAttiveConParametri.keySet()) {            
             Map<String, Object> versatoreConfigAziendaValue = aziendeAttiveConParametri.get(idAzienda);
@@ -43,12 +46,13 @@ public class VersatoreServiceCore {
             Integer threadPoolSize = (Integer) versatoreConfigAziendaValue.get("threadPoolSize");
             
             // richiama il metodo sul core che si occupa dell'accodamento del job
-            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app);
+            queueAziendaJob(azioneVersamento, idAzienda, hostId, false, null, threadPoolSize, app);
         }
     }
     
     /**
      * Accoda il job di versamento
+     * @param azioneVersamento indica se è un versamento o un controllo versamento
      * @param idAzienda azienda per la quale il job lavorerà
      * @param hostId hostId del servizio di versamento da usare
      * @param forzatura passare "true" se si tratta di una forzatura, "false" se accodato da un servizio giornaliero
@@ -56,8 +60,8 @@ public class VersatoreServiceCore {
      * @param poolsize numero di threads contemporanei massimi del pool di versamento
      * @param app applicazione a cui legare il job
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app) {
-        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura);
+    private void queueAziendaJob(AzioneVersamento azioneVersamento, Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app) {
+        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(azioneVersamento, idAzienda, hostId, forzatura, poolsize, idPersonaForzatura);
         VersatoreJobWorker jobWorker = null;
         try { // istanzia il woker
             jobWorker = masterjobsObjectsFactory.getJobWorker(VersatoreJobWorker.class, versatoreJobWorkerData, false);
