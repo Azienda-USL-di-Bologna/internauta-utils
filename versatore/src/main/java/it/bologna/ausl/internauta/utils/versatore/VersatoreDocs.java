@@ -1,10 +1,9 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
-import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatus;
 import javax.persistence.EntityManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -30,31 +29,29 @@ public abstract class VersatoreDocs {
         this.configuration = configuration;
     }
     
-    public abstract DocumentStatus getDocumentStatus(String hashDocumento);
-    
-    public VersamentoDocInformation versa(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation versa(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return transactionTemplate.execute(a -> {
             try {
                 return versaImpl(versamentoInformation);
-            } catch (VersatoreConfigurationException ex) {
+            } catch (VersatoreProcessingException ex) {
                throw new RuntimeException(ex);
             }
         });
     }
     
-    public VersamentoDocInformation controllaStatoVersamento(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation controllaStatoVersamento(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         return transactionTemplate.execute(a -> {
             try {
                 return controllaStatoVersamentoImpl(versamentoInformation);
-            } catch (VersatoreConfigurationException ex) {
+            } catch (VersatoreProcessingException ex) {
                throw new RuntimeException(ex);
             }
         });
     }
     
-    protected abstract VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
+    protected abstract VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException;
     
-    protected abstract VersamentoDocInformation controllaStatoVersamentoImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException;
+    protected abstract VersamentoDocInformation controllaStatoVersamentoImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException;
 }

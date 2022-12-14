@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import java.util.HashMap;
@@ -54,7 +54,7 @@ public class VersatoreFactory {
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
     
     @PostConstruct
-    public void initVersatoreFactory() throws VersatoreConfigurationException {
+    public void initVersatoreFactory() throws VersatoreProcessingException {
         configurations = configurationRepository.findAll();
         VersatoreDocs versatoreDocsInstance;
         for (it.bologna.ausl.model.entities.versatore.VersatoreConfiguration configuration : configurations) {
@@ -74,7 +74,7 @@ public class VersatoreFactory {
                     logger.info(configuration.getParams().toString());
                     break;
                 default:
-                    throw new VersatoreConfigurationException("Provider: " + provider + " not found");
+                    throw new VersatoreProcessingException("Provider: " + provider + " not found");
             }
             hostIdVersatoreInstansceMap.put(configuration.getHostId(), versatoreDocsInstance);
         }

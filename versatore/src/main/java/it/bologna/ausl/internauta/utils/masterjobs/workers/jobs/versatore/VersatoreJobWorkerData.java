@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
-import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento.AzioneVersamento;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

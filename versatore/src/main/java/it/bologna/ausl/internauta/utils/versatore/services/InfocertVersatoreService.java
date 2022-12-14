@@ -9,12 +9,11 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreServiceException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
@@ -42,7 +41,6 @@ import java.net.URL;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.activation.DataHandler;
@@ -75,7 +73,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
 
     @Override
-    public DocumentStatus getDocumentStatus(String hashDocumento) {
+    public VersamentoDocInformation controllaStatoVersamentoImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         DocumentStatus status = null;
         try {
             GenericDocumentService iss = new GenericDocumentService(new URL(infocertVersatoreServiceEndPointUri));
@@ -84,12 +82,18 @@ public class InfocertVersatoreService extends VersatoreDocs {
             bp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
                     infocertVersatoreServiceEndPointUri);
                 
-            status = is.getDocumentStatus(hashDocumento);
+            status = is.getDocumentStatus(versamentoInformation.getRapporto());
+            ObjectMapper objectMapper = new ObjectMapper(); 
+            versamentoInformation.setRapporto(objectMapper.writeValueAsString(status));
             
         } catch (MalformedURLException ex) {
-            log.error("URL servizio Infocert non corretto");
+            String message = "URL servizio Infocert non corretto";
+            log.error(message, ex);
+            throw new VersatoreProcessingException(message, ex);
+        } catch (JsonProcessingException ex) {
+            log.error("Errore parsing status", ex);
         }
-        return status;
+        return versamentoInformation;
     }    
 
     /**
@@ -97,10 +101,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * Costruisce l'oggetto contentente i metadati del doc che verranno inviati ad Infocert.
      * @param versamentoInformation L'oggetto con l'idDoc e l'idArchivio da versare.
      * @return Lo stesso oggetto VersamentoInformation con i risultati dei versamenti.
-     * @throws VersatoreConfigurationException Eccezioni.
+     * @throws VersatoreProcessingException Eccezioni.
      */
     @Override
-    public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreConfigurationException {
+    public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
               
         Integer idDoc = versamentoInformation.getIdDoc();
         Doc doc = entityManager.find(Doc.class, idDoc);
@@ -113,9 +117,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @param doc Il doc da versare.
      * @param versamentoDocInformation L'oggetto con i parametri.
      * @return I parametri e i risultati dei versamenti.
-     * @throws VersatoreConfigurationException Eventuali errori.
+     * @throws VersatoreProcessingException Eventuali errori.
      */
-    private VersamentoDocInformation versaDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreConfigurationException {
+    private VersamentoDocInformation versaDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         String docId = doc.getId().toString();
         log.info("Inizio versamento del doc: {}", docId);
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());

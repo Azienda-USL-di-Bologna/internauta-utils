@@ -3,9 +3,8 @@ package it.bologna.ausl.internauta.utils.versatore.controllers;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatus;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -35,10 +34,11 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     }
     
     @RequestMapping(value = "/getDocumentStatus", method = RequestMethod.GET)
-    public DocumentStatus getDocumentStatus(@RequestParam(required = true) String hash, @RequestParam(required = true) String hostId) {
-
+    public VersamentoDocInformation getDocumentStatus(@RequestParam(required = true) String hash, @RequestParam(required = true) String hostId) throws VersatoreProcessingException {
+        VersamentoDocInformation docInformation = new VersamentoDocInformation();
+        docInformation.setRapporto(hash);
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
-        DocumentStatus res = versatoreDocsInstance.getDocumentStatus(hash);
+        VersamentoDocInformation res = versatoreDocsInstance.controllaStatoVersamento(docInformation);
         return res;
     }
     
@@ -47,7 +47,7 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     public VersamentoDocInformation versa(
                 @RequestBody VersamentoDocInformation versamentoInformation, 
                 @RequestParam(required = true) String hostId,
-                HttpServletRequest request) throws VersatoreConfigurationException {
+                HttpServletRequest request) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
         VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoInformation);
         
