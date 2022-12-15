@@ -14,13 +14,14 @@ public class VersamentoDocInformation {
     private Integer idDoc;
     private Integer idArchivio;
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
+    private boolean primoVersamento = true;
+    private Integer versamentoPrecedente;
     private Boolean forzabile = false;
     private String rapporto;
     private String metadatiVersati;
     private String codiceErrore;
     private String descrizioneErrore;
     private ZonedDateTime dataVersamento;
-    private Integer versamentoPrecedente;
     private List<VersamentoAllegatoInformation> versamentiAllegatiInformations;
     private Versamento.StatoVersamento statoVersamento;
 
@@ -121,5 +122,13 @@ public class VersamentoDocInformation {
 
     public void setStatoVersamento(Versamento.StatoVersamento statoVersamento) {
         this.statoVersamento = statoVersamento;
+    }
+
+    public boolean isPrimoVersamento() {
+        return primoVersamento;
+    }
+
+    public void setPrimoVersamento(boolean primoVersamento) {
+        this.primoVersamento = primoVersamento;
     }
 }
