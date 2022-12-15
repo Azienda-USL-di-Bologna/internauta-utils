@@ -45,9 +45,9 @@ import org.springframework.transaction.TransactionDefinition;
  *
  * @author gdm
  * 
- * Job che effettua tutti i versamenti dell'azienda
+ * Job che effettua tutti i versamenti o i controlli dello stato dei versamenti dell'azienda
  * I parametri per effettuare il versamento sono definiti nella classe VersatoreJobWorkerData
- * reperisce i documenti da versare da tutti gli archivi da varsare, i docs stessi da versare e i versamenti in errore ritentabile
+ * reperisce i docs da versare/controllare dagli archivi, i docs stessi e i versamenti in errore ritentabile
  */
 @MasterjobsWorker
 public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
@@ -61,7 +61,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     /* mappa che ha come chiave l'idArchivio e
      * come valore una mappa che contiene tutti i docs con il loro rispettivo VersamentoDocInformation.
      * Serve per poter calcolare lo statoUltimoVersamento del fascicolo, 
-     * dopo che sono stati effettuati tutti i versamenti dei suoi docs
+     * dopo che sono stati effettuati tutti i versamenti/controlli dei suoi docs
     */
     private Map<Integer, Map<Integer, VersamentoDocInformation>> archiviDocs;
     
@@ -80,24 +80,28 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         
         TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
         
-        Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare = new HashMap<>();
-        versamentiDaEffettuare = addDocsDaProcessareDaArchivi(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
-        versamentiDaEffettuare = addDocsDaProcessareDaDocs(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
-        versamentiDaEffettuare = addDocsDaRitentare(versamentiDaEffettuare, tipologiaVersamento, queryFactory);
+        // calcolo tutti versamenti da effettaure o controllare per vari docs e li aggiungo alla mappa
+        Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap<>();
+        // aggiungo i docs dei fascicoli da versare o controllare, ioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
+        versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        // aggiungo i docs da versare o controllare, non dipendenti dal fascicolo
+        versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        // aggiungo i docs dei fascicoli da versare o controllare i cui versamenti sono da ritentare
+        versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
         
         SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
-        if (versamentiDaEffettuare != null && !versamentiDaEffettuare.isEmpty()) {
+        if (versamentiDaProcessare != null && !versamentiDaProcessare.isEmpty()) {
         
             // se c'è una sessione in corso, mi devo attaccare a quella, altrimenti ne apro una nuova
             SessioneVersamento sessioneVersamento;
             if (sessioneInCorso != null) {
                 sessioneVersamento = sessioneInCorso;
-                versamentiDaEffettuare = removeDocGiaVersati(versamentiDaEffettuare, sessioneInCorso.getId(), queryFactory);
+                versamentiDaProcessare = removeDocGiaVersati(versamentiDaProcessare, sessioneInCorso.getId(), queryFactory);
             } else {
                 sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
             }
             
-            List<VersatoreDocThread> versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaEffettuare, sessioneVersamento);
+            List<VersatoreDocThread> versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaProcessare, sessioneVersamento);
             StatoSessioneVersamento statoSessioneVersamento = executeAllVersatoreDocThreads(versatoreDocThreads);
 
             updateStatoVersamentoFascicoli(queryFactory);
