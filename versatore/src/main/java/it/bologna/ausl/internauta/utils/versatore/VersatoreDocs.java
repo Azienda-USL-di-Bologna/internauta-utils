@@ -40,18 +40,6 @@ public abstract class VersatoreDocs {
         });
     }
     
-    public VersamentoDocInformation controllaStatoVersamento(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        return transactionTemplate.execute(a -> {
-            try {
-                return controllaStatoVersamentoImpl(versamentoInformation);
-            } catch (VersatoreProcessingException ex) {
-               throw new RuntimeException(ex);
-            }
-        });
-    }
-    
     protected abstract VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException;
     
-    protected abstract VersamentoDocInformation controllaStatoVersamentoImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException;
 }

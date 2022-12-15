@@ -526,7 +526,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 for (VersamentoDocInformation v : versamenti) {
                     if ((idArchivio == null && v.getIdArchivio() == null) || 
                         (idArchivio != null && v.getIdArchivio() != null && v.getIdArchivio().equals(idArchivio))) {
-                        v.setVersamentoPrecedente(idVersamento);
+                        v.setIdVersamentoPrecedente(idVersamento);
                         versamentoDaInserire = false;
                         break;
                     }
@@ -536,7 +536,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             // se il versamento è da inserire lo inserisco nella lista
             if (versamentoDaInserire) {
                 VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(idDoc, idArchivio, tipologiaVersamento);
-                versamentoDocInformation.setVersamentoPrecedente(idVersamento);
+                versamentoDocInformation.setIdVersamentoPrecedente(idVersamento);
                 versamenti.add(versamentoDocInformation);
             }
         }

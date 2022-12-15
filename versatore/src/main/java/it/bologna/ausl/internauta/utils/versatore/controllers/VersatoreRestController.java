@@ -33,12 +33,17 @@ public class VersatoreRestController implements ControllerHandledExceptions {
         return "It works!\n" + variable;
     }
     
-    @RequestMapping(value = "/getDocumentStatus", method = RequestMethod.GET)
-    public VersamentoDocInformation getDocumentStatus(@RequestParam(required = true) String hash, @RequestParam(required = true) String hostId) throws VersatoreProcessingException {
-        VersamentoDocInformation docInformation = new VersamentoDocInformation();
-        docInformation.setRapporto(hash);
+    @RequestMapping(value = "/controllaStatoVersamento", method = RequestMethod.GET)
+    public VersamentoDocInformation controllaStatoVersamento(
+            @RequestParam(required = true) Integer idDoc,
+            @RequestParam(required = true) String rapporto,
+            @RequestParam(required = true) String hostId) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
-        VersamentoDocInformation res = versatoreDocsInstance.controllaStatoVersamento(docInformation);
+        VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
+        versamentoDocInformation.setIdDoc(idDoc);
+        versamentoDocInformation.setRapporto(rapporto);
+        
+        VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoDocInformation);
         return res;
     }
     

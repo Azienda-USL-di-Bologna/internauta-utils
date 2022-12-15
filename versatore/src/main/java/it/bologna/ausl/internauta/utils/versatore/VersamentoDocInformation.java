@@ -15,7 +15,7 @@ public class VersamentoDocInformation {
     private Integer idArchivio;
     private SessioneVersamento.TipologiaVersamento tipologiaVersamento;
     private boolean primoVersamento = true;
-    private Integer versamentoPrecedente;
+    private Integer idVersamentoPrecedente;
     private Boolean forzabile = false;
     private String rapporto;
     private String metadatiVersati;
@@ -96,12 +96,12 @@ public class VersamentoDocInformation {
         return dataVersamento;
     }
 
-    public Integer getVersamentoPrecedente() {
-        return versamentoPrecedente;
+    public Integer getIdVersamentoPrecedente() {
+        return idVersamentoPrecedente;
     }
 
-    public void setVersamentoPrecedente(Integer versamentoPrecedente) {
-        this.versamentoPrecedente = versamentoPrecedente;
+    public void setIdVersamentoPrecedente(Integer idVersamentoPrecedente) {
+        this.idVersamentoPrecedente = idVersamentoPrecedente;
     }
 
     public void setDataVersamento(ZonedDateTime dataVersamento) {

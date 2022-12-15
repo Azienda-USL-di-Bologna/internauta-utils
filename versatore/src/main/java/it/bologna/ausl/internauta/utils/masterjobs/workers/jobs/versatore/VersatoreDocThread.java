@@ -171,11 +171,11 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             se questo versamento è attaccato a un versamento precedente, viene settato da ignorare il versamento precedente,
             perché dal prossimo giro verrà usato questo versamento
             */
-            if (versamentoDocInformation.getVersamentoPrecedente() != null) {
+            if (versamentoDocInformation.getIdVersamentoPrecedente() != null) {
             queryFactory
                 .update(QVersamento.versamento)
                 .set(QVersamento.versamento.ignora, true)
-                .where(QVersamento.versamento.id.eq(versamentoDocInformation.getVersamentoPrecedente()))
+                .where(QVersamento.versamento.id.eq(versamentoDocInformation.getIdVersamentoPrecedente()))
                 .execute();
             }
         });
@@ -217,8 +217,8 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
      */
     private Versamento buildVersamento(VersamentoDocInformation versamentoDocInformation, Doc doc, Persona personaForzatura, Archivio archivio, ZonedDateTime now) {
         Versamento versamento = new Versamento();
-        if (versamentoDocInformation.getVersamentoPrecedente() != null) {
-            Versamento versamentoPrecedente = entityManager.find(Versamento.class, versamentoDocInformation.getVersamentoPrecedente());
+        if (versamentoDocInformation.getIdVersamentoPrecedente() != null) {
+            Versamento versamentoPrecedente = entityManager.find(Versamento.class, versamentoDocInformation.getIdVersamentoPrecedente());
             versamento.setIdVersamentoRitentato(versamentoPrecedente);
         }
         versamento.setCodiceErrore(versamentoDocInformation.getCodiceErrore());
