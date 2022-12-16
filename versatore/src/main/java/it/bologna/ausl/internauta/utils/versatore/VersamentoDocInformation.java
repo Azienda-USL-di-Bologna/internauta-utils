@@ -6,7 +6,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- *
+ * Classe che raccoglie i dati di un versamento. E' usata sia per indicare cosa versare al plugin di versamento,
+ * sia il risultato una volta che il plugin ha versato.
+ * 
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
 public class VersamentoDocInformation {
@@ -52,10 +54,20 @@ public class VersamentoDocInformation {
         this.tipologiaVersamento = tipologiaVersamento;
     }
 
+    /**
+     * indica il versamento è forzabile.
+     * Tipicamente è settato dal plugin, dopo un errore.
+     * @return se il versamento è forzabile
+     */
     public Boolean getForzabile() {
         return forzabile;
     }
 
+    /**
+     * setta se il versamento è forzabile.
+     * Tipicamente viene settato dal plugin, dopo un errore.
+     * @param forzabile 
+     */
     public void setForzabile(Boolean forzabile) {
         this.forzabile = forzabile;
     }
@@ -96,10 +108,22 @@ public class VersamentoDocInformation {
         return dataVersamento;
     }
 
+    /**
+     * indica a quale altro versamento già effettuato, questo versamento è collegato.
+     * E' popolato solo se isPrimoVersamento è false.
+     * Tipicamente il versamento precedente rappresenta un versamento provato, ma andato in errore o non ancora terminato.
+     * @return  l'id del versamento al quale quello attuale è collegato 
+     */
     public Integer getIdVersamentoPrecedente() {
         return idVersamentoPrecedente;
     }
 
+    /**
+     * setta il versamento già effettuato al quale collegare questo versamento.
+     * Da settare solo se isPrimoVersamento è settato a false
+     * Tipicamente il versamento precedente rappresenta un versamento provato, ma andato in errore o non ancora terminato.
+     * @param idVersamentoPrecedente 
+     */
     public void setIdVersamentoPrecedente(Integer idVersamentoPrecedente) {
         this.idVersamentoPrecedente = idVersamentoPrecedente;
     }
@@ -124,10 +148,20 @@ public class VersamentoDocInformation {
         this.statoVersamento = statoVersamento;
     }
 
+    /**
+     * indica se questo è il primo vesamento il doc con quell'archivio, oppure è un versamento collegato ad un altro.
+     * Se è true, si può leggere il versamento correlato traminte la getIdVersamentoPrecedente().
+     * @return true se è il primo versamento per il doc/archivio, false altrimenti
+     */
     public boolean isPrimoVersamento() {
         return primoVersamento;
     }
 
+    /**
+     * setta se questo versamento è il primo vesamento il doc con quell'archivio. Di default è true.
+     * Se settato a false, va settato anche il versamento precedente tramite la setIdVersamentoPrecedente().
+     * @param primoVersamento true se questo è il primo versamento (default), false altrimenti.
+     */
     public void setPrimoVersamento(boolean primoVersamento) {
         this.primoVersamento = primoVersamento;
     }

@@ -616,8 +616,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaProcessareDaArchivi(Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) {        
         List<Integer> archiviIdDaProcessare;
         /* 
-        se il job deve effettuare un versamento, estrae tutti i fascicoli da versare, 
-        cioè quelli che hanno statoVersamento VERSARE o AGGIORNARE, dell'azienda indicata nel job
+        estrae tutti i fascicoli da versare, coè quelli che hanno statoVersamento VERSARE o AGGIORNARE, 
+        dell'azienda indicata nel job
         */
 //        if (getWorkerData().getAzioneVersamento() == SessioneVersamento.AzioneVersamento.VERSAMENTO) {
             QArchivio qArchivio = QArchivio.archivio;
@@ -659,10 +659,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
 //                .fetch();
 //        }
         /*
-        Estrae i doc all'interno dei fascicoli trovati prima e:
-         Nel caso di versamento, ne inserisce il versamento di tutti nella mappa, indipendentemente dallo stato del doc
-         Nel caso di controllo, ne inserisce solo i doc da controllare, 
-         cioè quelli che hanno come statoUltimoVersamento IN_CARICO, IN_CARICO_CON_ERRORI, o IN_CARICO_CON_ERRORI_RITENTABILI
+        Estrae i doc all'interno dei fascicoli trovati prima e ne inserisce il versamento di tutti nella mappa,
+        indipendentemente dallo stato del doc
         */
         for (Integer idArchivioDaVersare : archiviIdDaProcessare) {
             List<Integer> docsIdDaProcessare;
