@@ -1,50 +1,39 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
-import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
-import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Configuration;
 import it.bologna.ausl.internauta.utils.versatore.repositories.VersatoreConfigurationRepository;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.stereotype.Component;
 
 /**
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
-@Configuration
+@Component
 public class VersatoreFactory {
     
      // Elenco dei vari provider supportati
     public static enum VersatoreProviders {
         PARER, INFOCERT
     };
-    
+
     @Autowired
-    private VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-    
-    @Autowired
-    private VersatoreConfigParams versatoreConfigParams;
-    
-    @Autowired
-    private TransactionTemplate transactionTemplate;
+    private BeanFactory beanFactory;
     
     @Autowired
     @Qualifier("VersatoreConfigurationRepository")
     private VersatoreConfigurationRepository configurationRepository;
-     
-    @PersistenceContext
-    private EntityManager entityManager;
+    
+    private boolean initialized = false;
     
     // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
     private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
@@ -53,7 +42,6 @@ public class VersatoreFactory {
     
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
     
-    @PostConstruct
     public void initVersatoreFactory() throws VersatoreProcessingException {
         configurations = configurationRepository.findAll();
         VersatoreDocs versatoreDocsInstance;
@@ -65,24 +53,23 @@ public class VersatoreFactory {
                     versatoreDocsInstance = null;
                     break;
                 case INFOCERT:
-                    versatoreDocsInstance = new InfocertVersatoreService(
-                            entityManager,
-                            transactionTemplate,
-                            versatoreRepositoryConfiguration, 
-                            versatoreConfigParams, 
-                            configuration);
-                    logger.info(configuration.getParams().toString());
+                    versatoreDocsInstance = beanFactory.getBean(InfocertVersatoreService.class);
+                    versatoreDocsInstance.init(configuration);
                     break;
                 default:
                     throw new VersatoreProcessingException("Provider: " + provider + " not found");
             }
             hostIdVersatoreInstansceMap.put(configuration.getHostId(), versatoreDocsInstance);
         }
+        initialized = true;
     }
     
     
-    public VersatoreDocs getVersatoreDocsInstance(String hostId) {
+    public VersatoreDocs getVersatoreDocsInstance(String hostId) throws VersatoreProcessingException {
         // Tramite l'hostId recupero dalla mappa l'istanza creata in fase di inizializzazione
+        if (!initialized) {
+            initVersatoreFactory();
+        }
         VersatoreDocs versatoreDocsInstance = hostIdVersatoreInstansceMap.get(hostId);
         return versatoreDocsInstance;
     }

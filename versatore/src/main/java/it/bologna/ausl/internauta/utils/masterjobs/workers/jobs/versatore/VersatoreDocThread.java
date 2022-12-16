@@ -4,6 +4,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -18,6 +19,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -33,6 +36,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
     private final EntityManager entityManager;
     private final SessioneVersamento sessioneVersamento;
     private final Persona personaForzatura;
+    private static final Logger log = LoggerFactory.getLogger(VersatoreDocThread.class);
 
     /**
      * Costruisce il thread che effettua la chiamata del versamento
@@ -66,6 +70,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 try {
                     versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
                 } catch (Throwable ex) {
+                    log.error("errore nel versamento", ex);
                     versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
                 }
                 JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);

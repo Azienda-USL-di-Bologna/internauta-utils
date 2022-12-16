@@ -3,8 +3,11 @@ package it.bologna.ausl.internauta.utils.versatore;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -14,20 +17,27 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 public abstract class VersatoreDocs {
     
-    protected final EntityManager entityManager;
-    protected final TransactionTemplate transactionTemplate;
-    protected final VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-    protected final VersatoreConfigParams configParams;
-    protected final VersatoreConfiguration configuration;
+    @PersistenceContext
+    protected EntityManager entityManager;
+    
+    @Autowired
+    protected VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
+        
+    @Autowired
+    protected TransactionTemplate transactionTemplate;
+    
+    @Autowired
+    protected VersatoreConfigParams configParams;
 
-    protected VersatoreDocs(EntityManager entityManager, TransactionTemplate transactionTemplate, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, 
-            VersatoreConfigParams configParams, VersatoreConfiguration configuration) {
-        this.entityManager = entityManager;
-        this.transactionTemplate = transactionTemplate;
-        this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
-        this.configParams = configParams;
-        this.configuration = configuration;
+    protected VersatoreConfiguration versatoreConfiguration;
+    
+    protected MinIOWrapper minIOWrapper;
+
+    public void init(VersatoreConfiguration versatoreConfiguration) {
+        minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
+        this.versatoreConfiguration = versatoreConfiguration;
     }
+
     
     public VersamentoDocInformation versa(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);

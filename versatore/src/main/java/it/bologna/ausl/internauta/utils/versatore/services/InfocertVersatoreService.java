@@ -8,11 +8,8 @@ import com.sun.xml.ws.fault.ServerSOAPFaultException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
-import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
-import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -48,43 +45,40 @@ import java.net.URL;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
-import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /**
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
+@Component
 public class InfocertVersatoreService extends VersatoreDocs {
     
     private enum AzioneVersamento {
         VERSA, CONTROLLO
-    };
+    };    
 
     private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
     private static final String INFOCERT_VERSATORE_SERVICE = "InfocertVersatoreService";
 
-    private final String infocertVersatoreServiceEndPointUri;
-    private final MinIOWrapper minIOWrapper;
-
-    public InfocertVersatoreService(EntityManager entityManager, TransactionTemplate transactionTemplate, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, VersatoreConfigParams versatoreConfigParams, VersatoreConfiguration configuration) {
-        super(entityManager, transactionTemplate, versatoreRepositoryConfiguration, versatoreConfigParams, configuration);
-
-        Map<String, Object> versatoreConfiguration = configuration.getParams();
-        Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) versatoreConfiguration.get(INFOCERT_VERSATORE_SERVICE);
+    private String infocertVersatoreServiceEndPointUri;
+ 
+    public void init(VersatoreConfiguration versatoreConfiguration) {
+        super.init(versatoreConfiguration);
+        Map<String, Object> versatoreConfigurationMap = this.versatoreConfiguration.getParams();
+        Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) versatoreConfigurationMap.get(INFOCERT_VERSATORE_SERVICE);
         infocertVersatoreServiceEndPointUri = infocertServiceConfiguration.get("InfocertVersatoreServiceEndPointUri").toString();
-        minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         log.info("URI: {}", infocertVersatoreServiceEndPointUri);
     }
-
     
     public VersamentoAllegatoInformation controllaStatoVersamento(
             VersamentoAllegato versamentoAllegato,
@@ -169,7 +163,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
             }
             boolean errorOccured = versamentoDocInformation.getVersamentiAllegatiInformations().stream().filter(all -> 
-                    List.of(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.ERRORE_RITENTABILE).contains(all.getStatoVersamento()))
+                    Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.ERRORE_RITENTABILE).contains(all.getStatoVersamento()))
                     .findFirst().isPresent();
             if (errorOccured) {
                 log.error("Versamenti di allegati in errore");
@@ -212,10 +206,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
             int i = 1; // Indice per il metadato ALLEGATI_NUMERO
             
             for (Allegato allegato: allegati) {
-                for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
-                    VersamentoAllegatoInformation versaAllegato = 
-                            versaAllegato(allegato, tipoDettaglioAllegato, docAttributes, i++, infocertService);        
-                    versamentiAllegatiInfo.add(versaAllegato);
+                for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {     
+                    VersamentoAllegatoInformation allegatoInformation = 
+                            versaAllegato(allegato, tipoDettaglioAllegato, docAttributes, i++, infocertService);
+                    if (allegatoInformation != null) {
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                    }
                 }
             }
             versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
@@ -275,12 +271,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
         // Metadati degli Agenti (Soggetti)
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO, "produttore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO, "PAI")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdStrutturaRegistrazione().getNome())
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdStrutturaRegistrazione().getNome()) // TODO: Gestire i null
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "responsabile")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaResponsabileProcedimento().getCognome())
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index++, docDetail.getIdPersonaResponsabileProcedimento().getNome()); // Index 3 
-        //Questa parte è da rivedere
+        //TODO: Questa parte è da rivedere per determine e delibere
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U")
@@ -328,8 +324,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
         List<DocumentAttribute> fileAttributes;
         List<DocumentAttribute> docFileAttributes;
         Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
-
-//        if (dettaglioAllegato == null) continue;
+        // TODO: Commentare perché viene fatto
+        if (dettaglioAllegato == null) return null;
 
         fileAttributes = new ArrayList();
         String mimeType = "application/pdf";

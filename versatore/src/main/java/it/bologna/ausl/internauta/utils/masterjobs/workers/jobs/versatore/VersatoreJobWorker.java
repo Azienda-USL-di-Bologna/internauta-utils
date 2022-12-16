@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +106,14 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
             }
             
-            List<VersatoreDocThread> versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaProcessare, sessioneVersamento);
+            List<VersatoreDocThread> versatoreDocThreads;
+            try {
+                versatoreDocThreads = buildVersatoreDocThreadsList(versamentiDaProcessare, sessioneVersamento);
+            } catch (Throwable ex) {
+                final String message = "errore nella creazione dei threads di versamento";
+                log.error(message, ex);
+                throw new MasterjobsWorkerException(message, ex);
+            }
             StatoSessioneVersamento statoSessioneVersamento = executeAllVersatoreDocThreads(versatoreDocThreads);
 
             updateStatoVersamentoFascicoli(queryFactory);
@@ -282,7 +291,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
      * @param sessioneVersamento la sessione a cui attaccare i versamenti
      * @return la lista dei threads costruiti
      */
-    private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) {
+    private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
         
         Persona personaForzatura = getPersonaForzatura();

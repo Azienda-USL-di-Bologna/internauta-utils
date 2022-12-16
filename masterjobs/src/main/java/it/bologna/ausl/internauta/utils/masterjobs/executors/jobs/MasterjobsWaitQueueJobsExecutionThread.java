@@ -53,7 +53,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
             this.workQueue, RedisListCommands.Direction.RIGHT, 
             this.queueReadTimeoutMillis, TimeUnit.MILLISECONDS);
         if (queueDataString != null) {
-            log.info(String.format("readed: %s", queueDataString));
+//            log.info(String.format("readed: %s", queueDataString));
             MasterjobsQueueData queueData;
             try {
                 queueData = masterjobsObjectsFactory.getMasterjobsQueueDataFromString(queueDataString);
