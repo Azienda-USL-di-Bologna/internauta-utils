@@ -124,6 +124,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 statoSessioneVersamento = getStatoSessioneVersamentoFromVersamenti(allResults);
             }
             
+            //se è presente almeno un versamento legato al fascicolo ne aggiorna lo stato ultimo versamento del fascicolo
             updateStatoVersamentoFascicoli(queryFactory);
 
             closeSessioneVersamento(statoSessioneVersamento, sessioneVersamento);
@@ -209,17 +210,26 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             for (Tuple versamentoEffettuato : versamentiEffettuati) {
                 Integer idDocVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idDoc.id);
                 Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
+                StatoVersamento statoVersamentoEffettuato = StatoVersamento.valueOf(versamentoEffettuato.get(QVersamento.versamento.stato));
+                Boolean forzabileVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.forzabile);
                 
-                /* 
+                /*
                 per calcolare lo stato della sessione in corso, leggo tutti gli stati devi versamenti e creo un oggetto
                 VersamentoDocInformation con solo lo stato, in modo da utilizzare la funzione getStatoSessioneVersamentoFromVersamenti
                 per calolare lo stato attuale della sessione
                 */
-                StatoVersamento statoVersamento = StatoVersamento.valueOf(versamentoEffettuato.get(QVersamento.versamento.stato));
                 VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
-                versamentoDocInformation.setStatoVersamento(statoVersamento);
+                versamentoDocInformation.setStatoVersamento(statoVersamentoEffettuato);
+                versamentoDocInformation.setIdDoc(idDocVersamentoEffettuato);
+                versamentoDocInformation.setIdArchivio(idArchivioVersamentoEffettuato);
+                versamentoDocInformation.setForzabile(forzabileVersamentoEffettuato);
                 versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
                 
+                /*
+                Ho bisogno anche di popolare la mappa archiviDocs, perché per poter scrivere correttamente lo stato di versamento
+                del fascicolo, devo conoscere gli stati dei precedenti versamenti effettuati.
+                */
+                addInArchiviDocs(idArchivioVersamentoEffettuato, versamentoDocInformation);
                 
                 // per prima cosa estraggo dalla mappa i versamenti del doc del versamento effettuati
                 List<VersamentoDocInformation> versamentiDocDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoEffettuato);
@@ -247,6 +257,26 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             }
         }
         return getStatoSessioneVersamentoFromVersamenti(versamentiPerCalcoloStatoSessione);
+    }
+    
+    /**
+     * Aggiunge il versamentoDocInformation alla mappa archiviDocs.
+     * Se idArchivio è null non fa nulla
+     * @param idArchivio
+     * @param versamentoDocInformation 
+     */
+    private void addInArchiviDocs(Integer idArchivio, VersamentoDocInformation versamentoDocInformation) {
+        if (idArchivio != null) {
+            // estraggo la mappa dei doc per questo archivio
+            Map<Integer, VersamentoDocInformation> docsArchivio = archiviDocs.get(idArchivio);
+            // se è null è il primo doc dell'archivio, creo la mappa e la inserisco nella mappa superiore
+            if (docsArchivio == null) {
+                docsArchivio = new HashMap<>();
+                archiviDocs.put(idArchivio, docsArchivio);
+            }
+            // inserisco il doc nella mappa
+            docsArchivio.put(versamentoDocInformation.getIdDoc(), versamentoDocInformation);
+        }
     }
     
     /**
@@ -279,17 +309,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                      - se è il primo doc per quell'archivio la mappa sarà vuota per cui la creo
                      - poi ci metto dentro il doc corrispondente
                     */
-                    if (versamentoThread.getIdArchivio() != null) {
-                        // estraggo la mappa dei doc per questo archivio
-                        Map<Integer, VersamentoDocInformation> docsArchivio = archiviDocs.get(versamentoThread.getIdArchivio());
-                        // se è null è il primo doc dell'archivio, creo la mappa e la inserisco nella mappa superiore
-                        if (docsArchivio == null) {
-                            docsArchivio = new HashMap<>();
-                            archiviDocs.put(versamentoThread.getIdArchivio(), docsArchivio);
-                        }
-                        // inserisco il doc nella mappa
-                        docsArchivio.put(versamentoThread.getIdDoc(), versamentoThread);
-                    }
+                    addInArchiviDocs(versamentoThread.getIdArchivio(), versamentoThread);
                 }
             }
             return allResults;
@@ -359,25 +379,27 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
      * @param queryFactory 
      */
     private void updateStatoVersamentoFascicoli(JPAQueryFactory queryFactory) {
-        for (Integer idArchivio : archiviDocs.keySet()) {
-            Map<Integer, VersamentoDocInformation> versamentoDocs = archiviDocs.get(idArchivio);
-            Pair<StatoVersamento, Boolean> statoVersamentoFascicoloAndForzatura = getStatoVersamentoFascicoloAndForzaturaFromStatoVersamentiDocs(versamentoDocs);
-            StatoVersamento statoVersamentoFascicolo = statoVersamentoFascicoloAndForzatura.getFirst();
-            Boolean forzatura = statoVersamentoFascicoloAndForzatura.getSecond();
-            transactionTemplate.executeWithoutResult(a -> {
-                queryFactory
-                    .update(QArchivio.archivio)
-                    .setNull(QArchivio.archivio.statoVersamento)
-                    .where(QArchivio.archivio.id.eq(idArchivio))
-                    .execute();
-                queryFactory
-                    .update(QArchivioDetail.archivioDetail)
-                    .set(QArchivioDetail.archivioDetail.statoUltimoVersamento, statoVersamentoFascicolo.toString())
-                    .set(QArchivioDetail.archivioDetail.dataUltimoVersamento, startSessioneVersamento)
-                    .set(QArchivioDetail.archivioDetail.versamentoForzabile, forzatura)
-                    .where(QArchivioDetail.archivioDetail.id.eq(idArchivio))
-                    .execute();
-            });
+        if (archiviDocs != null && !archiviDocs.isEmpty()) {
+            for (Integer idArchivio : archiviDocs.keySet()) {
+                Map<Integer, VersamentoDocInformation> versamentoDocs = archiviDocs.get(idArchivio);
+                Pair<StatoVersamento, Boolean> statoVersamentoFascicoloAndForzatura = getStatoVersamentoFascicoloAndForzaturaFromStatoVersamentiDocs(versamentoDocs);
+                StatoVersamento statoVersamentoFascicolo = statoVersamentoFascicoloAndForzatura.getFirst();
+                Boolean forzatura = statoVersamentoFascicoloAndForzatura.getSecond();
+                transactionTemplate.executeWithoutResult(a -> {
+                    queryFactory
+                        .update(QArchivio.archivio)
+                        .setNull(QArchivio.archivio.statoVersamento)
+                        .where(QArchivio.archivio.id.eq(idArchivio))
+                        .execute();
+                    queryFactory
+                        .update(QArchivioDetail.archivioDetail)
+                        .set(QArchivioDetail.archivioDetail.statoUltimoVersamento, statoVersamentoFascicolo.toString())
+                        .set(QArchivioDetail.archivioDetail.dataUltimoVersamento, startSessioneVersamento)
+                        .set(QArchivioDetail.archivioDetail.versamentoForzabile, forzatura)
+                        .where(QArchivioDetail.archivioDetail.id.eq(idArchivio))
+                        .execute();
+                });
+            }
         }
     }
     
