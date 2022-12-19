@@ -95,13 +95,16 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
         
         SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
+        
+        StatoSessioneVersamento statoSessioneVersamento = null;
+        
         if (versamentiDaProcessare != null && !versamentiDaProcessare.isEmpty()) {
         
             // se c'è una sessione in corso, mi devo attaccare a quella, altrimenti ne apro una nuova
             SessioneVersamento sessioneVersamento;
             if (sessioneInCorso != null) {
                 sessioneVersamento = sessioneInCorso;
-                versamentiDaProcessare = removeDocGiaVersati(versamentiDaProcessare, sessioneInCorso.getId(), queryFactory);
+                statoSessioneVersamento = removeDocGiaVersatiAndGetStatoSessioneAttuale(versamentiDaProcessare, sessioneInCorso.getId(), queryFactory);
             } else {
                 sessioneVersamento = openNewSessioneVersamento(tipologiaVersamento);
             }
@@ -114,8 +117,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 log.error(message, ex);
                 throw new MasterjobsWorkerException(message, ex);
             }
-            StatoSessioneVersamento statoSessioneVersamento = executeAllVersatoreDocThreads(versatoreDocThreads);
+            List<VersamentoDocInformation> allResults = executeAllVersatoreDocThreads(versatoreDocThreads);
 
+            // calcolo lo stato della sessione, basandomi sugli stati dei versamenti effettuati
+            if (statoSessioneVersamento != StatoSessioneVersamento.PARTIALLY) {
+                statoSessioneVersamento = getStatoSessioneVersamentoFromVersamenti(allResults);
+            }
+            
             updateStatoVersamentoFascicoli(queryFactory);
 
             closeSessioneVersamento(statoSessioneVersamento, sessioneVersamento);
@@ -180,19 +188,20 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
      * @param versamentiDaEffettuare i doc da versare estrapolati con le query
      * @param idSessioneVersamento l'id della sessione in corso
      * @param queryFactory
-     * @return la mappa dei versamenti da effettuare, alla quale sono stati rimossi quelli già versati (è la stessa mappa  che viene passata come paraemtro)
+     * @return lo stato attuale della sessione
      */
-    private Map<Integer, List<VersamentoDocInformation>> removeDocGiaVersati(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, Integer idSessioneVersamento, JPAQueryFactory queryFactory) {
+    private StatoSessioneVersamento removeDocGiaVersatiAndGetStatoSessioneAttuale(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, Integer idSessioneVersamento, JPAQueryFactory queryFactory) {
+        
+        List<VersamentoDocInformation> versamentiPerCalcoloStatoSessione = new ArrayList<>();
         
         // prendo i versamenti effettuati nella sessione
         List<Tuple> versamentiEffettuati = transactionTemplate.execute(a -> {
             return queryFactory
-                    .select(QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id)
+                    .select(QVersamento.versamento.idDoc.id, QVersamento.versamento.idArchivio.id, QVersamento.versamento.stato)
                     .from(QVersamento.versamento)
                     .where(QVersamento.versamento.idSessioneVersamento.id.eq(idSessioneVersamento))
                     .fetch();
         });
-        
         // se ne trovo qualcuno lo devo rimuovere da quelli da effettuare
         if (versamentiEffettuati != null && !versamentiEffettuati.isEmpty()) {
             
@@ -200,6 +209,18 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             for (Tuple versamentoEffettuato : versamentiEffettuati) {
                 Integer idDocVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idDoc.id);
                 Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
+                
+                /* 
+                per calcolare lo stato della sessione in corso, leggo tutti gli stati devi versamenti e creo un oggetto
+                VersamentoDocInformation con solo lo stato, in modo da utilizzare la funzione getStatoSessioneVersamentoFromVersamenti
+                per calolare lo stato attuale della sessione
+                */
+                StatoVersamento statoVersamento = StatoVersamento.valueOf(versamentoEffettuato.get(QVersamento.versamento.stato));
+                VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
+                versamentoDocInformation.setStatoVersamento(statoVersamento);
+                versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
+                
+                
                 // per prima cosa estraggo dalla mappa i versamenti del doc del versamento effettuati
                 List<VersamentoDocInformation> versamentiDocDaEffettuare = versamentiDaEffettuare.get(idDocVersamentoEffettuato);
                 // dovrei trovarne almeno uno, mi aspetto di entrare sempre in questo if
@@ -225,7 +246,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                 }
             }
         }
-        return versamentiDaEffettuare;
+        return getStatoSessioneVersamentoFromVersamenti(versamentiPerCalcoloStatoSessione);
     }
     
     /**
@@ -235,7 +256,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
      * @return torna lo stato finale della sessione, dopo che tutti i threads hanno terminato di versare
      * @throws MasterjobsWorkerException 
      */
-    private StatoSessioneVersamento executeAllVersatoreDocThreads(List<VersatoreDocThread> versatoreDocThreads) throws MasterjobsWorkerException {
+    private List<VersamentoDocInformation> executeAllVersatoreDocThreads(List<VersatoreDocThread> versatoreDocThreads) throws MasterjobsWorkerException {
         Integer poolSize = getWorkerData().getPoolSize();
         ExecutorService executoreService = Executors.newFixedThreadPool(poolSize);
         
@@ -271,9 +292,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
                     }
                 }
             }
-            // calcolo lo stato della sessione, basandomi sugli stati dei versamenti effettuati
-            StatoSessioneVersamento statoSessioneVersamento = getStatoSessioneVersamentoFromVersamenti(allResults);
-            return statoSessioneVersamento;
+            return allResults;
         } catch (InterruptedException ex) {
             String errorMessage = "ricevuto un InterruptedException errore nell'attesa del completamento dei thread di versamento";
             log.error(errorMessage, ex);
@@ -429,20 +448,22 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
      * @return lo stato della sessione in base agli stati dei versamenti effettuati
      */
     private StatoSessioneVersamento getStatoSessioneVersamentoFromVersamenti(List<VersamentoDocInformation> versamenti) {
-        StatoSessioneVersamento res;
-        boolean allVersatoOrInCarico = !versamenti.stream().anyMatch(p -> 
-                p.getStatoVersamento() == Versamento.StatoVersamento.PARZIALE ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.AGGIORNARE ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.VERSARE ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.IN_CARICO_CON_ERRORI ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.IN_CARICO_CON_ERRORI_RITENTABILI ||
-                p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE_RITENTABILE);
-        
-        if (allVersatoOrInCarico) {
-            res = StatoSessioneVersamento.DONE;
-        } else {
-            res = StatoSessioneVersamento.PARTIALLY;
+        StatoSessioneVersamento res = StatoSessioneVersamento.DONE;
+        if (versamenti != null && !versamenti.isEmpty()) {
+            boolean allVersatoOrInCarico = !versamenti.stream().anyMatch(p -> 
+                    p.getStatoVersamento() == Versamento.StatoVersamento.PARZIALE ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.AGGIORNARE ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.VERSARE ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.IN_CARICO_CON_ERRORI ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.IN_CARICO_CON_ERRORI_RITENTABILI ||
+                    p.getStatoVersamento() == Versamento.StatoVersamento.ERRORE_RITENTABILE);
+
+            if (allVersatoOrInCarico) {
+                res = StatoSessioneVersamento.DONE;
+            } else {
+                res = StatoSessioneVersamento.PARTIALLY;
+            }
         }
         return res;
     }
