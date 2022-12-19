@@ -3,8 +3,8 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
-import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
-import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -67,15 +67,19 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
     public List<VersamentoDocInformation> call() throws Exception {
         if (vesamentiDoc != null && !vesamentiDoc.isEmpty()) {
             for (VersamentoDocInformation versamentoDocInformation : vesamentiDoc) {
-                try {
-                    versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
-                } catch (Throwable ex) {
-                    log.error("errore nel versamento", ex);
-                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                if (versamentoDocInformation.getStatoVersamentoPrecedente() != StatoVersamento.ERRORE) {
+                    try {
+                        versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
+                    } catch (Throwable ex) {
+                        log.error("errore nel versamento", ex);
+                        versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    }
+                    JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+                    ZonedDateTime now = ZonedDateTime.now();
+                    insertVersamentoAndUpdateAllegatiAndDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, personaForzatura, now);
+                } else {
+                    versamentoDocInformation.setStatoVersamento(versamentoDocInformation.getStatoVersamentoPrecedente());
                 }
-                JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-                ZonedDateTime now = ZonedDateTime.now();
-                insertVersamentoAndUpdateAllegatiAndDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, personaForzatura, now);
             }
         }
         return vesamentiDoc;

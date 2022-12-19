@@ -1,5 +1,7 @@
-package it.bologna.ausl.internauta.utils.versatore;
+package it.bologna.ausl.internauta.utils.versatore.plugins;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
@@ -28,6 +30,9 @@ public abstract class VersatoreDocs {
     
     @Autowired
     protected VersatoreConfigParams configParams;
+    
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     protected VersatoreConfiguration versatoreConfiguration;
     

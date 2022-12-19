@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore.controllers;
 
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
-import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;

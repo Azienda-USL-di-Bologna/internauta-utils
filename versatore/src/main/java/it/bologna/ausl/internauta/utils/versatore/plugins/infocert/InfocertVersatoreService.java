@@ -1,15 +1,14 @@
-package it.bologna.ausl.internauta.utils.versatore.services;
+package it.bologna.ausl.internauta.utils.versatore.plugins.infocert;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sun.xml.ws.fault.ServerSOAPFaultException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
-import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
+import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -48,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
@@ -65,10 +65,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
     
     private enum AzioneVersamento {
         VERSA, CONTROLLO
-    };    
-
+    };
     private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
     private static final String INFOCERT_VERSATORE_SERVICE = "InfocertVersatoreService";
+    private static final String ERROR_PARSING_JSON = "Errore nel parsing dei metadati";
 
     private String infocertVersatoreServiceEndPointUri;
  
@@ -80,24 +80,23 @@ public class InfocertVersatoreService extends VersatoreDocs {
         log.info("URI: {}", infocertVersatoreServiceEndPointUri);
     }
     
+    /**
+     * Metodo che controlla lo status del versamento di un allegato effettuando una chiamata http
+     * al servizio Infocert.
+     * @param versamentoAllegato Il versamento allegato da controllare.
+     * @param infocertService Il webservice Infocert.
+     * @return L'oggetto VersamentoAllegatoInformation con i riferimenti dell'allegato, il repporto e lo stato.
+     */
     public VersamentoAllegatoInformation controllaStatoVersamento(
             VersamentoAllegato versamentoAllegato,
-            GenericDocument infocertService) throws VersatoreProcessingException {
-        DocumentStatus status = null;
+            GenericDocument infocertService) {
+        DocumentStatus status;
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
-        try {            
-            allegatoInformation.setIdAllegato(versamentoAllegato.getIdAllegato().getId());
-            allegatoInformation.setDataVersamento(ZonedDateTime.now());
-            allegatoInformation.setTipoDettaglioAllegato(versamentoAllegato.getDettaglioAllegato());
-
-            status = infocertService.getDocumentStatus(versamentoAllegato.getRapporto()); 
-
-            if (status.getDocumentError() != null) {
-                allegatoInformation.setCodiceErrore(status.getDocumentError().getErrorCode());
-                allegatoInformation.setDescrizioneErrore(status.getDocumentError().getErrorDescription());
-                allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-            }
-
+        try {
+            RapportoVersamentoInfocert rapporto = objectMapper.readValue(versamentoAllegato.getRapporto(), RapportoVersamentoInfocert.class);
+            log.info("chiamata della getDocumentStatus per l'allegato: {} con hash: {}", 
+                    versamentoAllegato.getIdAllegato().toString(), rapporto.getHash());
+            status = infocertService.getDocumentStatus(rapporto.getHash());
             switch (status.getDocumentStatusCode()) {
                 case SUCCESS:
                     allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
@@ -110,12 +109,19 @@ public class InfocertVersatoreService extends VersatoreDocs {
                     allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
                     break;
             }   
-            
-            ObjectMapper objectMapper = new ObjectMapper(); 
-            allegatoInformation.setRapporto(objectMapper.writeValueAsString(status));
-            
+            rapporto.setDocumentStatus(status);
+            if (status.getDocumentError() != null) {
+                allegatoInformation.setCodiceErrore(status.getDocumentError().getErrorCode());
+                allegatoInformation.setDescrizioneErrore(status.getDocumentError().getErrorDescription());
+                allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+            }
+            allegatoInformation.setIdAllegato(versamentoAllegato.getIdAllegato().getId());
+            allegatoInformation.setDataVersamento(ZonedDateTime.now());
+            allegatoInformation.setTipoDettaglioAllegato(versamentoAllegato.getDettaglioAllegato());
+            allegatoInformation.setMetadatiVersati(versamentoAllegato.getMetadatiVersati());
+            allegatoInformation.setRapporto(objectMapper.writeValueAsString(rapporto)); 
         } catch (JsonProcessingException ex) {
-            log.error("Errore parsing status", ex);
+            log.error(ERROR_PARSING_JSON, ex);
         }
         return allegatoInformation;
     }    
@@ -123,9 +129,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
     /**
      * Metodo astratto che implementa il versamento Infocert.
      * Costruisce l'oggetto contentente i metadati del doc che verranno inviati ad Infocert.
-     * @param versamentoInformation L'oggetto con l'idDoc e l'idArchivio da versare.
+     * @param versamentoDocInformation L'oggetto con l'idDoc e l'idArchivio da versare.
      * @return Lo stesso oggetto VersamentoInformation con i risultati dei versamenti.
-     * @throws VersatoreProcessingException Eccezioni.
+     * @throws VersatoreProcessingException Eventuali eccezioni.
      */
     @Override
     public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
@@ -134,13 +140,18 @@ public class InfocertVersatoreService extends VersatoreDocs {
         Doc doc = entityManager.find(Doc.class, idDoc);
         try {
             GenericDocument infocertService = initInfocertService();
-            
+            log.info("Inizio elaborazione del doc: {}", idDoc.toString());
+            // Se è il primo versamento del Doc chiamiamo direttamente il metodo versaDoc
+            // altrimenti bisogna recuperare tutti i versamenti allegati e controllare per ognuno lo stato del versamento
+            // per capire se è un'operazione di controllo oppure ritenta
             if (versamentoDocInformation.isPrimoVersamento() == Boolean.TRUE) {
                 versamentoDocInformation = versaDoc(doc, versamentoDocInformation, infocertService);
             } else {
                 List<DocumentAttribute> docAttributes = new ArrayList();
                 List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
-                List<VersamentoAllegato> versamentiAllegati = getVersamentiAllegati(versamentoDocInformation.getIdVersamentoPrecedente());
+                Versamento versamentoDoc = entityManager.find(Versamento.class, versamentoDocInformation.getIdVersamentoPrecedente());
+                List<VersamentoAllegato> versamentiAllegati = versamentoDoc.getVersamentoAllegatoList();
+//                List<VersamentoAllegato> versamentiAllegati = getVersamentiAllegati(versamentoDocInformation.getIdVersamentoPrecedente());
                 versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
                 for (VersamentoAllegato versamentoAllegato : versamentiAllegati) {
                     switch (getAzioneVersamento(versamentoAllegato)) {
@@ -160,6 +171,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         break;
                     }  
                 }
+                versamentoDocInformation.setMetadatiVersati(objectMapper.writeValueAsString(docAttributes));
                 versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
             }
             boolean errorOccured = versamentoDocInformation.getVersamentiAllegatiInformations().stream().filter(all -> 
@@ -173,7 +185,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
             }
         } catch (MalformedURLException ex) {
             log.error("Errore URL", ex);
-        }        
+        } catch (JsonProcessingException ex) {        
+            log.error(ERROR_PARSING_JSON, ex);
+        }
                 
         return versamentoDocInformation;
     }
@@ -190,13 +204,11 @@ public class InfocertVersatoreService extends VersatoreDocs {
             VersamentoDocInformation versamentoDocInformation,
             GenericDocument infocertService) throws VersatoreProcessingException {
         String docId = doc.getId().toString();
-        log.info("Inizio versamento del doc: {}", docId);
-        
+          
         // Build metadati generici dell'unità documentaria
         List<DocumentAttribute> docAttributes = buildMetadatiDoc(doc, versamentoDocInformation);
               
         // Elaborazione degli allegati
-        ObjectMapper objectMapper = new ObjectMapper();
         try {            
             List<Allegato> allegati = doc.getAllegati();
             List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
@@ -217,7 +229,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
             
         } catch (JsonProcessingException ex) {
-            log.error("Errore nel parsing dei metadati versati");
+            log.error(ERROR_PARSING_JSON, ex);
         }
         log.info("Versamento idDoc: {} concluso.", docId);
         return versamentoDocInformation;
@@ -314,6 +326,15 @@ public class InfocertVersatoreService extends VersatoreDocs {
         return docAttributes;
     }
     
+    /**
+     * 
+     * @param allegato
+     * @param tipoDettaglioAllegato
+     * @param docAttributes
+     * @param indexAllegato
+     * @param infocertService
+     * @return 
+     */
     private VersamentoAllegatoInformation versaAllegato(
             Allegato allegato,
             Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato,
@@ -353,15 +374,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 docFileAttributes = new ArrayList();
                 docFileAttributes.addAll(docAttributes);
                 docFileAttributes.addAll(fileAttributes);
-
-                ObjectMapper objectMapper = new ObjectMapper(); 
+                
                 allegatoInformation.setIdAllegato(allegato.getId());
                 allegatoInformation.setDataVersamento(ZonedDateTime.now());
                 allegatoInformation.setTipoDettaglioAllegato(tipoDettaglioAllegato);
                 allegatoInformation.setMetadatiVersati(objectMapper.writeValueAsString(docFileAttributes));
-
+                log.info("chiamata della submitDocument per l'allegato: {}", allegato.getId().toString());
                 String hash = infocertService.submitDocument(allegato.getIdDoc().getId().toString(), docFileAttributes, data);
-                allegatoInformation.setRapporto(hash);
+                allegatoInformation.setRapporto(objectMapper.writeValueAsString(new RapportoVersamentoInfocert(hash)));
                 allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);     
             } else {
                 log.error("file stream is null");
@@ -379,6 +399,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
         return allegatoInformation;
     }
     
+    /**
+     * Metodo che controlla lo stato del versamento di un allegato 
+     * e verifica se è di nuovo da versare oppure controllare.
+     * @param versamentoAllegato Il versamento allegato.
+     * @return Azione versamento VERSA oppure CONTROLLO.
+     */
     private AzioneVersamento getAzioneVersamento(final VersamentoAllegato versamentoAllegato) {
         AzioneVersamento azione = null;
         switch (versamentoAllegato.getStato()) {
@@ -403,14 +429,19 @@ public class InfocertVersatoreService extends VersatoreDocs {
         return is;
     }
     
-    private Integer getIndexAllegato(String metadatiVersati) {
+    /**
+     * Recupera il metadato "alleg_i", l'indice con il quale l'allegato è stato versato precedentemente.
+     * @param metadatiVersati I metadati con il quale l'allegato è stato versato.
+     * @return L'indice Integer dell'allegato.
+     */
+    private Integer getIndexAllegato(String metadatiVersati) throws VersatoreProcessingException {
         Integer indexAllegato = null;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(metadatiVersati);
             indexAllegato = jsonNode.get(InfocertAttributesEnum.ALLEGATI_NUMERO.toString()).asInt();
         } catch (JsonProcessingException ex) {
-            log.error("Errore parsing metadati.");
+            log.error(ERROR_PARSING_JSON, ex);
+            throw new VersatoreProcessingException(ERROR_PARSING_JSON, ex);
         }
         return indexAllegato;
     }
@@ -442,48 +473,6 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
     
     /**
-     * Restituisce i versamenti allegati del versamento passato in ingresso.
-     * @param versamento Il versamento.
-     * @return I versamenti allegati.
-     */
-    private List<VersamentoAllegato> getVersamentiAllegati(final Integer idVersamento) {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QVersamentoAllegato qVersamentoAllegato = QVersamentoAllegato.versamentoAllegato;
-        List<VersamentoAllegato> versamentiAllegati = queryFactory
-                .select(qVersamentoAllegato)
-                .from(qVersamentoAllegato)
-                .where(qVersamentoAllegato.idVersamento.id.eq(idVersamento))
-                .fetch();
-        if (versamentiAllegati.isEmpty()) {
-            log.error("Versamenti allegati of versamento {} not found", idVersamento);
-        }
-        return versamentiAllegati;
-    }
-    
-    /**
-     * @deprecated Perché non è necessario indicare gli attori del doc attraverso questo metodo.
-     * Restituisce la lista degli attori del doc filtrati per il ruolo passato.
-     * @param doc Il documento.
-     * @param ruolo Il ruolo.
-     * @return La lista di attori del documento.
-     */
-    @Deprecated
-    private List<AttoreDoc> getAttoriDoc(final Doc doc, final String ruolo) {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
-
-        List<AttoreDoc> attoriDoc = queryFactory
-                .select(qAttoreDoc)
-                .from(qAttoreDoc)
-                .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.eq(ruolo)))
-                .fetch();
-        if (attoriDoc.isEmpty()) {
-            log.error("Attori {} not found", ruolo);
-        }
-        return attoriDoc;
-    }
-
-    /**
      * Restituisce la concatenazione delle classificazioni del documento
      * passato.
      *
@@ -511,10 +500,53 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return titolo;
     }
+    
+    /**
+     * Restituisce i versamenti allegati del versamento passato in ingresso.
+     * @param versamento Il versamento.
+     * @return I versamenti allegati.
+     * @deprecated Perché li leggiamo direttamente dal Versamento.
+     */
+    @Deprecated
+    private List<VersamentoAllegato> getVersamentiAllegati(final Integer idVersamento) {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QVersamentoAllegato qVersamentoAllegato = QVersamentoAllegato.versamentoAllegato;
+        List<VersamentoAllegato> versamentiAllegati = queryFactory
+                .select(qVersamentoAllegato)
+                .from(qVersamentoAllegato)
+                .where(qVersamentoAllegato.idVersamento.id.eq(idVersamento))
+                .fetch();
+        if (versamentiAllegati.isEmpty()) {
+            log.error("Versamenti allegati of versamento {} not found", idVersamento);
+        }
+        return versamentiAllegati;
+    }
+    
+    /**
+     * Restituisce la lista degli attori del doc filtrati per il ruolo passato.
+     * @param doc Il documento.
+     * @param ruolo Il ruolo.
+     * @return La lista di attori del documento.
+     * @deprecated Perché non è necessario indicare gli attori del doc attraverso questo metodo.
+     */
+    @Deprecated
+    private List<AttoreDoc> getAttoriDoc(final Doc doc, final String ruolo) {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
+
+        List<AttoreDoc> attoriDoc = queryFactory
+                .select(qAttoreDoc)
+                .from(qAttoreDoc)
+                .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.eq(ruolo)))
+                .fetch();
+        if (attoriDoc.isEmpty()) {
+            log.error("Attori {} not found", ruolo);
+        }
+        return attoriDoc;
+    }
 
     /**
      * Restituisce la concatenazione dei destinatari del documento detail passato.
-     *
      * @param docDetail Il documento.
      * @return La stringa concatenata dei destinatari separati da ','.
      * @deprecated Al momento non è più utile.

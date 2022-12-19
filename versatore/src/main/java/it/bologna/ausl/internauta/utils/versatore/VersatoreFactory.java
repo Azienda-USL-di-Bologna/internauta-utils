@@ -1,11 +1,11 @@
 package it.bologna.ausl.internauta.utils.versatore;
 
+import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
-import it.bologna.ausl.internauta.utils.versatore.services.InfocertVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
