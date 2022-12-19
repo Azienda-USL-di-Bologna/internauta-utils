@@ -174,8 +174,10 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     
     /**
      * Chiude la sessione di versamento aggiornando lo stato e il time_interval settandoci la data di fine
+     * @param idSessioneVersamento id della sessione da chiudere
      * @param statoSessioneVersamento lo stato da settare sulla sessione versamento
-     * @param sessioneVersamento la sessione da chiudere
+     * @param actualInterval il time_interval della sessione
+     * @param queryFactory
      */
     private void closeSessioneVersamento(Integer idSessioneVersamento, StatoSessioneVersamento statoSessioneVersamento, 
             Range<ZonedDateTime> actualInterval, JPAQueryFactory queryFactory) {
@@ -521,9 +523,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
     
     /**
      * Prende tutti i docs su cui ritentare il versamento e li aggiunge alla mappa versamentiDaProcessare passata in input.
-     * Questi doc sono quelli il cui versamento precedente è andato nello stato:
-     * IN_CARICO, IN_CARICO_CON_ERRORI, IN_CARICO_CON_ERRORI_RITENTABILI o ERRORE_RITENTABILE.
+     * Questi doc sono quelli il cui versamento precedente non è andato a buon fine, ossia nello stato:
+     * ERRORE, IN_CARICO, IN_CARICO_CON_ERRORI, IN_CARICO_CON_ERRORI_RITENTABILI o ERRORE_RITENTABILE.
      * 
+     * Un doc va in ERRORE se c'è almeno un versamento(suo o dei suoi allegati) che è andato in ERRORE e non ci sono 
+     * versamenti in ERRORE_RITENTABILE o IN_CARICO o IN_CARICO_CON_ERRORI o IN_CARICO_CON_ERRORI_RITENTABILI
      * Un doc va in ERRORE_RITENTABILE se c'è almeno un versamento(suo o dei suoi allegati) che è andato in ERRORE_RITENTABILE
      * Un doc va in IN_CARICO (cioè il versamento non si può ancora considerare completato) se c'è almeno un versamento(suo o 
      * dei suoi allegati) che è andato in IN_CARICO
@@ -577,12 +581,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
              Se lo trovo allora non lo inserisco nuovamente, ma setto il versamento estratto come VersamentoPrecedente
               In questo modo, così da evere l'informazione per attaccare il nuovo versamento al precedente e settare il
               precedente da ignorare
-             Se non lo trovo, allora lo aggiungo, settandoci sempre il VersamentoPrecedente
+             Se non lo trovo, allora lo aggiungo, settandoci sempre il versamento precedente e il suo stato
             */
             Integer idVersamento = versamentoRitentabile.get(QVersamento.versamento.id);
             Integer idDoc = versamentoRitentabile.get(QVersamento.versamento.idDoc.id);
             Integer idArchivio = versamentoRitentabile.get(QVersamento.versamento.idArchivio.id);
             StatoVersamento statoVersamento = StatoVersamento.valueOf(versamentoRitentabile.get(QVersamento.versamento.stato));
+            
             List<VersamentoDocInformation> versamenti = versamentiDaProcessare.get(idDoc);
             boolean versamentoDaInserire = true;
             if (versamenti == null) { // se non trovo versamenti per il doc, creo la lista vuota
@@ -591,7 +596,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
             } else {
                 /*
                 se trovo dei versamenti, controllo se c'è il versamento con lo stesso fascicolo
-                se lo trovo, setto solo il versamento precedente, altrimenti setto che è da inserire
+                se lo trovo, setto solo il versamento precedente e il suo stato, altrimenti setto che è da inserire
                 */
                 for (VersamentoDocInformation v : versamenti) {
                     if ((idArchivio == null && v.getIdArchivio() == null) || 

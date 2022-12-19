@@ -67,6 +67,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
     public List<VersamentoDocInformation> call() throws Exception {
         if (vesamentiDoc != null && !vesamentiDoc.isEmpty()) {
             for (VersamentoDocInformation versamentoDocInformation : vesamentiDoc) {
+                // se lo stato del versamento non è ERRORE, allora richiamo il versamento sul plugin
                 if (versamentoDocInformation.getStatoVersamentoPrecedente() != StatoVersamento.ERRORE) {
                     try {
                         versamentoDocInformation = versatoreDocsInstance.versa(versamentoDocInformation);
@@ -78,6 +79,9 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                     ZonedDateTime now = ZonedDateTime.now();
                     insertVersamentoAndUpdateAllegatiAndDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, personaForzatura, now);
                 } else {
+                    /*
+                    se lo stato del versamento era ERRORE, allora setto come stato ERRORE (in modo che ne tenga conto nel calcolo dello stato finale
+                    */
                     versamentoDocInformation.setStatoVersamento(versamentoDocInformation.getStatoVersamentoPrecedente());
                 }
             }
