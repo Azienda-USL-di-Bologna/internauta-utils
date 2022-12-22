@@ -37,7 +37,8 @@ public class ParametriAziendeReader {
         firmaRemota,
         firmaRemotaConfiguration,
         fascicoliSAI,
-        downloader
+        downloader,
+        versatoreConfiguration
     }
     
     @Autowired
@@ -60,6 +61,10 @@ public class ParametriAziendeReader {
 
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende) {
         return getParameters(nome, idAziende, null);
+    }
+    
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, Integer[] idAziende) {
+        return getParameters(nome.toString(), idAziende, null);
     }
 
     public List<ParametroAziende> getParameters(String nome, String[] idApplicazioni) {
