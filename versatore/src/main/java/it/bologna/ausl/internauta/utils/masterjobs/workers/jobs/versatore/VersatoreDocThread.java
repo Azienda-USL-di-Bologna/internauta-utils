@@ -111,18 +111,6 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             // prima crea il versamento e lo salva
             Versamento versamento = buildVersamento(versamentoDocInformation, doc, personaForzatura, archivio, now);
             entityManager.persist(versamento);
-            
-            /* 
-            se lo stato del versamento è errore ritentabile, allora lo stato del versamento lo setto in modo che al prossimo giro
-            venga ricontrollato. Per farlo lo setto a VERSARE o IN_CARICO a seconda dell'azione versamento
-            */
-//            if (versamentoDocInformation.getStatoVersamento() == StatoVersamento.ERRORE_RITENTABILE) {
-//                if (azioneVersamento == AzioneVersamento.VERSAMENTO) {
-//                    versamentoDocInformation.setStatoVersamento(StatoVersamento.VERSARE);
-//                } else {
-//                    versamentoDocInformation.setStatoVersamento(StatoVersamento.IN_CARICO);
-//                }
-//            }
             Versamento.StatoVersamento statoVersamentoDoc = versamentoDocInformation.getStatoVersamento();
             /* 
             per ogni allegato salva il versamento_allegato e aggiorna lo stato ultimo versamento sull'allegato
@@ -160,9 +148,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             se il versamento è andato a buon fine, oppure è stato annullato (lo stato è VERSATO, o ANNULLATO), 
             allora il versamento viene settato da ignorare
             */
-            if (statoVersamentoDoc == Versamento.StatoVersamento.VERSATO || 
-//                    statoVersamentoDoc == Versamento.StatoVersamento.IN_CARICO ||
-                    statoVersamentoDoc == Versamento.StatoVersamento.ANNULLATO) {
+            if (statoVersamentoDoc == Versamento.StatoVersamento.VERSATO || statoVersamentoDoc == Versamento.StatoVersamento.ANNULLATO) {
                 versamento.setIgnora(true);
             }
             
