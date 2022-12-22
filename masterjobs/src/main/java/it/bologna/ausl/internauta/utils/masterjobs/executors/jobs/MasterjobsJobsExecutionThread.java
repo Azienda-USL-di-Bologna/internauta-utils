@@ -431,7 +431,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             }
         } catch (Throwable t) {
             try {
-                t.printStackTrace();
                 if (!(t.getClass().isAssignableFrom(MasterjobsWorkerException.class))) {
                     /*
                     * se c'è un errore nell'esecuzione del job:
@@ -443,7 +442,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     }
                     
                     if (set != null && set.getWaitObject()) {
-                        self.setInError(null, objectStatus);
+                        self.setInError(null, objectStatus, null);
                     }
                 }
                 redisTemplate.opsForList().rightPush(this.errorQueue, queueData.dump());
@@ -512,7 +511,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                         * poi setto in errore anche il job
                         */
                         if (set.getWaitObject()) {
-                            self.setInError(job, objectStatus);
+                            self.setInError(job, objectStatus, ex.getMessage());
                         }
 
                         /*
@@ -616,9 +615,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * setta in ERROR sul database sia il job, che l'ObjectStatus associato (se presente)
      * @param job
      * @param objectStatus 
+     * @param jobError stringa di errore da inserire in tabella jobs
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    public void setInError(Job job, ObjectStatus objectStatus) {
+    public void setInError(Job job, ObjectStatus objectStatus, String jobError) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         if (job != null) {
             QJob qJob = QJob.job;
@@ -627,6 +627,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             queryFactory
                 .update(qJob)
                 .set(qJob.state, job.getState().toString())
+                .set(qJob.error, jobError)
                 .where(qJob.id.eq(job.getId()))
                 .execute();
         }

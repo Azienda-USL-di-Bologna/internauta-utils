@@ -78,6 +78,10 @@ public class Job implements Serializable {
     @NotNull
     @Column(name = "deferred")
     private Boolean deferred = false;
+    
+    @Basic(optional = true)
+    @Column(name = "error")
+    private String error;
 
     public Job() {
     }
@@ -129,6 +133,16 @@ public class Job implements Serializable {
             this.state = null;
         }
     }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
+    
+    
 
     public Boolean getDeferred() {
         return deferred;
