@@ -31,7 +31,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker<T extends JobWorkerData> extends Worker {
+public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResult> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
     protected JobWorkerData workerData;
@@ -71,7 +71,7 @@ public abstract class JobWorker<T extends JobWorkerData> extends Worker {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
-    public JobWorkerResult doWork() throws MasterjobsWorkerException {
+    public R doWork() throws MasterjobsWorkerException {
         if (deferred) {
             this.workerData = this.workerDeferredData.toWorkerData();
         }
@@ -113,5 +113,5 @@ public abstract class JobWorker<T extends JobWorkerData> extends Worker {
      * @throws MasterjobsWorkerException nel caso di un errore nell'esecuzione del job
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    protected abstract JobWorkerResult doRealWork() throws MasterjobsWorkerException;
+    protected abstract R doRealWork() throws MasterjobsWorkerException;
 }

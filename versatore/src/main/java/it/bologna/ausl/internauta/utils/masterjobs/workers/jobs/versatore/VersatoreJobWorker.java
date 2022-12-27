@@ -54,7 +54,7 @@ import org.springframework.transaction.TransactionDefinition;
  * inotrle reperisce anche i versamenti non ancora competati o in errore ritentabile
  */
 @MasterjobsWorker
-public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
+public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWorkerResult> {
     private static final Logger log = LoggerFactory.getLogger(VersatoreJobWorker.class);
     
     @Autowired
@@ -81,6 +81,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData> {
         startSessioneVersamento = ZonedDateTime.now();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         
+        // setto il transactionTemplate in modo che tutte le volte che lo si usa apra una transazione e la committi
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         
         TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;

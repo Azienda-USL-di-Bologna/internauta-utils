@@ -399,35 +399,37 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             
             // carica i dati necessati all'esecuzione dei job
             set = self.getSet(queueData.getSet());
-            String objectId = set.getObjectId();
-            String objectType = set.getObjectType();
-            String app = set.getApp();
-            ObjectStatus.ObjectState objectState;
-            
-            /* solo se il set deve attendere il completamento dei job di set precedenti, 
-            * devo scrivere nella tabella ObjectStatus lo stato dell'oggetto a cui il set è attaccato
-            * nel caso l'ogetto era già presente nella tabella, allora ne leggo lo stato
-            */
-            if (set.getWaitObject()) {
-                objectStatus = self.getAndUpdateObjectState(objectId, objectType, app);
-                objectState = objectStatus.getState();
-            } else { // se il set non deve attendere altri set allora non scrivo nulla in tabella e considero l'oggetto libero (IDLE)
-                objectState = ObjectStatus.ObjectState.IDLE;
-            }
-            switch (objectState) {
-                case ERROR:
-                    redisTemplate.opsForList().move(
-                    this.workQueue, RedisListCommands.Direction.LEFT, 
-                    this.errorQueue, RedisListCommands.Direction.RIGHT);
-                    break;
-                case IDLE:
-                case PENDING:
-                    executeJobs(queueData, objectStatus, set);
-                    break;
-                default:
-                    String errorMessage = String.format("object state %s not excepted", objectState);
-                    log.error(errorMessage);
-                    throw new MasterjobsDataBaseException(errorMessage);
+            if (set != null) {
+                String objectId = set.getObjectId();
+                String objectType = set.getObjectType();
+                String app = set.getApp();
+                ObjectStatus.ObjectState objectState;
+
+                /* solo se il set deve attendere il completamento dei job di set precedenti, 
+                * devo scrivere nella tabella ObjectStatus lo stato dell'oggetto a cui il set è attaccato
+                * nel caso l'ogetto era già presente nella tabella, allora ne leggo lo stato
+                */
+                if (set.getWaitObject()) {
+                    objectStatus = self.getAndUpdateObjectState(objectId, objectType, app);
+                    objectState = objectStatus.getState();
+                } else { // se il set non deve attendere altri set allora non scrivo nulla in tabella e considero l'oggetto libero (IDLE)
+                    objectState = ObjectStatus.ObjectState.IDLE;
+                }
+                switch (objectState) {
+                    case ERROR:
+                        redisTemplate.opsForList().move(
+                        this.workQueue, RedisListCommands.Direction.LEFT, 
+                        this.errorQueue, RedisListCommands.Direction.RIGHT);
+                        break;
+                    case IDLE:
+                    case PENDING:
+                        executeJobs(queueData, objectStatus, set);
+                        break;
+                    default:
+                        String errorMessage = String.format("object state %s not excepted", objectState);
+                        log.error(errorMessage);
+                        throw new MasterjobsDataBaseException(errorMessage);
+                }
             }
         } catch (Throwable t) {
             try {
@@ -507,12 +509,9 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     } catch (Throwable ex) {
                         /*
                         * se c'è un errore nell'esecuzione del job:
-                        * se il set ha il wait, vuol dire che avrò la riga in object_status, per cui la setto in errore,
-                        * poi setto in errore anche il job
+                        * setto in errore la riga in object_status (se esiste) e setto in errore anche il job
                         */
-                        if (set.getWaitObject()) {
-                            self.setInError(job, objectStatus, ex.getMessage());
-                        }
+                        self.setInError(job, objectStatus, ex.getMessage());
 
                         /*
                         * una volta settato in errore sul DB, rimuovo i jobs completati dal queueData e
@@ -623,7 +622,6 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         if (job != null) {
             QJob qJob = QJob.job;
             job.setState(Job.JobState.ERROR);
-            objectStatus.setState(ObjectStatus.ObjectState.ERROR);
             queryFactory
                 .update(qJob)
                 .set(qJob.state, job.getState().toString())
@@ -632,6 +630,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                 .execute();
         }
         if (objectStatus != null) {
+            objectStatus.setState(ObjectStatus.ObjectState.ERROR);
             QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
             queryFactory
                 .update(qObjectStatus)

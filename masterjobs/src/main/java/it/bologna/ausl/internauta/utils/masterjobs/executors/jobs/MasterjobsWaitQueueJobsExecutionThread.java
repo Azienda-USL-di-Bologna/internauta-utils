@@ -63,26 +63,30 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                 throw new MasterjobsExecutionThreadsException(errorMessage, ex);
             }
             Set set = super.getSet(queueData.getSet());
+            if (set != null) {
             
-            // controllo se il set può essere eseguito
-            if (!set.getWaitObject() || super.isExecutable(set)) {
-                // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
-                String destinationQueue = queueData.getQueue();
-//                try {
-//                    destinationQueue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
-//                } catch (MasterjobsBadDataException ex) {
-//                    String errorMessage = String.format("error getting queue name from set priority", ex);
-//                    log.error(errorMessage);
-//                    throw new MasterjobsExecutionThreadsException(errorMessage);
-//                }
-                redisTemplate.opsForList().move(
-                this.workQueue, RedisListCommands.Direction.LEFT, 
-                destinationQueue, RedisListCommands.Direction.LEFT);
+                // controllo se il set può essere eseguito
+                if (!set.getWaitObject() || super.isExecutable(set)) {
+                    // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
+                    String destinationQueue = queueData.getQueue();
+    //                try {
+    //                    destinationQueue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
+    //                } catch (MasterjobsBadDataException ex) {
+    //                    String errorMessage = String.format("error getting queue name from set priority", ex);
+    //                    log.error(errorMessage);
+    //                    throw new MasterjobsExecutionThreadsException(errorMessage);
+    //                }
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    destinationQueue, RedisListCommands.Direction.LEFT);
+                } else {
+                    // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    this.waitQueue, RedisListCommands.Direction.RIGHT);
+                }
             } else {
-                // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
-                redisTemplate.opsForList().move(
-                this.workQueue, RedisListCommands.Direction.LEFT, 
-                this.waitQueue, RedisListCommands.Direction.RIGHT);
+                redisTemplate.delete(this.workQueue);
             }
         } else {
             // scaduto il timeout di lettura dalla coda redis, vuol dire che non c'è nulla da fare, mi riaccodo...
