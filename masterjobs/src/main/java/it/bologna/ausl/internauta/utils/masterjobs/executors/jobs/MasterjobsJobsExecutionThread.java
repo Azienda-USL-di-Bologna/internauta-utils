@@ -598,12 +598,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             * se il set non è attaccato a un oggetto allora objectId sarà null
             */
             if (job.getSet().getObjectId() != null) {
-            // eliminazione object_status
-                BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
-                if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
-                    filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));
-                if (job.getSet().getApp() != null)  // app potrebbe non esserci
-                    filter = filter.and(qObjectStatus.app.eq(job.getSet().getApp()));
+                // eliminazione object_status
+                BooleanExpression filter = getObjectStatusFilter(job.getSet().getObjectId(), job.getSet().getObjectType(), job.getSet().getApp());
                 queryFactory.delete(qObjectStatus).where(filter).execute();
             }
         }
@@ -688,11 +684,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     private BooleanExpression getObjectStatusFilter(String objectId, String objectType, String app) {
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus; 
         BooleanExpression filter = qObjectStatus.objectId.eq(objectId);
-        if (objectType != null) {
-            filter = filter.and(qObjectStatus.objectType.eq(objectType));
+        if (objectType != null) {  // objectType potrebbe non esserci
+            filter = filter.and(qObjectStatus.objectType.eq(objectType)); 
         }
-        if (app != null) {
-            filter = filter.and(qObjectStatus.app.eq(app));
+        if (app != null) {  // app potrebbe non esserci
+            filter = filter.and(qObjectStatus.app.eq(app)); 
         }
         return filter;
     }
@@ -806,14 +802,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         QSet qSet = QSet.set;
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         BooleanExpression filter = 
-            qSet.objectId.eq(set.getObjectId()).and(
-            qSet.id.lt(set.getId()));
-        if (set.getObjectType() != null) { // objectType potrebbe non esserci
-            filter =  filter.and(qSet.objectType.eq(set.getObjectType()));
-        }
-        if (set.getApp() != null) { // app potrebbe non esserci
-            filter = filter.and(qSet.app.eq(set.getApp()));
-        }
+                getObjectStatusFilter(set.getObjectId(), set.getObjectType(), set.getApp())
+                .and(qSet.id.lt(set.getId()));
         
         /* 
         * conta i set per lo stesso oggetto con id più piccolo del set in esame:
