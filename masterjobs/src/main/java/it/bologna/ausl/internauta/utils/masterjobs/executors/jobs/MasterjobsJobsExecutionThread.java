@@ -687,7 +687,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      */
     private BooleanExpression getObjectStatusFilter(String objectId, String objectType, String app) {
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus; 
-        BooleanExpression filter = qObjectStatus.objectId.eq(objectId).and(qObjectStatus.objectType.eq(objectType));
+        BooleanExpression filter = qObjectStatus.objectId.eq(objectId);
+        if (objectType != null) {
+            filter = filter.and(qObjectStatus.objectType.eq(objectType));
+        }
         if (app != null) {
             filter = filter.and(qObjectStatus.app.eq(app));
         }
