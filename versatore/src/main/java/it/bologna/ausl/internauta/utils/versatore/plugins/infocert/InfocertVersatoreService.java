@@ -32,6 +32,7 @@ import static it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatusCo
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocumentService;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -299,8 +300,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, getDenominazione(docDetail))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "redattore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaResponsabileProcedimento().getCognome())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index++, docDetail.getIdPersonaResponsabileProcedimento().getNome()); // Index 3 
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index++, docDetail.getIdPersonaRedattrice().getNome()); // Index 3 
 
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
@@ -404,11 +405,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         .addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
                 
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
-                    String text = new BufferedReader(
-                        new InputStreamReader(fileStream, StandardCharsets.UTF_8))
-                            .lines()
-                            .collect(Collectors.joining("\n"));
-                    addNewAttribute(fileAttributes, InfocertAttributesEnum.SEGNATURA, text);
+                    String segnatura = convertInputStreamToString(fileStream);
+                    addNewAttribute(fileAttributes, InfocertAttributesEnum.SEGNATURA, segnatura);
                 }
                 
                 if (tipoDettaglioAllegato.toString().contains("FIRMATO")) {
@@ -525,6 +523,23 @@ public class InfocertVersatoreService extends VersatoreDocs {
         return versione;
     }
     
+    
+    /**
+     * Legge l'inputStream e lo restituisce in formato String.
+     * @param is L'inputStream del file.
+     * @return Il contenuto del file in formato Stringa.
+     * @throws IOException.
+     */
+    private static String convertInputStreamToString(InputStream is) throws IOException {
+
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int length;
+        while ((length = is.read(buffer)) != -1) {
+            result.write(buffer, 0, length);
+        }
+        return result.toString("UTF-8");
+    }
     /**
      * Restituisce il tipo registro del documento.
      * @param doc Il documento.
