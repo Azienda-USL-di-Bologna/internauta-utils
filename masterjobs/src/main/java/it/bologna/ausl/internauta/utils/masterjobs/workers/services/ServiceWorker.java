@@ -2,20 +2,14 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.vladmihalcea.hibernate.type.range.Range;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.model.entities.masterjobs.QService;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ScheduledFuture;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 
 /**
@@ -24,12 +18,6 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 public abstract class ServiceWorker extends Worker implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ServiceWorker.class);
-
-    @PersistenceContext
-    protected EntityManager entityManager;
-    
-    @Autowired
-    protected TransactionTemplate transactionTemplate;
 
     protected ScheduledFuture scheduledFuture;
 

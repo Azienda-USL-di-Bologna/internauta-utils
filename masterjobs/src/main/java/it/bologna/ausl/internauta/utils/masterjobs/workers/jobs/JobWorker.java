@@ -1,16 +1,11 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -28,21 +23,18 @@ import org.springframework.transaction.support.TransactionTemplate;
  *  nel momento della sua esecuzione il worker creerà i JobWorkerData
  * 
  * NB: le classi concrete che implementeranno questa classe devono esse annotate come:
+ * @param <T> classe che estende JobWorkerData e raprpesenta i dati del job
+ * @param <R> classe che estende JobWorkerResult e raprpesenta i risultati del job
+ * 
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker<T extends JobWorkerData> extends Worker {
+public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResult> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
     protected JobWorkerData workerData;
     protected JobWorkerDeferredData workerDeferredData;
     protected boolean deferred;
-    
-    @PersistenceContext
-    protected EntityManager entityManager;
-    
-    @Autowired
-    protected TransactionTemplate transactionTemplate;
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
@@ -71,7 +63,7 @@ public abstract class JobWorker<T extends JobWorkerData> extends Worker {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
-    public JobWorkerResult doWork() throws MasterjobsWorkerException {
+    public R doWork() throws MasterjobsWorkerException {
         if (deferred) {
             this.workerData = this.workerDeferredData.toWorkerData();
         }
@@ -113,5 +105,5 @@ public abstract class JobWorker<T extends JobWorkerData> extends Worker {
      * @throws MasterjobsWorkerException nel caso di un errore nell'esecuzione del job
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    protected abstract JobWorkerResult doRealWork() throws MasterjobsWorkerException;
+    protected abstract R doRealWork() throws MasterjobsWorkerException;
 }
