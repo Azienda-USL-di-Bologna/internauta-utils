@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
@@ -599,7 +600,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             */
             if (job.getSet().getObjectId() != null) {
                 // eliminazione object_status
-                BooleanExpression filter = getObjectStatusFilter(job.getSet().getObjectId(), job.getSet().getObjectType(), job.getSet().getApp());
+                BooleanExpression filter = getObjectFilter(
+                        qObjectStatus.objectId, job.getSet().getObjectId(), 
+                        qObjectStatus.objectType, job.getSet().getObjectType(), 
+                        qObjectStatus.objectId, job.getSet().getApp());
                 queryFactory.delete(qObjectStatus).where(filter).execute();
             }
         }
@@ -675,20 +679,25 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
-     * costruisce un filtro per carcare un ObjectStatus con i prametri non null passati
-     * @param objectId
-     * @param objectType
-     * @param app
-     * @return 
+     * costruisce un filtro per cercare un ObjectStatus o un Set con i parametri non null passati
+     * @param objectIdPath il path dell'objectId (es. Qset.set.objectId)
+     * @param objectIdValue il valore dell'objectId
+     * @param objectTypePath il path dell'objectType (es. Qset.set.objectType)
+     * @param objectTypeValue il valore dell'objectType, se è null non viene inserito nel filtro
+     * @param appPath il path dell'app (es. Qset.set.app)
+     * @param appValue il valore dell'app, se è null non viene inserito nel filtro
+     * @return il filtro da inserire nella query
      */
-    private BooleanExpression getObjectStatusFilter(String objectId, String objectType, String app) {
-        QObjectStatus qObjectStatus = QObjectStatus.objectStatus; 
-        BooleanExpression filter = qObjectStatus.objectId.eq(objectId);
-        if (objectType != null) {  // objectType potrebbe non esserci
-            filter = filter.and(qObjectStatus.objectType.eq(objectType)); 
+    private BooleanExpression getObjectFilter(
+            StringPath objectIdPath, String objectIdValue, 
+            StringPath objectTypePath, String objectTypeValue, 
+            StringPath appPath, String appValue) {
+        BooleanExpression filter = objectIdPath.eq(objectIdValue);
+        if (objectTypeValue != null) {  // objectType potrebbe non esserci
+            filter = filter.and(objectTypePath.eq(objectTypeValue)); 
         }
-        if (app != null) {  // app potrebbe non esserci
-            filter = filter.and(qObjectStatus.app.eq(app)); 
+        if (appValue != null) {  // app potrebbe non esserci
+            filter = filter.and(appPath.eq(appValue)); 
         }
         return filter;
     }
@@ -706,9 +715,13 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public ObjectStatus getAndUpdateObjectState(String objectId, String objectType, String app) throws MasterjobsDataBaseException {
         ObjectStatus objectStatus;
+        QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
         
         // crea il filtro per cercare l'oggetto in base ai paramettri non null passati
-        BooleanExpression filter = getObjectStatusFilter(objectId, objectType, app);
+        BooleanExpression filter = getObjectFilter(
+                qObjectStatus.objectId, objectId, 
+                qObjectStatus.objectType, objectType, 
+                qObjectStatus.app, app);
         
         /* in una nuova transazione, con commit al temine,
         * legge (tramite una select for update) l'oggetto e se è in IDLE lo setta in PENDING
@@ -799,23 +812,30 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @return "true" se il set è eseguibile, "false" altrimenti
      */
     public boolean isExecutable(Set set) {
-        QSet qSet = QSet.set;
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        BooleanExpression filter = 
-                getObjectStatusFilter(set.getObjectId(), set.getObjectType(), set.getApp())
-                .and(qSet.id.lt(set.getId()));
-        
-        /* 
-        * conta i set per lo stesso oggetto con id più piccolo del set in esame:
-        * se ce ne sono, vuol dire che non posso ancora eseguire questo set
-        */
-        Long setCount = queryFactory
-            .select(qSet.count())
-            .from(qSet)
-            .where(filter)
-            .fetchOne();
-        
-        return setCount == 0;
+        if (set.getObjectId() != null) {
+            QSet qSet = QSet.set;
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            BooleanExpression filter = 
+                    getObjectFilter(
+                            qSet.objectId, set.getObjectId(),
+                            qSet.objectType, set.getObjectType(), 
+                            qSet.app, set.getApp())
+                    .and(qSet.id.lt(set.getId()));
+
+            /* 
+            * conta i set per lo stesso oggetto con id più piccolo del set in esame:
+            * se ce ne sono, vuol dire che non posso ancora eseguire questo set
+            */
+            Long setCount = queryFactory
+                .select(qSet.count())
+                .from(qSet)
+                .where(filter)
+                .fetchOne();
+
+            return setCount == 0;
+        } else {
+            return true;
+        }
     }
     
     
