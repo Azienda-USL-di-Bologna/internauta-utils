@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs;
+package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,8 +8,11 @@ import java.util.List;
 /**
  *
  * @author gdm
+ * 
+ * Classe che rappresenta un messaggio letto da redis per l'esecuzione di un set di jobs
  */
 public class MasterjobsQueueData {
+    private String queue;
     private Long set;
     private List<Long> jobs;
     
@@ -21,6 +24,14 @@ public class MasterjobsQueueData {
     
     public MasterjobsQueueData(ObjectMapper objectMapper){
         this.objectMapper = objectMapper;
+    }
+
+    public String getQueue() {
+        return queue;
+    }
+
+    public void setQueue(String queue) {
+        this.queue = queue;
     }
     
     public Long getSet() {
@@ -47,6 +58,11 @@ public class MasterjobsQueueData {
         this.objectMapper = objectMapper;
     }
     
+    /**
+     * trasforma l'oggetto in una stringa json (per scriverla nella coda redis)
+     * @return
+     * @throws JsonProcessingException 
+     */
     public String dump() throws JsonProcessingException {
         return this.objectMapper.writeValueAsString(this);
     }

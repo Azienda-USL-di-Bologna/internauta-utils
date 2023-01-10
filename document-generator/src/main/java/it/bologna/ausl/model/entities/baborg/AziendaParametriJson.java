@@ -299,14 +299,20 @@ public class AziendaParametriJson implements Serializable {
         private String mailServerSmtpUrl;
         private Integer mailServerSmtpPort;
         private String mailFrom;
+        private Boolean sslAuth = false;
+        private String username;
+        private String password;
 
         public MailParams() {
         }
 
-        public MailParams(Integer mailServerSmtpPort, String mailServerSmtpUrl, String mailFrom) {
+        public MailParams(Integer mailServerSmtpPort, String mailServerSmtpUrl, String mailFrom, Boolean sslAuth, String username, String password) {
             this.mailServerSmtpPort = mailServerSmtpPort;
             this.mailServerSmtpUrl = mailServerSmtpUrl;
             this.mailFrom = mailFrom;
+            this.sslAuth = sslAuth;
+            this.username = username;
+            this.password = password;
         }
 
         public Integer getMailServerSmtpPort() {
@@ -331,6 +337,30 @@ public class AziendaParametriJson implements Serializable {
 
         public void setMailFrom(String mailFrom) {
             this.mailFrom = mailFrom;
+        }
+
+        public Boolean getSslAuth() {
+            return sslAuth;
+        }
+
+        public void setSslAuth(Boolean sslAuth) {
+            this.sslAuth = sslAuth;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 

@@ -23,10 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
  *  nel momento della sua esecuzione il worker creerà i JobWorkerData
  * 
  * NB: le classi concrete che implementeranno questa classe devono esse annotate come:
+ * @param <T> classe che estende JobWorkerData e raprpesenta i dati del job
+ * @param <R> classe che estende JobWorkerResult e raprpesenta i risultati del job
+ * 
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker implements Worker {
+public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResult> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
     protected JobWorkerData workerData;
@@ -60,7 +63,7 @@ public abstract class JobWorker implements Worker {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
-    public JobWorkerResult doWork() throws MasterjobsWorkerException {
+    public R doWork() throws MasterjobsWorkerException {
         if (deferred) {
             this.workerData = this.workerDeferredData.toWorkerData();
         }
@@ -77,6 +80,16 @@ public abstract class JobWorker implements Worker {
         else
             return workerData;
     }
+    
+    /**
+     * Torna i parametri del job.
+     * @param <T>
+     * @param workerDataClass la classe dei parametri del woker in cui castare
+     * @return 
+     */
+    protected T getWorkerData() {
+        return (T) workerData;
+    }
 
     /**
      * Indica se un job è deferred
@@ -92,5 +105,5 @@ public abstract class JobWorker implements Worker {
      * @throws MasterjobsWorkerException nel caso di un errore nell'esecuzione del job
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    protected abstract JobWorkerResult doRealWork() throws MasterjobsWorkerException;
+    protected abstract R doRealWork() throws MasterjobsWorkerException;
 }

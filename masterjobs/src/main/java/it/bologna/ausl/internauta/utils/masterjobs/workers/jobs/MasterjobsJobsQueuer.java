@@ -2,22 +2,33 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
+import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
+import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
+import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.model.entities.masterjobs.Job;
+import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
+import it.bologna.ausl.model.entities.masterjobs.QJob;
+import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
@@ -45,18 +56,20 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
     @Qualifier(value = "redisMaterjobs")
     private RedisTemplate redisTemplate;
     
-    @Autowired
-    private BeanFactory beanFactory;
-    
 //    private PlatformTransactionManager transactionManager;
     
     @Autowired 
     private TransactionTemplate transactionTemplate;
     
-//    private MasterjobsQueuer self;
+    @Autowired
+    private MasterjobsUtils masterjobsUtils;
     
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
+    
+    @Autowired
+    private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
 //    @PostConstruct
 //    public void init() {
@@ -76,15 +89,18 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
     public void queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
-//        MasterjobsQueuer self = beanFactory.getBean(MasterjobsQueuer.class);
-//        MasterjobsQueueData queueData = self.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
-//        transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
-            return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
+            try {
+                return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
+            } catch (MasterjobsBadDataException ex) {
+                String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
+                log.error(errorMessage, ex);
+                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+            }
         });
         try {
-            insertInQueue(queueData, priority);
+            insertInQueue(queueData);
         } catch (Exception ex) {
             String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
             log.error(errorMessage, ex);
@@ -99,13 +115,11 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
     /**
      * crea un set di jobs e lo inserisce nella coda redis di esecuzione
      * @param queueData
-     * @param priority
      * @throws JsonProcessingException
      * @throws MasterjobsBadDataException 
      */
-    private void insertInQueue(MasterjobsQueueData queueData, Set.SetPriority priority) throws JsonProcessingException, MasterjobsBadDataException {
-        String queue = masterjobsObjectsFactory.getQueueBySetPriority(priority);
-        redisTemplate.opsForList().rightPush(queue, queueData.dump());
+    private void insertInQueue(MasterjobsQueueData queueData) throws JsonProcessingException {
+        redisTemplate.opsForList().rightPush(queueData.getQueue(), queueData.dump());
     }
     
     /**
@@ -117,9 +131,10 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
      * @param waitForObject
      * @param priority
      * @return 
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException 
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) {
+    public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsBadDataException {
 
         Set set = new Set();
         if (objectId != null)
@@ -154,7 +169,73 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
             jobsId.add(job.getId());
         }
         
-        MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(jobsId, set.getId());
+        String queue = masterjobsUtils.getQueueBySetPriority(priority);
+        MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(jobsId, set.getId(), queue);
         return queueData;
+    }
+    
+    /**
+     * Rilancia i job in errore nelle loro code di appartenenza, per far si che ne venga ritentata l'esecuzione
+     */
+    public void relaunchJobsInError() {
+//        log.info("pausing all threads");
+//        pauseThreads();
+        
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(a -> {
+            QJob qJob = QJob.job;
+            QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
+            
+            // prima setto gli objectStatus in error nello stato IDLE usando la select for update
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            List<ObjectStatus> objectStatusList = queryFactory.query().setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .select(qObjectStatus)
+                .from(qObjectStatus)
+                .where(qObjectStatus.state.eq(ObjectStatus.ObjectState.ERROR.toString()))
+                .fetch();
+            queryFactory
+                .update(qObjectStatus)
+                .set(qObjectStatus.state, ObjectStatus.ObjectState.IDLE.toString())
+                .where(qObjectStatus.in(objectStatusList))
+                .execute();
+            
+            // poi setto anche i job in error nello stato READY
+            queryFactory
+                .update(qJob)
+                .set(qJob.state, Job.JobState.READY.toString())
+                .where(qJob.state.eq(Job.JobState.ERROR.toString()))
+                .execute();
+        }); // committo
+        
+        /* 
+        * Una volta che lato DB è tutto committato, allora sposto nella waitQueue tutto quello che c'è nella errorQueue.
+        * Questo farà si che i threads che si occupano della waitQueue, smistino i job nelle loro code di appartenenza
+        */
+        while (redisTemplate.opsForList().move(
+            masterjobsApplicationConfig.getErrorQueue(), RedisListCommands.Direction.LEFT, 
+            masterjobsApplicationConfig.getWaitQueue(), RedisListCommands.Direction.RIGHT) != null) {}
+
+//        log.info("resuming all threads");
+//        resumeThreads();
+    }
+    
+    private void pauseThreads() {
+        Map commands = new HashMap();
+        commands.put(MasterjobsJobsExecutionThread.COMMAND_KEY, MasterjobsJobsExecutionThread.PAUSE_COMMAND);
+        redisTemplate.opsForStream().add(masterjobsApplicationConfig.getCommandsStreamName(), commands);
+        while (redisTemplate.opsForHash().size(masterjobsApplicationConfig.getActiveThreadsSetName()) > 0) {
+            log.info("waiting for all threads to pause");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                log.error("interrupt exception", ex);
+            }
+        }
+    }
+    
+    private void resumeThreads() {
+        Map commands = new HashMap();
+        commands.put(MasterjobsJobsExecutionThread.COMMAND_KEY, MasterjobsJobsExecutionThread.RESUME_COMMAND);
+        redisTemplate.opsForStream().add(masterjobsApplicationConfig.getCommandsStreamName(), commands);
     }
 }
