@@ -1,5 +1,9 @@
 package it.bologna.ausl.internauta.utils.masterjobs.configuration;
 
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,6 +13,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class MasterjobsApplicationConfig {
+    private static final Logger log = LoggerFactory.getLogger(MasterjobsApplicationConfig.class);
+    
+    @Value("${masterjobs.manager.use-debugging-options:false}")
+    private boolean useDebuggingOptions;
+    
     @Value("${masterjobs.manager.jobs-executor.redis-active-threads-set-name}")
     private String activeThreadsSetName;
     
@@ -53,6 +62,17 @@ public class MasterjobsApplicationConfig {
     
     @Value("${masterjobs.manager.jobs-executor.wait-queue-threads-number}")
     private Integer waitQueueThreadsNumber;
+    
+    private String machineIp;
+    
+
+    public boolean isUseDebuggingOptions() {
+        return useDebuggingOptions;
+    }
+
+    public void setUseDebuggingOptions(boolean useDebuggingOptions) {
+        this.useDebuggingOptions = useDebuggingOptions;
+    }
 
     public String getActiveThreadsSetName() {
         return activeThreadsSetName;
@@ -112,5 +132,21 @@ public class MasterjobsApplicationConfig {
 
     public Integer getWaitQueueThreadsNumber() {
         return waitQueueThreadsNumber;
+    }
+
+    public String getMachineIp() {
+        /* 
+        calcola l'indirizzo ip della macchina
+        codice preso da: https://stackoverflow.com/a/38342964
+        */
+        if (this.machineIp == null) {
+            try(final DatagramSocket socket = new DatagramSocket()){
+                socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+                this.machineIp = socket.getLocalAddress().getHostAddress();
+            } catch (Exception ex) {
+                log.error("error retrieving machine ip", ex);
+            }
+        }
+        return this.machineIp;
     }
 }

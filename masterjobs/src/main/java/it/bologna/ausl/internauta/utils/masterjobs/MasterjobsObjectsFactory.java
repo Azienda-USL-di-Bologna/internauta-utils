@@ -90,6 +90,8 @@ public class MasterjobsObjectsFactory {
             .waitQueue(masterjobsApplicationConfig.getWaitQueue())
             .sleepMillis(masterjobsApplicationConfig.getSleepMillis())
             .queueReadTimeoutMillis(masterjobsApplicationConfig.getQueueReadTimeoutMillis())
+            .useDebuggingOptions(masterjobsApplicationConfig.isUseDebuggingOptions())
+            .ip(masterjobsApplicationConfig.getMachineIp())
             .self(executionThreadObject);
         return executionThreadObject;
     }
