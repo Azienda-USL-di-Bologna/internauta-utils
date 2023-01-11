@@ -16,8 +16,6 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
@@ -73,6 +71,10 @@ public class Set implements Serializable {
     @Basic(optional = true)
     @Column(name = "app")
     private String app;
+    
+    @Basic(optional = true)
+    @Column(name = "inserted_from")
+    private String insertedFrom;
     
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
     @JsonBackReference(value = "jobList")
@@ -135,6 +137,14 @@ public class Set implements Serializable {
 
     public void setApp(String app) {
         this.app = app;
+    }
+
+    public String getInsertedFrom() {
+        return insertedFrom;
+    }
+
+    public void setInsertedFrom(String insertedFrom) {
+        this.insertedFrom = insertedFrom;
     }
 
     public List<Job> getJobList() {

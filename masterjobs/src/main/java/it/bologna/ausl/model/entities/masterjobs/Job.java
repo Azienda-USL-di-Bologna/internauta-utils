@@ -82,6 +82,10 @@ public class Job implements Serializable {
     @Basic(optional = true)
     @Column(name = "error")
     private String error;
+    
+    @Basic(optional = true)
+    @Column(name = "inserted_from")
+    private String insertedFrom;
 
     public Job() {
     }
@@ -141,9 +145,14 @@ public class Job implements Serializable {
     public void setError(String error) {
         this.error = error;
     }
-    
-    
+    public String getInsertedFrom() {
+        return insertedFrom;
+    }
 
+    public void setInsertedFrom(String insertedFrom) {
+        this.insertedFrom = insertedFrom;
+    }
+    
     public Boolean getDeferred() {
         return deferred;
     }
@@ -151,5 +160,5 @@ public class Job implements Serializable {
     public void setDeferred(Boolean deferred) {
         this.deferred = deferred;
     }
-    
+
 }

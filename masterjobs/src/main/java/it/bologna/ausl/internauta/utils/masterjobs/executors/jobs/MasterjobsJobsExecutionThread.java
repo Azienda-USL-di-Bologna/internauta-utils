@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.StringPath;
@@ -43,6 +44,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
+import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.UUID;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -101,12 +106,16 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     protected String outQueue;
     protected int sleepMillis;
     protected int queueReadTimeoutMillis;
+    protected boolean useDebuggingOptions;
+    protected String ip;
 
     protected boolean stopped = false;
     protected boolean paused = false;
+    
 
     private String lastStreamId = "0";
     private String currentCommand = null;
+    
     
     /*
     * Metodi builder
@@ -184,6 +193,18 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return this;
     }
     
+    @Override
+    public MasterjobsJobsExecutionThread useDebuggingOptions(boolean useDebuggingOptions) {
+        this.useDebuggingOptions = useDebuggingOptions;
+        return this;
+    }
+    
+    @Override
+    public MasterjobsJobsExecutionThread ip(String ip) {
+        this.ip = ip;
+        return this;
+    }
+    
     /**
      * da implementare tornando a quale coda è affine l'executor
      * i possibili valori sono: inQueueNormal, inQueueHigh, inQueueHighest, waitQueue
@@ -227,8 +248,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      */
     @Override
     public void run() {
+        
         while (!stopped && !paused) {
-//            boolean isInterrupted = Thread.currentThread().isInterrupted();
             insertInActiveThreadsSet();
             try {
                 log.info(String.format("executor %s started", getUniqueName()));
@@ -469,6 +490,64 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
+     * Funzione solo per debugging, ha senso solo se sono attive le debugging options.
+     * Controlla se il job può essere eseguito o meno.
+     * Se non sono attive le debugging options torna sempre "true".
+     * Un job può essere eseguito solo se nel parametro filerJobs delle debugging options è prensente jobName con l'ip della macchina
+     * @param jobName il job da controllare
+     * @return "true" se il job con il jobName passato può essere eseguito, "false" altrimenti
+     */
+    protected boolean debuggingCanExecuteJob(String jobName) {
+        boolean res = true;
+        if (useDebuggingOptions) {
+            JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+            QDebuggingOption qDebuggingOption = QDebuggingOption.debuggingOption;
+            Object filterJobsObj = jPAQueryFactory
+                    .select(qDebuggingOption.value)
+                    .from(qDebuggingOption)
+                    .where(qDebuggingOption.key.eq(DebuggingOption.Key.filterJobs.toString()))
+                    .fetchOne();
+            Map<String, Object> filterJobs = objectMapper.convertValue(filterJobsObj, new TypeReference<Map<String, Object>>(){});
+            if (filterJobs != null && !filterJobs.isEmpty()) {
+//                Object executeOthersObj = filterJobs.get("executeOthers");
+//                Boolean executeOthers = objectMapper.convertValue(executeOthersObj, Boolean.class);
+                //TODO: finire
+                List<String> ipsToFilter = objectMapper.convertValue(filterJobs.get(jobName), new TypeReference<List<String>>(){});
+                if (ipsToFilter != null && !ipsToFilter.isEmpty() && !ipsToFilter.stream().anyMatch(j -> j.equals(this.ip))) {
+                    res = false;
+                }
+            }
+        }
+        return res;
+    }
+    
+    /**
+     * Funzione solo per debugging, ha senso solo se sono attive le debugging options.
+     * Controlla se il set può essere eseguito dalla macchina.
+     * Se non sono attive le debugging options torna sempre "true".
+     * Il set può essere eseguito solo se esiste il parametro limitSetExecutionToInsertedIP ed è "true"
+     * @param set il set da controllare
+     * @return "true" se il set passato può essere eseguito, "false" altrimenti
+     */
+    protected boolean debuggingCanExecuteSet(Set set) {
+        boolean res = true;
+        if (useDebuggingOptions) {
+            if (set.getInsertedFrom() != null) {
+                QDebuggingOption qDebuggingOption = QDebuggingOption.debuggingOption;
+                JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+                Object limitSetExecutionToInsertedIPObj = jPAQueryFactory
+                    .select(qDebuggingOption.value)
+                    .from(qDebuggingOption)
+                    .where(qDebuggingOption.key.eq(DebuggingOption.Key.limitSetExecutionToInsertedIP.toString()))
+                    .fetchOne();
+                Boolean limitSetExecutionToInsertedIP = objectMapper.convertValue(limitSetExecutionToInsertedIPObj, Boolean.class);
+                res = limitSetExecutionToInsertedIP && set.getInsertedFrom().equals(this.ip);
+            }
+        }
+        return res;
+    }
+    
+    /**
      * Esegue i job presenti all'interno di MasterjobsQueueData passato
      * @param queueData l'oggetto costruito da quanto letto dalla coda redis
      * @param objectStatus l'ObjectStatus a cui il set è associato (può essere anche null)
@@ -479,20 +558,23 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      */
     protected void executeJobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
         
-        /* per prima cosa controllo se posso eseguire i job
-        * I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
-        * se la funzione isExecutable() mi torna true. 
-        *  Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
+        /* 
+        per prima cosa controllo se posso eseguire i job
+        I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
+        se la funzione isExecutable() mi torna true. 
+        Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
         */
-        if (!set.getWaitObject() || this.isExecutable(set)) {
-            /* tengo una lista dei job completati.
-            * Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
+        if (debuggingCanExecuteSet(set) && (!set.getWaitObject() || this.isExecutable(set))) {
+            /* 
+            tengo una lista dei job completati.
+            Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
             */
             List<Long> jobsCompleted = new ArrayList();
+            boolean stoppedJobsExecution = false;
             // se il set può essere eseguito allora ciclo su tutti i job e li eseguo uno ad uno
             for (Long jobId : queueData.getJobs()) {
                 Job job = this.getJob(jobId);
-                if (job != null) {
+                if (job != null && debuggingCanExecuteJob(job.getName())) {
                     try {
                         // carico i dati del job
                         Map<String, Object> data = job.getData();
@@ -521,12 +603,29 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                         removeJobsCompletedFromQueueData(queueData, jobsCompleted);
                         throw ex;
                     }
-                } else { // se il job non è in tabella, lo considero completato e vado avanti
+                } else if (job == null) { // se il job non è in tabella, lo considero completato e vado avanti
                     jobsCompleted.add(jobId);
+                } else { // se non posso eseguire il job a causa delle debugging option, ne interrompo l'esecuzione e setto che l'ho stoppata
+                    stoppedJobsExecution = true;
+                    break;
                 }
             }
             // ho finito l'esecuzione dei jobs del set
 
+            //se ho stoppato l'esecuzione, sposto nella waitQueue i rimanenti, in modo che saranno rimessi in coda
+            if (stoppedJobsExecution) {
+                // rimuovo i jobs completati dalla lista dei jobs
+                removeJobsCompletedFromQueueData(queueData, jobsCompleted);
+                try {
+                    // sposto i jobs rimanenti nella waitQueue
+                    redisTemplate.opsForList().rightPush(this.waitQueue, queueData.dump());
+                } catch (Throwable ex) {
+                    String errorMessage = "error moving jobs on wait queue after skip";
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsExecutionThreadsException(errorMessage, ex);
+                }
+            }
+            
             // elimino la workQueue
             redisTemplate.delete(this.workQueue);
         } else {

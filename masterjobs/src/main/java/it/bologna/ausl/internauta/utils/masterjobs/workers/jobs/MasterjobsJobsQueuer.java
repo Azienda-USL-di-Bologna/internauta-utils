@@ -44,7 +44,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Component
 public class MasterjobsJobsQueuer {
-private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
+    private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -137,6 +137,7 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
     public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsBadDataException {
 
         Set set = new Set();
+        set.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
         if (objectId != null)
             set.setObjectId(objectId);
         if (objectType != null)
@@ -153,6 +154,7 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
         List<Job> jobs = new ArrayList<>(); 
         for (JobWorker worker : workers) {
             Job job = new Job();
+            job.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
             job.setDeferred(worker.isDeferred());
             JobWorkerDataInterface workerData = worker.getData();
             if (workerData != null)
