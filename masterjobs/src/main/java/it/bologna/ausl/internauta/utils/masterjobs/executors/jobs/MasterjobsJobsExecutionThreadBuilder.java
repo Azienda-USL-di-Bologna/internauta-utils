@@ -17,4 +17,6 @@ public interface MasterjobsJobsExecutionThreadBuilder {
     public MasterjobsJobsExecutionThread outQueue(String outQueue);
     public MasterjobsJobsExecutionThread sleepMillis(int sleepMillis);
     public MasterjobsJobsExecutionThread queueReadTimeoutMillis(int queueReadTimeoutMillis);
+    public MasterjobsJobsExecutionThread useDebuggingOptions(boolean useDebuggingOptions);
+    public MasterjobsJobsExecutionThread ip(String ip);
 }
