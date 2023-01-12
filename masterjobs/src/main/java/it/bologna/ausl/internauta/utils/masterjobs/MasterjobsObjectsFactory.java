@@ -127,7 +127,7 @@ public class MasterjobsObjectsFactory {
             worker.build((JobWorkerData) workerData);
         }
         MasterjobsJobsQueuer masterjobsJobsQueuer = beanFactory.getBean(MasterjobsJobsQueuer.class);
-        worker.init(this, masterjobsJobsQueuer);
+        worker.init(this, masterjobsJobsQueuer, masterjobsApplicationConfig.isUseDebuggingOptions(), masterjobsApplicationConfig.getMachineIp());
         return worker;
     }
     
@@ -141,7 +141,7 @@ public class MasterjobsObjectsFactory {
         Class<? extends Worker> serviceWorkerClass = workerMap.get(name);
         ServiceWorker serviceWorker = (ServiceWorker) beanFactory.getBean(serviceWorkerClass);
         MasterjobsJobsQueuer masterjobsJobsQueuer = beanFactory.getBean(MasterjobsJobsQueuer.class);
-        serviceWorker.init(this, masterjobsJobsQueuer);
+        serviceWorker.init(this, masterjobsJobsQueuer, masterjobsApplicationConfig.isUseDebuggingOptions(), masterjobsApplicationConfig.getMachineIp());
         return serviceWorker;
     }
 }

@@ -79,6 +79,10 @@ public class Service implements Serializable {
     private Boolean active = true;
     
     @Basic(optional = true)
+    @Column(name = "execute_only_on")
+    private String executeOnlyOn;
+    
+    @Basic(optional = true)
     @Column(name = "note")
     private String note;
     
@@ -139,6 +143,14 @@ public class Service implements Serializable {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getExecuteOnlyOn() {
+        return executeOnlyOn;
+    }
+
+    public void setExecuteOnlyOn(String executeOnlyOn) {
+        this.executeOnlyOn = executeOnlyOn;
     }
 
     public String getNote() {
