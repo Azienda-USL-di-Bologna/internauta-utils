@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
 import it.bologna.ausl.model.entities.masterjobs.Set;

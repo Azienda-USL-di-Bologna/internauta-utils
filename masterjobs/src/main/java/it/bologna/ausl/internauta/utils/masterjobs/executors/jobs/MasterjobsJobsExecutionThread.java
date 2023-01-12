@@ -46,8 +46,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
 import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
 import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.UUID;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
