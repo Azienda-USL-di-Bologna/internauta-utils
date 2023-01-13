@@ -4,7 +4,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -62,6 +64,9 @@ public class MasterjobsApplicationConfig {
     
     @Value("${masterjobs.manager.jobs-executor.wait-queue-threads-number}")
     private Integer waitQueueThreadsNumber;
+    
+    @Value("${server.port}")
+    private Integer port;
     
     private String machineIp;
     
@@ -133,6 +138,11 @@ public class MasterjobsApplicationConfig {
     public Integer getWaitQueueThreadsNumber() {
         return waitQueueThreadsNumber;
     }
+    
+    public Integer getHttpPort() {
+        return port;
+    }
+    
 
     public String getMachineIp() {
         /* 
