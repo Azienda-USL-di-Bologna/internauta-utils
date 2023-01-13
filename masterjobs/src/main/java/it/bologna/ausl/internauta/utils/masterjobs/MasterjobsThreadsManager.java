@@ -86,7 +86,7 @@ public class MasterjobsThreadsManager {
     public void scheduleServiceExecutorThreads() throws MasterjobsWorkerException {
         // schedula i ServiceThreads attivi
         MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler = new MasterjobsServicesExecutionScheduler(entityManager, masterjobsObjectsFactory, scheduledExecutorService);
-        masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
+//        masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
     }
     

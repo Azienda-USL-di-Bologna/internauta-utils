@@ -166,12 +166,12 @@ public class MasterjobsServicesExecutionScheduler {
      * Schedula il thread che si accorge delle modifiche alla tabella dei servizi
      * @throws MasterjobsWorkerException 
      */
-    public void scheduleUpdateServiceDetector() throws MasterjobsWorkerException {
-        ChangeServiceDetectorWorker service = (ChangeServiceDetectorWorker) getServiceWorkerAndInit(ChangeServiceDetectorWorker.class.getSimpleName(), null);
-        ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
-        service.setScheduledFuture(scheduledFuture);
-        service.setMasterjobsServicesExecutionScheduler(this);
-    }
+//    public void scheduleUpdateServiceDetector() throws MasterjobsWorkerException {
+//        ChangeServiceDetectorWorker service = (ChangeServiceDetectorWorker) getServiceWorkerAndInit(ChangeServiceDetectorWorker.class.getSimpleName(), null);
+//        ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
+//        service.setScheduledFuture(scheduledFuture);
+//        service.setMasterjobsServicesExecutionScheduler(this);
+//    }
     
     private boolean isToday(ZonedDateTime zonedDateTime, ZonedDateTime now) {
         return zonedDateTime.toLocalDate().equals(now.toLocalDate());
@@ -180,6 +180,7 @@ public class MasterjobsServicesExecutionScheduler {
     private ServiceWorker getServiceWorkerAndInit(String name, Service serviceEntity) throws MasterjobsWorkerException {
         ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
         serviceWorker.setServiceEntity(serviceEntity);
+        serviceWorker.setMasterjobsServicesExecutionScheduler(this);
         // serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
         return serviceWorker;
     }
