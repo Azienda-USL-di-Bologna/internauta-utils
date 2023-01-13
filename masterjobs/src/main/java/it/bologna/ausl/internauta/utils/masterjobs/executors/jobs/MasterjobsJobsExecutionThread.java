@@ -1,8 +1,10 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
@@ -42,6 +44,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
+import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
 import java.util.UUID;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -100,12 +104,16 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     protected String outQueue;
     protected int sleepMillis;
     protected int queueReadTimeoutMillis;
+    protected boolean useDebuggingOptions;
+    protected String ip;
 
     protected boolean stopped = false;
     protected boolean paused = false;
+    
 
     private String lastStreamId = "0";
     private String currentCommand = null;
+    
     
     /*
     * Metodi builder
@@ -183,6 +191,18 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return this;
     }
     
+    @Override
+    public MasterjobsJobsExecutionThread useDebuggingOptions(boolean useDebuggingOptions) {
+        this.useDebuggingOptions = useDebuggingOptions;
+        return this;
+    }
+    
+    @Override
+    public MasterjobsJobsExecutionThread ip(String ip) {
+        this.ip = ip;
+        return this;
+    }
+    
     /**
      * da implementare tornando a quale coda è affine l'executor
      * i possibili valori sono: inQueueNormal, inQueueHigh, inQueueHighest, waitQueue
@@ -226,8 +246,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      */
     @Override
     public void run() {
+        
         while (!stopped && !paused) {
-//            boolean isInterrupted = Thread.currentThread().isInterrupted();
             insertInActiveThreadsSet();
             try {
                 log.info(String.format("executor %s started", getUniqueName()));
@@ -399,39 +419,40 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             
             // carica i dati necessati all'esecuzione dei job
             set = self.getSet(queueData.getSet());
-            String objectId = set.getObjectId();
-            String objectType = set.getObjectType();
-            String app = set.getApp();
-            ObjectStatus.ObjectState objectState;
-            
-            /* solo se il set deve attendere il completamento dei job di set precedenti, 
-            * devo scrivere nella tabella ObjectStatus lo stato dell'oggetto a cui il set è attaccato
-            * nel caso l'ogetto era già presente nella tabella, allora ne leggo lo stato
-            */
-            if (set.getWaitObject()) {
-                objectStatus = self.getAndUpdateObjectState(objectId, objectType, app);
-                objectState = objectStatus.getState();
-            } else { // se il set non deve attendere altri set allora non scrivo nulla in tabella e considero l'oggetto libero (IDLE)
-                objectState = ObjectStatus.ObjectState.IDLE;
-            }
-            switch (objectState) {
-                case ERROR:
-                    redisTemplate.opsForList().move(
-                    this.workQueue, RedisListCommands.Direction.LEFT, 
-                    this.errorQueue, RedisListCommands.Direction.RIGHT);
-                    break;
-                case IDLE:
-                case PENDING:
-                    executeJobs(queueData, objectStatus, set);
-                    break;
-                default:
-                    String errorMessage = String.format("object state %s not excepted", objectState);
-                    log.error(errorMessage);
-                    throw new MasterjobsDataBaseException(errorMessage);
+            if (set != null) {
+                String objectId = set.getObjectId();
+                String objectType = set.getObjectType();
+                String app = set.getApp();
+                ObjectStatus.ObjectState objectState;
+
+                /* solo se il set deve attendere il completamento dei job di set precedenti, 
+                * devo scrivere nella tabella ObjectStatus lo stato dell'oggetto a cui il set è attaccato
+                * nel caso l'ogetto era già presente nella tabella, allora ne leggo lo stato
+                */
+                if (set.getWaitObject()) {
+                    objectStatus = self.getAndUpdateObjectState(objectId, objectType, app);
+                    objectState = objectStatus.getState();
+                } else { // se il set non deve attendere altri set allora non scrivo nulla in tabella e considero l'oggetto libero (IDLE)
+                    objectState = ObjectStatus.ObjectState.IDLE;
+                }
+                switch (objectState) {
+                    case ERROR:
+                        redisTemplate.opsForList().move(
+                        this.workQueue, RedisListCommands.Direction.LEFT, 
+                        this.errorQueue, RedisListCommands.Direction.RIGHT);
+                        break;
+                    case IDLE:
+                    case PENDING:
+                        executeJobs(queueData, objectStatus, set);
+                        break;
+                    default:
+                        String errorMessage = String.format("object state %s not excepted", objectState);
+                        log.error(errorMessage);
+                        throw new MasterjobsDataBaseException(errorMessage);
+                }
             }
         } catch (Throwable t) {
             try {
-                t.printStackTrace();
                 if (!(t.getClass().isAssignableFrom(MasterjobsWorkerException.class))) {
                     /*
                     * se c'è un errore nell'esecuzione del job:
@@ -443,7 +464,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     }
                     
                     if (set != null && set.getWaitObject()) {
-                        self.setInError(null, objectStatus);
+                        self.setInError(null, objectStatus, null);
                     }
                 }
                 redisTemplate.opsForList().rightPush(this.errorQueue, queueData.dump());
@@ -467,6 +488,64 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
+     * Funzione solo per debugging, ha senso solo se sono attive le debugging options.
+     * Controlla se il job può essere eseguito o meno.
+     * Se non sono attive le debugging options torna sempre "true".
+     * Un job può essere eseguito solo se nel parametro filerJobs delle debugging options è prensente jobName con l'ip della macchina
+     * @param jobName il job da controllare
+     * @return "true" se il job con il jobName passato può essere eseguito, "false" altrimenti
+     */
+    protected boolean debuggingCanExecuteJob(String jobName) {
+        boolean res = true;
+        if (useDebuggingOptions) {
+            JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+            QDebuggingOption qDebuggingOption = QDebuggingOption.debuggingOption;
+            Object filterJobsObj = jPAQueryFactory
+                    .select(qDebuggingOption.value)
+                    .from(qDebuggingOption)
+                    .where(qDebuggingOption.key.eq(DebuggingOption.Key.filterJobs.toString()))
+                    .fetchOne();
+            Map<String, Object> filterJobs = objectMapper.convertValue(filterJobsObj, new TypeReference<Map<String, Object>>(){});
+            if (filterJobs != null && !filterJobs.isEmpty()) {
+//                Object executeOthersObj = filterJobs.get("executeOthers");
+//                Boolean executeOthers = objectMapper.convertValue(executeOthersObj, Boolean.class);
+                //TODO: finire
+                List<String> ipsToFilter = objectMapper.convertValue(filterJobs.get(jobName), new TypeReference<List<String>>(){});
+                if (ipsToFilter != null && !ipsToFilter.isEmpty() && !ipsToFilter.stream().anyMatch(j -> j.equals(this.ip))) {
+                    res = false;
+                }
+            }
+        }
+        return res;
+    }
+    
+    /**
+     * Funzione solo per debugging, ha senso solo se sono attive le debugging options.
+     * Controlla se il set può essere eseguito dalla macchina.
+     * Se non sono attive le debugging options torna sempre "true".
+     * Il set può essere eseguito solo se esiste il parametro limitSetExecutionToInsertedIP ed è "true"
+     * @param set il set da controllare
+     * @return "true" se il set passato può essere eseguito, "false" altrimenti
+     */
+    protected boolean debuggingCanExecuteSet(Set set) {
+        boolean res = true;
+        if (useDebuggingOptions) {
+            if (set.getInsertedFrom() != null) {
+                QDebuggingOption qDebuggingOption = QDebuggingOption.debuggingOption;
+                JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+                Object limitSetExecutionToInsertedIPObj = jPAQueryFactory
+                    .select(qDebuggingOption.value)
+                    .from(qDebuggingOption)
+                    .where(qDebuggingOption.key.eq(DebuggingOption.Key.limitSetExecutionToInsertedIP.toString()))
+                    .fetchOne();
+                Boolean limitSetExecutionToInsertedIP = objectMapper.convertValue(limitSetExecutionToInsertedIPObj, Boolean.class);
+                res = limitSetExecutionToInsertedIP && set.getInsertedFrom().equals(this.ip);
+            }
+        }
+        return res;
+    }
+    
+    /**
      * Esegue i job presenti all'interno di MasterjobsQueueData passato
      * @param queueData l'oggetto costruito da quanto letto dalla coda redis
      * @param objectStatus l'ObjectStatus a cui il set è associato (può essere anche null)
@@ -477,20 +556,23 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      */
     protected void executeJobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
         
-        /* per prima cosa controllo se posso eseguire i job
-        * I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
-        * se la funzione isExecutable() mi torna true. 
-        *  Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
+        /* 
+        per prima cosa controllo se posso eseguire i job
+        I job possono essere eseguti se non devono attendere l'esecuzione di altri job, oppure
+        se la funzione isExecutable() mi torna true. 
+        Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
         */
-        if (!set.getWaitObject() || this.isExecutable(set)) {
-            /* tengo una lista dei job completati.
-            * Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
+        if (debuggingCanExecuteSet(set) && (!set.getWaitObject() || this.isExecutable(set))) {
+            /* 
+            tengo una lista dei job completati.
+            Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
             */
             List<Long> jobsCompleted = new ArrayList();
+            boolean stoppedJobsExecution = false;
             // se il set può essere eseguito allora ciclo su tutti i job e li eseguo uno ad uno
             for (Long jobId : queueData.getJobs()) {
                 Job job = this.getJob(jobId);
-                if (job != null) {
+                if (job != null && debuggingCanExecuteJob(job.getName())) {
                     try {
                         // carico i dati del job
                         Map<String, Object> data = job.getData();
@@ -508,12 +590,9 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     } catch (Throwable ex) {
                         /*
                         * se c'è un errore nell'esecuzione del job:
-                        * se il set ha il wait, vuol dire che avrò la riga in object_status, per cui la setto in errore,
-                        * poi setto in errore anche il job
+                        * setto in errore la riga in object_status (se esiste) e setto in errore anche il job
                         */
-                        if (set.getWaitObject()) {
-                            self.setInError(job, objectStatus);
-                        }
+                        self.setInError(job, objectStatus, ex.getMessage());
 
                         /*
                         * una volta settato in errore sul DB, rimuovo i jobs completati dal queueData e
@@ -522,12 +601,29 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                         removeJobsCompletedFromQueueData(queueData, jobsCompleted);
                         throw ex;
                     }
-                } else { // se il job non è in tabella, lo considero completato e vado avanti
+                } else if (job == null) { // se il job non è in tabella, lo considero completato e vado avanti
                     jobsCompleted.add(jobId);
+                } else { // se non posso eseguire il job a causa delle debugging option, ne interrompo l'esecuzione e setto che l'ho stoppata
+                    stoppedJobsExecution = true;
+                    break;
                 }
             }
             // ho finito l'esecuzione dei jobs del set
 
+            //se ho stoppato l'esecuzione, sposto nella waitQueue i rimanenti, in modo che saranno rimessi in coda
+            if (stoppedJobsExecution) {
+                // rimuovo i jobs completati dalla lista dei jobs
+                removeJobsCompletedFromQueueData(queueData, jobsCompleted);
+                try {
+                    // sposto i jobs rimanenti nella waitQueue
+                    redisTemplate.opsForList().rightPush(this.waitQueue, queueData.dump());
+                } catch (Throwable ex) {
+                    String errorMessage = "error moving jobs on wait queue after skip";
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsExecutionThreadsException(errorMessage, ex);
+                }
+            }
+            
             // elimino la workQueue
             redisTemplate.delete(this.workQueue);
         } else {
@@ -600,12 +696,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
             * se il set non è attaccato a un oggetto allora objectId sarà null
             */
             if (job.getSet().getObjectId() != null) {
-            // eliminazione object_status
-                BooleanExpression filter = qObjectStatus.objectId.eq(job.getSet().getObjectId());
-                if (job.getSet().getObjectType() != null)  // objectType potrebbe non esserci
-                    filter = filter.and(qObjectStatus.objectType.eq(job.getSet().getObjectType()));
-                if (job.getSet().getApp() != null)  // app potrebbe non esserci
-                    filter = filter.and(qObjectStatus.app.eq(job.getSet().getApp()));
+                // eliminazione object_status
+                BooleanExpression filter = getObjectFilter(
+                        qObjectStatus.objectId, job.getSet().getObjectId(), 
+                        qObjectStatus.objectType, job.getSet().getObjectType(), 
+                        qObjectStatus.objectId, job.getSet().getApp());
                 queryFactory.delete(qObjectStatus).where(filter).execute();
             }
         }
@@ -616,21 +711,23 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * setta in ERROR sul database sia il job, che l'ObjectStatus associato (se presente)
      * @param job
      * @param objectStatus 
+     * @param jobError stringa di errore da inserire in tabella jobs
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    public void setInError(Job job, ObjectStatus objectStatus) {
+    public void setInError(Job job, ObjectStatus objectStatus, String jobError) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         if (job != null) {
             QJob qJob = QJob.job;
             job.setState(Job.JobState.ERROR);
-            objectStatus.setState(ObjectStatus.ObjectState.ERROR);
             queryFactory
                 .update(qJob)
                 .set(qJob.state, job.getState().toString())
+                .set(qJob.error, jobError)
                 .where(qJob.id.eq(job.getId()))
                 .execute();
         }
         if (objectStatus != null) {
+            objectStatus.setState(ObjectStatus.ObjectState.ERROR);
             QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
             queryFactory
                 .update(qObjectStatus)
@@ -679,17 +776,25 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     }
     
     /**
-     * costruisce un filtro per carcare un ObjectStatus con i prametri non null passati
-     * @param objectId
-     * @param objectType
-     * @param app
-     * @return 
+     * costruisce un filtro per cercare un ObjectStatus o un Set con i parametri non null passati
+     * @param objectIdPath il path dell'objectId (es. Qset.set.objectId)
+     * @param objectIdValue il valore dell'objectId
+     * @param objectTypePath il path dell'objectType (es. Qset.set.objectType)
+     * @param objectTypeValue il valore dell'objectType, se è null non viene inserito nel filtro
+     * @param appPath il path dell'app (es. Qset.set.app)
+     * @param appValue il valore dell'app, se è null non viene inserito nel filtro
+     * @return il filtro da inserire nella query
      */
-    private BooleanExpression getObjectStatusFilter(String objectId, String objectType, String app) {
-        QObjectStatus qObjectStatus = QObjectStatus.objectStatus; 
-        BooleanExpression filter = qObjectStatus.objectId.eq(objectId).and(qObjectStatus.objectType.eq(objectType));
-        if (app != null) {
-            filter = filter.and(qObjectStatus.app.eq(app));
+    private BooleanExpression getObjectFilter(
+            StringPath objectIdPath, String objectIdValue, 
+            StringPath objectTypePath, String objectTypeValue, 
+            StringPath appPath, String appValue) {
+        BooleanExpression filter = objectIdPath.eq(objectIdValue);
+        if (objectTypeValue != null) {  // objectType potrebbe non esserci
+            filter = filter.and(objectTypePath.eq(objectTypeValue)); 
+        }
+        if (appValue != null) {  // app potrebbe non esserci
+            filter = filter.and(appPath.eq(appValue)); 
         }
         return filter;
     }
@@ -707,9 +812,13 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public ObjectStatus getAndUpdateObjectState(String objectId, String objectType, String app) throws MasterjobsDataBaseException {
         ObjectStatus objectStatus;
+        QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
         
         // crea il filtro per cercare l'oggetto in base ai paramettri non null passati
-        BooleanExpression filter = getObjectStatusFilter(objectId, objectType, app);
+        BooleanExpression filter = getObjectFilter(
+                qObjectStatus.objectId, objectId, 
+                qObjectStatus.objectType, objectType, 
+                qObjectStatus.app, app);
         
         /* in una nuova transazione, con commit al temine,
         * legge (tramite una select for update) l'oggetto e se è in IDLE lo setta in PENDING
@@ -800,29 +909,30 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @return "true" se il set è eseguibile, "false" altrimenti
      */
     public boolean isExecutable(Set set) {
-        QSet qSet = QSet.set;
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        BooleanExpression filter = 
-            qSet.objectId.eq(set.getObjectId()).and(
-            qSet.id.lt(set.getId()));
-        if (set.getObjectType() != null) { // objectType potrebbe non esserci
-            filter =  filter.and(qSet.objectType.eq(set.getObjectType()));
+        if (set.getObjectId() != null) {
+            QSet qSet = QSet.set;
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            BooleanExpression filter = 
+                    getObjectFilter(
+                            qSet.objectId, set.getObjectId(),
+                            qSet.objectType, set.getObjectType(), 
+                            qSet.app, set.getApp())
+                    .and(qSet.id.lt(set.getId()));
+
+            /* 
+            * conta i set per lo stesso oggetto con id più piccolo del set in esame:
+            * se ce ne sono, vuol dire che non posso ancora eseguire questo set
+            */
+            Long setCount = queryFactory
+                .select(qSet.count())
+                .from(qSet)
+                .where(filter)
+                .fetchOne();
+
+            return setCount == 0;
+        } else {
+            return true;
         }
-        if (set.getApp() != null) { // app potrebbe non esserci
-            filter = filter.and(qSet.app.eq(set.getApp()));
-        }
-        
-        /* 
-        * conta i set per lo stesso oggetto con id più piccolo del set in esame:
-        * se ce ne sono, vuol dire che non posso ancora eseguire questo set
-        */
-        Long setCount = queryFactory
-            .select(qSet.count())
-            .from(qSet)
-            .where(filter)
-            .fetchOne();
-        
-        return setCount == 0;
     }
     
     

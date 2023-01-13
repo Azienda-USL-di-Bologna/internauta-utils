@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.versatore.utils.exceptions;
+package it.bologna.ausl.internauta.utils.versatore.exceptions;
 
 /**
  *

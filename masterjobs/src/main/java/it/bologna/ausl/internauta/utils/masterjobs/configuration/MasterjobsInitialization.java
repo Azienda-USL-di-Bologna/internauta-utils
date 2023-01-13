@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.configuration;
 
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MaterjobsConfigurationException;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsConfigurationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import java.util.HashMap;
@@ -29,10 +29,10 @@ public class MasterjobsInitialization {
     /**
      * Crea una mappa con chiave il nome del Worker e valore la classe corrispondente
      * @return
-     * @throws MaterjobsConfigurationException 
+     * @throws MasterjobsConfigurationException 
      */
     @Bean
-    public Map<String, Class<? extends Worker>> workerMap() throws MaterjobsConfigurationException {
+    public Map<String, Class<? extends Worker>> workerMap() throws MasterjobsConfigurationException {
         Map<String, Class<? extends Worker>> workerMap = new HashMap();
         
         Set<Class<?>> workersSet = new Reflections(Worker.class.getPackage().getName()).getTypesAnnotatedWith(MasterjobsWorker.class);
@@ -46,7 +46,7 @@ public class MasterjobsInitialization {
             } catch (Exception ex) {
                 String errorMessage = "errore nella creazione della mappa dei worker";
                 log.error("errore nella creazione della mappa dei worker", ex);
-                throw new MaterjobsConfigurationException(errorMessage);
+                throw new MasterjobsConfigurationException(errorMessage);
             }
             workerMap.put(workerInstance.getName(), workerClassCasted);
         }

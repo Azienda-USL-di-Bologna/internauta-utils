@@ -1,8 +1,13 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers;
 
+import it.bologna.ausl.internauta.utils.masterjobs.DebuggingOptionsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -10,9 +15,21 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQu
  * 
  */
 public abstract class Worker {  
-        
+    
+    @PersistenceContext
+    protected EntityManager entityManager;
+    
+    @Autowired
+    protected TransactionTemplate transactionTemplate;
+    
+    @Autowired
+    protected DebuggingOptionsManager debuggingOptionsManager;
+    
     protected MasterjobsObjectsFactory masterjobsObjectsFactory;
     protected MasterjobsJobsQueuer masterjobsJobsQueuer;
+    
+    protected boolean debuggingOptions = false;
+    protected String ip;
     
     public abstract WorkerResult doWork() throws MasterjobsWorkerException;
 
@@ -25,14 +42,16 @@ public abstract class Worker {
     public abstract String getName();
     
     /**
-     * eseguire l'inizializzazione, nello specifico pass i bean MasterjobsObjectsFactory e MasterjobsJobsQueuer.
-     * Eventualmente si può estendere per eseguire alche altra inizializzazione
+     * eseguire l'inizializzazione, nello specifico pass i bean MasterjobsObjectsFactory e MasterjobsJobsQueuer.Eventualmente si può estendere per eseguire alche altra inizializzazione
      * @param masterjobsObjectsFactory
      * @param masterjobsJobsQueuer
+     * @param debuggingOptions
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer) throws MasterjobsWorkerException {
+    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer, boolean debuggingOptions, String ip) throws MasterjobsWorkerException {
         this.masterjobsObjectsFactory = masterjobsObjectsFactory;
         this.masterjobsJobsQueuer = masterjobsJobsQueuer;
+        this.debuggingOptions = debuggingOptions;
+        this.ip = ip;
     }
 }

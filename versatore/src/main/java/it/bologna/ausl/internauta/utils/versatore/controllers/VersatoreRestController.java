@@ -1,11 +1,14 @@
 package it.bologna.ausl.internauta.utils.versatore.controllers;
 
-import it.bologna.ausl.internauta.utils.versatore.VersamentoInformation;
-import it.bologna.ausl.internauta.utils.versatore.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
+import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,19 +27,35 @@ public class VersatoreRestController implements ControllerHandledExceptions {
     @Autowired
     private VersatoreFactory versatoreFactory;
     
-     @RequestMapping(value = "/test/{variable}", method = RequestMethod.GET)
+    @RequestMapping(value = "/test/{variable}", method = RequestMethod.GET)
     public String test(@PathVariable String variable) {
 
         return "It works!\n" + variable;
     }
     
-    @RequestMapping(value = "/versaDocumento", method = RequestMethod.POST)
-    public VersamentoInformation versa(
-                @RequestBody VersamentoInformation versamentoInformation, 
-                @RequestParam(required = true) String hostId,
-                HttpServletRequest request) {
+    @RequestMapping(value = "/controllaStatoVersamento", method = RequestMethod.GET)
+    public VersamentoDocInformation controllaStatoVersamento(
+            @RequestParam(required = true) Integer idDoc,
+            @RequestParam(required = true) String rapporto,
+            @RequestParam(required = true) String hostId) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
-        VersamentoInformation res = versatoreDocsInstance.versa(versamentoInformation);
+        VersamentoDocInformation versamentoDocInformation = new VersamentoDocInformation();
+        versamentoDocInformation.setIdDoc(idDoc);
+        versamentoDocInformation.setRapporto(rapporto);
+        
+        VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoDocInformation);
+        return res;
+    }
+    
+    @RequestMapping(value = "/versaDocumento", method = RequestMethod.POST)
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
+    public VersamentoDocInformation versa(
+                @RequestBody VersamentoDocInformation versamentoInformation, 
+                @RequestParam(required = true) String hostId,
+                HttpServletRequest request) throws VersatoreProcessingException {
+        VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(hostId);
+        VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoInformation);
+        
         return res;
     } 
     

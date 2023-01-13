@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.versatore.configuration;
 
-import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientManager;
 import org.springframework.stereotype.Component;
 
 /**

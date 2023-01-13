@@ -2,8 +2,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.QueryFactory;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
@@ -17,24 +15,20 @@ import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
-import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.RedisListCommands;
-import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
@@ -50,7 +44,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @Component
 public class MasterjobsJobsQueuer {
-private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
+    private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -143,6 +137,7 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
     public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsBadDataException {
 
         Set set = new Set();
+        set.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
         if (objectId != null)
             set.setObjectId(objectId);
         if (objectType != null)
@@ -159,6 +154,7 @@ private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.c
         List<Job> jobs = new ArrayList<>(); 
         for (JobWorker worker : workers) {
             Job job = new Job();
+            job.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
             job.setDeferred(worker.isDeferred());
             JobWorkerDataInterface workerData = worker.getData();
             if (workerData != null)

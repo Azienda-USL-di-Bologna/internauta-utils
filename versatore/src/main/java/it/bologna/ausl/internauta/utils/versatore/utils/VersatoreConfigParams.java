@@ -3,7 +3,7 @@ package it.bologna.ausl.internauta.utils.versatore.utils;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreConfigurationException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.repositories.ParameterRepository;
 import it.bologna.ausl.model.entities.versatore.Parameter;
 import java.io.IOException;
@@ -49,10 +49,10 @@ public class VersatoreConfigParams {
      * Inizializza il tutto
      * @throws UnknownHostException
      * @throws IOException
-     * @throws VersatoreConfigurationException 
+     * @throws VersatoreProcessingException 
      */
     @PostConstruct
-    public void init() throws UnknownHostException, IOException, VersatoreConfigurationException {
+    public void init() throws UnknownHostException, IOException, VersatoreProcessingException {
         
         // lettura dei parametri
         List<Parameter> parameters = parameterRepository.findAll();
