@@ -3,7 +3,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.executors.services;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.changeservicedetector.ChangeServiceDetectorWorker;
 import it.bologna.ausl.model.entities.masterjobs.QService;
@@ -18,10 +17,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 
 /**
  *
@@ -91,7 +86,7 @@ public class MasterjobsServicesExecutionScheduler {
                 // se il servizio non è mai girato oppure non è mai terminato
                 if (!isToday(startDate, now) || !startDate.isBefore(now.with(activeService.getEveryDayAt()))
                 ) { // se la startAt è prima di oggi oppure è oggi e l'ora di avvio è già passata, il servizio deve partire subito
-                    ServiceWorker service = getServiceWorkerAndInit(activeService.getName());
+                    ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
                     ScheduledFuture scheduleFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
                     service.setScheduledFuture(scheduleFuture);
                     scheduledService.add(scheduleFuture);
@@ -113,7 +108,7 @@ public class MasterjobsServicesExecutionScheduler {
                 }
             }
             // poi schedulo la prossima partenza
-            ServiceWorker service = getServiceWorkerAndInit(activeService.getName());
+            ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
             ScheduledFuture scheduleFuture = scheduledExecutorService.scheduleAtFixedRate(service, secondsToStart, 60*60*24, TimeUnit.SECONDS);
             service.setScheduledFuture(scheduleFuture);
             scheduledService.add(scheduleFuture);
@@ -140,7 +135,7 @@ public class MasterjobsServicesExecutionScheduler {
             } else { // se la data di avvio è nel futuro il thread sarà schedulato per partire in quella data
                 secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt());
             }
-            ServiceWorker service = getServiceWorkerAndInit(activeService.getName());
+            ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
             ScheduledFuture scheduleFuture = scheduledExecutorService.scheduleAtFixedRate(service, secondsToStart, activeService.getEverySeconds(), TimeUnit.SECONDS);
             service.setScheduledFuture(scheduleFuture);
             scheduledService.add(scheduleFuture);
@@ -155,7 +150,7 @@ public class MasterjobsServicesExecutionScheduler {
                 if (activeService.getStartAt().isAfter(now)) {
                     secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt());
                 }
-                ServiceWorker service = getServiceWorkerAndInit(activeService.getName());
+                ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
                 ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, secondsToStart, TimeUnit.SECONDS);
                 service.setScheduledFuture(scheduledFuture);
                 scheduledService.add(scheduledFuture);
@@ -171,19 +166,21 @@ public class MasterjobsServicesExecutionScheduler {
      * Schedula il thread che si accorge delle modifiche alla tabella dei servizi
      * @throws MasterjobsWorkerException 
      */
-    public void scheduleUpdateServiceDetector() throws MasterjobsWorkerException {
-        ChangeServiceDetectorWorker service = (ChangeServiceDetectorWorker) getServiceWorkerAndInit(ChangeServiceDetectorWorker.class.getSimpleName());
-        ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
-        service.setScheduledFuture(scheduledFuture);
-        service.setMasterjobsServicesExecutionScheduler(this);
-    }
+//    public void scheduleUpdateServiceDetector() throws MasterjobsWorkerException {
+//        ChangeServiceDetectorWorker service = (ChangeServiceDetectorWorker) getServiceWorkerAndInit(ChangeServiceDetectorWorker.class.getSimpleName(), null);
+//        ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
+//        service.setScheduledFuture(scheduledFuture);
+//        service.setMasterjobsServicesExecutionScheduler(this);
+//    }
     
     private boolean isToday(ZonedDateTime zonedDateTime, ZonedDateTime now) {
         return zonedDateTime.toLocalDate().equals(now.toLocalDate());
     }
     
-    private ServiceWorker getServiceWorkerAndInit(String name) throws MasterjobsWorkerException {
+    private ServiceWorker getServiceWorkerAndInit(String name, Service serviceEntity) throws MasterjobsWorkerException {
         ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
+        serviceWorker.setServiceEntity(serviceEntity);
+        serviceWorker.setMasterjobsServicesExecutionScheduler(this);
         // serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
         return serviceWorker;
     }

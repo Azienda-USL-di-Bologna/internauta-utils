@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.annotations.GenerateProjections;
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Objects;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;

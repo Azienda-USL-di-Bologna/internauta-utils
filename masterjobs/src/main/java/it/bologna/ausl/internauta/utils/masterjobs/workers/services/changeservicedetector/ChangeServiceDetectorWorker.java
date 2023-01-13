@@ -38,12 +38,6 @@ public class ChangeServiceDetectorWorker extends ServiceWorker {
     public String getName() {
         return getClass().getSimpleName();
     }
-
-    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
-
-    public void setMasterjobsServicesExecutionScheduler(MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler) {
-        this.masterjobsServicesExecutionScheduler = masterjobsServicesExecutionScheduler;
-    }
     
     @Override
     public void preWork() throws MasterjobsWorkerException {
@@ -69,9 +63,7 @@ public class ChangeServiceDetectorWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {
-        log.info(String.format("starting %s...", getName()));
-        
+    public WorkerResult doWork() throws MasterjobsWorkerException {        
         Session session = entityManager.unwrap(Session.class);
         session.doWork((Connection connection) -> {
             try {
