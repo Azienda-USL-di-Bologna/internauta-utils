@@ -1,22 +1,14 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.vladmihalcea.hibernate.type.range.Range;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsObjectNotFoundException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.services.changeservicedetector.ChangeServiceDetectorWorker;
-import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
 import it.bologna.ausl.model.entities.masterjobs.QService;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
 import javax.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +139,7 @@ public abstract class ServiceWorker extends Worker implements Runnable {
         }
     }
 
-    private void startTimeInterval(){
+    private void startTimeInterval() {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QService qService = QService.service;
         queryFactory
@@ -157,7 +149,7 @@ public abstract class ServiceWorker extends Worker implements Runnable {
             .execute();
     }
     
-    private void stopTimeInterval(){
+    private void stopTimeInterval() {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QService qService = QService.service;
         Range<ZonedDateTime> timeInterval = queryFactory
