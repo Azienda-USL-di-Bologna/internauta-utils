@@ -73,39 +73,104 @@ public class MasterjobsServicesExecutionScheduler {
         if (activeService.getEveryDayAt() != null) { // se è un servizio giornaliero
             long secondsToStart = 0;
             if (!activeService.getStartAt().isAfter(now)) { // se startAt è <= oggi
-
-                // se il servizio non è mai girato oppure non è mai terminato considero come prossima data di avvio del servizio la startAt
-                // altrimenti se è terminato, considero come prossima data di avvio la data di terminazione
-                ZonedDateTime startDate;
+                
+                /**
+                 * Ho un servizio giornaliero attivo con startAt minore/uguale di oggi. 
+                 * Quindi va capito se il servizio: 
+                 * a) va lanciato subito (cioè oggi doveva già essere partito ma non lo ha ancora fatto).
+                 * b) va lanciato oggi ma non subito (va lanciato all'ora di EveryDayAt)
+                 * c) va lanciato domani (all'ora di EveryDayAt)
+                 * 
+                 * Caso a: Va lanciato subito se: 
+                 *  - l'ora EveryDayAt è già stata raggiunta
+                 *  - l'ultima ora in cui è terminato, se esiste, è minore di EveryDayAt
+                 * 
+                 * Caso b: Va lanciato oggi ma non subito se:
+                 *  - l'ora EveryDayAt non è ancora stata raggiunta
+                 * 
+                 * Caso c: Va lanciato domani se:
+                 *  - l'ora EveryDayAt è già stata raggiunta
+                 *  - l'ultima volta in cui è terminato è maggiore/uguale di EveryDayAt
+                 */
+                
+                // Questa variabile todayAtTheRightTime è la data di oggi all'ora di everyDayAt. E' la dataora su cui ragiono per capire tutto
+                ZonedDateTime todayAtTheRightTime = now.with(activeService.getEveryDayAt());
+                ZonedDateTime lastTermination = null;
                 if (activeService.getTimeInterval() != null && activeService.getTimeInterval().hasUpperBound()) {
-                    startDate = activeService.getTimeInterval().upper();
+                    lastTermination = activeService.getTimeInterval().upper();
+                }
+                // Preparo i booleani informativi
+                Boolean everyDayAtReached = !todayAtTheRightTime.isAfter(now); // EveryDayAt raggiunta, todayAtTheRightTime <= now()
+                Boolean lastTerminationIsBeforeEveryDayAt = lastTermination == null ? false : lastTermination.isBefore(todayAtTheRightTime); // lastTermination <= EveryDayAt
+                
+                if (everyDayAtReached) {
+                    if (lastTerminationIsBeforeEveryDayAt) {
+                        // Caso a
+                        ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
+                        ScheduledFuture scheduleFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
+                        service.setScheduledFuture(scheduleFuture);
+                        scheduledService.add(scheduleFuture);
+                        // Conto i secondi che intercorrono tra now e e domani all'orario di everyDayAt
+                        secondsToStart = ChronoUnit.SECONDS.between(now, now.plusDays(1).with(activeService.getEveryDayAt()));
+                    } else {
+                        // Caso c
+                        // Conto i secondi che intercorrono tra now e e domani all'orario di everyDayAt
+                        secondsToStart = ChronoUnit.SECONDS.between(now, now.plusDays(1).with(activeService.getEveryDayAt()));
+                    }                    
                 } else {
-                    startDate = activeService.getStartAt();
+                    // Caso b
+                    // Conto i secondi che intercorrono tra now e now all'ora di everyDayAt
+                    secondsToStart = ChronoUnit.SECONDS.between(now, todayAtTheRightTime);
                 }
 
-                // se il servizio non è mai girato oppure non è mai terminato
-                if (!isToday(startDate, now) || !startDate.isBefore(now.with(activeService.getEveryDayAt()))
-                ) { // se la startAt è prima di oggi oppure è oggi e l'ora di avvio è già passata, il servizio deve partire subito
-                    ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
-                    ScheduledFuture scheduleFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
-                    service.setScheduledFuture(scheduleFuture);
-                    scheduledService.add(scheduleFuture);
-                    // il prossimo partire domani all'ora indicata, per cui aggiungo 24 ore
-                    secondsToStart = now.toLocalTime().until(startDate.toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
-                } else {
-                    secondsToStart = now.toLocalTime().until(activeService.getEveryDayAt(), ChronoUnit.SECONDS);
-                }
+                
+                // Commento codice vecchio
+//                // se il servizio non è mai girato oppure non è mai terminato considero come prossima data di avvio del servizio la startAt
+//                // altrimenti se è terminato, considero come prossima data di avvio la data di terminazione
+//                ZonedDateTime startDate;
+//                if (activeService.getTimeInterval() != null && activeService.getTimeInterval().hasUpperBound()) {
+//                    startDate = activeService.getTimeInterval().upper();
+//                } else {
+//                    startDate = activeService.getStartAt();
+//                }
+//
+//                // se il servizio non è mai girato oppure non è mai terminato
+//                if (!isSameDate(startDate, now) || startDate.isAfter(now.with(activeService.getEveryDayAt()))
+//                ) { // se la startAt è prima di oggi oppure è oggi e l'ora di avvio è già passata, il servizio deve partire subito
+//                    ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
+//                    ScheduledFuture scheduleFuture = scheduledExecutorService.schedule(service, 0, TimeUnit.SECONDS);
+//                    service.setScheduledFuture(scheduleFuture);
+//                    scheduledService.add(scheduleFuture);
+//                    // il prossimo partire domani all'ora indicata, per cui aggiungo 24 ore
+//                    secondsToStart = now.toLocalTime().until(startDate.toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
+//                } else {
+//                    secondsToStart = now.toLocalTime().until(activeService.getEveryDayAt(), ChronoUnit.SECONDS);
+//                }
             } else { // se la data di avvio è nel futuro, calcolo i secondi che mancano ad arrivare alla data di avvio
-                // prima calcolo i secondi che mancano fino alla data di avvio
-                secondsToStart = now.until(activeService.getStartAt(), ChronoUnit.SECONDS);
-
-                // poi se l'ora di avvio è dopo l'ora di avvi ogiornaliera, allora la data effettiva di avvio sarà il giorno dopo all'ora indicata
-                if (activeService.getStartAt().toLocalTime().isAfter(activeService.getEveryDayAt())) { 
-                    // per cui devo calcolare i secondi tra le due ore di avvio e sommare 24 ore
-                    secondsToStart += activeService.getEveryDayAt().until(activeService.getStartAt().toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
-                } else { // altrimenti calcolo i secondi tra l'ora di avvio indicata e l'ora di avvio giornaliera
-                    secondsToStart += activeService.getStartAt().toLocalTime().until(activeService.getEveryDayAt(), ChronoUnit.SECONDS);
+                /**
+                 * Conto i secondi che intercorrono tra now e il giorno in cui deve avvenire il primo lancio.
+                 * Il giorno in cui deve partire il primo lancio potrebbe essere StartAt o il giorno successivo, 
+                 * dipende dall'orario di StartAt rispetto all'orario di EveryDayAt
+                 */
+                
+                // Se l'ora di avvio è dopo l'ora di avvio ogiornaliera, allora la data effettiva di avvio sarà il giorno dopo all'ora indicata
+                if (activeService.getStartAt().toLocalTime().isAfter(activeService.getEveryDayAt())) {
+                    
+                    secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt().plusDays(1).with(activeService.getEveryDayAt()));
+                } else {
+                    secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt().with(activeService.getEveryDayAt()));
                 }
+                // Commento codice vecchio
+                // prima calcolo i secondi che mancano fino alla data di avvio
+//                secondsToStart = now.until(activeService.getStartAt(), ChronoUnit.SECONDS);
+//
+//                // poi se l'ora di avvio è dopo l'ora di avvi ogiornaliera, allora la data effettiva di avvio sarà il giorno dopo all'ora indicata
+//                if (activeService.getStartAt().toLocalTime().isAfter(activeService.getEveryDayAt())) { 
+//                    // per cui devo calcolare i secondi tra le due ore di avvio e sommare 24 ore
+//                    secondsToStart += activeService.getEveryDayAt().until(activeService.getStartAt().toLocalTime(), ChronoUnit.SECONDS) + 60*60*24;
+//                } else { // altrimenti calcolo i secondi tra l'ora di avvio indicata e l'ora di avvio giornaliera
+//                    secondsToStart += activeService.getStartAt().toLocalTime().until(activeService.getEveryDayAt(), ChronoUnit.SECONDS);
+//                }
             }
             // poi schedulo la prossima partenza
             ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
@@ -173,7 +238,7 @@ public class MasterjobsServicesExecutionScheduler {
 //        service.setMasterjobsServicesExecutionScheduler(this);
 //    }
     
-    private boolean isToday(ZonedDateTime zonedDateTime, ZonedDateTime now) {
+    private boolean isSameDate(ZonedDateTime zonedDateTime, ZonedDateTime now) {
         return zonedDateTime.toLocalDate().equals(now.toLocalDate());
     }
     
