@@ -11,11 +11,23 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.mimetypeutilities.Detector;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import it.bologna.ausl.model.entities.baborg.Pec;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.rubrica.Contatto;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.AZIENDA;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.FORNITORE;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.ORGANIGRAMMA;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PERSONA_FISICA;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PUBBLICA_AMMINISTRAZIONE_ESTERA;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PUBBLICA_AMMINISTRAZIONE_ITALIANA;
+import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.VARIO;
+import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
@@ -31,23 +43,21 @@ import static it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatusCo
 import static it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentStatusCode.VERIFICATION_FAILED;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocument;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.GenericDocumentService;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.Optional;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
@@ -140,10 +150,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
             } else {
                 versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
             }
-        } catch (MalformedURLException ex) {
+        } catch (MalformedURLException | JsonProcessingException ex) {
             log.error("Errore URL", ex);
-        } catch (JsonProcessingException ex) {        
-            log.error(ERROR_PARSING_JSON, ex);
+            versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+            versamentoDocInformation.setDescrizioneErrore(ex.getMessage());
         }
         log.info("processing doc: {} done.", idDoc.toString());         
         return versamentoDocInformation;
@@ -280,7 +290,6 @@ public class InfocertVersatoreService extends VersatoreDocs {
     private List<DocumentAttribute> buildMetadatiDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
         Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
-        int index = 2;  // Indice per i metadati ricorsivi del ruolo
         List<DocumentAttribute> docAttributes = new ArrayList<>();
         
         // Dati generici del documento
@@ -294,40 +303,40 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto());
        
+        int index = 2;  // Indice per i metadati ricorsivi del ruolo, il numero 1 è default ed è il produttore
         // Metadati degli Agenti (Soggetti)
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO, "produttore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO, "SW")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, getDenominazione(docDetail))
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdAzienda().getDescrizione())
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "redattore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index++, docDetail.getIdPersonaRedattrice().getNome()); // Index 3 
-
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, docDetail.getIdPersonaRedattrice().getNome()); 
+        index++;    // Index 3
+        
+        // Tipologia e Mittente    
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "mittente")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PAI");
-                // Se il PU ha il campo mittente è in smistamento
-                if (docDetail.getMittente() != null || StringUtils.hasLength(docDetail.getMittente())) {
-                    addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index++, docDetail.getMittente());
+                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
+                if (docDetail.getStato() == DocDetailInterface.StatoDoc.SMISTAMENTO) {
+                    addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
                 } else {
-                    addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index++, doc.getIdAzienda().getDescrizione()); // Codice IPA?
-                }                        
+                    addMittenteAzienda(docAttributes, docDetail, index);
+                }
                 break;
             case PROTOCOLLO_IN_ENTRATA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
-                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "E")
-                    .addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "mittente")
-                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PAI")
-                    .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index++, docDetail.getIdStrutturaRegistrazione().getNome());
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "E");
+                addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
                 break;
             case DETERMINA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Determine");
+                addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case DELIBERA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Delibere");
+                addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case RGPICO:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero protocollo");
@@ -337,11 +346,25 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro documentale");
                 break;
         }
+        index++;
+        
+        // Soggetti che registrano, FIRMATARI
+        List<AttoreDoc> attori = new ArrayList<>();
+        attori.addAll(getAttoriDoc(doc, "FIRMA"));
+        attori.addAll(getAttoriDoc(doc, "RICEZIONE"));
+        for (AttoreDoc attoreDoc : attori) {
+            Persona attore = attoreDoc.getIdPersona();
+            addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "Soggetto che effettua la registrazione")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, attore.getCognome())
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, attore.getNome());
+            index++;
+        }
         
         // Metadati di archiviazione
         Titolo titolo = archivio.getIdTitolo();
         if (titolo != null) {
-           addNewAttribute(docAttributes, InfocertAttributesEnum.INDICE_DI_CLASSIFICAZIONE, titolo.getClassificazione())
+            addNewAttribute(docAttributes, InfocertAttributesEnum.INDICE_DI_CLASSIFICAZIONE, titolo.getClassificazione())
                    .addNewAttribute(docAttributes, InfocertAttributesEnum.DESCRIZIONE_CLASSIFICAZIONE, titolo.getNome());
         } else {
             log.warn("Titolo non trovato.");
@@ -441,6 +464,124 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         
         return allegatoInformation;
+    }
+    
+    /**
+     * Aggiunge come metadato Mittente l'azienda (eg. Azienda USL Bologna)
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il mittente.
+     * @param doc Il documento.
+     * @param index L'indice del metadato ricorsivo.
+     */
+    private void addMittenteAzienda(List<DocumentAttribute> docAttributes, DocDetail docDetail, int index) {
+        String denominazione = getDenominazione(docDetail);
+        addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PAI")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, denominazione);
+        Pec pecMittente = Optional.ofNullable(docDetail.getIdPecMittente()).orElse(null);
+        if (pecMittente != null) {
+            addNewAttribute(docAttributes, InfocertAttributesEnum.INDIRIZZI_DIGITALI_DI_RIFERIMENTO_N, index, pecMittente.getIndirizzo());
+        }
+    }
+    
+    /**
+     * Aggiunge il metadato Mittente per un protocollo in entrata o un protocollo in uscita che è in smistamento.
+     * Se presente, aggiunge anche l'indirizzo email.
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il mittente.
+     * @param docDetail Il dettagli del documento.
+     * @param index L'indice del metadato ricorsivo.
+     * @throws VersatoreProcessingException Errore nel caso non sia presente il mittente sul doc.
+     */
+    private void addMittenteProtEntrataPuSmistamento(List<DocumentAttribute> docAttributes, DocDetail docDetail, int index) throws VersatoreProcessingException {
+        addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "mittente");
+        Contatto idContattoMittente = Optional.ofNullable(docDetail.getIdContattoMittente()).orElse(null);
+        if  (idContattoMittente != null) { 
+            addContattoRubrica(docAttributes, idContattoMittente, index);
+        } else if (docDetail.getMittente() != null || StringUtils.hasLength(docDetail.getMittente())) {
+            addSoggettoGenerico(docAttributes, docDetail.getMittente(), index);
+        } else {
+            String message = "Manca il campo mittente";
+            log.error(message);
+             throw new VersatoreProcessingException(message);
+        }
+    }
+    
+    /**
+     * Aggiunge alla lista dei metadati un contatto dalla rubrica.
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto. 
+     * @param contatto Il contatto della rubrica.
+     * @param index L'indice del metadato ricorsivo.
+     */
+    private void addContattoRubrica(List<DocumentAttribute> docAttributes, Contatto contatto, int index) {
+        switch (contatto.getTipo()) {
+            case AZIENDA:
+            case FORNITORE:
+                addContattoAziendaOrPA(docAttributes, contatto, index, "PG");
+                break;
+            case PERSONA_FISICA:
+                addContattoPersonaFisica(docAttributes, contatto, index);
+                break;
+            case PUBBLICA_AMMINISTRAZIONE_ITALIANA:
+                addContattoAziendaOrPA(docAttributes, contatto, index, "PAI");
+                break;
+            case ORGANIGRAMMA:
+                if (contatto.getCategoria() == Contatto.CategoriaContatto.PERSONA) {
+                    addContattoPersonaFisica(docAttributes, contatto, index);
+                } else if (contatto.getCategoria() == Contatto.CategoriaContatto.STRUTTURA) {
+                    addContattoAziendaOrPA(docAttributes, contatto, index, "PG");
+                }
+                break;
+            case PUBBLICA_AMMINISTRAZIONE_ESTERA:
+            case VARIO:
+                addContattoAziendaOrPA(docAttributes, contatto, index, "PG");
+                break;
+        }
+    }
+    
+    /**
+     * Aggiunge alla lista dei metadati un contatto di persona dalla rubrica. 
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto.
+     * @param contatto Il contatto della rubrica.
+     * @param index L'indice del metadato ricorsivo.
+     */
+    private void addContattoPersonaFisica(List<DocumentAttribute> docAttributes, Contatto contatto, int index) {
+        addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, contatto.getCognome())
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, contatto.getNome());
+        if (StringUtils.hasLength(contatto.getCodiceFiscale())) 
+            addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_FISCALE_N, index, contatto.getCodiceFiscale());
+    }
+    
+    /**
+     * Aggiunge alla lista dei metadati un contatto di un'azienda o una Pubblica Amminstrazione dalla rubrica. 
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto.
+     * @param contatto Il contatto della rubrica.
+     * @param index L'indice del metadato ricorsivo.
+     * @param tipo Il tipo "PG" oppure "PAI".
+     */
+    private void addContattoAziendaOrPA(List<DocumentAttribute> docAttributes, Contatto contatto, int index, String tipo) {
+        String descrizione = contatto.getRagioneSociale() != null ? contatto.getRagioneSociale() : contatto.getDescrizione();
+        
+        addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, tipo)
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, descrizione);
+        if (StringUtils.hasLength(contatto.getPartitaIva())) 
+            addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_FISCALE_N, index, contatto.getPartitaIva());
+        
+        Optional<DettaglioContatto> dettaglioContatto = contatto.getDettaglioContattoList()
+                .stream()
+                .filter(d -> DettaglioContatto.TipoDettaglio.EMAIL.equals(d.getTipo()) && Objects.equals(d.getPrincipale(), Boolean.TRUE))
+                .findFirst();
+        if (dettaglioContatto.isPresent())
+            addNewAttribute(docAttributes, InfocertAttributesEnum.INDIRIZZI_DIGITALI_DI_RIFERIMENTO_N, index, dettaglioContatto.get().getDescrizione());
+    }
+    
+    /**
+     * Aggiunge alla lista dei metadati un soggetto con descrizione generica.
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il soggetto.
+     * @param descrizione La descrizione del soggetto.
+     * @param index L'indice del metadato ricorsivo.
+     */
+    private void addSoggettoGenerico(List<DocumentAttribute> docAttributes, String descrizione, int index) {
+        addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PG")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, descrizione);
     }
     
     /**
@@ -606,9 +747,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @param doc Il documento.
      * @param ruolo Il ruolo.
      * @return La lista di attori del documento.
-     * @deprecated Perché non è necessario indicare gli attori del doc attraverso questo metodo.
      */
-    @Deprecated
     private List<AttoreDoc> getAttoriDoc(final Doc doc, final String ruolo) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
