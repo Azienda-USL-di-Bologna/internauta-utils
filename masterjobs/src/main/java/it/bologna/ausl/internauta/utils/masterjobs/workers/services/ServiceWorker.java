@@ -94,12 +94,15 @@ public abstract class ServiceWorker extends Worker implements Runnable {
     @Override
     public void run() {
         
-        /*
-        controllo se l'applicazione può eseguire questo servizio (se ip:porta settati sulla colonna execute_only_on sono
-        uguali ai miei
-        */
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        Boolean canExecuteRun = transactionTemplate.execute(a -> CanExecuteRun());
+        Boolean canExecuteRun = true;
+        if (debuggingOptions == true) {
+            /*
+            controllo se l'applicazione può eseguire questo servizio (se ip:porta settati sulla colonna execute_only_on 
+            sono uguali ai miei
+            */
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            canExecuteRun = transactionTemplate.execute(a -> CanExecuteRun());
+        }
         
         if (canExecuteRun) {
             log.info(String.format("starting %s...", getName()));
