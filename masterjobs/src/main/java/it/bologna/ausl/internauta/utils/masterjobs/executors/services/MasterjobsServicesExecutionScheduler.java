@@ -83,7 +83,7 @@ public class MasterjobsServicesExecutionScheduler {
                  * 
                  * Caso a: Va lanciato subito se: 
                  *  - l'ora EveryDayAt è già stata raggiunta
-                 *  - l'ultima ora in cui è terminato, se esiste, è minore di EveryDayAt
+                 *  - l'ultima ora in cui è terminato, se esiste, è minore di EveryDayAt, oppure se non è mai terminato
                  * 
                  * Caso b: Va lanciato oggi ma non subito se:
                  *  - l'ora EveryDayAt non è ancora stata raggiunta
@@ -101,7 +101,7 @@ public class MasterjobsServicesExecutionScheduler {
                 }
                 // Preparo i booleani informativi
                 Boolean everyDayAtReached = !todayAtTheRightTime.isAfter(now); // EveryDayAt raggiunta, todayAtTheRightTime <= now()
-                Boolean lastTerminationIsBeforeEveryDayAt = lastTermination == null ? false : lastTermination.isBefore(todayAtTheRightTime); // lastTermination <= EveryDayAt
+                Boolean lastTerminationIsBeforeEveryDayAt = lastTermination == null ? true : lastTermination.isBefore(todayAtTheRightTime); // lastTermination <= EveryDayAt
                 
                 if (everyDayAtReached) {
                     if (lastTerminationIsBeforeEveryDayAt) {
