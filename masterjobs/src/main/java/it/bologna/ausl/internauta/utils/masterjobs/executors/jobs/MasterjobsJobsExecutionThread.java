@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.querydsl.jpa.impl.JPAUpdateClause;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
@@ -14,6 +15,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutio
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsReadQueueTimeout;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
@@ -47,6 +49,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInt
 import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
 import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
 import java.util.UUID;
+import java.util.logging.Level;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
@@ -110,7 +113,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     protected boolean stopped = false;
     protected boolean paused = false;
     
-
+    private String name;
     private String lastStreamId = "0";
     private String currentCommand = null;
     
@@ -254,11 +257,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                 buildWorkQueue();
                 checkCommand();
                 
-                // lancia runExecutor() sulla classe concreta in una nuova transazione
-                transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                transactionTemplate.executeWithoutResult(a -> {
-                    this.runExecutor();
-                });
+                // lancia runExecutor() sulla classe concreta
+                this.runExecutor();
                
             } catch (MasterjobsInterruptException ex) { // se viene mandato un comando di stop o di pausa
                 if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE) { // se rilvea un comando pausa
@@ -299,7 +299,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @return 
      */
     protected String getUniqueName() {
-        return getExecutorName() +"_" + UUID.randomUUID().toString() + "_" + Thread.currentThread().getName();
+        if (this.name == null) {
+            this.name = getExecutorName() + "_" + UUID.randomUUID().toString() + "_" + Thread.currentThread().getName();
+        }
+        return this.name;
     }
     
     /**
@@ -369,17 +372,29 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @throws MasterjobsExecutionThreadsException se c'è un errore nella gestione dei job da eseguire
      * @throws MasterjobsInterruptException lanciata nel caso rileva un comando di stop o pause
      */
-    public void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
+    protected void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
         try {
-            // come prima cosa verifica se ci sono comandi da eseguire e nel caso gli esegue
-            checkCommand();
-            
-            // legge dalla coda della priorità passata e se ci sono, esegue i job
-            readFromQueueAndManageJobs(masterjobsUtils.getQueueBySetPriority(priority));
-        } catch (MasterjobsBadDataException ex) {
-            String errorMessage = "error on selecting queue";
-            log.error(errorMessage, ex);
-            throw new MasterjobsExecutionThreadsException(errorMessage, ex);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.executeWithoutResult(a -> {
+                // come prima cosa verifica se ci sono comandi da eseguire e nel caso gli esegue
+                try {
+                    checkCommand();
+                    // legge dalla coda della priorità passata e se ci sono, esegue i job
+                    readFromQueueAndManageJobs(masterjobsUtils.getQueueBySetPriority(priority));
+                } catch (Throwable ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
+                }
+            });         
+        } catch (MasterjobsRuntimeExceptionWrapper ex) {
+            if (ex.getOriginalException().getClass().isAssignableFrom(MasterjobsBadDataException.class)) {
+                String errorMessage = "error on selecting queue";
+                log.error(errorMessage, ex);
+                throw new MasterjobsExecutionThreadsException(errorMessage, ex);
+            } else if (ex.getOriginalException().getClass().isAssignableFrom(MasterjobsReadQueueTimeout.class)) {
+                throw (MasterjobsReadQueueTimeout) ex.getOriginalException();
+            } else if (ex.getOriginalException().getClass().isAssignableFrom(MasterjobsInterruptException.class)) {
+                throw (MasterjobsInterruptException) ex.getOriginalException();
+            }
         }
     }
     
@@ -574,6 +589,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                 Job job = this.getJob(jobId);
                 if (job != null && debuggingCanExecuteJob(job.getName())) {
                     try {
+                        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                        transactionTemplate.executeWithoutResult(a -> {
+                            this.updateJobState(jobId, Job.JobState.RUNNING, null);
+                        });
                         // carico i dati del job
                         Map<String, Object> data = job.getData();
                         JobWorkerDataInterface workerData = JobWorkerDataInterface.parseFromJobData(objectMapper, data);
@@ -664,6 +683,16 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
         return set;
     }
     
+    protected void updateJobState(Long jobId, Job.JobState state, String error) {
+        QJob qJob = QJob.job;
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAUpdateClause updateClause = queryFactory.update(qJob).set(qJob.state, state.toString());
+        if (error != null) {
+            updateClause.set(qJob.error, error);
+        }
+        updateClause.where(qJob.id.eq(jobId)).execute();
+    }
+    
     /**
      * Cancella un job dalla tabella dei job.
      * se il job è l'ultimo del set, cancella anche il set dalla tabella dei set e l'oggetto dalla tabella ObjectStatus (se presente)
@@ -717,14 +746,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     public void setInError(Job job, ObjectStatus objectStatus, String jobError) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         if (job != null) {
-            QJob qJob = QJob.job;
             job.setState(Job.JobState.ERROR);
-            queryFactory
-                .update(qJob)
-                .set(qJob.state, job.getState().toString())
-                .set(qJob.error, jobError)
-                .where(qJob.id.eq(job.getId()))
-                .execute();
+            this.updateJobState(job.getId(), job.getState(), jobError);
         }
         if (objectStatus != null) {
             objectStatus.setState(ObjectStatus.ObjectState.ERROR);
