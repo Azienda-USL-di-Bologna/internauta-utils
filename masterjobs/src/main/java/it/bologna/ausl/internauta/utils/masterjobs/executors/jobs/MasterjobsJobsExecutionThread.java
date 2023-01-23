@@ -67,7 +67,7 @@ import org.springframework.data.redis.connection.stream.StreamReadOptions;
  *  - MasterjobsNormalPriorityJobsExecutionThread
  *  - MasterjobsWaitQueueJobsExecutionThread
  */
-public abstract class MasterjobsJobsExecutionThread implements Runnable, MasterjobsJobsExecutionThreadBuilder {
+public abstract class MasterjobsJobsExecutionThread implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsExecutionThread.class);
     public static final String COMMAND_KEY = "command";
     public static final String STOP_COMMAND = "stop";
@@ -122,85 +122,71 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
     * Metodi builder
     */
     
-    @Override
     public MasterjobsJobsExecutionThread self(MasterjobsJobsExecutionThread self) {
         this.self = self;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread activeThreadsSetName(String activeThreadsSetName) {
         this.activeThreadsSetName = activeThreadsSetName;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread commandsStreamName(String commandsStreamName) {
         this.commandsStreamName = commandsStreamName;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread inQueueNormal(String inQueueNormal) {
         this.inQueueNormal = inQueueNormal;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread inQueueHigh(String inQueueHigh) {
         this.inQueueHigh = inQueueHigh;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread inQueueHighest(String inQueueHighest) {
         this.inQueueHighest = inQueueHighest;
         return this;
     }
 
-    @Override
     public MasterjobsJobsExecutionThread workQueue(String workQueue) {
         this.workQueue = workQueue;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread errorQueue(String errorQueue) {
         this.errorQueue = errorQueue;
         return this;
     }
 
-    @Override
     public MasterjobsJobsExecutionThread waitQueue(String waitQueue) {
         this.waitQueue = waitQueue;
         return this;
     }
 
-    @Override
     public MasterjobsJobsExecutionThread outQueue(String outQueue) {
         this.outQueue = outQueue;
         return this;
     }
 
-    @Override
     public MasterjobsJobsExecutionThread sleepMillis(int sleepMillis) {
         this.sleepMillis = sleepMillis;
         return this;
     }
 
-    @Override
     public MasterjobsJobsExecutionThread queueReadTimeoutMillis(int queueReadTimeoutMillis) {
         this.queueReadTimeoutMillis = queueReadTimeoutMillis;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread useDebuggingOptions(boolean useDebuggingOptions) {
         this.useDebuggingOptions = useDebuggingOptions;
         return this;
     }
     
-    @Override
     public MasterjobsJobsExecutionThread ip(String ip) {
         this.ip = ip;
         return this;
