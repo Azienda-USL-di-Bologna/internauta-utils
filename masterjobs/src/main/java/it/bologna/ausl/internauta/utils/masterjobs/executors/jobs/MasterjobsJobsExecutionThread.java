@@ -556,7 +556,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                     .where(qDebuggingOption.key.eq(DebuggingOption.Key.limitSetExecutionToInsertedIP.toString()))
                     .fetchOne();
                 Boolean limitSetExecutionToInsertedIP = objectMapper.convertValue(limitSetExecutionToInsertedIPObj, Boolean.class);
-                res = limitSetExecutionToInsertedIP && set.getInsertedFrom().equals(this.ip);
+                res = !limitSetExecutionToInsertedIP || set.getInsertedFrom().equals(this.ip);
             }
         }
         return res;
