@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
@@ -35,6 +36,9 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     protected JobWorkerData workerData;
     protected JobWorkerDeferredData workerDeferredData;
     protected boolean deferred;
+    protected Integer executableCheckEveryMillis;
+    protected ZonedDateTime jobExecutableCheckStart = null;
+    
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
@@ -83,8 +87,6 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     
     /**
      * Torna i parametri del job.
-     * @param <T>
-     * @param workerDataClass la classe dei parametri del woker in cui castare
      * @return 
      */
     protected T getWorkerData() {
@@ -97,6 +99,25 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      */
     public boolean isDeferred() {
         return deferred;
+    }
+    
+    public boolean executableCheck() {
+        if (this.jobExecutableCheckStart == null) {
+            jobExecutableCheckStart = ZonedDateTime.now();
+        }
+        return true;
+    }
+    
+    public boolean isExecutable() {
+        return true;
+    }
+
+    public Integer getExecutableCheckEveryMillis() {
+        return executableCheckEveryMillis;
+    }
+    
+    public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
+        this.executableCheckEveryMillis = executableCheckEveryMillis;
     }
     
     /**
