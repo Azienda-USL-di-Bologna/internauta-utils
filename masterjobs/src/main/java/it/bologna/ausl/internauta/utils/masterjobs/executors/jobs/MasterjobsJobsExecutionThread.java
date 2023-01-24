@@ -618,7 +618,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
                             */
                             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                             transactionTemplate.executeWithoutResult(a -> {
-                                updateSet(jobId, ZonedDateTime.now().plus(job.getExecutableCheckEveryMillis(), ChronoUnit.MILLIS));
+                                updateSet(set.getId(), ZonedDateTime.now().plus(job.getExecutableCheckEveryMillis(), ChronoUnit.MILLIS));
                             });
                             // se non posso eseguire il job, ne interrompo l'esecuzione e setto che l'ho stoppata
                             stoppedJobsExecution = true;

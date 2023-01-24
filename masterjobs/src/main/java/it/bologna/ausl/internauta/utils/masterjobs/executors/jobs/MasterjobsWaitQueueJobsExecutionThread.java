@@ -64,27 +64,29 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
             }
             Set set = super.getSet(queueData.getSet());
             if (set != null) {
-            
+                ZonedDateTime now = ZonedDateTime.now();
                 // controllo se il set può essere eseguito
-                
-                // se ho settato una data di controllo eseguibilità, allora il controllo lo farò solo se la data è giunta
-                if (set.getNextExecutableCheck() == null || !ZonedDateTime.now().isBefore(set.getNextExecutableCheck()) ) {
-                    
+                if (
+                    // se ho settato una data di controllo eseguibilità, allora il controllo lo farò solo se la data è giunta
+                    (set.getNextExecutableCheck() == null || !now.isBefore(set.getNextExecutableCheck())) && 
                     // se la data è giunta, allora controllo l'eseguibilità sequenziale del set
-                    if ((!set.getWaitObject() || super.isSetSequentiallyExecutable(set))) {
-                        // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
-                        String destinationQueue = queueData.getQueue();
-                        redisTemplate.opsForList().move(
-                        this.workQueue, RedisListCommands.Direction.LEFT, 
-                        destinationQueue, RedisListCommands.Direction.LEFT);
-                    } else {
-                        // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
-                        redisTemplate.opsForList().move(
-                        this.workQueue, RedisListCommands.Direction.LEFT, 
-                        this.waitQueue, RedisListCommands.Direction.RIGHT);
-                    }
+                    (!set.getWaitObject() || super.isSetSequentiallyExecutable(set))
+                    ) {
+                    // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
+                    String destinationQueue = queueData.getQueue();
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    destinationQueue, RedisListCommands.Direction.LEFT);
                 } else {
-                    log.info(String.format("set %s not executable, it will be executable at %s", set.getId(), set.getNextExecutableCheck().toString()));
+                    
+                    if (set.getNextExecutableCheck() != null) {
+                        log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
+                    }
+                    
+                    // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    this.waitQueue, RedisListCommands.Direction.RIGHT);
                 }
             } else {
                 redisTemplate.delete(this.workQueue);
