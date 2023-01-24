@@ -30,6 +30,7 @@ public abstract class Worker {
     
     protected boolean debuggingOptions = false;
     protected String ip;
+    protected Integer port;
     
     public abstract WorkerResult doWork() throws MasterjobsWorkerException;
 
@@ -46,12 +47,15 @@ public abstract class Worker {
      * @param masterjobsObjectsFactory
      * @param masterjobsJobsQueuer
      * @param debuggingOptions
+     * @param ip
+     * @param port
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer, boolean debuggingOptions, String ip) throws MasterjobsWorkerException {
+    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer, boolean debuggingOptions, String ip, Integer port) throws MasterjobsWorkerException {
         this.masterjobsObjectsFactory = masterjobsObjectsFactory;
         this.masterjobsJobsQueuer = masterjobsJobsQueuer;
         this.debuggingOptions = debuggingOptions;
         this.ip = ip;
+        this.port = port;
     }
 }
