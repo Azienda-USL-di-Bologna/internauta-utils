@@ -34,7 +34,7 @@ import org.hibernate.annotations.TypeDefs;
 public class DebuggingOption implements Serializable {
 
     public static enum Key {
-        filterJobs, limitSetExecutionToInsertedIP
+        filterJobs, limitSetExecutionToInsertedIP, test
     }
     
     @Id

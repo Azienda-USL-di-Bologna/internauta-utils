@@ -16,7 +16,6 @@ import it.bologna.ausl.model.entities.masterjobs.QJobNotified;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
-import java.util.logging.Level;
 import org.hibernate.Session;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;

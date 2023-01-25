@@ -86,7 +86,12 @@ public class Job implements Serializable {
     @Basic(optional = true)
     @Column(name = "inserted_from")
     private String insertedFrom;
-
+    
+    @Basic(optional = false)
+    @Column(name = "executable_check_every_millis")
+    @NotNull
+    private Integer executableCheckEveryMillis = 100;
+    
     public Job() {
     }
 
@@ -161,4 +166,11 @@ public class Job implements Serializable {
         this.deferred = deferred;
     }
 
+    public Integer getExecutableCheckEveryMillis() {
+        return executableCheckEveryMillis;
+    }
+
+    public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
+        this.executableCheckEveryMillis = executableCheckEveryMillis;
+    }
 }
