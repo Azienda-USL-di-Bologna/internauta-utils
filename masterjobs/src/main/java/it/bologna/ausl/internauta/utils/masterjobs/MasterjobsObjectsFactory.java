@@ -4,7 +4,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueu
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
@@ -102,9 +102,9 @@ public class MasterjobsObjectsFactory {
      * @param workerData i dati del job (JobWorkerDeferredData se il job è deferred JobWorkerData se non lo è)
      * @param deferred "true" se il job è deferred, "false" altrimenti
      * @return un JobWorker con del nome passato, costruito con i dati passati
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred) throws MasterjobsWorkerException {
+    public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred) throws MasterjobsWorkerInitializationException {
         return getJobWorker(name, workerData, deferred, null);
     }
 
@@ -115,9 +115,9 @@ public class MasterjobsObjectsFactory {
      * @param deferred "true" se il job è deferred, "false" altrimenti
      * @param executableCheckEveryMillis indica ogni quanti millisendi fare il check di eseguibilità
      * @return un JobWorker con del nome passato, costruito con i dati passati
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis) throws MasterjobsWorkerException {
+    public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis) throws MasterjobsWorkerInitializationException {
         Class<? extends JobWorker> jobWorkerClass = (Class<? extends JobWorker>)workerMap.get(name);
         JobWorker worker = getJobWorker(jobWorkerClass, workerData, deferred, executableCheckEveryMillis);
         return worker;
@@ -130,9 +130,9 @@ public class MasterjobsObjectsFactory {
      * @param workerData i dati del job (JobWorkerDeferredData se il job è deferred JobWorkerData se non lo è)
      * @param deferred "true" se il job è deferred, "false" altrimenti
      * @return un JobWorker della classe passata, costruito con i dati passati
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public <T extends JobWorker> T getJobWorker(Class<T> jobWorkerClass, JobWorkerDataInterface workerData, boolean deferred) throws MasterjobsWorkerException {
+    public <T extends JobWorker> T getJobWorker(Class<T> jobWorkerClass, JobWorkerDataInterface workerData, boolean deferred) throws MasterjobsWorkerInitializationException {
         return getJobWorker(jobWorkerClass, workerData, deferred, null);
     }
     
@@ -144,9 +144,9 @@ public class MasterjobsObjectsFactory {
      * @param deferred "true" se il job è deferred, "false" altrimenti
      * @param executableCheckEveryMillis indica ogni quanti millisendi fare il check di eseguibilità
      * @return un JobWorker della classe passata, costruito con i dati passati
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public <T extends JobWorker> T getJobWorker(Class<T> jobWorkerClass, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis) throws MasterjobsWorkerException {
+    public <T extends JobWorker> T getJobWorker(Class<T> jobWorkerClass, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis) throws MasterjobsWorkerInitializationException {
         T worker = beanFactory.getBean(jobWorkerClass);
         if (deferred) {
             worker.buildDeferred((JobWorkerDeferredData) workerData);
@@ -165,9 +165,9 @@ public class MasterjobsObjectsFactory {
      * Torna un ServiceWorker del nome passato
      * @param name il nome del ServiceWorker (quello che viene tornato dal metodo getName())
      * @return un ServiceWorker del nome passato
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public ServiceWorker getServiceWorker(String name) throws MasterjobsWorkerException {
+    public ServiceWorker getServiceWorker(String name) throws MasterjobsWorkerInitializationException {
         Class<? extends Worker> serviceWorkerClass = workerMap.get(name);
         ServiceWorker serviceWorker = (ServiceWorker) beanFactory.getBean(serviceWorkerClass);
         MasterjobsJobsQueuer masterjobsJobsQueuer = beanFactory.getBean(MasterjobsJobsQueuer.class);

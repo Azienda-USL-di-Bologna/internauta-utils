@@ -571,7 +571,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable, Masterj
      * @throws MasterjobsExecutionThreadsException
      * @throws MasterjobsWorkerException 
      */
-    protected void executeJobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException {
+    protected void executeJobs(MasterjobsQueueData queueData, ObjectStatus objectStatus, Set set) throws MasterjobsParsingException, MasterjobsExecutionThreadsException, MasterjobsWorkerException, Throwable {
         
         /* 
         per prima cosa controllo se posso eseguire i job
