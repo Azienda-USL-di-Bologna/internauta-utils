@@ -2,10 +2,12 @@ package it.bologna.ausl.model.entities.masterjobs;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.annotations.GenerateProjections;
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
@@ -22,6 +24,7 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
@@ -75,6 +78,12 @@ public class Set implements Serializable {
     @Basic(optional = true)
     @Column(name = "inserted_from")
     private String insertedFrom;
+    
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @Column(name = "next_executable_check")
+    @Basic(optional = true)
+    private ZonedDateTime nextExecutableCheck;
     
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
     @JsonBackReference(value = "jobList")
@@ -153,5 +162,13 @@ public class Set implements Serializable {
 
     public void setJobList(List<Job> jobList) {
         this.jobList = jobList;
+    }
+
+    public ZonedDateTime getNextExecutableCheck() {
+        return nextExecutableCheck;
+    }
+
+    public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
+        this.nextExecutableCheck = nextExecutableCheck;
     }
 }

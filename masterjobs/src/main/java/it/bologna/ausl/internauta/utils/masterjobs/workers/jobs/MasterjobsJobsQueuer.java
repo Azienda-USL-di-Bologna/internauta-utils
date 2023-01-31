@@ -154,6 +154,9 @@ public class MasterjobsJobsQueuer {
         List<Job> jobs = new ArrayList<>(); 
         for (JobWorker worker : workers) {
             Job job = new Job();
+            if (worker.getExecutableCheckEveryMillis() != null) {
+                job.setExecutableCheckEveryMillis(worker.getExecutableCheckEveryMillis());
+            }
             job.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
             job.setDeferred(worker.isDeferred());
             JobWorkerDataInterface workerData = worker.getData();

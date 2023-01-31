@@ -1,8 +1,10 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.DebuggingOptionsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -21,6 +23,9 @@ public abstract class Worker {
     
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    
+    @Autowired
+    protected ObjectMapper objectMapper;
     
     @Autowired
     protected DebuggingOptionsManager debuggingOptionsManager;
@@ -49,9 +54,9 @@ public abstract class Worker {
      * @param debuggingOptions
      * @param ip
      * @param port
-     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
-    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer, boolean debuggingOptions, String ip, Integer port) throws MasterjobsWorkerException {
+    public void init(MasterjobsObjectsFactory masterjobsObjectsFactory, MasterjobsJobsQueuer masterjobsJobsQueuer, boolean debuggingOptions, String ip, Integer port) throws MasterjobsWorkerInitializationException {
         this.masterjobsObjectsFactory = masterjobsObjectsFactory;
         this.masterjobsJobsQueuer = masterjobsJobsQueuer;
         this.debuggingOptions = debuggingOptions;

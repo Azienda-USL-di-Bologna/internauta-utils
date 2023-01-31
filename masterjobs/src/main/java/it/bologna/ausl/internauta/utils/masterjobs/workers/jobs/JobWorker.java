@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,16 +33,19 @@ import org.springframework.transaction.annotation.Transactional;
 public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResult> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
-    protected JobWorkerData workerData;
-    protected JobWorkerDeferredData workerDeferredData;
+    protected JobWorkerData _workerData;
+    protected JobWorkerDeferredData _workerDeferredData;
     protected boolean deferred;
+    protected Integer executableCheckEveryMillis;
+    protected ZonedDateTime jobExecutableCheckStart = null;
+    
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
      * @param workerData i dati per l'esecuzione del job
      */
     public void build(JobWorkerData workerData) {
-        this.workerData = workerData;
+        this._workerData = workerData;
         this.deferred = false;
     }
     
@@ -50,7 +54,7 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      * @param workerDeferredData i deffered data, che saranno usati per creare i data nel momento dell'esecuzione del job
      */
     public void buildDeferred(JobWorkerDeferredData workerDeferredData) {
-        this.workerDeferredData = workerDeferredData;
+        this._workerDeferredData = workerDeferredData;
         this.deferred = true;
     }
     
@@ -65,7 +69,7 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Override
     public R doWork() throws MasterjobsWorkerException {
         if (deferred) {
-            this.workerData = this.workerDeferredData.toWorkerData();
+            this._workerData = this._workerDeferredData.toWorkerData();
         }
         return doRealWork();
     }
@@ -76,19 +80,17 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      */
     public JobWorkerDataInterface getData() {
         if (deferred)
-            return workerDeferredData;
+            return _workerDeferredData;
         else
-            return workerData;
+            return _workerData;
     }
     
     /**
      * Torna i parametri del job.
-     * @param <T>
-     * @param workerDataClass la classe dei parametri del woker in cui castare
      * @return 
      */
     protected T getWorkerData() {
-        return (T) workerData;
+        return (T) _workerData;
     }
 
     /**
@@ -97,6 +99,25 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      */
     public boolean isDeferred() {
         return deferred;
+    }
+    
+    public boolean executableCheck() {
+        if (this.jobExecutableCheckStart == null) {
+            jobExecutableCheckStart = ZonedDateTime.now();
+        }
+        return true;
+    }
+    
+    public boolean isExecutable() {
+        return true;
+    }
+
+    public Integer getExecutableCheckEveryMillis() {
+        return executableCheckEveryMillis;
+    }
+    
+    public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
+        this.executableCheckEveryMillis = executableCheckEveryMillis;
     }
     
     /**
