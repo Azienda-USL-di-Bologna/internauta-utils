@@ -39,7 +39,8 @@ public class ParametriAziendeReader {
         fascicoliSAI,
         downloader,
         versatoreConfiguration,
-        attivitaMailSender
+        attivitaMailSender,
+        usaGediInternauta
     }
     
     @Autowired
