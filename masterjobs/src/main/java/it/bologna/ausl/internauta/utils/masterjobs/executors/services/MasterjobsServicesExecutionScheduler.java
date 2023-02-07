@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.executors.services;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.changeservicedetector.ChangeServiceDetectorWorker;
 import it.bologna.ausl.model.entities.masterjobs.QService;
@@ -54,7 +55,7 @@ public class MasterjobsServicesExecutionScheduler {
         activeServiceMap.remove(serviceName);
     }
     
-    public void scheduleServiceThreads() throws MasterjobsWorkerException {
+    public void scheduleServiceThreads() throws MasterjobsWorkerInitializationException {
         ZonedDateTime now = ZonedDateTime.now();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QService qService = QService.service;
@@ -68,7 +69,7 @@ public class MasterjobsServicesExecutionScheduler {
         }
     }
     
-    public List<ScheduledFuture> scheduleService(Service activeService, ZonedDateTime now) throws MasterjobsWorkerException {
+    public List<ScheduledFuture> scheduleService(Service activeService, ZonedDateTime now) throws MasterjobsWorkerInitializationException {
         List<ScheduledFuture> scheduledService = new ArrayList<>();
         if (activeService.getEveryDayAt() != null) { // se è un servizio giornaliero
             long secondsToStart = 0;
@@ -242,7 +243,7 @@ public class MasterjobsServicesExecutionScheduler {
         return zonedDateTime.toLocalDate().equals(now.toLocalDate());
     }
     
-    private ServiceWorker getServiceWorkerAndInit(String name, Service serviceEntity) throws MasterjobsWorkerException {
+    private ServiceWorker getServiceWorkerAndInit(String name, Service serviceEntity) throws MasterjobsWorkerInitializationException {
         ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
         serviceWorker.setServiceEntity(serviceEntity);
         serviceWorker.setMasterjobsServicesExecutionScheduler(this);

@@ -169,10 +169,22 @@ public enum InfocertAttributesEnum {
     CODICE_FISCALE("codicefiscale_s"),
     
     /**
+     * O Partita Iva.<br>
+     * <i>Optional</i>
+     */
+    CODICE_FISCALE_N("codicefiscale_x_s"),
+    
+    /**
      * Se presenti.<br>
      * <i>Optional</i>
      */
     INDIRIZZI_DIGITALI_DI_RIFERIMENTO("indirizzidigit_s"),
+    
+    /**
+     * Se presenti.<br>
+     * <i>Optional</i>
+     */
+    INDIRIZZI_DIGITALI_DI_RIFERIMENTO_N("indirizzidigit_x_s"),
     
     /**
      * Valori ammessi: 0, 1, 2 …<br>
@@ -298,7 +310,7 @@ public enum InfocertAttributesEnum {
      * Nome alfanumerico del documento/file così come riconosciuto all’esterno.<br>
      * <b>Required</b>
      */
-    NOME_FILE("nomefile_s"),
+    NOME_FILE("nome_documento_s"),
     
     /**
      * 1, 2, 3, può essere per es. un default: 1.<br>
