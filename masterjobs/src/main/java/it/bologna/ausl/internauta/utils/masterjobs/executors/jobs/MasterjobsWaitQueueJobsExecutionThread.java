@@ -80,7 +80,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                 } else {
                     
                     if (set.getNextExecutableCheck() != null) {
-                        log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
+//                        log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
                     }
                     
                     // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
