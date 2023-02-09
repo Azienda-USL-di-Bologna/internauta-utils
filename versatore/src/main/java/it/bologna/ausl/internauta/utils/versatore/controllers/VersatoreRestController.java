@@ -43,6 +43,7 @@ public class VersatoreRestController implements ControllerHandledExceptions {
         versamentoDocInformation.setIdDoc(idDoc);
         versamentoDocInformation.setRapporto(rapporto);
         
+        
         VersamentoDocInformation res = versatoreDocsInstance.versa(versamentoDocInformation);
         return res;
     }

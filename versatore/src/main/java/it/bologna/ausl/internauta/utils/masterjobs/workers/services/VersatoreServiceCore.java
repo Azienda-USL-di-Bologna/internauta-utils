@@ -5,6 +5,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorkerData;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +43,12 @@ public class VersatoreServiceCore {
             // numero massimo di thread paralleli che il job di versamento istanzierà per effettuare i versamenti
             Integer threadPoolSize = (Integer) versatoreConfigAziendaValue.get("threadPoolSize");
             
+            //parametri per il versamento 
+            Map<String,Object> params = (Map<String,Object>) versatoreConfigAziendaValue.get("params");
+            
             // richiama il metodo sul core che si occupa dell'accodamento del job
-            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app);
+            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app, params);
+            
         }
     }
     
@@ -55,9 +60,10 @@ public class VersatoreServiceCore {
      * @param idPersonaForzatura la persona che effettua la forzatura, se non si tratta di una forzatura passare null
      * @param poolsize numero di threads contemporanei massimi del pool di versamento
      * @param app applicazione a cui legare il job
+     * @param params parametri specifici per il versamento
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app) {
-        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura);
+    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app, Map<String,Object> params) {
+        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura, params);
         VersatoreJobWorker jobWorker = null;
         try { // istanzia il woker
             jobWorker = masterjobsObjectsFactory.getJobWorker(VersatoreJobWorker.class, versatoreJobWorkerData, false);
