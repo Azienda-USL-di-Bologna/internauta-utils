@@ -24,8 +24,8 @@ public abstract class Worker {
     @Autowired
     protected TransactionTemplate transactionTemplate;
     
-    @Autowired
-    protected ObjectMapper objectMapper;
+//    @Autowired
+//    protected ObjectMapper objectMapper;
     
     @Autowired
     protected DebuggingOptionsManager debuggingOptionsManager;
