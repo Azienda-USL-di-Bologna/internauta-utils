@@ -51,7 +51,6 @@ import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import java.util.logging.Level;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
