@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
+import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighPriorityJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHighestPriorityJobsExecutionThread;
@@ -8,72 +10,83 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWait
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.connection.RedisListCommands;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
  *
  * @author gdm
+ * 
+ * Si occupa di far partire tutti i threads degli executor, per tutte le priorità e per la coda di wait
  */
 @Component
 public class MasterjobsThreadsManager {
     
-    private static Logger log = LoggerFactory.getLogger(MasterjobsThreadsManager.class);
-    
-    @Value("${masterjobs.manager.jobs-executor.normal-priority-threads-number}")
-    private int normalPriorityThreadsNumber;
-    
-    @Value("${masterjobs.manager.jobs-executor.high-priority-threads-number}")
-    private int highPriorityThreadsNumber;
-    
-    @Value("${masterjobs.manager.jobs-executor.highest-priority-threads-number}")
-    private int highestPriorityThreadsNumber;
-    
-    @Value("${masterjobs.manager.jobs-executor.wait-queue-threads-number}")
-    private Integer waitQueueThreadsNumber;
+    private static Logger log = LoggerFactory.getLogger(MasterjobsThreadsManager.class);    
     
     @Autowired
-    private BeanFactory beanFactory;
-    
-    @Autowired
-    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
+    private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
     
+    @Autowired
+    @Qualifier(value = "redisMaterjobs")
+    protected RedisTemplate redisTemplate;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+ 
+    @Autowired
+    @Qualifier("masterjobsScheduledThreadPoolExecutor")
+    private ScheduledThreadPoolExecutor scheduledExecutorService;
+    
     private ExecutorService executorService;
     
-    private List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
+    private final List<MasterjobsJobsExecutionThread> masterjobsJobsExecutionThreadsList = new ArrayList<>();
 
-//    @Autowired
-//    TransactionTemplate transactionTemplate;
-    
     /**
-     * lancia tutti i threads del Masterjobs
+     * lancia tutti i threads esecutori dei jobs
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
-    public void scheduleThreads(){
+    public void scheduleJobsExecutorThreads() throws MasterjobsWorkerException {
+        
+        // sposta le eventuali code di work rimaste appese nella wait queue, in modo che i job vengano ripresi in considerazione
+        moveWorkQueueInWaitQueue();
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
         executorService = Executors.newFixedThreadPool(
-                normalPriorityThreadsNumber + 
-                highPriorityThreadsNumber + 
-                highestPriorityThreadsNumber +
-                waitQueueThreadsNumber);
+                masterjobsApplicationConfig.getNormalPriorityThreadsNumber() + 
+                masterjobsApplicationConfig.getHighPriorityThreadsNumber() + 
+                masterjobsApplicationConfig.getHighestPriorityThreadsNumber() +
+                masterjobsApplicationConfig.getWaitQueueThreadsNumber());
 //        executorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
 //        executorService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-        scheduleExecutionThreads(normalPriorityThreadsNumber, executorService, MasterjobsNormalPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(highPriorityThreadsNumber, executorService, MasterjobsHighPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(highestPriorityThreadsNumber, executorService, MasterjobsHighestPriorityJobsExecutionThread.class);
-        scheduleExecutionThreads(waitQueueThreadsNumber, executorService, MasterjobsWaitQueueJobsExecutionThread.class);
-        
+        scheduleExecutionThreads(masterjobsApplicationConfig.getNormalPriorityThreadsNumber(), executorService, MasterjobsNormalPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(masterjobsApplicationConfig.getHighPriorityThreadsNumber(), executorService, MasterjobsHighPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(masterjobsApplicationConfig.getHighestPriorityThreadsNumber(), executorService, MasterjobsHighestPriorityJobsExecutionThread.class);
+        scheduleExecutionThreads(masterjobsApplicationConfig.getWaitQueueThreadsNumber(), executorService, MasterjobsWaitQueueJobsExecutionThread.class);
+    }
+    
+    /**
+     * lancia i treads dei servizi
+     * @throws MasterjobsWorkerException 
+     */
+    public void scheduleServiceExecutorThreads() throws MasterjobsWorkerException {
         // schedula i ServiceThreads attivi
+        MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler = new MasterjobsServicesExecutionScheduler(entityManager, masterjobsObjectsFactory, scheduledExecutorService);
+//        masterjobsServicesExecutionScheduler.scheduleUpdateServiceDetector();
         masterjobsServicesExecutionScheduler.scheduleServiceThreads();
     }
     
@@ -91,5 +104,24 @@ public class MasterjobsThreadsManager {
 
     public List<MasterjobsJobsExecutionThread> getMasterjobsJobsExecutionThreadsList() {
         return masterjobsJobsExecutionThreadsList;
+    }
+    
+    /**
+     * Viene chiamata prima dell'avvio dei threads.
+     * Sposta i job che erano rimasti in esecuzione nelle work queue nella coda di wait, 
+     * in modo che vengano smistati nelle loro code di appartenenza
+    */
+    private void moveWorkQueueInWaitQueue() {
+        // prendo tutte le code di work (viene eseguito il comando redis keys masterjobsWork_*)
+        Set workQueues = redisTemplate.keys(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", "*"));
+        if (workQueues != null && ! workQueues.isEmpty()) {
+            // per ogni coda di work trovata, sposto tutti gli elementi nella waitQueue
+            for (Object workQueue : workQueues) {
+                // quando nella coda di work non c'è più nulla la move torna null
+                while ( redisTemplate.opsForList().move(
+                        workQueue, RedisListCommands.Direction.LEFT, 
+                        masterjobsApplicationConfig.getWaitQueue(), RedisListCommands.Direction.RIGHT) != null) {};
+            }
+        }
     }
 }

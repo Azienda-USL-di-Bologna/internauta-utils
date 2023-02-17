@@ -37,7 +37,10 @@ public class ParametriAziendeReader {
         firmaRemota,
         firmaRemotaConfiguration,
         fascicoliSAI,
-        downloader
+        downloader,
+        versatoreConfiguration,
+        attivitaMailSender,
+        usaGediInternauta
     }
     
     @Autowired
@@ -60,6 +63,10 @@ public class ParametriAziendeReader {
 
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende) {
         return getParameters(nome, idAziende, null);
+    }
+    
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, Integer[] idAziende) {
+        return getParameters(nome.toString(), idAziende, null);
     }
 
     public List<ParametroAziende> getParameters(String nome, String[] idApplicazioni) {
@@ -88,6 +95,7 @@ public class ParametriAziendeReader {
         }
 
         Iterable<ParametroAziende> parametriFound = parametroAziendeRepository.findAll(filter);
+        
         List<ParametroAziende> res = new ArrayList();
         parametriFound.forEach(res::add);
         return res;

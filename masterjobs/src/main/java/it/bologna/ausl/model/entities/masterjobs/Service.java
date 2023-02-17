@@ -8,15 +8,12 @@ import com.vladmihalcea.hibernate.type.range.PostgreSQLRangeType;
 import com.vladmihalcea.hibernate.type.range.Range;
 import it.nextsw.common.annotations.GenerateProjections;
 import java.io.Serializable;
-import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
@@ -72,10 +69,23 @@ public class Service implements Serializable {
     @Column(name = "every_day_at")
     private LocalTime everyDayAt;
     
+    @Basic(optional = true)
+    @Column(name = "schedule_on_start")
+    private Boolean scheduleOnStart;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "active")
     private Boolean active = true;
+    
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "system")
+    private Boolean system = false;
+    
+    @Basic(optional = true)
+    @Column(name = "execute_only_on")
+    private String executeOnlyOn;
     
     @Basic(optional = true)
     @Column(name = "note")
@@ -124,12 +134,36 @@ public class Service implements Serializable {
         this.everyDayAt = everyDayAt;
     }
 
+    public Boolean getScheduleOnStart() {
+        return scheduleOnStart;
+    }
+
+    public void setScheduleOnStart(Boolean scheduleOnStart) {
+        this.scheduleOnStart = scheduleOnStart;
+    }
+
     public Boolean getActive() {
         return active;
     }
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Boolean getSystem() {
+        return system;
+    }
+
+    public void setSystem(Boolean system) {
+        this.system = system;
+    }
+
+    public String getExecuteOnlyOn() {
+        return executeOnlyOn;
+    }
+
+    public void setExecuteOnlyOn(String executeOnlyOn) {
+        this.executeOnlyOn = executeOnlyOn;
     }
 
     public String getNote() {

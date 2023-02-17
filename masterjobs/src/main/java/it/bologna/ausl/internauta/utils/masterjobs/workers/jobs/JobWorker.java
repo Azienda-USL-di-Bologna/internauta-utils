@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
@@ -23,22 +24,28 @@ import org.springframework.transaction.annotation.Transactional;
  *  nel momento della sua esecuzione il worker creerà i JobWorkerData
  * 
  * NB: le classi concrete che implementeranno questa classe devono esse annotate come:
+ * @param <T> classe che estende JobWorkerData e raprpesenta i dati del job
+ * @param <R> classe che estende JobWorkerResult e raprpesenta i risultati del job
+ * 
  * @Component
  * @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
  */
-public abstract class JobWorker implements Worker {
+public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResult> extends Worker {
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
-    protected JobWorkerData workerData;
-    protected JobWorkerDeferredData workerDeferredData;
+    protected JobWorkerData _workerData;
+    protected JobWorkerDeferredData _workerDeferredData;
     protected boolean deferred;
+    protected Integer executableCheckEveryMillis;
+    protected ZonedDateTime jobExecutableCheckStart = null;
+    
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
      * @param workerData i dati per l'esecuzione del job
      */
     public void build(JobWorkerData workerData) {
-        this.workerData = workerData;
+        this._workerData = workerData;
         this.deferred = false;
     }
     
@@ -47,7 +54,7 @@ public abstract class JobWorker implements Worker {
      * @param workerDeferredData i deffered data, che saranno usati per creare i data nel momento dell'esecuzione del job
      */
     public void buildDeferred(JobWorkerDeferredData workerDeferredData) {
-        this.workerDeferredData = workerDeferredData;
+        this._workerDeferredData = workerDeferredData;
         this.deferred = true;
     }
     
@@ -60,9 +67,9 @@ public abstract class JobWorker implements Worker {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
-    public JobWorkerResult doWork() throws MasterjobsWorkerException {
+    public R doWork() throws MasterjobsWorkerException {
         if (deferred) {
-            this.workerData = this.workerDeferredData.toWorkerData();
+            this._workerData = this._workerDeferredData.toWorkerData();
         }
         return doRealWork();
     }
@@ -73,9 +80,17 @@ public abstract class JobWorker implements Worker {
      */
     public JobWorkerDataInterface getData() {
         if (deferred)
-            return workerDeferredData;
+            return _workerDeferredData;
         else
-            return workerData;
+            return _workerData;
+    }
+    
+    /**
+     * Torna i parametri del job.
+     * @return 
+     */
+    protected T getWorkerData() {
+        return (T) _workerData;
     }
 
     /**
@@ -86,11 +101,30 @@ public abstract class JobWorker implements Worker {
         return deferred;
     }
     
+    public boolean executableCheck() {
+        if (this.jobExecutableCheckStart == null) {
+            jobExecutableCheckStart = ZonedDateTime.now();
+        }
+        return true;
+    }
+    
+    public boolean isExecutable() {
+        return true;
+    }
+
+    public Integer getExecutableCheckEveryMillis() {
+        return executableCheckEveryMillis;
+    }
+    
+    public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
+        this.executableCheckEveryMillis = executableCheckEveryMillis;
+    }
+    
     /**
      * da implementare nei worker specifici, è l'effettiva esecuzione del lavoro
      * @return L'oggetto WorkerResult o una sua sottoclasse, rappresentante il risultato del job. Si può tornare anche null
      * @throws MasterjobsWorkerException nel caso di un errore nell'esecuzione del job
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
-    protected abstract JobWorkerResult doRealWork() throws MasterjobsWorkerException;
+    protected abstract R doRealWork() throws MasterjobsWorkerException;
 }

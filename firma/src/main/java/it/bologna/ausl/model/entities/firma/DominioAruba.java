@@ -24,7 +24,7 @@ public class DominioAruba implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static enum DominiAruba {
-        frAUSLBO, frAUSLPR, frAOPR, frASLImola, frAUSLFE, frIORizzoli, firma
+        frAUSLBO, frAUSLPR, frAOPR, frASLImola, frUSLRomagna, frAUSLFE, frIORizzoli, firma, demoprod, frUmbriaDigitale
     }
 
     @Id

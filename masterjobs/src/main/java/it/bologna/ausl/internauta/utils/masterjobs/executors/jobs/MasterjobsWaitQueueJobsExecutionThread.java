@@ -1,11 +1,10 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsQueueData;
-import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
             this.workQueue, RedisListCommands.Direction.RIGHT, 
             this.queueReadTimeoutMillis, TimeUnit.MILLISECONDS);
         if (queueDataString != null) {
-            log.info(String.format("readed: %s", queueDataString));
+//            log.info(String.format("readed: %s", queueDataString));
             MasterjobsQueueData queueData;
             try {
                 queueData = masterjobsObjectsFactory.getMasterjobsQueueDataFromString(queueDataString);
@@ -64,26 +63,33 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                 throw new MasterjobsExecutionThreadsException(errorMessage, ex);
             }
             Set set = super.getSet(queueData.getSet());
-            
-            // controllo se il set può essere eseguito
-            if (!set.getWaitObject() || super.isExecutable(set)) {
-                // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
-                String destinationQueue;
-                try {
-                    destinationQueue = masterjobsObjectsFactory.getQueueBySetPriority(set.getPriority());
-                } catch (MasterjobsBadDataException ex) {
-                    String errorMessage = String.format("error getting queue name from set priority", ex);
-                    log.error(errorMessage);
-                    throw new MasterjobsExecutionThreadsException(errorMessage);
+            if (set != null) {
+                ZonedDateTime now = ZonedDateTime.now();
+                // controllo se il set può essere eseguito
+                if (
+                    // se ho settato una data di controllo eseguibilità, allora il controllo lo farò solo se la data è giunta
+                    (set.getNextExecutableCheck() == null || !now.isBefore(set.getNextExecutableCheck())) && 
+                    // se la data è giunta, allora controllo l'eseguibilità sequenziale del set
+                    (!set.getWaitObject() || super.isSetSequentiallyExecutable(set))
+                    ) {
+                    // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
+                    String destinationQueue = queueData.getQueue();
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    destinationQueue, RedisListCommands.Direction.LEFT);
+                } else {
+                    
+                    if (set.getNextExecutableCheck() != null) {
+//                        log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
+                    }
+                    
+                    // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
+                    redisTemplate.opsForList().move(
+                    this.workQueue, RedisListCommands.Direction.LEFT, 
+                    this.waitQueue, RedisListCommands.Direction.RIGHT);
                 }
-                redisTemplate.opsForList().move(
-                this.workQueue, RedisListCommands.Direction.LEFT, 
-                destinationQueue, RedisListCommands.Direction.LEFT);
             } else {
-                // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
-                redisTemplate.opsForList().move(
-                this.workQueue, RedisListCommands.Direction.LEFT, 
-                this.waitQueue, RedisListCommands.Direction.RIGHT);
+                redisTemplate.delete(this.workQueue);
             }
         } else {
             // scaduto il timeout di lettura dalla coda redis, vuol dire che non c'è nulla da fare, mi riaccodo...
@@ -91,4 +97,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
         }
     }
     
+    private void aaa(Set set) {
+        
+    }
 }
