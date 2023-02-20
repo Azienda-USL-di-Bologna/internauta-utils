@@ -29,6 +29,9 @@ public class VersamentoDocInformation {
     private List<VersamentoAllegatoInformation> versamentiAllegatiInformations;
     private Versamento.StatoVersamento statoVersamento;
     private Map<String, Object> params;
+    private String username;
+    private String passsword;
+    private String urlVersSync;
 
     public VersamentoDocInformation() {
     }
@@ -166,6 +169,32 @@ public class VersamentoDocInformation {
     public void setParams(Map<String, Object> params) {
         this.params = params;
     }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPasssword() {
+        return passsword;
+    }
+
+    public void setPasssword(String passsword) {
+        this.passsword = passsword;
+    }
+
+    public String getUrlVersSync() {
+        return urlVersSync;
+    }
+
+    public void setUrlVersSync(String url) {
+        this.urlVersSync = url;
+    }
+    
+    
 
     
     /**
