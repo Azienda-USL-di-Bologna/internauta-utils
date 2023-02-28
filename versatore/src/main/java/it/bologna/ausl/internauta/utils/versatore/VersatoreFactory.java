@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.versatore;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +50,9 @@ public class VersatoreFactory {
             VersatoreProviders provider = VersatoreProviders.valueOf(configuration.getProvider().getId());
             switch (provider) {
                 case PARER:
-                    // TODO
-                    versatoreDocsInstance = null;
+                    versatoreDocsInstance = beanFactory.getBean(ParerVersatoreService.class);
+                    versatoreDocsInstance.init(configuration);
+//                    versatoreDocsInstance = null;
                     break;
                 case INFOCERT:
                     versatoreDocsInstance = beanFactory.getBean(InfocertVersatoreService.class);

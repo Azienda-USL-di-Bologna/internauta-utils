@@ -46,13 +46,10 @@ public class VersatoreServiceCore {
             //parametri per il versamento 
             Map<String,Object> params = (Map<String,Object>) versatoreConfigAziendaValue.get("params");
             
-            //parametro per l'utente e password e url del versamento
-            String username = (String) versatoreConfigAziendaValue.get("username");
-            String password = (String) versatoreConfigAziendaValue.get("password");
-            String urlVersSync = (String) versatoreConfigAziendaValue.get("urlVersSync");
+            
             
             // richiama il metodo sul core che si occupa dell'accodamento del job
-            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app, params, username, password, urlVersSync);
+            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app, params);
             
         }
     }
@@ -67,8 +64,8 @@ public class VersatoreServiceCore {
      * @param app applicazione a cui legare il job
      * @param params parametri specifici per il versamento
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app, Map<String,Object> params, String username, String password, String urlVersSync) {
-        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura, params, username, password, urlVersSync);
+    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app, Map<String,Object> params) {
+        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura, params);
         VersatoreJobWorker jobWorker = null;
         try { // istanzia il woker
             jobWorker = masterjobsObjectsFactory.getJobWorker(VersatoreJobWorker.class, versatoreJobWorkerData, false);

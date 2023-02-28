@@ -7,6 +7,8 @@ import it.bologna.ausl.riversamento.builder.oggetti.StrutturaType;
 import it.bologna.ausl.riversamento.builder.oggetti.TipoSupportoType;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -81,7 +83,7 @@ public class DocumentBuilder {
 
         //data di registrazione di protocollo
         if ((riferimentoTemporale != null) && (!"".equals(riferimentoTemporale))) {
-            componente.setRiferimentoTemporale(DatatypeFactory.newInstance().newXMLGregorianCalendar(buildCalendar(riferimentoTemporale)));
+            componente.setRiferimentoTemporale(ZonedDateTime.parse(riferimentoTemporale));
         }
 
         // data di protocollazione

@@ -6,6 +6,7 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.parer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
@@ -24,6 +25,9 @@ import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.Tipologi
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDELI;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDETE;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGPICO;
+import it.bologna.ausl.model.entities.scripta.QAllegato;
+import it.bologna.ausl.model.entities.scripta.QArchivio;
+import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.riversamento.builder.DatiSpecificiBuilder;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
@@ -33,6 +37,7 @@ import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
 import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
 import java.text.ParseException;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,14 +71,24 @@ public final class ParerVersatoreMetadatiBuilder {
 
     public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecifici, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
        
-        List<ArchivioDoc> archiviazioni = entityManager.createQuery("SELECT * FROM scripta.archivi_docs ad where ad.id_doc = :value1 order by ad.data_archiviziazione ASC")
-                .setParameter("value1", doc.getId()).getResultList();
+//        List<ArchivioDoc> archiviazioni = entityManager.createQuery("SELECT * FROM scripta.archivi_docs ad where ad.id_doc = :value1 order by ad.data_archiviziazione ASC")
+//                .setParameter("value1", doc.getId()).getResultList();
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+        List<ArchivioDoc> archiviazioni = jPAQueryFactory
+                .select(QArchivioDoc.archivioDoc)
+                .from(QArchivioDoc.archivioDoc)
+                .where(QArchivioDoc.archivioDoc.idDoc.id.eq(doc.getId()))
+                .orderBy(QArchivioDoc.archivioDoc.dataArchiviazione.asc())
+                .fetch();
         Map<String,Object> mappaUnitaDocumentaria = new HashMap<>();
         
         
 
-        if (archiviazioni != null) { 
-            String dataArchiviazione = archiviazioni.get(0).getDataArchiviazione().toLocalDate().toString();
+        if (archiviazioni != null && archiviazioni.size() != 0) { 
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy - HH:mm:ss Z");
+            String dataArchiviazione = archiviazioni.get(0).getDataArchiviazione().format(formatter);
+            
             try {
                 log.info("buildo il profilo archivistico");
                 ProfiloArchivistico profiloArchivistico = buildProfiloArchivistico(doc, docDetail, archiviazioni);
@@ -88,7 +103,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     
                     UnitaDocumentariaBuilder unitaDocumentariaBuilder;
                     
-                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParer(doc.getTipologia()), "0", "-1", "0", profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
+                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParer(doc.getTipologia()), "false", "true", "false", profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
                     Map<String, Object> mappaUnitaDocumentariaEAllegati = buildAllegati(doc,docDetail, unitaDocumentariaBuilder, tipoDocumentoDefault,includiNote);
                     UnitaDocumentariaBuilder unitaDocumentariaBuilderConAllegati = (UnitaDocumentariaBuilder) mappaUnitaDocumentariaEAllegati.get("unitaDocumentariaBuilder");
                     List<VersamentoAllegatoInformation> versamentiAllegatiInformation = (List<VersamentoAllegatoInformation>) mappaUnitaDocumentariaEAllegati.get("versamentiAllegatiInfo");
@@ -130,27 +145,27 @@ public final class ParerVersatoreMetadatiBuilder {
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.RESPONSABILE_PROCEDIMENTO) {
                 nomeResponsabile = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.VISTATORE) {
-                if (!vistiString.equals("")) {
+            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.VISTI) {
+                if (vistiString.equals("")) {
                     vistiString = vistiString + attore.getIdPersona().getDescrizione();
                 } else {
                     vistiString = vistiString + "; " + attore.getIdPersona().getDescrizione();
                 }
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMATARIO) {
-                if (!firmatariString.equals("")) {
+            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {
+                if (firmatariString.equals("")) {
                     firmatariString = firmatariString + attore.getIdPersona().getDescrizione();
                 } else {
                     firmatariString = firmatariString + "; " + attore.getIdPersona().getDescrizione();
                 }
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DA) {
+            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_AMMINISTRATIVO) {
                 nomeDirettoreAmministrativo = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DS) {
+            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_SANITARIO) {
                 nomeDirettoreSanitario = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DG) {
+            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE) {
                 nomeDirettoreGenerale = attore.getIdPersona().getDescrizione();
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.RICEZIONE) {
@@ -234,26 +249,29 @@ public final class ParerVersatoreMetadatiBuilder {
             HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
             additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
             HashMap<String, Object> metadatiTrasparenza = new HashMap<String, Object>();
-            metadatiTrasparenza = (HashMap<String, Object>) additionalDataDoc.get("metadati_trasparenza");
-            String descrizione = (String) metadatiTrasparenza.get("descrizione");
-            String tipoProvvedimento = (String) metadatiTrasparenza.get("id_tipo_provvedimento");
-            if (descrizione != null || !descrizione.equals("")) {
-                datiSpecificiBuilder.insertNewTag("TipologiaAtto", descrizione);
+            if(additionalDataDoc != null && additionalDataDoc.get("metadati_trasparenza") != null) {
+                metadatiTrasparenza = (HashMap<String, Object>) additionalDataDoc.get("metadati_trasparenza");
+                String descrizione = (String) metadatiTrasparenza.get("descrizione");
+                String tipoProvvedimento = (String) metadatiTrasparenza.get("id_tipo_provvedimento");
+                if (descrizione != null || !descrizione.equals("")) {
+                    datiSpecificiBuilder.insertNewTag("TipologiaAtto", descrizione);
+                }
+                if (!tipoProvvedimento.equals("non_rilevante       ")) {
+                    String spesa = (String) metadatiTrasparenza.get("spesa");
+                    String contenuto = (String) metadatiTrasparenza.get("contenuto");
+                    String estremiDocumenti = (String) metadatiTrasparenza.get("estremi_documento");
+                    if (contenuto != null) {
+                        datiSpecificiBuilder.insertNewTag("Contenuto", contenuto);
+                    }
+                    if (spesa != null) {
+                        datiSpecificiBuilder.insertNewTag("SpesaPrevista", spesa);
+                    }
+                    if (estremiDocumenti != null) {
+                        datiSpecificiBuilder.insertNewTag("PrincipaliDocumenti", estremiDocumenti);
+                    }
+                }
             }
-            if (!tipoProvvedimento.equals("non_rilevante       ")) {
-                String spesa = (String) metadatiTrasparenza.get("spesa");
-                String contenuto = (String) metadatiTrasparenza.get("contenuto");
-                String estremiDocumenti = (String) metadatiTrasparenza.get("estremi_documento");
-                if (contenuto != null) {
-                    datiSpecificiBuilder.insertNewTag("Contenuto", contenuto);
-                }
-                if (spesa != null) {
-                    datiSpecificiBuilder.insertNewTag("SpesaPrevista", spesa);
-                }
-                if (estremiDocumenti != null) {
-                    datiSpecificiBuilder.insertNewTag("PrincipaliDocumenti", estremiDocumenti);
-                }
-            }
+            
 
         }
         datiSpecifici = datiSpecificiBuilder.getDatiSpecifici();
@@ -268,7 +286,13 @@ public final class ParerVersatoreMetadatiBuilder {
             for (ArchivioDoc fascicolazioneSecondaria : archiviazioni) {
 
                 if (fascicolazioneSecondaria == archiviazioni.get(0)) {
-                    Archivio archivioPrincipale = entityManager.find(Archivio.class, archiviazioni.get(0).getId());
+                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+                    Archivio archivioPrincipale = jPAQueryFactory
+                    .select(QArchivio.archivio)
+                    .from(QArchivio.archivio)
+                    .where(QArchivio.archivio.id.eq(archiviazioni.get(0).getIdArchivio().getId()))
+                    .fetchOne();
+//                    Archivio archivioPrincipale = entityManager.find(Archivio.class, archiviazioni.get(0).getIdArchivio());
                     if (archivioPrincipale.getLivello() == 1) {
                         profiloArchivistico.addFascicoloPrincipale(
                                 archivioPrincipale.getIdTitolo().getClassificazione(),
@@ -303,7 +327,12 @@ public final class ParerVersatoreMetadatiBuilder {
 
                     }
                 } else {
-                    Archivio archivioSecondario = entityManager.find(Archivio.class, fascicolazioneSecondaria.getId());
+                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+                    Archivio archivioSecondario = jPAQueryFactory
+                    .select(QArchivio.archivio)
+                    .from(QArchivio.archivio)
+                    .where(QArchivio.archivio.id.eq(fascicolazioneSecondaria.getIdArchivio().getId()))
+                    .fetchOne();
                     if (archivioSecondario.getLivello() == 1) {
                         profiloArchivistico.addFascicoloSecondario(
                                 archivioSecondario.getIdTitolo().getClassificazione(),
@@ -350,8 +379,15 @@ public final class ParerVersatoreMetadatiBuilder {
 
     private  Map<String, Object> buildAllegati(Doc doc,DocDetail docDetail, UnitaDocumentariaBuilder unitaDocumentariaBuilder, String tipoDocumentoDefault, Boolean includiNoteParer) throws DatatypeConfigurationException, ParseException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
-        List<Allegato> allegati = entityManager.createQuery("SELECT * FROM scripta.allegati a where a.id_doc = :value1")
-                .setParameter("value1", doc.getId()).getResultList();
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+
+        List<Allegato> allegati = jPAQueryFactory
+                    .select(QAllegato.allegato)
+                    .from(QAllegato.allegato)
+                    .where(QAllegato.allegato.idDoc.id.eq(doc.getId()))
+                    .fetch();
+//        List<Allegato> allegati = entityManager.createQuery("SELECT * FROM scripta.allegati a where a.id_doc = :value1")
+//                .setParameter("value1", doc.getId()).getResultList();
 //        IdentityFile identityFilePrincipale;
         Integer i = 1;
         Integer indexCommittente = 1;

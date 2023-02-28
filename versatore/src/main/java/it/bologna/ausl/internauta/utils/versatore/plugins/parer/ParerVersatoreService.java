@@ -11,21 +11,13 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.scripta.Allegato;
-import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
-import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.model.entities.versatore.Versamento;
-import it.bologna.ausl.riversamento.builder.DatiSpecificiBuilder;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
-import it.bologna.ausl.riversamento.builder.InfoDocumento;
-import it.bologna.ausl.riversamento.builder.ProfiloArchivistico;
-import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
+import it.bologna.ausl.riversamento.builder.UnitaDocumentariaBuilder;
 import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
 import it.bologna.ausl.riversamento.sender.Pacco;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
@@ -37,9 +29,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
-
-
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+
+
 import java.util.HashMap;
 
 import java.util.List;
@@ -52,7 +45,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.JAXBException;
 import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.parsers.ParserConfigurationException;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -60,7 +52,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.NameValuePair;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +82,7 @@ public class ParerVersatoreService extends VersatoreDocs{
     @Autowired
     private ParerVersatoreMetadatiBuilder parerVersatoreMetadatiBuilder;
     
-    protected MinIOWrapper minIOWrapper;
+   
     
 //    
     @Override
@@ -109,9 +100,9 @@ public class ParerVersatoreService extends VersatoreDocs{
         }
         String response = (String) mappaResultAndAllegati.get("response");
         List<VersamentoAllegatoInformation> listaAllegati = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
+        
         versamentoInformation.setDataVersamento(ZonedDateTime.now()); 
         Doc doc = entityManager.find(Doc.class, versamentoInformation.getIdDoc());
-        List<Allegato> allegati = doc.getAllegati();
         if(response != null && !response.equals("")) {
             Builder parser = new Builder();
             try {
@@ -286,9 +277,9 @@ public class ParerVersatoreService extends VersatoreDocs{
         String enteVersamento = (String) versamentoInformation.getParams().get("ente");
         String userID = (String) versamentoInformation.getParams().get("userID");
         String version = (String) versamentoInformation.getParams().get("versione");
-        String username = (String) versamentoInformation.getUsername();
-        String password = (String) versamentoInformation.getPasssword();
-        String urlVersSync = (String) versamentoInformation.getUrlVersSync();
+        String username = (String) versamentoInformation.getParams().get("username");
+        String password = (String) versamentoInformation.getParams().get("password");
+        String urlVersSync = (String) versamentoInformation.getParams().get("urlVersSync");
         
         String ambiente = (String) versamentoInformation.getParams().get("ambiente");
         String struttura = (String) versamentoInformation.getParams().get("struttura");
@@ -298,15 +289,20 @@ public class ParerVersatoreService extends VersatoreDocs{
         String versioneDatiSpecifici = (String) versamentoInformation.getParams().get("versionedatispecifici");
         String tipoComponenteDefault = (String) versamentoInformation.getParams().get("tipocomponentedefault");
         Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecifici, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
-        List<IdentityFile> identityFiles = (List<IdentityFile>) unitaDocConIdentityFiles.get("identityFiles");
-        UnitaDocumentaria unitaDoc = (UnitaDocumentaria) unitaDocConIdentityFiles.get("unitaDocumentaria");
+        List<JSONObject> identityFiles = (List<JSONObject>) unitaDocConIdentityFiles.get("identityFiles");
+        List<IdentityFile> identityFiless= new ArrayList<>();
+        for(JSONObject identityFile: identityFiles) {
+            IdentityFile identityFilee = IdentityFile.parse(identityFile);
+            identityFiless.add(identityFilee);
+        }
+        UnitaDocumentariaBuilder unitaDoc = (UnitaDocumentariaBuilder) unitaDocConIdentityFiles.get("unitaDocumentaria");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformation = (List<VersamentoAllegatoInformation>) unitaDocConIdentityFiles.get("versamentiAllegatiInformation");
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformation);
         Pacco pacco = creazionePacco(version, username, password);
         try {
-            Pacco paccoConPacchiFiles = creazionePaccoFile(identityFiles, pacco);
-            List<NameValuePair> formparams = paccoConPacchiFiles.getFormValues();
+            Pacco paccoConPacchiFiles = creazionePaccoFile(identityFiless, pacco);
             paccoConPacchiFiles.setXmlsip(unitaDoc.toString());
+            List<NameValuePair> formparams = paccoConPacchiFiles.getFormValues();
             
             String response = null;
             OkHttpClient client = new OkHttpClient();

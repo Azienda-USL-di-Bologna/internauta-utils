@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.logging.Level;
@@ -171,7 +172,7 @@ public class UnitaDocumentariaBuilder {
         unitaDocumentaria.setConfigurazione(config);
 
         profiloUnitaDocumentaria.setOggetto(oggetto);
-        profiloUnitaDocumentaria.setData(DatatypeFactory.newInstance().newXMLGregorianCalendar(buildCalendar(data)));
+        profiloUnitaDocumentaria.setData(ZonedDateTime.parse(data));
         profiloUnitaDocumentaria.setCartaceo(setCartaceo);
 
         unitaDocumentaria.setProfiloUnitaDocumentaria(profiloUnitaDocumentaria);
@@ -241,7 +242,7 @@ public class UnitaDocumentariaBuilder {
         componente.setHashVersato(identityFile.getHash());
         componente.setUtilizzoDataFirmaPerRifTemp(Boolean.FALSE);
 
-        componente.setRiferimentoTemporale(DatatypeFactory.newInstance().newXMLGregorianCalendar(buildCalendar(dataRiferimentoTemporale)));
+        componente.setRiferimentoTemporale(ZonedDateTime.parse(dataRiferimentoTemporale));
         componente.setDescrizioneRiferimentoTemporale(descrizioneRifTemporale);
 
         componenti.getComponente().add(componente);

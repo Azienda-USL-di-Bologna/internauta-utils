@@ -8,6 +8,7 @@
 
 package it.bologna.ausl.riversamento.builder.oggetti;
 
+import java.util.GregorianCalendar;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -47,7 +48,7 @@ public class ProfiloUnitaDocumentariaType {
     @XmlElement(name = "Oggetto", required = true)
     protected String oggetto;
     @XmlElement(name = "Data", required = true)
-    protected XMLGregorianCalendar data;
+    protected String data;
     @XmlElement(name = "Cartaceo")
     protected Boolean cartaceo;
 
@@ -83,7 +84,7 @@ public class ProfiloUnitaDocumentariaType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public XMLGregorianCalendar getData() {
+    public String getData() {
         return data;
     }
 
@@ -95,7 +96,7 @@ public class ProfiloUnitaDocumentariaType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public void setData(XMLGregorianCalendar value) {
+    public void setData(String value) {
         this.data = value;
     }
 

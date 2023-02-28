@@ -8,6 +8,7 @@
 
 package it.bologna.ausl.riversamento.builder.oggetti;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.JAXBElement;
@@ -129,7 +130,7 @@ public class ComponenteType {
     protected Boolean utilizzoDataFirmaPerRifTemp;
     @XmlElement(name = "RiferimentoTemporale")
     @XmlSchemaType(name = "dateTime")
-    protected XMLGregorianCalendar riferimentoTemporale;
+    protected ZonedDateTime riferimentoTemporale;
     @XmlElement(name = "DescrizioneRiferimentoTemporale")
     protected String descrizioneRiferimentoTemporale;
     @XmlElement(name = "SottoComponenti")
@@ -471,7 +472,7 @@ public class ComponenteType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public XMLGregorianCalendar getRiferimentoTemporale() {
+    public ZonedDateTime getRiferimentoTemporale() {
         return riferimentoTemporale;
     }
 
@@ -483,7 +484,7 @@ public class ComponenteType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public void setRiferimentoTemporale(XMLGregorianCalendar value) {
+    public void setRiferimentoTemporale(ZonedDateTime value) {
         this.riferimentoTemporale = value;
     }
 
