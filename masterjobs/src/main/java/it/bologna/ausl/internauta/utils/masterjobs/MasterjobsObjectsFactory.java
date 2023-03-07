@@ -169,9 +169,13 @@ public class MasterjobsObjectsFactory {
      */
     public ServiceWorker getServiceWorker(String name) throws MasterjobsWorkerInitializationException {
         Class<? extends Worker> serviceWorkerClass = workerMap.get(name);
-        ServiceWorker serviceWorker = (ServiceWorker) beanFactory.getBean(serviceWorkerClass);
-        MasterjobsJobsQueuer masterjobsJobsQueuer = beanFactory.getBean(MasterjobsJobsQueuer.class);
-        serviceWorker.init(this, masterjobsJobsQueuer, masterjobsApplicationConfig.isUseDebuggingOptions(), masterjobsApplicationConfig.getMachineIp(), masterjobsApplicationConfig.getHttpPort());
-        return serviceWorker;
+        if (serviceWorkerClass != null) {
+            ServiceWorker serviceWorker = (ServiceWorker) beanFactory.getBean(serviceWorkerClass);
+            MasterjobsJobsQueuer masterjobsJobsQueuer = beanFactory.getBean(MasterjobsJobsQueuer.class);
+            serviceWorker.init(this, masterjobsJobsQueuer, masterjobsApplicationConfig.isUseDebuggingOptions(), masterjobsApplicationConfig.getMachineIp(), masterjobsApplicationConfig.getHttpPort());
+            return serviceWorker;
+        } else {
+            return null;
+        }
     }
 }
