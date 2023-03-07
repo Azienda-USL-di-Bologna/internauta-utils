@@ -172,7 +172,7 @@ public class UnitaDocumentariaBuilder {
         unitaDocumentaria.setConfigurazione(config);
 
         profiloUnitaDocumentaria.setOggetto(oggetto);
-        profiloUnitaDocumentaria.setData(ZonedDateTime.parse(data));
+        profiloUnitaDocumentaria.setData(data);
         profiloUnitaDocumentaria.setCartaceo(setCartaceo);
 
         unitaDocumentaria.setProfiloUnitaDocumentaria(profiloUnitaDocumentaria);
@@ -242,7 +242,7 @@ public class UnitaDocumentariaBuilder {
         componente.setHashVersato(identityFile.getHash());
         componente.setUtilizzoDataFirmaPerRifTemp(Boolean.FALSE);
 
-        componente.setRiferimentoTemporale(ZonedDateTime.parse(dataRiferimentoTemporale));
+        componente.setRiferimentoTemporale(dataRiferimentoTemporale);
         componente.setDescrizioneRiferimentoTemporale(descrizioneRifTemporale);
 
         componenti.getComponente().add(componente);

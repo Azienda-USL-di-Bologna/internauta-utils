@@ -35,7 +35,11 @@ import it.bologna.ausl.riversamento.builder.ProfiloArchivistico;
 import it.bologna.ausl.riversamento.builder.UnitaDocumentariaBuilder;
 import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
 import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
+import java.text.DecimalFormat;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -69,7 +73,7 @@ public final class ParerVersatoreMetadatiBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
 
-    public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecifici, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
+    public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
        
 //        List<ArchivioDoc> archiviazioni = entityManager.createQuery("SELECT * FROM scripta.archivi_docs ad where ad.id_doc = :value1 order by ad.data_archiviziazione ASC")
 //                .setParameter("value1", doc.getId()).getResultList();
@@ -77,7 +81,7 @@ public final class ParerVersatoreMetadatiBuilder {
         List<ArchivioDoc> archiviazioni = jPAQueryFactory
                 .select(QArchivioDoc.archivioDoc)
                 .from(QArchivioDoc.archivioDoc)
-                .where(QArchivioDoc.archivioDoc.idDoc.id.eq(doc.getId()))
+                .where(QArchivioDoc.archivioDoc.idDoc.id.eq(doc.getId()).and(QArchivioDoc.archivioDoc.dataEliminazione.isNull()))
                 .orderBy(QArchivioDoc.archivioDoc.dataArchiviazione.asc())
                 .fetch();
         Map<String,Object> mappaUnitaDocumentaria = new HashMap<>();
@@ -86,9 +90,9 @@ public final class ParerVersatoreMetadatiBuilder {
 
         if (archiviazioni != null && archiviazioni.size() != 0) { 
             
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy - HH:mm:ss Z");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
             String dataArchiviazione = archiviazioni.get(0).getDataArchiviazione().format(formatter);
-            
+            String dataPerDatiSpecifici = archiviazioni.get(0).getDataArchiviazione().toLocalDate().toString();
             try {
                 log.info("buildo il profilo archivistico");
                 ProfiloArchivistico profiloArchivistico = buildProfiloArchivistico(doc, docDetail, archiviazioni);
@@ -96,19 +100,20 @@ public final class ParerVersatoreMetadatiBuilder {
                     log.info("buildo i dati specifici");
                     DatiSpecifici datiSpecifici = null;
                     if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
-                        datiSpecifici = buildDatiSpecifici(doc, docDetail, dataArchiviazione, versioneDatiSpecifici);
+                        datiSpecifici = buildDatiSpecifici(doc, docDetail, dataPerDatiSpecifici, versioneDatiSpecificiPico, versioneDatiSpecificiDete, versioneDatiSpecificiDeli);
                     } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE) {
                         datiSpecifici = buildDatiSpecificiRegistroGiornaliero(doc, docDetail);
                     }
                     
                     UnitaDocumentariaBuilder unitaDocumentariaBuilder;
-                    
-                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParer(doc.getTipologia()), "false", "true", "false", profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
+                    DecimalFormat df = new DecimalFormat("0000000");
+                    String numeroRegistrazione = df.format(docDetail.getNumeroRegistrazione());
+                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(numeroRegistrazione, docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParerPerDatiSpecifici(doc.getTipologia()), "false", "true", "false", profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
                     Map<String, Object> mappaUnitaDocumentariaEAllegati = buildAllegati(doc,docDetail, unitaDocumentariaBuilder, tipoDocumentoDefault,includiNote);
                     UnitaDocumentariaBuilder unitaDocumentariaBuilderConAllegati = (UnitaDocumentariaBuilder) mappaUnitaDocumentariaEAllegati.get("unitaDocumentariaBuilder");
                     List<VersamentoAllegatoInformation> versamentiAllegatiInformation = (List<VersamentoAllegatoInformation>) mappaUnitaDocumentariaEAllegati.get("versamentiAllegatiInfo");
-                    mappaUnitaDocumentaria.put("unitaDocumentaria", unitaDocumentariaBuilder);
-                    mappaUnitaDocumentaria.put("identityFiles", unitaDocumentariaBuilder.getIdentityFiles());
+                    mappaUnitaDocumentaria.put("unitaDocumentaria", unitaDocumentariaBuilderConAllegati);
+                    mappaUnitaDocumentaria.put("identityFiles", unitaDocumentariaBuilderConAllegati.getIdentityFiles());
                     mappaUnitaDocumentaria.put("versamentiAllegatiInformation", versamentiAllegatiInformation);
                     return mappaUnitaDocumentaria;
                     
@@ -124,16 +129,17 @@ public final class ParerVersatoreMetadatiBuilder {
 
     }
 
-    private DatiSpecifici buildDatiSpecifici(Doc doc, DocDetail docDetail, String dataArchiviazione, String versioneDati) throws ParserConfigurationException {
+    private DatiSpecifici buildDatiSpecifici(Doc doc, DocDetail docDetail, String dataArchiviazione, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli) throws ParserConfigurationException {
 
-        DatiSpecifici datiSpecifici = null;
+        DatiSpecifici datiSpecifici = new DatiSpecifici();
         ObjectMapper mapper = new ObjectMapper();
 
         DatiSpecificiBuilder datiSpecificiBuilder = new DatiSpecificiBuilder();
+
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
             datiSpecificiBuilder.insertNewTag("UnitaOperativaProponente", docDetail.getIdStrutturaRegistrazione().getNome());
         }
-        List<AttoreDoc> attori = doc.getAttori();
+        List<AttoreDoc> attori = doc.getAttoriList();
         String nomeResponsabile = "";
         String vistiString = "";
         String firmatariString = "";
@@ -141,9 +147,14 @@ public final class ParerVersatoreMetadatiBuilder {
         String nomeDirettoreSanitario = "";
         String nomeDirettoreGenerale = "";
         String operatoreDiProtocollo = "";
+        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+            datiSpecificiBuilder.insertNewTag("Destinatario", "Vedi annesso elenco destinatari");
+            datiSpecificiBuilder.insertNewTag("Movimento", "OUT");
+            datiSpecificiBuilder.insertNewTag("ModalitaTrasmissione", "BABEL");
+        }
         for (AttoreDoc attore : attori) {
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.RESPONSABILE_PROCEDIMENTO) {
-                nomeResponsabile = attore.getIdPersona().getDescrizione();
+                nomeResponsabile = attore.getIdPersona().getDescrizione() + " (" + attore.getIdStruttura().getNome() + ")";
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.VISTI) {
                 if (vistiString.equals("")) {
@@ -154,9 +165,9 @@ public final class ParerVersatoreMetadatiBuilder {
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {
                 if (firmatariString.equals("")) {
-                    firmatariString = firmatariString + attore.getIdPersona().getDescrizione();
+                    firmatariString = firmatariString + "&amp;lt;nominativo&amp;gt;" + attore.getIdPersona().getDescrizione() + "&amp;lt;/nominativo&amp;gt;";
                 } else {
-                    firmatariString = firmatariString + "; " + attore.getIdPersona().getDescrizione();
+                    firmatariString = firmatariString + "; " + "&amp;lt;nominativo&amp;gt;" + attore.getIdPersona().getDescrizione()+ "&amp;lt;/nominativo&amp;gt;";
                 }
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_AMMINISTRATIVO) {
@@ -172,7 +183,13 @@ public final class ParerVersatoreMetadatiBuilder {
                 operatoreDiProtocollo = attore.getIdPersona().getCodiceFiscale();
             }
         }
-        if (!nomeResponsabile.equals("")) {
+        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA && !firmatariString.equals("")) {
+                datiSpecificiBuilder.insertNewTag("Proponente", firmatariString);
+            }
+        if (!nomeResponsabile.equals("") && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
+            datiSpecificiBuilder.insertNewTag("ResponsabileDelProcedimento", nomeResponsabile);
+        }
+        if (!nomeResponsabile.equals("") && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA)) {
             datiSpecificiBuilder.insertNewTag("ResponsabileProcedimento", nomeResponsabile);
         }
         if (!vistiString.equals("")) {
@@ -186,14 +203,24 @@ public final class ParerVersatoreMetadatiBuilder {
                 datiSpecificiBuilder.insertNewTag("FirmatarioAtto", firmatariString);
                 datiSpecificiBuilder.insertNewTag("UnitaOperativaFirmatarioAtto", docDetail.getIdStrutturaRegistrazione().getNome());
             }
-            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
-                datiSpecificiBuilder.insertNewTag("Proponente", firmatariString);
-            }
+            
         }
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
-            datiSpecificiBuilder.insertNewTag("DirettoreAmministrativo", nomeDirettoreAmministrativo);
-            datiSpecificiBuilder.insertNewTag("DirettoreSanitario", nomeDirettoreSanitario);
-            datiSpecificiBuilder.insertNewTag("DirettoreGenerale", nomeDirettoreGenerale);
+            if(nomeDirettoreAmministrativo != null) {
+                datiSpecificiBuilder.insertNewTag("DirettoreAmministrativo", nomeDirettoreAmministrativo);
+            } else {
+                datiSpecificiBuilder.insertNewTag("CausaleAssenzaDA", "assente");
+            }
+            if(nomeDirettoreSanitario != null) {
+                datiSpecificiBuilder.insertNewTag("DirettoreSanitario", nomeDirettoreSanitario);
+            } else {
+                datiSpecificiBuilder.insertNewTag("CausaleAssenzaDS", "assente");
+            }
+            if(nomeDirettoreGenerale != null) {
+                datiSpecificiBuilder.insertNewTag("DirettoreGenerale", nomeDirettoreGenerale);
+            } else {
+                datiSpecificiBuilder.insertNewTag("CausaleAssenzaDG", "assente");
+            }
             HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
 
             additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
@@ -207,31 +234,38 @@ public final class ParerVersatoreMetadatiBuilder {
         }
 
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
-            datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
+            if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+                datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
+            }
             HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
             additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
             HashMap<String, Object> datiPubblicazione = new HashMap<String, Object>();
             datiPubblicazione = (HashMap<String, Object>) additionalDataDoc.get("dati_pubblicazione");
-            String dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
+            LocalDateTime dataEsecutivita = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("data_esecutivita"));
+            LocalDateTime inizioPubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("inizio_pubblicazione"));
+            LocalDateTime finePubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("fine_pubblicazione"));
+            
             if (dataEsecutivita != null) {
-                datiSpecificiBuilder.insertNewTag("EsecutivitaData", dataEsecutivita);
+                datiSpecificiBuilder.insertNewTag("EsecutivitaData", dataEsecutivita.toLocalDate().toString());
             }
             if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
                 String noteEsecutivita = (String) additionalDataDoc.get("note_esecutivita");
                 datiSpecificiBuilder.insertNewTag("EsecutivitaNote", noteEsecutivita);
             }
+            if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+                datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
+            }
             datiSpecificiBuilder.insertNewTag("PubblicazioneRegistro", "ALBO ON LINE");
             datiSpecificiBuilder.insertNewTag("PubblicazioneAnno", (String) datiPubblicazione.get("anno"));
             datiSpecificiBuilder.insertNewTag("PubblicazioneNumero", (String) datiPubblicazione.get("numero"));
-            datiSpecificiBuilder.insertNewTag("PubblicazioneInizio", (String) datiPubblicazione.get("inizio_pubblicazione"));
-            datiSpecificiBuilder.insertNewTag("PubblicazioneFine", (String) datiPubblicazione.get("fine_pubblicazione"));
-            datiSpecificiBuilder.insertNewTag("PubblicazioneTipo", "INTEGRALE");
+            datiSpecificiBuilder.insertNewTag("PubblicazioneInizio", inizioPubblicazione.toLocalDate().toString());
+            datiSpecificiBuilder.insertNewTag("PubblicazioneFine", finePubblicazione.toLocalDate().toString());
+            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+                datiSpecificiBuilder.insertNewTag("PubblicazioneTipo", "INTEGRALE");
+            }
+            
             datiSpecificiBuilder.insertNewTag("IdentificazioneRepository", "GEDI");
-        } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
-            datiSpecificiBuilder.insertNewTag("Destinatario", "Vedi annesso elenco destinatari");
-            datiSpecificiBuilder.insertNewTag("Movimento", "OUT");
-            datiSpecificiBuilder.insertNewTag("ModalitaTrasmissione", "BABEL");
-        }
+        } 
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
             datiSpecificiBuilder.insertNewTag("Mittente", docDetail.getMittente());
             datiSpecificiBuilder.insertNewTag("Movimento", "IN");
@@ -241,8 +275,8 @@ public final class ParerVersatoreMetadatiBuilder {
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
             datiSpecificiBuilder.insertNewTag("DataFascicolazione", dataArchiviazione);
             datiSpecificiBuilder.insertNewTag("IdentificazioneRepository", "GEDI");
-            datiSpecificiBuilder.insertNewTag("Visibiita", "LIBERA");
-            datiSpecificiBuilder.insertNewTag("Consultazione", "NON PRECISATA");
+            datiSpecificiBuilder.insertNewTag("Visibilita", "LIBERA");
+            datiSpecificiBuilder.insertNewTag("Consultabilita", "NON PRECISATA");
 
         }
         if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
@@ -272,9 +306,17 @@ public final class ParerVersatoreMetadatiBuilder {
                 }
             }
             
-
+            
         }
         datiSpecifici = datiSpecificiBuilder.getDatiSpecifici();
+        if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+            datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiPico);
+        } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+            datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiDete);
+        } else {
+            datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiDeli);
+        }
+
         return datiSpecifici;
     }
 
@@ -295,7 +337,7 @@ public final class ParerVersatoreMetadatiBuilder {
 //                    Archivio archivioPrincipale = entityManager.find(Archivio.class, archiviazioni.get(0).getIdArchivio());
                     if (archivioPrincipale.getLivello() == 1) {
                         profiloArchivistico.addFascicoloPrincipale(
-                                archivioPrincipale.getIdTitolo().getClassificazione(),
+                                archivioPrincipale.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioPrincipale.getAnno().toString(),
                                 archivioPrincipale.getNumero().toString(),
                                 archivioPrincipale.getOggetto(),
@@ -305,7 +347,7 @@ public final class ParerVersatoreMetadatiBuilder {
                                 "");
                     } else if (archivioPrincipale.getLivello() == 2) {
                         profiloArchivistico.addFascicoloPrincipale(
-                                archivioPrincipale.getIdTitolo().getClassificazione(),
+                                archivioPrincipale.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioPrincipale.getAnno().toString(),
                                 archivioPrincipale.getIdArchivioPadre().getNumero().toString(),
                                 archivioPrincipale.getIdArchivioPadre().getOggetto(),
@@ -315,7 +357,7 @@ public final class ParerVersatoreMetadatiBuilder {
                                 "");
                     } else {
                         profiloArchivistico.addFascicoloPrincipale(
-                                archivioPrincipale.getIdTitolo().getClassificazione(),
+                                archivioPrincipale.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioPrincipale.getIdArchivioRadice().getAnno().toString(),
                                 archivioPrincipale.getIdArchivioRadice().getNumero().toString(),
                                 archivioPrincipale.getIdArchivioRadice().getOggetto(),
@@ -335,7 +377,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     .fetchOne();
                     if (archivioSecondario.getLivello() == 1) {
                         profiloArchivistico.addFascicoloSecondario(
-                                archivioSecondario.getIdTitolo().getClassificazione(),
+                                archivioSecondario.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioSecondario.getAnno().toString(),
                                 archivioSecondario.getNumero().toString(),
                                 archivioSecondario.getOggetto(),
@@ -345,7 +387,7 @@ public final class ParerVersatoreMetadatiBuilder {
                                 "");
                     } else if (archivioSecondario.getLivello() == 2) {
                         profiloArchivistico.addFascicoloSecondario(
-                                archivioSecondario.getIdTitolo().getClassificazione(),
+                                archivioSecondario.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioSecondario.getAnno().toString(),
                                 archivioSecondario.getIdArchivioPadre().getNumero().toString(),
                                 archivioSecondario.getIdArchivioPadre().getOggetto(),
@@ -355,7 +397,7 @@ public final class ParerVersatoreMetadatiBuilder {
                                 "");
                     } else {
                         profiloArchivistico.addFascicoloSecondario(
-                                archivioSecondario.getIdTitolo().getClassificazione(),
+                                archivioSecondario.getIdTitolo().getClassificazione().replaceAll("\\-", "\\."),
                                 archivioSecondario.getIdArchivioRadice().getAnno().toString(),
                                 archivioSecondario.getIdArchivioRadice().getNumero().toString(),
                                 archivioSecondario.getIdArchivioRadice().getOggetto(),
@@ -393,63 +435,63 @@ public final class ParerVersatoreMetadatiBuilder {
         Integer indexCommittente = 1;
         Integer indexAlbo = 1;
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
-        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
         for (Allegato allegato : allegati) {
             if (allegato.getTipo() != Allegato.TipoAllegato.ANNESSO && allegato.getTipo() != Allegato.TipoAllegato.ANNOTAZIONE) {
                 if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", originale.getIdRepository(), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().toString(), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     
                 }else  if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO ||doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE )&& allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", originale.getIdRepository(), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().toString(), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("letterafirmata.pdf", originaleFirmato.getIdRepository(), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().toString(), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmato.pdf", originaleFirmato.getIdRepository(), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().toString(), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getFirmato() == true && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", originaleFirmato.getIdRepository(), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(originaleFirmato.getIdRepository(),"GENERICO", "", originaleFirmato.getNome(), i, identityFilePrincipale, "Documento Generico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(originaleFirmato.getIdRepository(),"GENERICO", "", originaleFirmato.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", convertito.getIdRepository(), convertito.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(convertito.getIdRepository(),"GENERICO", "", convertito.getNome(), i, identityFilePrincipale, "Documento Generico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(convertito.getIdRepository(),"GENERICO", "", convertito.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.ALLEGATO) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato" + i.toString(), originale.getIdRepository(), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(originale.getIdRepository(),"GENERICO", "", originale.getNome(), i, identityFilePrincipale, "Documento Generico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(originale.getIdRepository(),"GENERICO", "", originale.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
 
-            } else if (allegato.getTipo() == Allegato.TipoAllegato.ANNESSO && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)) {
+            } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
                     Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", destinatari.getIdRepository(), destinatari.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(destinatari.getIdRepository(),"ELENCO DESTINATARI", "", destinatari.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(destinatari.getIdRepository(),"ELENCO DESTINATARI", "", destinatari.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
@@ -458,14 +500,14 @@ public final class ParerVersatoreMetadatiBuilder {
                         Allegato.DettaglioAllegato committente = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("relata committente " + indexCommittente.toString() + ".pdf", committente.getIdRepository(), committente.getHashMd5(), "PDF", "application/pdf");
                         indexCommittente = indexCommittente + 1;
-                        unitaDocumentariaBuilder.addDocumentoSecondario(committente.getIdRepository(),"RELATA COMMITTENTE", "", committente.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(committente.getIdRepository(),"RELATA PUBBLICAZIONE PROFILO COMMITTENTE", "", committente.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
                     } else {
                         Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("relata committente " + indexAlbo.toString() + ".pdf", albo.getIdRepository(), albo.getHashMd5(), "PDF", "application/pdf");
                         indexAlbo = indexAlbo + 1;
-                        unitaDocumentariaBuilder.addDocumentoSecondario(albo.getIdRepository(),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(albo.getIdRepository(),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
                     }
@@ -473,58 +515,58 @@ public final class ParerVersatoreMetadatiBuilder {
                     Allegato.DettaglioAllegato stampaUnica = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("stampaunica.pdf", stampaUnica.getIdRepository(), stampaUnica.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(stampaUnica.getIdRepository(),"STAMPA UNICA", "", stampaUnica.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(stampaUnica.getIdRepository(),"STAMPA UNICA", "", stampaUnica.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS) {
                     Allegato.DettaglioAllegato stampaUnicaOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("stampaunicaconomissis.pdf", stampaUnicaOmissis.getIdRepository(), stampaUnicaOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(stampaUnicaOmissis.getIdRepository(),"STAMPA UNICA CON OMISSIS", "", stampaUnicaOmissis.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(stampaUnicaOmissis.getIdRepository(),"STAMPA UNICA CON OMISSIS", "", stampaUnicaOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("deliberazioneomissis.pdf", testoOmissis.getIdRepository(), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(testoOmissis.getIdRepository(),"DELIBERAIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(testoOmissis.getIdRepository(),"DELIBERAIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmatomissis.pdf", testoOmissis.getIdRepository(), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(testoOmissis.getIdRepository(),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(testoOmissis.getIdRepository(),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
-            } else if (allegato.getTipo() == Allegato.TipoAllegato.ANNESSO && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
+            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
                     Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", destinatari.getIdRepository(), destinatari.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(destinatari.getIdRepository(),"ELENCO DESTINATARI", "", destinatari.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(destinatari.getIdRepository(),"ELENCO DESTINATARI", "", destinatari.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_ACCETTAZIONE_PEC) {
                     Allegato.DettaglioAllegato accettazione = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_di_accettazione_" + i.toString(), accettazione.getIdRepository(), accettazione.getHashMd5(), "EML", "message/rfc822");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(accettazione.getIdRepository(),"RICEVUTA DI ACCETTAZIONE", "", accettazione.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(accettazione.getIdRepository(),"RICEVUTA DI ACCETTAZIONE", "", accettazione.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_CONSEGNA_PEC) {
                     Allegato.DettaglioAllegato consegna = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_consegna_" + i.toString(), consegna.getIdRepository(), consegna.getHashMd5(), "EML", "message/rfc822");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario( consegna.getIdRepository(),"RICEVUTA DI CONSEGNA", "", consegna.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario( consegna.getIdRepository(),"RICEVUTA DI CONSEGNA", "", consegna.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_ERRORE_PEC) {
                     Allegato.DettaglioAllegato consegna = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_errore_consegna_" + i.toString(), consegna.getIdRepository(), consegna.getHashMd5(), "EML", "message/rfc822");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(consegna.getIdRepository(),"RICEVUTA DI ERRORE CONSEGNA", "", consegna.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(consegna.getIdRepository(),"RICEVUTA DI ERRORE CONSEGNA", "", consegna.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RELATA) {
@@ -532,13 +574,13 @@ public final class ParerVersatoreMetadatiBuilder {
                         Allegato.DettaglioAllegato committente = allegato.getDettagli().getOriginale();
                         indexCommittente = indexCommittente + 1;
                         IdentityFile identityFilePrincipale = new IdentityFile("relata_COMMITTENTE_" + indexCommittente.toString()+ ".pdf", committente.getIdRepository(), committente.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(committente.getIdRepository(),"RELATA COMMITTENTE", "", committente.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(committente.getIdRepository(),"RELATA PUBBLICAZIONE PROFILO COMMITTENTE", "", committente.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
                     } else {
                         Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("relata_" + indexCommittente.toString() + ".pdf", albo.getIdRepository(), albo.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(albo.getIdRepository(),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(albo.getIdRepository(),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         indexAlbo = indexAlbo + 1;
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
@@ -546,11 +588,11 @@ public final class ParerVersatoreMetadatiBuilder {
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SMISTAMENTO) {
                     Allegato.DettaglioAllegato smistamenti = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("smistamenti.pdf", smistamenti.getIdRepository(), smistamenti.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoSecondario(smistamenti.getIdRepository(),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "Documento Generico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(smistamenti.getIdRepository(),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
-            } else if (allegato.getTipo() == Allegato.TipoAllegato.ANNOTAZIONE && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)) {
+            } else if ( (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
                     Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("segnatura.xml", segnatura.getIdRepository(), segnatura.getHashMd5(), "XML", "text/xml");
@@ -560,7 +602,7 @@ public final class ParerVersatoreMetadatiBuilder {
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.FRONTESPIZIO) {
                     Allegato.DettaglioAllegato frontespizio = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("frontespizio.pdf", frontespizio.getIdRepository(), frontespizio.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoSecondario(frontespizio.getIdRepository(),"FRONTESPIZIO", "", frontespizio.getNome(), i, identityFilePrincipale, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                    unitaDocumentariaBuilder.addDocumentoSecondario(frontespizio.getIdRepository(),"FRONTESPIZIO", "", frontespizio.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
@@ -573,35 +615,35 @@ public final class ParerVersatoreMetadatiBuilder {
                     if (includiNoteParer) {
                         Allegato.DettaglioAllegato noteDocumento = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("notedocumento.pdf", noteDocumento.getIdRepository(), noteDocumento.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(noteDocumento.getIdRepository(),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, identityFilePrincipale, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                        unitaDocumentariaBuilder.addDocumentoSecondario(noteDocumento.getIdRepository(),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
                     }
                 }
-            } else if (allegato.getTipo() == Allegato.TipoAllegato.ANNOTAZIONE && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
                     Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
                     IdentityFile infoDocumento = new IdentityFile("segnatura.xml", segnatura.getIdRepository(), segnatura.getHashMd5(), segnatura.getEstensione(), segnatura.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoSecondario(segnatura.getIdRepository(),"SEGNATURA", "", segnatura.getNome(), i, infoDocumento, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                    unitaDocumentariaBuilder.addDocumentoSecondario(segnatura.getIdRepository(),"SEGNATURA", "", segnatura.getNome(), i, infoDocumento, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.FRONTESPIZIO) {
                     Allegato.DettaglioAllegato frontespizio = allegato.getDettagli().getOriginale();
                     IdentityFile infoDocumento = new IdentityFile("frontespizio.pdf", frontespizio.getIdRepository(), frontespizio.getHashMd5(), frontespizio.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoSecondario(frontespizio.getIdRepository(),"FRONTESPIZIO", "", frontespizio.getNome(), i, infoDocumento, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                    unitaDocumentariaBuilder.addDocumentoSecondario(frontespizio.getIdRepository(),"FRONTESPIZIO", "", frontespizio.getNome(), i, infoDocumento, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
                     Allegato.DettaglioAllegato schedaSintesiTrasparenza = allegato.getDettagli().getOriginale();
                     IdentityFile infoDocumento = new IdentityFile("sintesitrasparenza.pdf", schedaSintesiTrasparenza.getIdRepository(), schedaSintesiTrasparenza.getHashMd5(), schedaSintesiTrasparenza.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoSecondario(schedaSintesiTrasparenza.getIdRepository(),"SCHEDA SINTESI TRASPARENZA", "", schedaSintesiTrasparenza.getNome(), i, infoDocumento, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                    unitaDocumentariaBuilder.addDocumentoSecondario(schedaSintesiTrasparenza.getIdRepository(),"SCHEDA SINTESI TRASPARENZA", "", schedaSintesiTrasparenza.getNome(), i, infoDocumento, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.NOTE_DOCUMENTO) {
                     if (includiNoteParer) {
                         Allegato.DettaglioAllegato noteDocumento = allegato.getDettagli().getOriginale();
                         IdentityFile infoDocumento = new IdentityFile("notedelibera.pdf", noteDocumento.getIdRepository(), noteDocumento.getHashMd5(), noteDocumento.getMimeType());
-                        unitaDocumentariaBuilder.addDocumentoSecondario(noteDocumento.getIdRepository(),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, infoDocumento, "Documento Generico", "annotazione", "Contenuto", "FILE", null , null);
+                        unitaDocumentariaBuilder.addDocumentoSecondario(noteDocumento.getIdRepository(),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, infoDocumento, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
                         versamentiAllegatiInfo.add(allegatoInformation);
                     }
@@ -723,17 +765,50 @@ public final class ParerVersatoreMetadatiBuilder {
         
     }
     
-    public String traduzioneTipologiaParer(DocDetailInterface.TipologiaDoc tipo){
+    public String traduzioneTipologiaParerPerDatiSpecifici(DocDetailInterface.TipologiaDoc tipo){
         String tipologia = "";
         switch(tipo) {
             case PROTOCOLLO_IN_USCITA:
-                tipologia = "PROTOCOLLO IN USCITA";
+                tipologia = "DOCUMENTO PROTOCOLLATO IN USCITA";
                    break;
                case PROTOCOLLO_IN_ENTRATA:
-                   tipologia = "PROTOCOLLO IN ENTRATA";
+                   tipologia = "DOCUMENTO PROTOCOLLATO IN ENTRATA";
                    break;
                case DETERMINA:
-                   tipologia = "DETERMINAZIONE";
+                   tipologia = "DETERMINA";
+                   break;
+               case DELIBERA:
+                   tipologia = "DELIBERAZIONE";
+                   break;
+               case RGPICO:
+                   tipologia = "REGISTRO GIORNALIERO";
+                   break;
+               case RGDETE:
+                   tipologia = "REGISTRO GIORNALIERO";
+                   break;
+               case RGDELI:
+                   tipologia = "REGISTRO GIORNALIERO";
+                   break;
+               default:
+                   throw new AssertionError(tipo.name());
+                   
+        }
+        return tipologia;   
+        
+    }
+    
+    
+     public String traduzioneTipologiaParer(DocDetailInterface.TipologiaDoc tipo){
+        String tipologia = "";
+        switch(tipo) {
+            case PROTOCOLLO_IN_USCITA:
+                tipologia = "DOCUMENTO PROTOCOLLATO";
+                   break;
+               case PROTOCOLLO_IN_ENTRATA:
+                   tipologia = "DOCUMENTO PROTOCOLLATO";
+                   break;
+               case DETERMINA:
+                   tipologia = "DETERMINA";
                    break;
                case DELIBERA:
                    tipologia = "DELIBERAZIONE";

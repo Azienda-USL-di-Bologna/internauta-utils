@@ -61,9 +61,12 @@ import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.Elements;
+import nu.xom.Node;
 import nu.xom.Nodes;
 import nu.xom.ParsingException;
 import nu.xom.XPathContext;
+import org.apache.commons.lang.StringEscapeUtils;
+
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -99,48 +102,83 @@ public class ParerVersatoreService extends VersatoreDocs{
             java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
         }
         String response = (String) mappaResultAndAllegati.get("response");
+        String xmlVersatoOutput = (String) mappaResultAndAllegati.get("xmlVersato");
         List<VersamentoAllegatoInformation> listaAllegati = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
         
+        versamentoInformation.setMetadatiVersati(xmlVersatoOutput); 
         versamentoInformation.setDataVersamento(ZonedDateTime.now()); 
         Doc doc = entityManager.find(Doc.class, versamentoInformation.getIdDoc());
         if(response != null && !response.equals("")) {
             Builder parser = new Builder();
             try {
                 Document resd = parser.build(response, null);
-                XPathContext context = new XPathContext("EsitoVersamento", "");
-                Nodes node = resd.query("//CodiceEsito/text()", context);
-                Element root = resd.getRootElement();
-                Element esitoUnitaDocumentaria = root.getFirstChildElement("UnitaDocumentaria");
-                Element esitoDocPrincipale = esitoUnitaDocumentaria.getFirstChildElement("DocumentoPrincipale");
-                String idDocPrincipale = esitoDocPrincipale.getAttributeValue("IDDocumento");
-                Element allegatiContainer = esitoUnitaDocumentaria.getFirstChildElement("Allegati");
-                Elements allegatiEsiti = allegatiContainer.getChildElements();
-                Map<String, Element> mappaEsitiAllegati = new HashMap<>();
-                mappaEsitiAllegati.put(idDocPrincipale, esitoDocPrincipale);
-                
-                for (int i = 0 ; i < allegatiEsiti.size() ; i ++) {
-                    String idAllegato = allegatiEsiti.get(i).getAttributeValue("IDDocumento");
-                    mappaEsitiAllegati.put(idAllegato, allegatiEsiti.get(i));
+//                XPathContext context = new XPathContext("EsitoVersamento", "");
+                Nodes EsitoVersamento = resd.query("EsitoVersamento");
+                Nodes node = resd.query("/EsitoVersamento/EsitoGenerale/CodiceEsito");
+                if(resd.query("/EsitoVersamento/XMLVersamento").size() != 0) {
+                    Nodes nodeXmlVersato = resd.query("//XMLVersamento");
+                    String xmlVersato = nodeXmlVersato.get(0).toXML();
+                    versamentoInformation.setMetadatiVersati(xmlVersato);
+
+                }
+                if(resd.query("/EsitoVersamento/UnitaDocumentaria/text()").size() != 0) {
+//                    Element root = resd.getRootElement();
+                    String esitoUnitaDocumentaria = resd.query("/EsitoVersamento/UnitaDocumentaria").get(0).toXML();
+                    Document esitoUnitaDocumentariaDocument = parser.build(esitoUnitaDocumentaria, null);
+                    Element rootUnitaDoc = esitoUnitaDocumentariaDocument.getRootElement();
+//                    Element esitoDocPrincipale  = rootUnitaDoc.getChildElements("DocumentoPrincipale").get(0);
+                    Document unitaDocumentaria = parser.build(resd.query("/EsitoVersamento/UnitaDocumentaria").get(0).toXML(),null);
+//                    String esitoDocPrincipale = esitoUnitaDocumentariaDocument.query("//DocumentoPrincipale/text()").get(0).;
+                    if(unitaDocumentaria.query("/DocumentoPrincipale").size() != 0){
+                        String esitoDocPrincipale = unitaDocumentaria.query("/DocumentoPrincipale").get(0).toXML();
+                        Document esitoDocPrincipaleDoc = parser.build(esitoDocPrincipale, null);
+                        String idDocPrincipale = unitaDocumentaria.query("/DocumentoPrincipale/IDDocumento").get(0).toXML();
+                        if(esitoUnitaDocumentariaDocument.query("/Allegati").size() != 0) {
+                            String allegatiContainer = esitoUnitaDocumentariaDocument.query("/Allegati").get(0).toXML();
+                            Document AllegatiContainerDocument = parser.build(allegatiContainer, null);
+                            Element root = AllegatiContainerDocument.getRootElement();
+                            Elements allegatiEsiti = root.getChildElements("Allegati");
+    //                        Elements allegatiEsiti = AllegatiContainerDocument.query("//Allegato/text()");
+                            Map<String, Element> mappaEsitiAllegati = new HashMap<>();
+                            mappaEsitiAllegati.put(idDocPrincipale, esitoDocPrincipaleDoc.getRootElement());
+                            for (int i = 0 ; i < allegatiEsiti.size() ; i ++) {
+                                String idAllegato = allegatiEsiti.get(i).getAttributeValue("IDDocumento");
+                                mappaEsitiAllegati.put(idAllegato, allegatiEsiti.get(i));
+                            }
+
+                            listaAllegati = parseAllegatiResult(mappaEsitiAllegati, listaAllegati);
+                            }
+                        }
+                    
+                    
                 }
                 
-                listaAllegati = parseAllegatiResult(mappaEsitiAllegati, listaAllegati);
                 
-                if (node.get(0).toXML().equals("POSITIVO") || node.get(0).toXML().equals("WARNING")) {
+                if (node.get(0).toXML().equals("<CodiceEsito>POSITIVO</CodiceEsito>") || node.get(0).toXML().equals("<CodiceEsito>WARNING</CodiceEsito>")) {
                     versamentoInformation.setRapporto(response);
                     versamentoInformation.setStatoVersamentoPrecedente(versamentoInformation.getStatoVersamento());
-                    versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);  
+                    versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO); 
+                    for(VersamentoAllegatoInformation allegato: listaAllegati) {
+                        allegato.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    }
                 } else {
                     log.error("Creo il nodo errorText...");
-                    Nodes errorText = resd.query("//MessaggioErrore/text()", context);
+                    Nodes errorText = resd.query("/EsitoVersamento/EsitoGenerale/MessaggioErrore/text()");
                     versamentoInformation.setRapporto(response);
                     log.error("Creo il nodo codErrore...");
-                    Nodes codErrore = resd.query("//CodiceErrore/text()", context);
+                    Nodes codErrore = resd.query("/EsitoVersamento/EsitoGenerale/CodiceErrore/text()");
                     String errorCode = codErrore.get(0).toXML();
                     versamentoInformation.setCodiceErrore(errorCode);
                     String utf8ErrorMessage = new String(errorText.get(0).toXML().getBytes("UTF-8"), "UTF-8");
                     versamentoInformation.setDescrizioneErrore(utf8ErrorMessage);
                     versamentoInformation.setStatoVersamentoPrecedente(versamentoInformation.getStatoVersamento());
                     versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    if(errorCode.equals("UD-008-001")|| errorCode.startsWith("FIRMA") && !errorCode.equals("FIRMA-002-001")) {
+                        versamentoInformation.setForzabile(Boolean.TRUE);
+                    }
+                    for(VersamentoAllegatoInformation allegato: listaAllegati) {
+                        allegato.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    }
                     if (errorCode != null && utf8ErrorMessage != null) {
                         log.error("Codice Errore " + errorCode + ": " + utf8ErrorMessage);
                     }
@@ -271,7 +309,7 @@ public class ParerVersatoreService extends VersatoreDocs{
                 
         forzaAccettazione = "0";
         forzaCollegamento = "0";
-        forzaConservazione = "0";
+        forzaConservazione = "-1";
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         String enteVersamento = (String) versamentoInformation.getParams().get("ente");
@@ -286,9 +324,12 @@ public class ParerVersatoreService extends VersatoreDocs{
         String tipoConservazione = (String) versamentoInformation.getParams().get("tipoconservazione");
         String codifica = (String) versamentoInformation.getParams().get("codifica");
         Boolean includiNote = (Boolean) versamentoInformation.getParams().get("includinote");
-        String versioneDatiSpecifici = (String) versamentoInformation.getParams().get("versionedatispecifici");
+        String versioneDatiSpecificiPico = (String) versamentoInformation.getParams().get("versionedatispecificipico");
+        String versioneDatiSpecificiDete = (String) versamentoInformation.getParams().get("versionedatispecificidete");
+        String versioneDatiSpecificiDeli = (String) versamentoInformation.getParams().get("versionedatispecificideli");
+     
         String tipoComponenteDefault = (String) versamentoInformation.getParams().get("tipocomponentedefault");
-        Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecifici, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
+        Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
         List<JSONObject> identityFiles = (List<JSONObject>) unitaDocConIdentityFiles.get("identityFiles");
         List<IdentityFile> identityFiless= new ArrayList<>();
         for(JSONObject identityFile: identityFiles) {
@@ -296,6 +337,7 @@ public class ParerVersatoreService extends VersatoreDocs{
             identityFiless.add(identityFilee);
         }
         UnitaDocumentariaBuilder unitaDoc = (UnitaDocumentariaBuilder) unitaDocConIdentityFiles.get("unitaDocumentaria");
+        risultatoEVersamentiAllegati.put("xmlVersato", unitaDoc.toString());
         List<VersamentoAllegatoInformation> versamentiAllegatiInformation = (List<VersamentoAllegatoInformation>) unitaDocConIdentityFiles.get("versamentiAllegatiInformation");
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformation);
         Pacco pacco = creazionePacco(version, username, password);

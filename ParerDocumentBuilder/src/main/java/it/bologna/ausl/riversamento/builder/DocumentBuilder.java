@@ -83,7 +83,7 @@ public class DocumentBuilder {
 
         //data di registrazione di protocollo
         if ((riferimentoTemporale != null) && (!"".equals(riferimentoTemporale))) {
-            componente.setRiferimentoTemporale(ZonedDateTime.parse(riferimentoTemporale));
+            componente.setRiferimentoTemporale(riferimentoTemporale);
         }
 
         // data di protocollazione

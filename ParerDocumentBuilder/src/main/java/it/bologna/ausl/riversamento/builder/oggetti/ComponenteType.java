@@ -130,7 +130,7 @@ public class ComponenteType {
     protected Boolean utilizzoDataFirmaPerRifTemp;
     @XmlElement(name = "RiferimentoTemporale")
     @XmlSchemaType(name = "dateTime")
-    protected ZonedDateTime riferimentoTemporale;
+    protected String riferimentoTemporale;
     @XmlElement(name = "DescrizioneRiferimentoTemporale")
     protected String descrizioneRiferimentoTemporale;
     @XmlElement(name = "SottoComponenti")
@@ -472,7 +472,7 @@ public class ComponenteType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public ZonedDateTime getRiferimentoTemporale() {
+    public String getRiferimentoTemporale() {
         return riferimentoTemporale;
     }
 
@@ -484,7 +484,7 @@ public class ComponenteType {
      *     {@link XMLGregorianCalendar }
      *     
      */
-    public void setRiferimentoTemporale(ZonedDateTime value) {
+    public void setRiferimentoTemporale(String value) {
         this.riferimentoTemporale = value;
     }
 
