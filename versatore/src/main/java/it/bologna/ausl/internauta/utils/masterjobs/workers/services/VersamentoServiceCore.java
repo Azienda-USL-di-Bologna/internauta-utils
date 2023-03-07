@@ -15,13 +15,13 @@ import org.slf4j.LoggerFactory;
  * Da richiamare dal servizio su internauta
  * @author gdm
  */
-public class VersatoreServiceCore {
-    private static final Logger log = LoggerFactory.getLogger(VersatoreServiceCore.class);
+public class VersamentoServiceCore {
+    private static final Logger log = LoggerFactory.getLogger(VersamentoServiceCore.class);
     
     private final MasterjobsJobsQueuer masterjobsJobsQueuer;
     private final MasterjobsObjectsFactory masterjobsObjectsFactory;
 
-    public VersatoreServiceCore(MasterjobsJobsQueuer masterjobsJobsQueuer, MasterjobsObjectsFactory masterjobsObjectsFactory) {
+    public VersamentoServiceCore(MasterjobsJobsQueuer masterjobsJobsQueuer, MasterjobsObjectsFactory masterjobsObjectsFactory) {
         this.masterjobsJobsQueuer = masterjobsJobsQueuer;
         this.masterjobsObjectsFactory = masterjobsObjectsFactory;
     }

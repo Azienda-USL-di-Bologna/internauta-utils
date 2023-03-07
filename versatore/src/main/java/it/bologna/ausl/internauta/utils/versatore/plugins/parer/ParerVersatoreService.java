@@ -12,13 +12,11 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.builder.UnitaDocumentariaBuilder;
-import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
 import it.bologna.ausl.riversamento.sender.Pacco;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
 import java.io.IOException;
@@ -29,7 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 
@@ -61,11 +58,8 @@ import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.Elements;
-import nu.xom.Node;
 import nu.xom.Nodes;
 import nu.xom.ParsingException;
-import nu.xom.XPathContext;
-import org.apache.commons.lang.StringEscapeUtils;
 
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
