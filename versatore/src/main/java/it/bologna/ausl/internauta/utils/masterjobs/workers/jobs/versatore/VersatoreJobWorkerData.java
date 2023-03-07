@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,7 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
     private Boolean forzatura = false;
     private Integer poolSize;
     private Integer idPersonaForzatura;
+    private Map<String,Object> params;
     
     public VersatoreJobWorkerData() {
     }
@@ -33,13 +35,15 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
      * @param forzatura indica se il job si sta eseguendo per una forzatura utente
      * @param poolSize dimensione del pool di threads (numero massimo di threads contemporanei di versamento)
      * @param idPersonaForzatura persona che effettua la forzatura
+     * @param params parametri di versamento
      */
-    public VersatoreJobWorkerData(Integer idAzienda, String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura) {
+    public VersatoreJobWorkerData(Integer idAzienda, String hostId, Boolean forzatura, Integer poolSize, Integer idPersonaForzatura, Map<String,Object> params) {
         this.idAzienda = idAzienda;
         this.hostId = hostId;
         this.forzatura = forzatura;
         this.poolSize = poolSize;
         this.idPersonaForzatura = idPersonaForzatura;
+        this.params = params;
     }
 
     public Integer getIdAzienda() {
@@ -81,4 +85,18 @@ public class VersatoreJobWorkerData  extends JobWorkerData {
     public void setIdPersonaForzatura(Integer idPersonaForzatura) {
         this.idPersonaForzatura = idPersonaForzatura;
     }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, Object> params) {
+        this.params = params;
+    }
+
+    
+    
+    
+    
+    
 }

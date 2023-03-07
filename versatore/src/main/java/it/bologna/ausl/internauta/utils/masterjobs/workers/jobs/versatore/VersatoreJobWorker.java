@@ -236,6 +236,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 versamentoDocInformation.setIdDoc(idDocVersamentoEffettuato);
                 versamentoDocInformation.setIdArchivio(idArchivioVersamentoEffettuato);
                 versamentoDocInformation.setForzabile(forzabileVersamentoEffettuato);
+                versamentoDocInformation.setParams(getWorkerData().getParams());
                 versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
                 
                 /*
@@ -756,6 +757,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         versamentoDocInformation.setTipologiaVersamento(tipologiaVersamento);
         versamentoDocInformation.setIdDoc(idDoc);
         versamentoDocInformation.setIdArchivio(idArchivio);
+        versamentoDocInformation.setParams(getWorkerData().getParams());
         return versamentoDocInformation;
     }
 }

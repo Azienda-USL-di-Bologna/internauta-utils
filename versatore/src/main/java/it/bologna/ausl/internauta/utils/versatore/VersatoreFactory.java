@@ -5,6 +5,7 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertIdoneitaCheckerService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class VersatoreFactory {
     // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
     private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
     
-    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del checker dell'idoneit√†
+    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del checker dell'idoneit‡
     private final static Map<String, IdoneitaChecker> hostIdIdoneitaCheckerInstanceMap = new HashMap<>();
    
     List<VersatoreConfiguration> configurations;
@@ -56,8 +57,9 @@ public class VersatoreFactory {
             VersatoreProviders provider = VersatoreProviders.valueOf(configuration.getProvider().getId());
             switch (provider) {
                 case PARER:
-                    // TODO
-                    versatoreDocsInstance = null;
+                    versatoreDocsInstance = beanFactory.getBean(ParerVersatoreService.class);
+                    versatoreDocsInstance.init(configuration);
+//                    versatoreDocsInstance = null;
                     idoneitaCheckerInstance = null;
                     break;
                 case INFOCERT:
