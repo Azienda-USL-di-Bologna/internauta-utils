@@ -307,10 +307,13 @@ public class ParerVersatoreService extends VersatoreDocs{
         String forzaCollegamento, forzaAccettazione, forzaConservazione;
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
                 
-        forzaAccettazione = "0";
-        forzaCollegamento = "0";
-        forzaConservazione = "-1";
+        forzaAccettazione = "false";
+        forzaCollegamento = "false";
+        forzaConservazione = "true";
         Doc doc = entityManager.find(Doc.class, idDoc);
+        if(doc.getStatoVersamento() == Versamento.StatoVersamento.FORZARE) {
+            forzaAccettazione = "true";
+        }
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         String enteVersamento = (String) versamentoInformation.getParams().get("ente");
         String userID = (String) versamentoInformation.getParams().get("userID");

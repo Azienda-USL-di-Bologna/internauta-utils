@@ -108,7 +108,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     UnitaDocumentariaBuilder unitaDocumentariaBuilder;
                     DecimalFormat df = new DecimalFormat("0000000");
                     String numeroRegistrazione = df.format(docDetail.getNumeroRegistrazione());
-                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(numeroRegistrazione, docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParerPerDatiSpecifici(doc.getTipologia()), "false", "true", "false", profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
+                    unitaDocumentariaBuilder = new UnitaDocumentariaBuilder(numeroRegistrazione, docDetail.getAnnoRegistrazione(), traduzioneTipologiaRegistro(doc.getTipologia()), traduzioneTipologiaParerPerDatiSpecifici(doc.getTipologia()), forzaConservazione, forzaAccettazione, forzaCollegamento, profiloArchivistico, doc.getOggetto(), dataArchiviazione, datiSpecifici, version , ambiente, enteVersamento, struttura, userID, tipoConservazione, codifica);
                     Map<String, Object> mappaUnitaDocumentariaEAllegati = buildAllegati(doc,docDetail, unitaDocumentariaBuilder, tipoDocumentoDefault,includiNote);
                     UnitaDocumentariaBuilder unitaDocumentariaBuilderConAllegati = (UnitaDocumentariaBuilder) mappaUnitaDocumentariaEAllegati.get("unitaDocumentariaBuilder");
                     List<VersamentoAllegatoInformation> versamentiAllegatiInformation = (List<VersamentoAllegatoInformation>) mappaUnitaDocumentariaEAllegati.get("versamentiAllegatiInfo");
