@@ -38,7 +38,9 @@ public class IdoneitaCheckerServiceCore {
             // hostId del servizio di versamento, indica il servizio che sarà utilizzato (sono definiti nella tabella versatore.configurations)
             String hostId = (String) versatoreConfigAziendaValue.get("hostId");
             
+            // dai parametri leggo se il servizio di idoneità deve controllare gli archivi
             Boolean controllaIdoneitaArchivi = (Boolean) versatoreConfigAziendaValue.get("controllaIdoneitaArchivi");
+            // dai parametri leggo anche se il servizio di idoneità deve controllare i doc
             Boolean controllaIdoneitaDocs = (Boolean) versatoreConfigAziendaValue.get("controllaIdoneitaDocs");
             
             // richiama il metodo sul core che si occupa dell'accodamento del job

@@ -7,6 +7,12 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author gdm
+ * 
+ * Implementa il controllo di idoneità Infocert
+ * 
+ * Per Infocert gli archivi candicati al controllo (quindi chiusi e di livello 1) sono tutti idonei, 
+ * mentre non supporta il controllo di idoneità sui singoli Doc, in quanto, vengono versati solo i doc all'interno
+ * degli archivi chiusi
  */
 @Component
 public class InfocertIdoneitaCheckerService extends IdoneitaChecker {

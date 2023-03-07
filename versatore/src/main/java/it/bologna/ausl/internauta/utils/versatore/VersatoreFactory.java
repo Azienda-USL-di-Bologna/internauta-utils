@@ -5,6 +5,7 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertIdoneitaCheckerService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerIdoneitaCheckerService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreService;
 import java.util.HashMap;
 import java.util.List;
@@ -42,13 +43,19 @@ public class VersatoreFactory {
     // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
     private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
     
-    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del checker dell'idoneit�
+    // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del checker dell'idoneità
     private final static Map<String, IdoneitaChecker> hostIdIdoneitaCheckerInstanceMap = new HashMap<>();
    
     List<VersatoreConfiguration> configurations;
     
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
     
+    /**
+     * inizializza le classi necessarie al versatore
+     * Sia per il controllo idoneità che per il versamento, crea una mappa che ha come chiave l'hostId e come valore
+     * l'istanza della classe del plugin corretta
+     * @throws VersatoreProcessingException 
+     */
     public void initVersatoreFactory() throws VersatoreProcessingException {
         configurations = configurationRepository.findAll();
         VersatoreDocs versatoreDocsInstance;
@@ -59,8 +66,7 @@ public class VersatoreFactory {
                 case PARER:
                     versatoreDocsInstance = beanFactory.getBean(ParerVersatoreService.class);
                     versatoreDocsInstance.init(configuration);
-//                    versatoreDocsInstance = null;
-                    idoneitaCheckerInstance = null;
+                    idoneitaCheckerInstance = beanFactory.getBean(ParerIdoneitaCheckerService.class);
                     break;
                 case INFOCERT:
                     versatoreDocsInstance = beanFactory.getBean(InfocertVersatoreService.class);
@@ -76,6 +82,12 @@ public class VersatoreFactory {
         initialized = true;
     }
     
+    /**
+     * Torna l'istanza della classe per il versamento relativa all'hostId passato
+     * @param hostId
+     * @return l'istanza della classe per il versamento relativa all'hostId passato
+     * @throws VersatoreProcessingException 
+     */
     public VersatoreDocs getVersatoreDocsInstance(String hostId) throws VersatoreProcessingException {
         // Tramite l'hostId recupero dalla mappa l'istanza creata in fase di inizializzazione
         if (!initialized) {
@@ -85,6 +97,12 @@ public class VersatoreFactory {
         return versatoreDocsInstance;
     }
     
+    /**
+     * Torna l'istanza della classe per il controllo idoneità all'hostId passato
+     * @param hostId
+     * @return l'istanza della classe per il controllo idoneità all'hostId passato
+     * @throws VersatoreProcessingException 
+     */
     public IdoneitaChecker getIdoneitaCheckerInstance(String hostId) throws VersatoreProcessingException {
         // Tramite l'hostId recupero dalla mappa l'istanza creata in fase di inizializzazione
         if (!initialized) {

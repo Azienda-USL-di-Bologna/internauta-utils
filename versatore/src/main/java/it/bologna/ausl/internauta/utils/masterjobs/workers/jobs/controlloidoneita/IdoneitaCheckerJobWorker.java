@@ -26,9 +26,11 @@ import org.springframework.transaction.TransactionDefinition;
  * 
  * Job che effettua i controlli di idoneità sugli archivi e sui docs
  * Dai parametri del job legge se l'idoneità va controllata sugli archivi, sui docs o su entrambi
- * Il job estrai i candidati per il controllo dell'idoneità e delega il controllo vero e proprio al plugin
+ * Il job estrae i candidati per il controllo dell'idoneità e delega il controllo vero e proprio al plugin
  * Per gli archivi i candidati sono quelli chiusi e di livello 1 (fascicoli)
  * Per i doc i candidati sono solo quelli registrati (che hanno il numero di registazione)
+ * 
+ * NB: il parametri del job vengono settati in fase di accodamento (classe IdoneitaCheckerServiceCore)
  */
 @MasterjobsWorker
 public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorkerData, JobWorkerResult> {
@@ -41,6 +43,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         IdoneitaChecker idoneitaCheckerInstance;
         try {
+            // reperisce la classe plugin per il controllo dell'idoneità
             idoneitaCheckerInstance = versatoreFactory.getIdoneitaCheckerInstance(getWorkerData().getHostId());
         } catch (VersatoreProcessingException ex) {
             String errorMessage = "errore nel reperire il plugin di versamento";
@@ -48,38 +51,44 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
             throw new MasterjobsWorkerException(errorMessage, ex);
         }
         
+        // se il job deve controllare gli archivi...
         if (getWorkerData().getControllaArchivi()) {
+            // reperisco gli archivi candidati al controllo di idoneità
             List<Integer> archiviDaControllare = getArchiviDaControllare();
             if (archiviDaControllare != null && !archiviDaControllare.isEmpty()) {
                 Boolean isIdoneo = false;
                 for (Integer idArchivio : archiviDaControllare) {
                     try {
+                        // per ognuno controllo l'idoneità tramite il plugin
                         isIdoneo = idoneitaCheckerInstance.checkArchivio(idArchivio);
                     } catch (Throwable ex) {
                         String errorMessage = String.format("errore nel plugin di idoneitaCheck sull'archivio %s", idArchivio);
                         log.error(errorMessage, ex);
                         //TODO: compilare report checker
                     }
-                    if (isIdoneo) {
+                    if (isIdoneo) { // se è ideoneo, setto lo stato VERSARE sull'archivio e sull'archivio_detail
                         setStatoArchivio(idArchivio, Versamento.StatoVersamento.VERSARE);
                     }
                 }
             }
         }
         
+        // se il job deve controllare i doc...
         if (getWorkerData().getControllaDocs()) {
+            // reperisco i doc candidati al controllo di idoneità
             List<Integer> docsDaControllare = getDocsDaControllare();
             if (docsDaControllare != null && !docsDaControllare.isEmpty()) {
                 Boolean isIdoneo = false;
                 for (Integer idDoc : docsDaControllare) {
                     try {
+                        // per ognuno controllo l'idoneità tramite il plugin
                         isIdoneo = idoneitaCheckerInstance.checkDoc(idDoc);
                     } catch (Throwable ex) {
                         String errorMessage = String.format("errore nel plugin di idoneitaCheck sul doc %s", idDoc);
                         log.error(errorMessage, ex);
                         //TODO: compilare report checker
                     }
-                    if (isIdoneo) {
+                    if (isIdoneo) { // se è ideoneo, setto lo stato VERSARE sul doc e sul doc_detail
                         setStatoDoc(idDoc, Versamento.StatoVersamento.VERSARE);
                     }
                 }
@@ -90,12 +99,14 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
     
     /**
      * Setta lo stato versamento passato sull'archivio con id passato
+     * Setta anche lo stato ultimo versamento sull'archivio detail corrispondente
      * @param idArchivio l'id dell'archivio su cui settare lo stato versamento
      * @param statoVersamento lo stato versamento da settare
      */
     private void setStatoArchivio(Integer idArchivio, Versamento.StatoVersamento stato) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QArchivio qArchivio = QArchivio.archivio;
+        QArchivioDetail qArchivioDetail = QArchivioDetail.archivioDetail;
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(a -> {
             queryFactory
@@ -103,23 +114,35 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
                 .set(qArchivio.statoVersamento, stato.toString())
                 .where(qArchivio.id.eq(idArchivio))
                 .execute();
+            queryFactory
+                .update(qArchivioDetail)
+                .set(qArchivioDetail.statoUltimoVersamento, stato.toString())
+                .where(qArchivioDetail.id.eq(idArchivio))
+                .execute();
         });
     }
     
     /**
      * Setta lo stato versamento passato sul doc con id passato
+     * Setta anche lo stato ultimo versamento sul doc detail corrispondente
      * @param idDoc l'id del doc su cui settare lo stato versamento
      * @param statoVersamento lo stato versamento da settare
      */
     private void setStatoDoc(Integer idDoc, Versamento.StatoVersamento statoVersamento) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QDoc qDoc = QDoc.doc;
+        QDocDetail qDocDetail = QDocDetail.docDetail;
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(a -> {
             queryFactory
                 .update(qDoc)
                 .set(qDoc.statoVersamento, statoVersamento.toString())
                 .where(qDoc.id.eq(idDoc))
+                .execute();
+            queryFactory
+                .update(qDocDetail)
+                .set(qDocDetail.statoUltimoVersamento, statoVersamento.toString())
+                .where(qDocDetail.id.eq(idDoc))
                 .execute();
         });
     }
@@ -136,11 +159,11 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
             .select(qArchivioDetail.id)
             .from(qArchivioDetail)
             .where(
-                qArchivioDetail.id.eq(1116221).and(
+//                qArchivioDetail.id.eq(1116221).and(
                 qArchivioDetail.livello.eq(1).and(
                 qArchivioDetail.statoUltimoVersamento.isNull().and(
                 qArchivioDetail.stato.eq(Archivio.StatoArchivio.CHIUSO.toString())))
-                )
+//                )
             )
             .fetch();
         return archiviDaControllare;
