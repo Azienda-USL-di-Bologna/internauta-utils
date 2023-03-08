@@ -60,7 +60,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
                 for (Integer idArchivio : archiviDaControllare) {
                     try {
                         // per ognuno controllo l'idoneità tramite il plugin
-                        isIdoneo = idoneitaCheckerInstance.checkArchivio(idArchivio);
+                        isIdoneo = idoneitaCheckerInstance.checkArchivio(idArchivio, getWorkerData().getParams());
                     } catch (Throwable ex) {
                         String errorMessage = String.format("errore nel plugin di idoneitaCheck sull'archivio %s", idArchivio);
                         log.error(errorMessage, ex);
@@ -82,7 +82,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
                 for (Integer idDoc : docsDaControllare) {
                     try {
                         // per ognuno controllo l'idoneità tramite il plugin
-                        isIdoneo = idoneitaCheckerInstance.checkDoc(idDoc);
+                        isIdoneo = idoneitaCheckerInstance.checkDoc(idDoc, getWorkerData().getParams());
                     } catch (Throwable ex) {
                         String errorMessage = String.format("errore nel plugin di idoneitaCheck sul doc %s", idDoc);
                         log.error(errorMessage, ex);

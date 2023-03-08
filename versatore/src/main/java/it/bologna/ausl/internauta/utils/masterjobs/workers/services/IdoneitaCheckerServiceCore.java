@@ -43,8 +43,11 @@ public class IdoneitaCheckerServiceCore {
             // dai parametri leggo anche se il servizio di idoneità deve controllare i doc
             Boolean controllaIdoneitaDocs = (Boolean) versatoreConfigAziendaValue.get("controllaIdoneitaDocs");
             
+            //parametri per il versamento 
+            Map<String,Object> params = (Map<String,Object>) versatoreConfigAziendaValue.get("params");
+            
             // richiama il metodo sul core che si occupa dell'accodamento del job
-            queueAziendaJob(idAzienda, hostId, controllaIdoneitaArchivi, controllaIdoneitaDocs, app);
+            queueAziendaJob(idAzienda, hostId, controllaIdoneitaArchivi, controllaIdoneitaDocs, params, app);
         }
     }
     
@@ -55,8 +58,8 @@ public class IdoneitaCheckerServiceCore {
      * @param controllaIdoneitaArchivi passare true se si vuole che il servizio controlli l'idoneità degli archivi
      * @param controllaIdoneitaDocs passare true se si vuole che il servizio controlli l'idoneità dei docs
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean controllaIdoneitaArchivi, Boolean controllaIdoneitaDocs, String app) {
-        IdoneitaCheckerJobWorkerData idoneitaCheckerJobWorkerData = new IdoneitaCheckerJobWorkerData(idAzienda, hostId, controllaIdoneitaArchivi, controllaIdoneitaDocs);
+    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean controllaIdoneitaArchivi, Boolean controllaIdoneitaDocs, Map<String,Object> params, String app) {
+        IdoneitaCheckerJobWorkerData idoneitaCheckerJobWorkerData = new IdoneitaCheckerJobWorkerData(idAzienda, hostId, controllaIdoneitaArchivi, controllaIdoneitaDocs, params);
         IdoneitaCheckerJobWorker jobWorker = null;
         try { // istanzia il woker
             jobWorker = masterjobsObjectsFactory.getJobWorker(IdoneitaCheckerJobWorker.class, idoneitaCheckerJobWorkerData, false);

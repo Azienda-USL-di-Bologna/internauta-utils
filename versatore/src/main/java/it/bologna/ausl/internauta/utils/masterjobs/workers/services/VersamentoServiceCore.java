@@ -45,9 +45,7 @@ public class VersamentoServiceCore {
             
             //parametri per il versamento 
             Map<String,Object> params = (Map<String,Object>) versatoreConfigAziendaValue.get("params");
-            
-            
-            
+
             // richiama il metodo sul core che si occupa dell'accodamento del job
             queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app, params);
             

@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.controlloidonei
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ public class IdoneitaCheckerJobWorkerData  extends JobWorkerData {
     private String hostId;
     private Boolean controllaArchivi = false;
     private Boolean controllaDocs = false;
+    private Map<String,Object> params;
     
     public IdoneitaCheckerJobWorkerData() {
     }
@@ -29,12 +31,14 @@ public class IdoneitaCheckerJobWorkerData  extends JobWorkerData {
      * @param hostId hostId della configurazione del versatore (tabella versatore.configurations)
      * @param controllaArchivi indica se il job deve controllare l'idoneità degli archivi
      * @param controllaDocs indica se il job deve controllare l'idoneità dei doc
+     * @param params parametri di versamento
      */
-    public IdoneitaCheckerJobWorkerData(Integer idAzienda, String hostId, Boolean controllaArchivi, Boolean controllaDocs) {
+    public IdoneitaCheckerJobWorkerData(Integer idAzienda, String hostId, Boolean controllaArchivi, Boolean controllaDocs, Map<String,Object> params) {
         this.idAzienda = idAzienda;
         this.hostId = hostId;
         this.controllaArchivi = controllaArchivi;
         this.controllaDocs = controllaDocs;
+        this.params = params;
     }
 
     public Integer getIdAzienda() {
@@ -67,5 +71,13 @@ public class IdoneitaCheckerJobWorkerData  extends JobWorkerData {
 
     public void setControllaDocs(Boolean controllaDocs) {
         this.controllaDocs = controllaDocs;
+    }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, Object> params) {
+        this.params = params;
     }
 }
