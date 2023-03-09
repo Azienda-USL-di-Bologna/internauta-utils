@@ -39,6 +39,12 @@ public class MasterjobsController {
         masterjobsJobsQueuer.relaunchJobsInError();
     }
     
+    @RequestMapping(value = "regenerateQueue", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional(rollbackFor = {Error.class})
+    public void regenerateQueue() {
+        masterjobsJobsQueuer.regenerateQueue();
+    }
+    
     @RequestMapping(value = "getService/{name}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(rollbackFor = {Error.class})
     public ResponseEntity<Service> getService(@PathVariable(required = true) String name) {
