@@ -51,10 +51,13 @@ import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.connection.stream.StreamReadOptions;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 
 /**
  *
@@ -97,6 +100,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     protected MasterjobsJobsExecutionThread self;
     
     protected String activeThreadsSetName;
+    protected String stoppedThreadsSetName;
     protected String commandsStreamName;
     protected Integer commandsExpireSeconds;
     protected String inQueueNormal;
@@ -130,6 +134,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     
     public MasterjobsJobsExecutionThread activeThreadsSetName(String activeThreadsSetName) {
         this.activeThreadsSetName = activeThreadsSetName;
+        return this;
+    }
+    
+    public MasterjobsJobsExecutionThread stoppedThreadsSetName(String stoppedThreadsSetName) {
+        this.stoppedThreadsSetName = stoppedThreadsSetName;
         return this;
     }
     
@@ -207,10 +216,26 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     public abstract void runExecutor() throws MasterjobsInterruptException;
     
     /**
-     * inserisce il riferimento del thread nella mappa dei threads attivi
+     * inserisce il riferimento del thread nella mappa dei threads attivi, se per caso il riferimento è presente in 
+     * stoppedThreadsSetName, allora lo rimuove
      */
     protected void insertInActiveThreadsSet() {
-        redisTemplate.opsForHash().put(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
+//        redisTemplate.opsForHash().put(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
+        SessionCallback<Object> sessionCallback = new SessionCallback() {
+            @Override
+            public Object execute(RedisOperations operations) throws DataAccessException {
+                operations.multi();
+                //esegui le operazioni da includere nella transazione
+                operations.opsForHash().put(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
+                operations.opsForHash().delete(stoppedThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+                operations.exec();
+                return null;
+            }
+        };
+        redisTemplate.execute(sessionCallback);
+        if (redisTemplate.opsForHash().size(stoppedThreadsSetName) == 0) {
+            redisTemplate.delete(commandsStreamName);
+        }
     }
     
     /**
@@ -222,9 +247,25 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     
     /**
      * rimuove il riferimento del thread nella mappa dei threads attivi
+     * @param moveOnstoppedThreadsSet se true, la chiave viene spostata nel set stoppedThreadsSetName transazionalmente
      */
-    protected void removeFromActiveThreadsSet() {
-        redisTemplate.opsForHash().delete(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+    protected void removeFromActiveThreadsSet(boolean moveOnstoppedThreadsSet) {
+        
+        SessionCallback<Object> sessionCallback = new SessionCallback() {
+            @Override
+            public Object execute(RedisOperations operations) throws DataAccessException {
+                operations.multi();
+                //esegui le operazioni da includere nella transazione
+                if (moveOnstoppedThreadsSet)
+                    operations.opsForHash().put(stoppedThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
+                operations.opsForHash().delete(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+                operations.exec();
+                return null;
+            }
+        };
+        redisTemplate.execute(sessionCallback);
+        
+//        redisTemplate.opsForHash().delete(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()));
         if (redisTemplate.opsForHash().size(activeThreadsSetName) == 0) {
             redisTemplate.delete(commandsStreamName);
         }
@@ -250,7 +291,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             } catch (MasterjobsInterruptException ex) { // se viene mandato un comando di stop o di pausa
                 if (ex.getInterruptType() == MasterjobsInterruptException.InterruptType.PAUSE) { // se rilvea un comando pausa
                     // ri rimuove dai threads attivi
-                    removeFromActiveThreadsSet();
+                    removeFromActiveThreadsSet(true);
                     
                     // rimane in pausa facendo uno sleep di 5 secondi fino a che non viene lanciato un resume
                     while (paused) {
@@ -269,7 +310,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             }
         }
         // arrivati qui il ciclo principale è finito, prima di terminare si rimuove dai thread attivi
-        removeFromActiveThreadsSet();
+        removeFromActiveThreadsSet(false);
         log.info(String.format("executor %s ended", getUniqueName()));
     }
     
