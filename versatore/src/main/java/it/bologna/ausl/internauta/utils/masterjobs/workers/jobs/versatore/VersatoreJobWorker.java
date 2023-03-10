@@ -82,17 +82,27 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         // setto il transactionTemplate in modo che tutte le volte che lo si usa apra una transazione e la committi
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         
-        TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
-        
+        TipologiaVersamento tipologiaVersamento = getWorkerData().getTipologia();
+        //TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
+//        prnedo dal worker data
+//                
+//                aggiungere un contorllo in caso di idDocsDaversare tale per cui contorllo nel caso in cui si è scelto 
+//                        FORZARE che lo stato del doc sia FORZARE, e se è scelto ritentenare lo stato sia ERRORE RITENTBAILE
+//    FACCIMAO quelli che matchano
+                
         // calcolo tutti versamenti da effettaure per vari docs e li aggiungo alla mappa
         Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap<>();
         
-        // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
-        versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-        // aggiungo i docs da versare, non dipendenti dal fascicolo
-        versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-        // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
-        versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        if (tipologiaVersamento == TipologiaVersamento.GIORNALIERO) {
+            // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
+            versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+            // aggiungo i docs da versare, non dipendenti dal fascicolo
+            versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+            // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
+            versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        } else {
+            versamentiDaProcessare = addDocsDaVersare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        }
         
         SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
         
@@ -675,6 +685,44 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
 //                )
 //                .fetch();
 //        }
+        
+        for (Integer docIdDaProcessare : docsIdDaProcessare) {
+            VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, null, tipologiaVersamento);
+            List<VersamentoDocInformation> versamenti = versamentiDaProcessare.get(docIdDaProcessare);
+            if (versamenti == null) {
+                versamenti = new ArrayList<>();
+                versamentiDaProcessare.put(docIdDaProcessare, versamenti);
+            }
+            versamenti.add(versamentoDocInformation);
+        }
+        return versamentiDaProcessare;
+    }
+    
+    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersare(
+            List<Integer> idDocsDaVersare, 
+            TipologiaVersamento tipologiaVersamento, 
+            JPAQueryFactory queryFactory) {
+        List<Integer> docsIdDaProcessare;
+        List<String> tipologieDoc = null;
+        // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
+        if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
+            Versamento.StatoVersamento.FORZARE.toString();
+        } else { // altrimenti prendo tutti quelli da versare o aggiornare
+            Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
+        }
+        QDoc qDoc = QDoc.doc;
+        docsIdDaProcessare = queryFactory
+            .select(qDoc.id)
+            .from(qDoc)
+            .where(
+                    qDoc.statoVersamento.isNotNull()
+                .and(
+                    qDoc.statoVersamento.in(tipologieDoc))
+                .and(
+                    qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
+                )
+            )
+            .fetch();
         
         for (Integer docIdDaProcessare : docsIdDaProcessare) {
             VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, null, tipologiaVersamento);
