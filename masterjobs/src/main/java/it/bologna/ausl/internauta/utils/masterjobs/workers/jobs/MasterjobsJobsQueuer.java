@@ -2,7 +2,9 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.querydsl.jpa.impl.JPAUpdateClause;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
@@ -15,15 +17,18 @@ import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
+import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -180,6 +185,131 @@ public class MasterjobsJobsQueuer {
     }
     
     /**
+     * Cancella tutte le code relative ai jobs
+     */
+    private void deleteAllJobsQueue() {        
+        // prendo tutte le code di work (viene eseguito il comando redis keys masterjobsWork_*)
+        java.util.Set workQueues = redisTemplate.keys(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", "*"));
+        if (workQueues != null && ! workQueues.isEmpty()) {
+            for (Object workQueue : workQueues) {
+                redisTemplate.delete(workQueue);
+            }
+        }
+        redisTemplate.delete(masterjobsApplicationConfig.getWaitQueue());
+        redisTemplate.delete(masterjobsApplicationConfig.getErrorQueue());
+        redisTemplate.delete(masterjobsApplicationConfig.getInQueueNormal());
+        redisTemplate.delete(masterjobsApplicationConfig.getInQueueHigh());
+        redisTemplate.delete(masterjobsApplicationConfig.getInQueueHighest());
+        
+    }
+    
+    public void regenerateQueue() throws MasterjobsRuntimeExceptionWrapper {
+        log.info("inizio riginerazione code...");
+        
+        log.info("metto in pausa tutti i threads");
+        pauseThreads();
+        
+        // cancello tutte le code relative ai jobs, in quanto rigenererò tutto da capo a partire dai jobs nel database
+        log.info("rimuovo tutte le code relative ai jobs...");
+        deleteAllJobsQueue();
+        
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(a -> {
+            QSet qSet = QSet.set;
+            QJob qJob = QJob.job;
+            
+            // setto tutto nello stato iniziale
+            log.info("resetto tutti i jobs e gli object_status su DB...");
+            resetJobsState(false);
+            
+            // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
+            log.info("estraggo tutti i set dal DB...");
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            List<Set> setToRegenerate = queryFactory
+                .select(qSet)
+                .from(qSet)
+                .fetch();
+            for (Set set : setToRegenerate) {
+                log.info(String.format("processo il set %s, ne estraggo i job...", set.getId()));
+                List<Long> jobsofSet = queryFactory.select(qJob.id)
+                    .from(qJob)
+                    .where(qJob.set.id.eq(set.getId()))
+                    .fetch();
+                
+                // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
+                String queue;
+                try {
+                    log.info("calcolo la coda in base alla priorità");
+                    queue = masterjobsUtils.getQueueBySetPriority(set.getPriority());
+                    log.info(String.format("coda estratta %s", queue));
+                } catch (MasterjobsBadDataException ex) {
+                    String errorMessage = String.format("errore nella rigenerazione del set %s", set.getId());
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+                
+                // constuisco il json dei jobs del set
+                log.info("constuisco il json dei jobs del set...");
+                MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(jobsofSet, set.getId(), queue);
+                try {
+                    
+                    // inserisco il json nella coda di esecuzione
+                    log.info("inserisco il json nella coda di esecuzione...");
+                    insertInQueue(queueData);
+                } catch (JsonProcessingException ex) {
+                    String errorMessage = String.format("errore nell'inserimo del json del set %s", set.getId());
+                    log.error(errorMessage, ex);
+                    try {
+                        if (queueData != null)
+                            log.error(String.format("il josn è il seguente: %s", queueData.dump()));
+                        else
+                            log.error("queueData è null");
+                    } catch (JsonProcessingException subEx) {
+                        log.error("non sono riuscito a stampare il json", ex);
+                    }
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            }
+        });
+        
+        log.info("riattivo tutti i threads");
+        resumeThreads();
+    }
+    
+    /**
+     * Setta nello stato iniziale gli objectStatus e i jobs
+     * Lo stato iniziale è IDLE per gli objectStatus e READY per i jobs
+     * @param onlyInError se true resetta solo quelli in errore, se false, tutti
+     */
+    private void resetJobsState(boolean onlyInError) {
+        QJob qJob = QJob.job;
+        QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
+
+        // prima setto gli objectStatus nello stato IDLE usando la select for update
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+       
+        JPAQuery<ObjectStatus> querySelect = queryFactory.query().setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .select(qObjectStatus)
+            .from(qObjectStatus);
+        if (onlyInError)
+            querySelect = querySelect.where(qObjectStatus.state.eq(ObjectStatus.ObjectState.ERROR.toString()));
+//        List<ObjectStatus> objectStatusList = querySelect.fetch();
+        queryFactory
+            .update(qObjectStatus)
+            .set(qObjectStatus.state, ObjectStatus.ObjectState.IDLE.toString())
+            .where(qObjectStatus.in(querySelect))
+            .execute();
+        
+        // poi setto anche i job nello stato READY
+        JPAUpdateClause querySet = queryFactory
+            .update(qJob)
+            .set(qJob.state, Job.JobState.READY.toString());
+        if (onlyInError)
+            querySet = querySet.where(qJob.state.eq(Job.JobState.ERROR.toString()));
+        querySet.execute();
+    }
+    
+    /**
      * Rilancia i job in errore nelle loro code di appartenenza, per far si che ne venga ritentata l'esecuzione
      */
     public void relaunchJobsInError() {
@@ -188,28 +318,11 @@ public class MasterjobsJobsQueuer {
         
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(a -> {
-            QJob qJob = QJob.job;
-            QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
-            
-            // prima setto gli objectStatus in error nello stato IDLE usando la select for update
-            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-            List<ObjectStatus> objectStatusList = queryFactory.query().setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                .select(qObjectStatus)
-                .from(qObjectStatus)
-                .where(qObjectStatus.state.eq(ObjectStatus.ObjectState.ERROR.toString()))
-                .fetch();
-            queryFactory
-                .update(qObjectStatus)
-                .set(qObjectStatus.state, ObjectStatus.ObjectState.IDLE.toString())
-                .where(qObjectStatus.in(objectStatusList))
-                .execute();
-            
-            // poi setto anche i job in error nello stato READY
-            queryFactory
-                .update(qJob)
-                .set(qJob.state, Job.JobState.READY.toString())
-                .where(qJob.state.eq(Job.JobState.ERROR.toString()))
-                .execute();
+            /* 
+            prima setto gli objectStatus in error nello stato IDLE usando la select for update e poi
+            anche i job in error nello stato READY
+            */
+            resetJobsState(true);
         }); // committo
         
         /* 
@@ -241,6 +354,12 @@ public class MasterjobsJobsQueuer {
     private void resumeThreads() {
         Map commands = new HashMap();
         commands.put(MasterjobsJobsExecutionThread.COMMAND_KEY, MasterjobsJobsExecutionThread.RESUME_COMMAND);
+        redisTemplate.opsForStream().add(masterjobsApplicationConfig.getCommandsStreamName(), commands);
+    }
+    
+    public void stopThreads() {
+        Map commands = new HashMap();
+        commands.put(MasterjobsJobsExecutionThread.COMMAND_KEY, MasterjobsJobsExecutionThread.STOP_COMMAND);
         redisTemplate.opsForStream().add(masterjobsApplicationConfig.getCommandsStreamName(), commands);
     }
 }

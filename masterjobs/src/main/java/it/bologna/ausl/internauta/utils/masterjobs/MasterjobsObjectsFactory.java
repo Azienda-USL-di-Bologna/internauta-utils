@@ -81,6 +81,7 @@ public class MasterjobsObjectsFactory {
         T executionThreadObject = beanFactory.getBean(classz);
         executionThreadObject
             .activeThreadsSetName(masterjobsApplicationConfig.getActiveThreadsSetName())
+            .stoppedThreadsSetName(masterjobsApplicationConfig.getStoppedThreadsSetName())
             .commandsStreamName(masterjobsApplicationConfig.getCommandsStreamName())
             .inQueueNormal(masterjobsApplicationConfig.getInQueueNormal())
             .inQueueHigh(masterjobsApplicationConfig.getInQueueHigh())
