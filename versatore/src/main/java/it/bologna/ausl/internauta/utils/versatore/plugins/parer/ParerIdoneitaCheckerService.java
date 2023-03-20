@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -61,6 +62,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                     if(ZonedDateTime.now().minusDays(giorniPrimaDiVersarePe).isBefore(docDetail.getDataRegistrazione())){ 
                         idoneo = false;
                     }
+                    break;
+                case RGPICO:
+                    idoneo = true;
+                    
                     break;
                 default: 
                     break;
