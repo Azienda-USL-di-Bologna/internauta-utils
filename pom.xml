@@ -42,6 +42,8 @@
         <module>downloader</module>
         <module>masterjobs</module>
         <module>versatore</module>
+        <module>ParerDocumentBuilder</module>
+        <module>parersender</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 <!--    <dependencies>

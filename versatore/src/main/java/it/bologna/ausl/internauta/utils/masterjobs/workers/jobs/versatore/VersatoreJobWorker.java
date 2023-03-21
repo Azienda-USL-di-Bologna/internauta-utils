@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore;
 
-import com.querydsl.core.QueryFactory;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -36,7 +35,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,17 +82,21 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         // setto il transactionTemplate in modo che tutte le volte che lo si usa apra una transazione e la committi
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         
-        TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
-        
+        TipologiaVersamento tipologiaVersamento = getWorkerData().getTipologia();
+                
         // calcolo tutti versamenti da effettaure per vari docs e li aggiungo alla mappa
         Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap<>();
         
-        // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
-        versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-        // aggiungo i docs da versare, non dipendenti dal fascicolo
-        versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-        // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
-        versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        if (tipologiaVersamento == TipologiaVersamento.GIORNALIERO) {
+            // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
+            versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+            // aggiungo i docs da versare, non dipendenti dal fascicolo
+            versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+            // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
+            versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        } else {
+            versamentiDaProcessare = addDocsDaVersare(getWorkerData().getIdDocsDaVersare(), tipologiaVersamento, queryFactory);
+        }
         
         SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
         
@@ -238,6 +240,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 versamentoDocInformation.setIdDoc(idDocVersamentoEffettuato);
                 versamentoDocInformation.setIdArchivio(idArchivioVersamentoEffettuato);
                 versamentoDocInformation.setForzabile(forzabileVersamentoEffettuato);
+                versamentoDocInformation.setParams(getWorkerData().getParams());
                 versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
                 
                 /*
@@ -625,31 +628,38 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
     
     /**
      * aggiunge alla mappa dei versamenti da effettuare i doc da versare, indipendentemente dai fascicoli:
-     *  i doc da versare sono quelli che hanno come statoVersamento VERSARE o AGGIORNARE.
+     *  Nel caso di sessione giornaliera i doc da versare sono quelli che hanno come statoVersamento VERSARE o AGGIORNARE.
+     *  Nel caso di sessione di forzatura i doc da versare sono solo quelli che hanno come statoVersamento FORZARE
      *  NB: Prende solo i doc dell'azienda a cui il job fa riferimento
      * @param versamentiDaProcessare la mappa dei versamenti da effettuare alla quale verranno aggiunti i doc
-     * @param tipologiaVersamento la tipologia del versamento
+     * @param tipologiaVersamento la tipologia del versamento (deriva dalla sessione GIORNALIERO o FORZATURA)
      * @param queryFactory
      * @return la mappa dei versamenti da effettuare (è la stessa passata in input)
      */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaProcessareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) { 
         List<Integer> docsIdDaProcessare;
-//        if (getWorkerData().getAzioneVersamento() == SessioneVersamento.AzioneVersamento.VERSAMENTO) {
-            QDoc qDoc = QDoc.doc;
-            docsIdDaProcessare = queryFactory
-                .select(qDoc.id)
-                .from(qDoc)
-                .where(
-                    qDoc.statoVersamento.isNotNull().and(
-                    qDoc.statoVersamento.in(
-                        Arrays.asList(
-                                Versamento.StatoVersamento.VERSARE.toString(), 
-                                Versamento.StatoVersamento.AGGIORNARE.toString()))
-                    ).and(
-                        qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
-                    )
+        List<String> tipologieDoc ;
+        // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
+        if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
+            tipologieDoc = Arrays.asList(Versamento.StatoVersamento.FORZARE.toString());
+        } else { // altrimenti prendo tutti quelli da versare o aggiornare
+            tipologieDoc = Arrays.asList(
+                Versamento.StatoVersamento.VERSARE.toString(), 
+                Versamento.StatoVersamento.AGGIORNARE.toString());
+        }
+        QDoc qDoc = QDoc.doc;
+        docsIdDaProcessare = queryFactory
+            .select(qDoc.id)
+            .from(qDoc)
+            .where(
+                    qDoc.statoVersamento.isNotNull()
+                .and(
+                    qDoc.statoVersamento.in(tipologieDoc))
+                .and(
+                    qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
                 )
-                .fetch();
+            )
+            .fetch();
 //        }
 //        else {
 //            QDocDetail qDocDetail = QDocDetail.docDetail;
@@ -683,12 +693,73 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
     }
     
     /**
+     * 
+     * @param idDocsDaVersare
+     * @param tipologiaVersamento
+     * @param queryFactory
+     * @return
+     * @throws VersatoreProcessingException 
+     */
+    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersare(
+            List<Integer> idDocsDaVersare, 
+            TipologiaVersamento tipologiaVersamento, 
+            JPAQueryFactory queryFactory) throws MasterjobsWorkerException {
+        List<Integer> docsIdDaProcessare;
+        String tipologiaDoc = null;
+        // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
+        if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
+            tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
+        } else { // altrimenti prendo tutti quelli da ritentare
+            tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
+        }
+        switch (tipologiaVersamento) {
+            case FORZATURA:
+                tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
+                break;
+            case RITENTA:
+                tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
+                break;
+            default:
+                throw new MasterjobsWorkerException("Tipologia versamento non prevista");
+        }
+        
+        // Faccio la query anche se ho già gli idDoc per assicurarmi che corrispondano alla giusta tipologia e alla giusta azienda
+        QDoc qDoc = QDoc.doc;
+        docsIdDaProcessare = queryFactory
+            .select(qDoc.id)
+            .from(qDoc)
+            .where(
+                    qDoc.statoVersamento.eq(tipologiaDoc)
+                .and(
+                    qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
+                )
+                .and(
+                    qDoc.id.in(idDocsDaVersare)   
+                )
+            )
+            .fetch();
+        
+        Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap();
+        for (Integer docIdDaProcessare : docsIdDaProcessare) {
+            VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, null, tipologiaVersamento);
+            List<VersamentoDocInformation> versamenti = versamentiDaProcessare.get(docIdDaProcessare);
+            if (versamenti == null) {
+                versamenti = new ArrayList<>();
+                versamentiDaProcessare.put(docIdDaProcessare, versamenti);
+            }
+            versamenti.add(versamentoDocInformation);
+        }
+        return versamentiDaProcessare;
+    }
+    
+    /**
      * aggiunge alla mappa dei versamenti da effettuare i doc all'interno dei fascicoli da versare
-     * Verranno aggiunti tutti i doc all'interno dei fascicoli nello stato Versare, indipendentemente dal loro sato versamento. 
-     * I fascicoli da versare sono tutti i fascicoli che hanno come statoVersamento VERSARE o AGGIORNARE
+     * Se siamo in una sessione giornaliera, verranno aggiunti tutti i doc all'interno dei fascicoli nello stato Versare, indipendentemente dal loro sato versamento.
+     * Se siamo in una sessione di forzatura, verranno aggiunti solo i doc in stato FORZARE
+     * I fascicoli presi in considerazione saranno tutti i fascicoli che hanno come statoVersamento VERSARE o AGGIORNARE
      * NB: Prende solo i doc dell'azienda a cui il fascicolo fa riferimento
      * @param versamentiDaProcessare la mappa dei versamenti da effettuare alla quale verranno aggiunti i doc
-     * @param tipologiaVersamento la tipologia del versamento
+     * @param tipologiaVersamento la tipologia del versamento (GIORNALIERO o FORZATURA)
      * @param queryFactory
      * @return la mappa dei versamenti da effettuare (è la stessa passata in input)
      */
@@ -713,22 +784,30 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 )
             )
             .fetch();
-        /*
-        Estrae i doc all'interno dei fascicoli trovati prima e ne inserisce il versamento di tutti nella mappa,
-        indipendentemente dallo stato del doc
-        */
+        
         for (Integer idArchivioDaVersare : archiviIdDaProcessare) {
             List<Integer> docsIdDaProcessare;
             QArchivioDoc qArchivioDoc = QArchivioDoc.archivioDoc;
             QDocDetail qDocDetail = QDocDetail.docDetail;
+            
+            /*
+            Se sono in uno versamento giornaliero, estraggo i doc all'interno dei fascicoli trovati prima e ne inserisco il versamento 
+            di tutti nella mappa, indipendentemente dallo stato del doc
+            */  
+            BooleanExpression filter = 
+            qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare)
+                .and(
+            qDocDetail.numeroRegistrazione.isNotNull());
+            // se sono in una sessione FORZATURA, allora considero solo i doc nello stato FORZARE
+            if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
+                filter = filter.and(qArchivioDoc.idDoc.statoVersamento.eq(Versamento.StatoVersamento.FORZARE.toString()));
+            }
+            
             docsIdDaProcessare = queryFactory
                 .select(qArchivioDoc.idDoc.id)
                 .from(qArchivioDoc)
                 .join(qDocDetail).on(qDocDetail.id.eq(qArchivioDoc.idDoc.id))
-                .where(
-                    qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare).and(
-                    qDocDetail.numeroRegistrazione.isNotNull())
-                )
+                .where(filter)
                 .fetch();
             for (Integer docIdDaProcessare : docsIdDaProcessare) {
                 VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, idArchivioDaVersare, tipologiaVersamento);
@@ -758,6 +837,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         versamentoDocInformation.setTipologiaVersamento(tipologiaVersamento);
         versamentoDocInformation.setIdDoc(idDoc);
         versamentoDocInformation.setIdArchivio(idArchivio);
+        versamentoDocInformation.setParams(getWorkerData().getParams());
         return versamentoDocInformation;
     }
 }
