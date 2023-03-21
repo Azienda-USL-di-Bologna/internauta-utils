@@ -638,8 +638,9 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
         if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
             Versamento.StatoVersamento.FORZARE.toString();
+            tipologieDoc.add( Versamento.StatoVersamento.FORZARE.toString());
         } else { // altrimenti prendo tutti quelli da versare o aggiornare
-            Arrays.asList(
+            tipologieDoc = Arrays.asList(
                 Versamento.StatoVersamento.VERSARE.toString(), 
                 Versamento.StatoVersamento.AGGIORNARE.toString());
         }
