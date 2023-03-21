@@ -5,7 +5,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.VersatoreJobWorkerData;
 import it.bologna.ausl.model.entities.masterjobs.Set;
-import java.util.HashMap;
+import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class VersamentoServiceCore {
             Map<String,Object> params = (Map<String,Object>) versatoreConfigAziendaValue.get("params");
 
             // richiama il metodo sul core che si occupa dell'accodamento del job
-            queueAziendaJob(idAzienda, hostId, false, null, threadPoolSize, app, params);
+            queueAziendaJob(idAzienda, hostId, threadPoolSize, app, params);
             
         }
     }
@@ -62,8 +62,8 @@ public class VersamentoServiceCore {
      * @param app applicazione a cui legare il job
      * @param params parametri specifici per il versamento
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, Boolean forzatura, Integer idPersonaForzatura, Integer poolsize, String app, Map<String,Object> params) {
-        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, forzatura, poolsize, idPersonaForzatura, params);
+    private void queueAziendaJob(Integer idAzienda, String hostId, Integer poolsize, String app, Map<String,Object> params) {
+        VersatoreJobWorkerData versatoreJobWorkerData = new VersatoreJobWorkerData(idAzienda, hostId, poolsize, params, SessioneVersamento.TipologiaVersamento.GIORNALIERO);
         VersatoreJobWorker jobWorker = null;
         try { // istanzia il woker
             jobWorker = masterjobsObjectsFactory.getJobWorker(VersatoreJobWorker.class, versatoreJobWorkerData, false);
