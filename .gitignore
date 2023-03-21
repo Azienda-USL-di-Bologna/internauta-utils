@@ -21,3 +21,4 @@ masterjobs/target/
 versatore/target/
 ParerDocumentBuilder/target/
 parersender/target/
+*.p12
