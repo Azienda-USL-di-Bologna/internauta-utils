@@ -289,7 +289,27 @@ public class InfocertVersatoreService extends VersatoreDocs {
      */
     private List<DocumentAttribute> buildMetadatiDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
-        Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+        Integer idArchivio = versamentoDocInformation.getIdArchivio();
+        
+        if (idArchivio == null) {
+            // L'archivio è obbligatorio. Dato che è null provo a ricavarmelo dai precedenti versamenti del doc. (se ne ha)
+            QVersamento qVersamento = QVersamento.versamento;
+            JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+            idArchivio = jpaQueryFactory
+                    .select(qVersamento.idArchivio.id)
+                    .from(qVersamento)
+                    .where(qVersamento.idDoc.id.eq(doc.getId()))
+                    .orderBy(qVersamento.data.desc())
+                    .limit(1)
+                    .fetchOne();
+        }
+        
+        if (idArchivio == null) {
+            throw new VersatoreProcessingException("idArchivio null");
+        }
+        
+        Archivio archivio = entityManager.find(Archivio.class, idArchivio);
+
         List<DocumentAttribute> docAttributes = new ArrayList<>();
         
         // Dati generici del documento
