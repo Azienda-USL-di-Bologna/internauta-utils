@@ -151,7 +151,9 @@ public class ParerVersatoreService extends VersatoreDocs{
                 if (node.get(0).toXML().equals("<CodiceEsito>POSITIVO</CodiceEsito>") || node.get(0).toXML().equals("<CodiceEsito>WARNING</CodiceEsito>")) {
                     versamentoInformation.setRapporto(response);
                     versamentoInformation.setStatoVersamentoPrecedente(versamentoInformation.getStatoVersamento());
-                    versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO); 
+                    versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    doc.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    
                     for(VersamentoAllegatoInformation allegato: listaAllegati) {
                         allegato.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                     }

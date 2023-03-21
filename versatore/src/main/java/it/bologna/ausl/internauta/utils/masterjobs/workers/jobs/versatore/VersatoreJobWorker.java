@@ -82,21 +82,17 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         // setto il transactionTemplate in modo che tutte le volte che lo si usa apra una transazione e la committi
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         
-        TipologiaVersamento tipologiaVersamento = getWorkerData().getTipologia();
-                
+        TipologiaVersamento tipologiaVersamento = getWorkerData().getForzatura()? TipologiaVersamento.FORZATURA: TipologiaVersamento.GIORNALIERO;
+        
         // calcolo tutti versamenti da effettaure per vari docs e li aggiungo alla mappa
         Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap<>();
         
-        if (tipologiaVersamento == TipologiaVersamento.GIORNALIERO) {
-            // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
-            versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-            // aggiungo i docs da versare, non dipendenti dal fascicolo
-            versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-            // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
-            versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
-        } else {
-            versamentiDaProcessare = addDocsDaVersare(getWorkerData().getIdDocsDaVersare(), tipologiaVersamento, queryFactory);
-        }
+        // aggiungo i docs numerati dei fascicoli da versare, cioè quelli veicolati da un fascicolo (es. fascicolo che viene chiuso)
+        versamentiDaProcessare = addDocsDaProcessareDaArchivi(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        // aggiungo i docs da versare, non dipendenti dal fascicolo
+        versamentiDaProcessare = addDocsDaProcessareDaDocs(versamentiDaProcessare, tipologiaVersamento, queryFactory);
+        // aggiungo anche i docs reperiti dai versamenti ancora non competati o che sono da ritentare
+        versamentiDaProcessare = addDocsDaRitentare(versamentiDaProcessare, tipologiaVersamento, queryFactory);
         
         SessioneVersamento sessioneInCorso = getSessioneInCorso(queryFactory);
         
@@ -638,10 +634,11 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
      */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaProcessareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) { 
         List<Integer> docsIdDaProcessare;
-        List<String> tipologieDoc ;
+        List<String> tipologieDoc = null;
         // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
         if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
-            tipologieDoc = Arrays.asList(Versamento.StatoVersamento.FORZARE.toString());
+            Versamento.StatoVersamento.FORZARE.toString();
+            tipologieDoc.add( Versamento.StatoVersamento.FORZARE.toString());
         } else { // altrimenti prendo tutti quelli da versare o aggiornare
             tipologieDoc = Arrays.asList(
                 Versamento.StatoVersamento.VERSARE.toString(), 
@@ -680,66 +677,6 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
 //                .fetch();
 //        }
         
-        for (Integer docIdDaProcessare : docsIdDaProcessare) {
-            VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, null, tipologiaVersamento);
-            List<VersamentoDocInformation> versamenti = versamentiDaProcessare.get(docIdDaProcessare);
-            if (versamenti == null) {
-                versamenti = new ArrayList<>();
-                versamentiDaProcessare.put(docIdDaProcessare, versamenti);
-            }
-            versamenti.add(versamentoDocInformation);
-        }
-        return versamentiDaProcessare;
-    }
-    
-    /**
-     * 
-     * @param idDocsDaVersare
-     * @param tipologiaVersamento
-     * @param queryFactory
-     * @return
-     * @throws VersatoreProcessingException 
-     */
-    private Map<Integer, List<VersamentoDocInformation>> addDocsDaVersare(
-            List<Integer> idDocsDaVersare, 
-            TipologiaVersamento tipologiaVersamento, 
-            JPAQueryFactory queryFactory) throws MasterjobsWorkerException {
-        List<Integer> docsIdDaProcessare;
-        String tipologiaDoc = null;
-        // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
-        if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
-            tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
-        } else { // altrimenti prendo tutti quelli da ritentare
-            tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
-        }
-        switch (tipologiaVersamento) {
-            case FORZATURA:
-                tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
-                break;
-            case RITENTA:
-                tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
-                break;
-            default:
-                throw new MasterjobsWorkerException("Tipologia versamento non prevista");
-        }
-        
-        // Faccio la query anche se ho già gli idDoc per assicurarmi che corrispondano alla giusta tipologia e alla giusta azienda
-        QDoc qDoc = QDoc.doc;
-        docsIdDaProcessare = queryFactory
-            .select(qDoc.id)
-            .from(qDoc)
-            .where(
-                    qDoc.statoVersamento.eq(tipologiaDoc)
-                .and(
-                    qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
-                )
-                .and(
-                    qDoc.id.in(idDocsDaVersare)   
-                )
-            )
-            .fetch();
-        
-        Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare = new HashMap();
         for (Integer docIdDaProcessare : docsIdDaProcessare) {
             VersamentoDocInformation versamentoDocInformation = buildVersamentoDocInformation(docIdDaProcessare, null, tipologiaVersamento);
             List<VersamentoDocInformation> versamenti = versamentiDaProcessare.get(docIdDaProcessare);
