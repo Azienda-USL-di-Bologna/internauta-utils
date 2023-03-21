@@ -23,6 +23,9 @@ public class MasterjobsApplicationConfig {
     @Value("${masterjobs.manager.jobs-executor.redis-active-threads-set-name}")
     private String activeThreadsSetName;
     
+    @Value("${masterjobs.manager.jobs-executor.redis-stopped-threads-set-name}")
+    private String stoppedThreadsSetName;
+    
     @Value("${masterjobs.manager.jobs-executor.commands-stream-name}")
     private String commandsStreamName;
     
@@ -81,6 +84,10 @@ public class MasterjobsApplicationConfig {
 
     public String getActiveThreadsSetName() {
         return activeThreadsSetName;
+    }
+    
+    public String getStoppedThreadsSetName() {
+        return stoppedThreadsSetName;
     }
 
     public String getCommandsStreamName() {
