@@ -58,6 +58,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>xom</groupId>
+            <artifactId>xom</artifactId>
+            <version>1.3.7</version>
+        </dependency>
+        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>minIO-manager</artifactId>
             <version>1.2</version>
@@ -84,6 +89,30 @@
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>ParerDocumentBuilder</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>parameters-manager</artifactId>
+            <version>1.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>parersender</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -96,7 +125,7 @@
             </resource>
         </resources>
         <plugins>
-<!--            <plugin>
+            <plugin>
                 <groupId>com.mysema.maven</groupId>
                 <artifactId>apt-maven-plugin</artifactId>
                 <version>1.1.3</version>
@@ -109,6 +138,56 @@
                         <configuration>
                             <outputDirectory>target/generated-sources/java</outputDirectory>
                             <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+<!--            <plugin>
+                <groupId>org.jvnet.jaxb2.maven2</groupId>
+                <artifactId>maven-jaxb2-plugin</artifactId>
+                <version>0.15.2</version>
+                <executions>
+                    <execution>
+                        <id>example-xml</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generateDirectory>${project.build.directory}/generated-sources/xjc/</generateDirectory>
+                            <schemaDirectory>${basedir}/src/main/resources/schemas/xsd</schemaDirectory>
+                            <schemaIncludes>
+                                <include>edu.xsd</include>
+                            </schemaIncludes>
+                            <bindingDirectory>${basedir}/src/main/resources/schemas/xjb</bindingDirectory>
+                            <bindingIncludes>
+                                <include>edu.xjb</include>
+                            </bindingIncludes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-runtime</artifactId>
+                        <version>2.3.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.9</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/xjc/</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
