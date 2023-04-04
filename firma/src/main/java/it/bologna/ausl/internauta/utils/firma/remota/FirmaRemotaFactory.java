@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota;
 
+import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders;
 import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders.ARUBA;
@@ -9,7 +10,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemot
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.FirmaRemotaInfocert;
-import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.namirial.FirmaRemotaNamirial;
+import it.bologna.ausl.internauta.utils.firma.remota.namirialsignservice.FirmaRemotaNamirial;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
 import java.util.HashMap;
@@ -41,6 +42,9 @@ public class FirmaRemotaFactory {
 
     @Autowired
     private InternalCredentialManager internalCredentialManager;
+    
+    @Autowired
+    private FirmaHttpClientConfiguration firmaHttpClientConfiguration;
 
     List<it.bologna.ausl.model.entities.firma.Configuration> configurations;
 
@@ -67,13 +71,13 @@ public class FirmaRemotaFactory {
             FirmaRemota firmaRemotaInstance;
             switch (provider) {
                 case ARUBA:
-                    firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, dominioFirmaDefault);
+                    firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration, dominioFirmaDefault);
                     break;
                 case INFOCERT:
-                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaRemotaInfocertSslCertpath, firmaRemotaInfocertSslCertpassword);
+                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration, firmaRemotaInfocertSslCertpath, firmaRemotaInfocertSslCertpassword);
                     break;
                 case NAMIRIAL:
-                    firmaRemotaInstance = new FirmaRemotaNamirial(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaRemotaNamirialSslCertpath, firmaRemotaNamirialSslCertpassword);
+                    firmaRemotaInstance = new FirmaRemotaNamirial(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration, firmaRemotaNamirialSslCertpath, firmaRemotaNamirialSslCertpassword);
                     break;
                 default:
                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not found");

@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota.arubasignservice;
 
 import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation;
 import com.sun.xml.ws.developer.JAXWSProperties;
+import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
@@ -76,8 +77,8 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private final CredentialProxyService credentialProxyService;
     private final String dominioFirmaDefault;
 
-    public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager);
+    public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration, String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
 //        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration(codiceAzienda);

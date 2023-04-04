@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota;
 
+import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
@@ -37,12 +38,14 @@ public abstract class FirmaRemota {
     protected final FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils;
     protected final Configuration configuration;
     protected final InternalCredentialManager internalCredentialManager;
+    protected final FirmaHttpClientConfiguration firmaHttpClientConfiguration;
     
-    protected FirmaRemota(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager) {
+    protected FirmaRemota(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) {
         this.configParams = configParams;
         this.firmaRemotaDownloaderUtils = firmaRemotaDownloaderUtils;
         this.configuration = configuration;
         this.internalCredentialManager = internalCredentialManager;
+        this.firmaHttpClientConfiguration = firmaHttpClientConfiguration;
     }
     
     /**

@@ -161,5 +161,9 @@ public class ConfigParams {
     public MinIOWrapper getMinIOWrapper() {
         return minIOWrapper;
     }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
     
 }

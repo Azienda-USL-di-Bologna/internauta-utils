@@ -5,12 +5,10 @@ package it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice;
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
 public enum InfoCertPathEnum {
-    FIRMA_CADES("/[CONTEXT]/sign/cades/[ALIAS]"),
-    FIRMA_CADES_MARCA_TEMPORALE("/[CONTEXT]/sign/cades-t/[ALIAS]"),
-    FIRMA_PADES("/[CONTEXT]/sign/pades/[ALIAS]"),
-    FIRMA_PADES_MARCA_TEMPORALE("/[CONTEXT]/sign/pades-t/[ALIAS]"),
-    FIRMA_XADES_ENVELOPED("/[CONTEXT]/sign/xades-enveloped/[ALIAS]"),
-    FIRMA_XADES_ENVELOPING("/[CONTEXT]/sign/xades-enveloping/[ALIAS]"),
+    FIRMA_CADES("/SignEngineWeb/rest/sign/signCades"),
+    FIRMA_PADES("/SignEngineWeb/rest/sign/signPades"),
+    FIRMA_XADES("/SignEngineWeb/rest/sign/signXades"),
+    FIRMA_PKCS1("/SignEngineWeb/rest/sign/signXades"),
     FIRMA_XADES_DETACHED("/[CONTEXT]/sign/xades-detached/[ALIAS]"),
     FIRMA_XADES_ENVELOPED_MARCA_TEMPORALE("/[CONTEXT]/sign/xades-t-enveloped/[ALIAS]"),
     FIRMA_XADES_ENVELOPING_MARCA_TEMPORALE("/[CONTEXT]/sign/xades-t-enveloping/[ALIAS]"),
