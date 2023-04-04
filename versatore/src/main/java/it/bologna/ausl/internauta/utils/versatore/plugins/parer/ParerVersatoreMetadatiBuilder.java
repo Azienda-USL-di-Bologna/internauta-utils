@@ -37,12 +37,14 @@ import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
 import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
 import java.text.DecimalFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -241,9 +243,15 @@ public final class ParerVersatoreMetadatiBuilder {
             additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
             HashMap<String, Object> datiPubblicazione = new HashMap<String, Object>();
             datiPubblicazione = (HashMap<String, Object>) additionalDataDoc.get("dati_pubblicazione");
-            LocalDateTime dataEsecutivita = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("data_esecutivita"));
-            LocalDateTime inizioPubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("inizio_pubblicazione"));
-            LocalDateTime finePubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("fine_pubblicazione"));
+            LocalDateTime dataEsecutivita = null;
+            LocalDateTime inizioPubblicazione = null;
+            LocalDateTime finePubblicazione = null;
+            if(datiPubblicazione != null) {
+                dataEsecutivita = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("data_esecutivita"));
+                inizioPubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("inizio_pubblicazione"));
+                finePubblicazione = (LocalDateTime) LocalDateTime.parse((String) datiPubblicazione.get("fine_pubblicazione"));
+            }
+            
             
             if (dataEsecutivita != null) {
                 datiSpecificiBuilder.insertNewTag("EsecutivitaData", dataEsecutivita.toLocalDate().toString());
@@ -256,10 +264,13 @@ public final class ParerVersatoreMetadatiBuilder {
                 datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
             }
             datiSpecificiBuilder.insertNewTag("PubblicazioneRegistro", "ALBO ON LINE");
-            datiSpecificiBuilder.insertNewTag("PubblicazioneAnno", (String) datiPubblicazione.get("anno"));
-            datiSpecificiBuilder.insertNewTag("PubblicazioneNumero", (String) datiPubblicazione.get("numero"));
-            datiSpecificiBuilder.insertNewTag("PubblicazioneInizio", inizioPubblicazione.toLocalDate().toString());
-            datiSpecificiBuilder.insertNewTag("PubblicazioneFine", finePubblicazione.toLocalDate().toString());
+            if(datiPubblicazione != null) {
+                datiSpecificiBuilder.insertNewTag("PubblicazioneAnno", (String) datiPubblicazione.get("anno"));
+                datiSpecificiBuilder.insertNewTag("PubblicazioneNumero", (String) datiPubblicazione.get("numero"));
+                datiSpecificiBuilder.insertNewTag("PubblicazioneInizio", inizioPubblicazione.toLocalDate().toString());
+                datiSpecificiBuilder.insertNewTag("PubblicazioneFine", finePubblicazione.toLocalDate().toString());
+            }
+            
             if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
                 datiSpecificiBuilder.insertNewTag("PubblicazioneTipo", "INTEGRALE");
             }
@@ -655,14 +666,18 @@ public final class ParerVersatoreMetadatiBuilder {
         return mappaPerAllegati;
     }
 
-    public DatiSpecifici buildDatiSpecificiRegistroGiornaliero(Doc doc, DocDetail docDetail) throws ParserConfigurationException {
+    public DatiSpecifici buildDatiSpecificiRegistroGiornaliero(Doc doc, DocDetail docDetail) throws ParserConfigurationException, ParseException {
         DatiSpecifici datiSpecifici;
         DatiSpecificiBuilder datiSpecificiBuilder = new DatiSpecificiBuilder();
-        Pattern pattern = Pattern.compile("\"n.\\s(.*)\\sal\\sn.\\s(.*)\\sdel\\s(.*)");
+        Pattern pattern = Pattern.compile("(.*)n\\.\\s(.*)\\sal\\sn\\.\\s(.*)\\sdel\\s(.*)", Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(doc.getOggetto());
-        String numeroIniziale = matcher.group(1);
-        String numeroFinale = matcher.group(2);
-        String giorno = matcher.group(3);
+        matcher.matches();
+        matcher.groupCount();
+        String numeroIniziale = matcher.group(2);
+        String numeroFinale = matcher.group(3);
+        String giorno = matcher.group(4);
+        Date date = new SimpleDateFormat("dd-MM-yyyy").parse(giorno); 
+        ZonedDateTime d = ZonedDateTime.ofInstant(date.toInstant(),ZoneId.systemDefault());
         Integer documenti = 0;
         Integer documentiAnnullati = 0;
         String applicativo = "";
@@ -672,12 +687,12 @@ public final class ParerVersatoreMetadatiBuilder {
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + " and tipologia in ('PROTOCOLLO_IN_USCITA', 'PROTOCOLLO_IN_ENTRATA') "
                     + "and annullato = false")
-                    .setParameter("value1", giorno).getSingleResult();
+                    .setParameter("value1", d ).getSingleResult();
             documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
                     + "from scripta.docs_details dd2 "
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + " and tipologia in ('PROTOCOLLO_IN_USCITA', 'PROTOCOLLO_IN_ENTRATA') "
-                    + "and annullato = false")
+                    + "and annullato = true")
                     .setParameter("value1", doc.getId()).getSingleResult();
             applicativo = "procton";
         } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE) {
@@ -686,12 +701,12 @@ public final class ParerVersatoreMetadatiBuilder {
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + "and tipologia = 'DETERMINA' "
                     + "and annullato = false")
-                    .setParameter("value1", giorno).getSingleResult();
+                    .setParameter("value1", d).getSingleResult();
             documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
                     + "from scripta.docs_details dd2 "
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + " and tipologia = 'DETERMINA' "
-                    + "and annullato = false")
+                    + "and annullato = true")
                     .setParameter("value1", doc.getId()).getSingleResult();
             applicativo = "dete";
         } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI) {
@@ -700,12 +715,12 @@ public final class ParerVersatoreMetadatiBuilder {
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + " and tipologia in ('DELIBERA') "
                     + "and annullato = false")
-                    .setParameter("value1", giorno).getSingleResult();
+                    .setParameter("value1", d).getSingleResult();
             documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
                     + "from scripta.docs_details dd2 "
                     + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
                     + " and tipologia = 'DELIBERA' "
-                    + "and annullato = false")
+                    + "and annullato = true")
                     .setParameter("value1", doc.getId()).getSingleResult();
             applicativo = "deli";
 
