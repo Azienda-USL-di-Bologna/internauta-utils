@@ -37,7 +37,6 @@ import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -57,9 +56,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
- * Classe che implementa i metodi necessari per la firma remota Infocert.
+ * Classe che implementa i metodi necessari per la firma remota Namirial.
  *
- * @author Giuseppe Russo <g.russo@nsi.it>
+ * @author gdm
  */
 public class FirmaRemotaNamirial extends FirmaRemota {
 
@@ -90,135 +89,165 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     @Override
     public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
 
+        /* 
+        come prima cosa reperiamo le credenziali. Queste cambiano in base al fatto che si firmi con OTP o con firma AUTOMATICA.
+        Per la firma OTP la procedura è diversa a seconda se si vuole firmare un solo file o più di uno. In quanto per la firma di un solo file è sufficiente
+        passare l'OTP all'interno delle credenziali, mentre per la firma di più file è necessario aprire una sessione, facendo una chiamata ad un url apposito passando
+        le credenziali con l'OTP.
+        Per semplicità è stato scelto di usare sempre la procedura della firma di più file, anche se se ne vuole firmare solo uno.
+        */
         NamirialUserInformation userInformation = (NamirialUserInformation) firmaRemotaInformation.getUserInformation();
         String sessionKey = null;
+        // come scritto sopra, nel caso di firma OTP, facciamo la chiamata per l'apertura della sessione
         if (userInformation.getModalitaFirma() == NamirialUserInformation.ModalitaFirma.OTP) {
+            // esegue l'apertura della sessione e torna una sessionKey, da passare in ogni chiamata di firma.
             sessionKey = openSession(userInformation);
         }
-        List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
-
-        for (FirmaRemotaFile file : filesDaFirmare) {
-            File tmpFileToSign = null;
+        
+        try {
+            // genera il json delle credenziali da passare in tutte le chiamate di firma, se c'è la sessionKey la include nel json
+            String credentialJson;
             try {
-                File tempDir = new File(System.getProperty("java.io.tmpdir"), "firma_remota");
-                if (!tempDir.exists()) {
-                    tempDir.mkdir();
-                }
-                String filename = "namirial_firma_remota_to_sing_tmp";
+                credentialJson = getCredentialJson(userInformation, sessionKey);
+            } catch (Throwable ex) {
+                String errorMessage = "errore nella creazione del Json delle credenziali";
+                logger.error(errorMessage, ex);
+                throw new FirmaRemotaHttpException(errorMessage, ex);
+            }
+
+            List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
+
+            // clicla su tutti i file da firmare
+            for (FirmaRemotaFile file : filesDaFirmare) {
+                File tmpFileToSign = null;
                 try {
-                    tmpFileToSign = File.createTempFile(filename, null, tempDir);
-                    InputStream in = new URL(file.getUrl()).openStream();
-                    logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
-                    Files.copy(in, Paths.get(tmpFileToSign.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-                } catch (Throwable ex) {
-                    String errorMessage = "errore nella creazione del file temporaneo da firmare";
-                    logger.error(errorMessage, ex);
-                    throw new FirmaRemotaHttpException(errorMessage, ex);
-                }
-
-                // creo la richiesta multipart
-                MultipartBody.Builder formData = new MultipartBody.Builder().setType(MultipartBody.FORM);
-
-                String credentialJson;
-                try {
-                    credentialJson = getCredentialJson(userInformation, sessionKey);
-                } catch (Throwable ex) {
-                    String errorMessage = "errore nella creazione del Json delle credenziali";
-                    logger.error(errorMessage, ex);
-                    throw new FirmaRemotaHttpException(errorMessage, ex);
-                }
-                formData.addFormDataPart("credentials", credentialJson);
-  
-                NamirialRestPathsEnum firmaPath;
-                switch (file.getFormatoFirma()) {
-                    case PDF:
-                        firmaPath = NamirialRestPathsEnum.PADES_SIGN;
-                        // Check della SignAppearance, se voluta
-                        logger.info("signAppearence: " + file.getSignAppearance());
-                        logger.info(String.format("creating padesPreferences for file %s...", file.getFileId()));
-                        String padesPreferences;
-                        try {
-                            padesPreferences = configParams.getObjectMapper().writeValueAsString(getPadesPreference(file.getSignAppearance()));
-                        } catch (Throwable ex) {
-                            String errorMessage = "errore nella creazione del Json delle padesPreferences ";
-                            logger.error(errorMessage, ex);
-                            throw new FirmaRemotaHttpException(errorMessage, ex);
-                        }
-                        formData.addFormDataPart("padesPreferences", padesPreferences);
-                        break;
-                    case P7M:
-                        logger.info(String.format("creating cadesPreferences for file %s...", file.getFileId()));
-                        firmaPath = NamirialRestPathsEnum.CADES_SIGN;
-                        String cadesPreferences;
-                        try {
-                            cadesPreferences = configParams.getObjectMapper().writeValueAsString(getCadesPreference());
-                        }  catch (Throwable ex) {
-                            String errorMessage = "errore nella creazione del Json delle cadesPreferences ";
-                            logger.error(errorMessage, ex);
-                            throw new FirmaRemotaHttpException(errorMessage, ex);
-                        }
-                        formData.addFormDataPart("cadesPreferences", cadesPreferences);
-                        break;
-                    default:
-                        throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
-                }
-
-                logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
-                RequestBody dataBody = RequestBody.create(MediaType.parse("application/octet-stream"), tmpFileToSign);
-                MultipartBody multipartBody = formData.addFormDataPart("buffer", filename, dataBody).build();
-                String signUrl = signServiceEndPointUri + firmaPath.getPath();
-                Request httpRequest = new Request.Builder().header("Content-Type", "multipart/form-data")
-                    .url(signUrl)
-                    .post(multipartBody)
-                    .build();
-
-                Call call = okHttpClient.newCall(httpRequest);
-                okhttp3.Response response;
-                try {
-                    response = call.execute();
-                } catch (Throwable ex) {
-                    String errorMessage = String.format("errore nella richiesta http per la firma all'url: %s", signUrl);
-                    logger.error(errorMessage, ex);
-                    throw new FirmaRemotaHttpException(errorMessage, ex);
-                }
-
-                try (ResponseBody responseBody = response.body()) {
-                    if (response.isSuccessful()) {
-                        try {
-                            InputStream signedFileIs = responseBody.byteStream();
-                            // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
-                            logger.info("File firmato, upload su minIO...");
-                            super.upload(file, signedFileIs, codiceAzienda, request);
-                            logger.info("File caricato su minIO");
-                        } catch (Throwable ex) {
-                            String errorMessage = "errore nell'upload del file su minIO";
-                            logger.error(errorMessage, ex);
-                            throw new FirmaRemotaHttpException(errorMessage, ex);
-                        }
-                    } else {
-                        String errorMessage = "Namirial ha tornato un errore, rilancio l'eccezione appropriata...";
-                        logger.error(errorMessage);
-                        throwCorrectException(response);
+                    /* 
+                    Se non esiste, crea una cartella in cui inserire i file temporanei. L'unico file temporaneo sarà il file da firmare, che viene scaricato per poi essere passato
+                    alla firma. Alla fine questo file viene eliminato
+                    */
+                    File tempDir = new File(System.getProperty("java.io.tmpdir"), "firma_remota");
+                    if (!tempDir.exists()) {
+                        tempDir.mkdir();
                     }
-                }
-            } finally {
-                if (tmpFileToSign != null) {
-                    if (!tmpFileToSign.delete()) {
-                        tmpFileToSign.deleteOnExit();
+                    String filename = "namirial_firma_remota_to_sing_tmp";
+                    try {
+                        // crea il file da firmare scaricamendolo dall'utr passato nei parametri di firma.
+                        tmpFileToSign = File.createTempFile(filename, null, tempDir);
+                        InputStream in = new URL(file.getUrl()).openStream();
+                        logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
+                    } catch (Throwable ex) {
+                        String errorMessage = "errore nella creazione del file temporaneo da firmare";
+                        logger.error(errorMessage, ex);
+                        throw new FirmaRemotaHttpException(errorMessage, ex);
+                    }
+
+                    // creo la richiesta multipart per la firma
+                    MultipartBody.Builder formData = new MultipartBody.Builder().setType(MultipartBody.FORM);
+
+                    // aggiunge la part con le credenziali
+                    formData.addFormDataPart("credentials", credentialJson);
+
+                    NamirialRestPathsEnum firmaPath;
+                    switch (file.getFormatoFirma()) {
+                        case PDF: // firma PADES
+                            firmaPath = NamirialRestPathsEnum.PADES_SIGN;
+                            logger.info("signAppearence: " + file.getSignAppearance());
+                            logger.info(String.format("creating padesPreferences for file %s...", file.getFileId()));
+                            String padesPreferences;
+                            try {
+                                // crea il json con la configurazione della firma PADES e le aggiunge alla multipart
+                                padesPreferences = configParams.getObjectMapper().writeValueAsString(getPadesPreference(file.getSignAppearance()));
+                            } catch (Throwable ex) {
+                                String errorMessage = "errore nella creazione del Json delle padesPreferences ";
+                                logger.error(errorMessage, ex);
+                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                            }
+                            formData.addFormDataPart("padesPreferences", padesPreferences);
+                            break;
+                        case P7M: // firma CADES
+                            logger.info(String.format("creating cadesPreferences for file %s...", file.getFileId()));
+                            firmaPath = NamirialRestPathsEnum.CADES_SIGN;
+                            String cadesPreferences;
+                            try {
+                                // crea il json con la configurazione della firma CADES e le aggiunge alla multipart
+                                cadesPreferences = configParams.getObjectMapper().writeValueAsString(getCadesPreference());
+                            }  catch (Throwable ex) {
+                                String errorMessage = "errore nella creazione del Json delle cadesPreferences ";
+                                logger.error(errorMessage, ex);
+                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                            }
+                            formData.addFormDataPart("cadesPreferences", cadesPreferences);
+                            break;
+                        default:
+                            throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
+                    }
+
+                    // aggiunge il file al multipart
+                    logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
+                    RequestBody dataBody = RequestBody.create(MediaType.parse("application/octet-stream"), tmpFileToSign);
+                    MultipartBody multipartBody = formData.addFormDataPart("buffer", filename, dataBody).build();
+                    String signUrl = signServiceEndPointUri + firmaPath.getPath();
+                    Request httpRequest = new Request.Builder().header("Content-Type", "multipart/form-data")
+                        .url(signUrl)
+                        .post(multipartBody)
+                        .build();
+
+                    Call call = okHttpClient.newCall(httpRequest);
+                    okhttp3.Response response;
+                    try {
+                        // effettua la chiamata
+                        response = call.execute();
+                    } catch (Throwable ex) {
+                        String errorMessage = String.format("errore nella richiesta http per la firma all'url: %s", signUrl);
+                        logger.error(errorMessage, ex);
+                        throw new FirmaRemotaHttpException(errorMessage, ex);
+                    }
+
+                    try (ResponseBody responseBody = response.body()) {
+                        // se tutto ok carica il file su minIO
+                        if (response.isSuccessful()) {
+                            try {
+                                InputStream signedFileIs = responseBody.byteStream();
+                                // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
+                                logger.info("File firmato, upload su minIO...");
+                                super.upload(file, signedFileIs, codiceAzienda, request);
+                                logger.info("File caricato su minIO");
+                            } catch (Throwable ex) {
+                                String errorMessage = "errore nell'upload del file su minIO";
+                                logger.error(errorMessage, ex);
+                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                            }
+                        } else { // se c'è un errore lancia l'eccezione corretta, relativa all'errore ricevuto
+                            String errorMessage = "Namirial ha tornato un errore, rilancio l'eccezione appropriata...";
+                            logger.error(errorMessage);
+                            throwCorrectException(response);
+                        }
+                    }
+                } finally { // elimina il file temporaneo, se è stato creato
+                    if (tmpFileToSign != null) {
+                        if (!tmpFileToSign.delete()) {
+                            tmpFileToSign.deleteOnExit();
+                        }
                     }
                 }
             }
+        } finally { // se è stata aperta una sessione, la chiude
+            if (sessionKey != null) {
+                closeSession(userInformation, sessionKey);
+            }
         }
+        
+        
 
         return firmaRemotaInformation;
     }
 
     /**
-     * Costruisce okHttpClient, inserendo la chiave nel keystore di java.
-     * Il formato deve essere p12
+     * Costruisce okHttpClient, partendo dalla proprietà impostante in internauta, inserendo la chiave nel keystore di java.
+     * Il formato della chiave deve essere p12
      *
      * @param sslCertPath il path del file p12 con la chiave
-     * @param sslCertPswd  la apssword del p12
+     * @param sslCertPswd  la password del p12
      */
     private void buildOkHttpClientWithSSLContext(String sslCertPath, String sslCertPswd) {
         SSLContext sslContext;
@@ -241,15 +270,22 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             
             this.okHttpClient = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient().newBuilder()
                 .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS).build();
+                .build();
         } catch (Throwable ex) {
             logger.error("errore buildOkHttpClientWithSSLContext", ex);
         }
 
     }
 
+    /**
+     * Carica il keystore di java
+     * @return
+     * @throws FileNotFoundException
+     * @throws KeyStoreException
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     * @throws CertificateException 
+     */
     private KeyStore loadJavaKeyStore() throws FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         String relativeCacertsPath = "/lib/security/cacerts".replace("/", File.separator);
         String filename = System.getProperty("java.home") + relativeCacertsPath;
@@ -372,6 +408,37 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     }
     
     /**
+     * chiude la sessione aperta con openSession
+     * @param userInformation le userInformation che devono contenere lo username
+     * @param sessionKey la chiave della sessioen da chiudere (tornata dalla openSession)
+     * @throws FirmaRemotaHttpException 
+     */
+    private void closeSession(NamirialUserInformation userInformation, String sessionKey) throws FirmaRemotaHttpException {
+        String credentialJson;
+        try {
+            credentialJson = getCredentialJson(userInformation, sessionKey);
+        } catch (Throwable ex) {
+            throw new FirmaRemotaHttpException("errore nella creazione del json delle credenziali per la richiesta http closeSession", ex);
+        }
+        RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"),credentialJson);
+
+        String url = signServiceEndPointUri + NamirialRestPathsEnum.CLOSE_SESSION.getPath();
+        Request request = new Request.Builder()
+            .url(url)
+            .method("POST", reqBody)
+            .addHeader("Content-Type", "application/json")
+            .build();
+        
+        try (Response response = okHttpClient.newCall(request).execute();){
+            if (!response.isSuccessful()) {
+                throwCorrectException(response);
+            }
+        } catch (Throwable ex) {
+            throw new FirmaRemotaHttpException("errore nella richiesta http closeSession", ex);
+        }
+    }
+    
+    /**
      * Genera una mappa che rappresenta il parametro credentials della richesta post
      * @param userInformation le userInformation contenenti
      *  - username, 
@@ -417,6 +484,11 @@ public class FirmaRemotaNamirial extends FirmaRemota {
         return configParams.getObjectMapper().writeValueAsString(credentialMap);
     }
     
+    /**
+     * Genera il json da passare nel parametro "padesPreferences" per la firma PADES
+     * @param signAppearance l'oggetto che descrive le caratteristiche del campo firma visibile, se la firma deve essere invisibile, passare null
+     * @return una mappa che rappresenta il json delle "padesPreferences"
+     */
     private Map<String, Object> getPadesPreference(SignAppearance signAppearance) {
         Map<String, Object> padesPreference = getCadesPreference();
         Map<String, Object> signerImage = new HashMap<>();
@@ -434,29 +506,62 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             signerImage.put("height", signAppearanceArray[2]);
             signerImage.put("x", signAppearanceArray[3]);
             signerImage.put("y", signAppearanceArray[4]);
-        } else {
+        } else { 
+            /* 
+            se signAppearance è null vuol dire che si vuole una firma invisibile, per cui viene settata la proprietà "textVisible" a false in modo che Namirial inserisca
+            la firma invisibile
+            */
             signerImage.put("textVisible", false);
         }
         padesPreference.put("signerImage", signerImage);
         return padesPreference;
     }
     
+    /**
+     * Genera il json da passare nel parametro "cadesPreferences" per le firme CADES
+     * @return una mappa che rappresenta il json delle "cadesPreferences"
+     */
     private Map<String, Object> getCadesPreference() {
         Map<String, Object> cadesPreference = new HashMap<>();
         cadesPreference.put("level", "B");
         return cadesPreference;
     }
 
+    /**
+     * il salvataggio delle credenziali non è supportato da Namirial, per cui torniamo sempre false
+     * @param userInformation
+     * @param hostId
+     * @return
+     * @throws FirmaRemotaHttpException
+     * @throws InvalidCredentialException
+     * @throws RemoteServiceException 
+     */
     @Override
     protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
-
+    /**
+     * il salvataggio delle credenziali non è supportato da Namirial, per cui torniamo sempre false
+     * @param userInformation
+     * @param hostId
+     * @return
+     * @throws FirmaRemotaHttpException
+     * @throws InvalidCredentialException
+     * @throws RemoteServiceException 
+     */
     @Override
     protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
-
+    /**
+     * il salvataggio delle credenziali non è supportato da Namirial, per cui torniamo sempre false
+     * @param userInformation
+     * @param hostId
+     * @return
+     * @throws FirmaRemotaHttpException
+     * @throws InvalidCredentialException
+     * @throws RemoteServiceException 
+     */
     @Override
     protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
