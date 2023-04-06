@@ -28,6 +28,8 @@ import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.Tipologi
 import it.bologna.ausl.model.entities.scripta.QAllegato;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
+import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
+import it.bologna.ausl.model.entities.scripta.QDocDetail;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.riversamento.builder.DatiSpecificiBuilder;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
@@ -676,57 +678,75 @@ public final class ParerVersatoreMetadatiBuilder {
         String numeroIniziale = matcher.group(2);
         String numeroFinale = matcher.group(3);
         String giorno = matcher.group(4);
-        Date date = new SimpleDateFormat("dd-MM-yyyy").parse(giorno); 
+        Date date = new SimpleDateFormat("yyyy-MM-dd").parse(giorno); 
         ZonedDateTime d = ZonedDateTime.ofInstant(date.toInstant(),ZoneId.systemDefault());
-        Integer documenti = 0;
-        Integer documentiAnnullati = 0;
+        ZonedDateTime dsuccessivo = d.plusDays(1);
+        long documenti = 0;
+        long documentiAnnullati = 0;
         String applicativo = "";
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO) {
-            documenti = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + " and tipologia in ('PROTOCOLLO_IN_USCITA', 'PROTOCOLLO_IN_ENTRATA') "
-                    + "and annullato = false")
-                    .setParameter("value1", d ).getSingleResult();
-            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + " and tipologia in ('PROTOCOLLO_IN_USCITA', 'PROTOCOLLO_IN_ENTRATA') "
-                    + "and annullato = true")
-                    .setParameter("value1", doc.getId()).getSingleResult();
-            applicativo = "procton";
-        } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE) {
-            documenti = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + "and tipologia = 'DETERMINA' "
-                    + "and annullato = false")
-                    .setParameter("value1", d).getSingleResult();
-            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + " and tipologia = 'DETERMINA' "
-                    + "and annullato = true")
-                    .setParameter("value1", doc.getId()).getSingleResult();
-            applicativo = "dete";
-        } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI) {
-            documenti = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + " and tipologia in ('DELIBERA') "
-                    + "and annullato = false")
-                    .setParameter("value1", d).getSingleResult();
-            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
-                    + "from scripta.docs_details dd2 "
-                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
-                    + " and tipologia = 'DELIBERA' "
-                    + "and annullato = true")
-                    .setParameter("value1", doc.getId()).getSingleResult();
-            applicativo = "deli";
-
-        }
-        List<AttoreDoc> attori = entityManager.createQuery("SELECT * FROM scripta.attori_docs ad where ad.id_doc = :value1 ")
-                .setParameter("value1", doc.getId()).getResultList();
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+        if (null != doc.getTipologia()) switch (doc.getTipologia()) {
+               case RGPICO:
+                   documenti = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
+                           .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
+                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA.toString(), DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA.toString()))
+                                   .and(QDocDetail.docDetail.annullato.eq(Boolean.FALSE))).fetchOne();
+                   //            documenti = (Integer) entityManager.createQuery("select count(*) "
+//                    + "from scripta.docs_details dd2 "
+//                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+//                    + " and tipologia in ('PROTOCOLLO_IN_USCITA', '') "
+//                    + "and annullato = false")
+//                    .setParameter("value1", d ).getSingleResult();
+                   documentiAnnullati = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
+                           .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
+                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA.toString(), DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA.toString()))
+                                   .and(QDocDetail.docDetail.annullato.eq(Boolean.TRUE))).fetchOne();
+                   //            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
+//                    + "from scripta.docs_details dd2 "
+//                    + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+//                    + " and tipologia in ('PROTOCOLLO_IN_USCITA', 'PROTOCOLLO_IN_ENTRATA') "
+//                    + "and annullato = true")
+//                    .setParameter("value1", doc.getId()).getSingleResult();
+                   applicativo = "procton";
+                   break;
+               case RGDETE:
+                   documenti = (Integer) entityManager.createQuery("select count(*) "
+                           + "from scripta.docs_details dd2 "
+                           + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+                           + "and tipologia = 'DETERMINA' "
+                           + "and annullato = false")
+                           .setParameter("value1", d).getSingleResult();
+                   documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
+                           + "from scripta.docs_details dd2 "
+                           + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+                           + " and tipologia = 'DETERMINA' "
+                           + "and annullato = true")
+                           .setParameter("value1", doc.getId()).getSingleResult();
+                   applicativo = "dete";
+                   break;
+               case RGDELI:
+                   documenti = (Integer) entityManager.createQuery("select count(*) "
+                           + "from scripta.docs_details dd2 "
+                           + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+                           + " and tipologia in ('DELIBERA') "
+                           + "and annullato = false")
+                           .setParameter("value1", d).getSingleResult();
+                   documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
+                           + "from scripta.docs_details dd2 "
+                           + "where dd2.data_registrazione >=  :value1  and data_registrazione < (':value1::date + interval '1 days') "
+                           + " and tipologia = 'DELIBERA' "
+                           + "and annullato = true")
+                           .setParameter("value1", doc.getId()).getSingleResult();
+                   applicativo = "deli";
+                   break;
+               default:
+                   break;
+           }
+        List<AttoreDoc> attori = jPAQueryFactory.select(QAttoreDoc.attoreDoc).from(QAttoreDoc.attoreDoc)
+                .where(QAttoreDoc.attoreDoc.idDoc.id.eq(doc.getId())).fetch();
+                
+//                entityManager.createQuery("SELECT * FROM scripta.attori_docs ad where ad.id_doc = :value1 ")
+//                .setParameter("value1", doc.getId()).getResultList();
         datiSpecificiBuilder.insertNewTag("VersioneDatiSpecifici", "1.0");
         datiSpecificiBuilder.insertNewTag("NumeroIniziale", numeroIniziale);
         datiSpecificiBuilder.insertNewTag("NumeroFinale", numeroFinale);
@@ -735,14 +755,14 @@ public final class ParerVersatoreMetadatiBuilder {
         datiSpecificiBuilder.insertNewTag("Originatore", attori.get(0).getIdStruttura().getNome());
         datiSpecificiBuilder.insertNewTag("Responsabile", attori.get(0).getIdPersona().getDescrizione());
         datiSpecificiBuilder.insertNewTag("Operatore", "SISTEMA");
-        datiSpecificiBuilder.insertNewTag("NumeroDocumentiRegistrati", documenti.toString());
-        datiSpecificiBuilder.insertNewTag("NumeroDocumentiAnnullati", documentiAnnullati.toString());
+        datiSpecificiBuilder.insertNewTag("NumeroDocumentiRegistrati", String.valueOf(documenti));
+        datiSpecificiBuilder.insertNewTag("NumeroDocumentiAnnullati", String.valueOf(documentiAnnullati));
         datiSpecificiBuilder.insertNewTag("DenominazioneApplicativo", applicativo);
         datiSpecificiBuilder.insertNewTag("VersioneApplicativo", "0.1");
         datiSpecificiBuilder.insertNewTag("ProduttoreApplicativo", "vuoto");
         datiSpecificiBuilder.insertNewTag("DenominazioneSistemaGestioneBaseDati", "PostgresSQL");
         datiSpecificiBuilder.insertNewTag("VersioneSistemaGestioneBaseDati", "12");
-        datiSpecificiBuilder.insertNewTag("VersioneSistemaGestioneBaseDati", "The PostgreSQL Global Development Group");
+        datiSpecificiBuilder.insertNewTag("ProduttoreSistemaGestioneBaseDati", "The PostgreSQL Global Development Group");
 
         datiSpecifici = datiSpecificiBuilder.getDatiSpecifici();
         return datiSpecifici;
