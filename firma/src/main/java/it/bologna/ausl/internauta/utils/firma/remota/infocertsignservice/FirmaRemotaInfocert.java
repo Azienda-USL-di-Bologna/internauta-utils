@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice;
 
+import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
@@ -72,8 +73,8 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     private String sslCertPath;
     private String sslCertPswd;
 
-    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, String sslCertPath, String sslCertPswd) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager);
+    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration, String sslCertPath, String sslCertPswd) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
 
         // leggo le informazioni di configurazione della firma remota e del credential proxy
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
