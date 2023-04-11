@@ -17,6 +17,8 @@ parameters-manager/target/
 repository-wrapper/target/
 rubrica-client/target/
 nb-configuration.xml
-/masterjobs/target/
-/firma - Copia/target/
-/versatore/target/
+masterjobs/target/
+versatore/target/
+ParerDocumentBuilder/target/
+parersender/target/
+*.p12

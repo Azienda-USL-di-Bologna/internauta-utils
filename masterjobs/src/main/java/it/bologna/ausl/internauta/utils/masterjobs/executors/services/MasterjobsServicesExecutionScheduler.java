@@ -217,9 +217,16 @@ public class MasterjobsServicesExecutionScheduler {
                     secondsToStart = ChronoUnit.SECONDS.between(now, activeService.getStartAt());
                 }
                 ServiceWorker service = getServiceWorkerAndInit(activeService.getName(), activeService);
-                ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, secondsToStart, TimeUnit.SECONDS);
-                service.setScheduledFuture(scheduledFuture);
-                scheduledService.add(scheduledFuture);
+                /* 
+                se capita che service sia null, vuol dire che nella tabella dei servizi ho un servizio, di cui però non esiste la
+                classe. Capita di solito in fase di sviluppo.
+                Se dovesse capitare ignoriamo questo servizio.
+                */
+                if (service != null) { 
+                    ScheduledFuture scheduledFuture = scheduledExecutorService.schedule(service, secondsToStart, TimeUnit.SECONDS);
+                    service.setScheduledFuture(scheduledFuture);
+                    scheduledService.add(scheduledFuture);
+                }
             }
         }
         if (!scheduledService.isEmpty()) {
@@ -245,10 +252,14 @@ public class MasterjobsServicesExecutionScheduler {
     
     private ServiceWorker getServiceWorkerAndInit(String name, Service serviceEntity) throws MasterjobsWorkerInitializationException {
         ServiceWorker serviceWorker = masterjobsObjectsFactory.getServiceWorker(name);
-        serviceWorker.setServiceEntity(serviceEntity);
-        serviceWorker.setMasterjobsServicesExecutionScheduler(this);
+        if (serviceWorker != null) {
+            serviceWorker.setServiceEntity(serviceEntity);
+            serviceWorker.setMasterjobsServicesExecutionScheduler(this);
+            return serviceWorker;
+        } else {
+            return null;
+        }
         // serviceWorker.init(masterjobsObjectsFactory, masterjobsJobsQueuer);
-        return serviceWorker;
     }
     
 }

@@ -4,6 +4,7 @@ import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Classe che raccoglie i dati di un versamento. E' usata sia per indicare cosa versare al plugin di versamento,
@@ -27,6 +28,7 @@ public class VersamentoDocInformation {
     private ZonedDateTime dataVersamento;
     private List<VersamentoAllegatoInformation> versamentiAllegatiInformations;
     private Versamento.StatoVersamento statoVersamento;
+    private Map<String, Object> params;
 
     public VersamentoDocInformation() {
     }
@@ -157,6 +159,19 @@ public class VersamentoDocInformation {
         this.statoVersamento = statoVersamento;
     }
 
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, Object> params) {
+        this.params = params;
+    }
+
+    
+    
+    
+
+    
     /**
      * indica se questo è il primo vesamento il doc con quell'archivio, oppure è un versamento collegato ad un altro.
      * Se è true, si può leggere il versamento correlato traminte la getIdVersamentoPrecedente().
