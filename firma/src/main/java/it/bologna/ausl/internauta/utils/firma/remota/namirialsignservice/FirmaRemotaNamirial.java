@@ -135,6 +135,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                         tmpFileToSign = File.createTempFile(filename, null, tempDir);
                         InputStream in = new URL(file.getUrl()).openStream();
                         logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
+                        Files.copy(in, Paths.get(tmpFileToSign.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
                     } catch (Throwable ex) {
                         String errorMessage = "errore nella creazione del file temporaneo da firmare";
                         logger.error(errorMessage, ex);
@@ -308,7 +309,9 @@ public class FirmaRemotaNamirial extends FirmaRemota {
         logger.info("Richiesta codice OTP per l'utente: " + userInformation.getUsername());
         try {
             String url = signServiceEndPointUri + NamirialRestPathsEnum.GET_SMS_OTP.getPath();
-            String credentialJson = getCredentialJson((NamirialUserInformation) userInformation, null);
+            Map<String, Map<String, Object>> credentialReqMap = new HashMap<>();
+            credentialReqMap.put("credentials", getCredentialMap((NamirialUserInformation) userInformation, null));
+            String credentialJson = this.configParams.getObjectMapper().writeValueAsString(credentialReqMap);
             RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"),credentialJson);
             Request request = new Request.Builder()
                 .url(url)
@@ -379,10 +382,16 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private String openSession(NamirialUserInformation userInformation) throws InvalidCredentialException, TimeoutException, WrongTokenException, FirmaRemotaHttpException {
         String credentialJson;
         try {
-            credentialJson = getCredentialJson(userInformation, null);
+            //credentialJson = getCredentialJson(userInformation, null);
+            Map<String, Map<String, Object>> credentialReqMap = new HashMap<>();
+            credentialReqMap.put("credentials", getCredentialMap(userInformation, null));
+            credentialJson = this.configParams.getObjectMapper().writeValueAsString(credentialReqMap);
         } catch (Throwable ex) {
             throw new FirmaRemotaHttpException("errore nella creazione del json delle credenziali per la richiesta http openSession", ex);
         }
+        
+        
+        
         RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"),credentialJson);
 
         String url = signServiceEndPointUri + NamirialRestPathsEnum.OPEN_SESSION.getPath();
@@ -416,7 +425,9 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private void closeSession(NamirialUserInformation userInformation, String sessionKey) throws FirmaRemotaHttpException {
         String credentialJson;
         try {
-            credentialJson = getCredentialJson(userInformation, sessionKey);
+            Map<String, Map<String, Object>> credentialReqMap = new HashMap<>();
+            credentialReqMap.put("credentials", getCredentialMap(userInformation, sessionKey));
+            credentialJson = this.configParams.getObjectMapper().writeValueAsString(credentialReqMap);
         } catch (Throwable ex) {
             throw new FirmaRemotaHttpException("errore nella creazione del json delle credenziali per la richiesta http closeSession", ex);
         }
@@ -448,7 +459,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @throws JsonProcessingException
      * @throws EncryptionException 
      */
-    private Map<String, Object> getCredentialMap(NamirialUserInformation userInformation) throws EncryptionException  {
+    private Map<String, Object> getCredentialMap(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException  {
         String password;
         if (userInformation.useSavedCredential() != null  && userInformation.useSavedCredential() && configuration.getInternalCredentialsManager() != null) {
             password = internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId());
@@ -461,6 +472,9 @@ public class FirmaRemotaNamirial extends FirmaRemota {
         if (userInformation.getOtp()!= null) {
             credential.put("idOtp", -1);
             credential.put("otp", userInformation.getOtp());
+        }
+        if (sessionKey != null) {
+            credential.put("sessionKey", sessionKey);
         }
         return credential;
     }
@@ -477,10 +491,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @throws EncryptionException 
      */
     private String getCredentialJson(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException, JsonProcessingException {
-        Map<String, Object> credentialMap = getCredentialMap(userInformation);
-        if (StringUtils.hasText(sessionKey)) {
-            credentialMap.put("sessionKey", sessionKey);
-        }
+        Map<String, Object> credentialMap = getCredentialMap(userInformation, sessionKey);
         return configParams.getObjectMapper().writeValueAsString(credentialMap);
     }
     
