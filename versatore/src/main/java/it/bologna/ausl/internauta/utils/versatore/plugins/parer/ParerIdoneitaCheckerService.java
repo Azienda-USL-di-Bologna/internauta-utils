@@ -47,9 +47,15 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                     if(ZonedDateTime.now().minusDays(giorniPrimaDiVersareDeli).isBefore(docDetail.getDataRegistrazione())){ 
                         idoneo = false;
                     }
+                    if(doc.getAdditionalData().get("dati_pubblicazione") == null) {
+                        idoneo = false;
+                    }
                     break;
                 case DETERMINA:
                     if(ZonedDateTime.now().minusDays(giorniPrimaDiVersareDete).isBefore(docDetail.getDataRegistrazione())){ 
+                        idoneo = false;
+                    }
+                    if(doc.getAdditionalData().get("dati_pubblicazione") == null) {
                         idoneo = false;
                     }
                     break;
