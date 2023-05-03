@@ -383,7 +383,7 @@ public class MasterjobsJobsQueuer {
             List<Job> job = queryFactory.query().select(qJob).from(qJob).where(qJob.hash.eq(calcolaMD5)).fetch();
             return !CollectionUtils.isEmpty(job);
         } catch (JsonProcessingException ex) {
-            java.util.logging.Logger.getLogger(MasterjobsJobsQueuer.class.getName()).log(Level.SEVERE, null, ex);
+            log.error("",ex);
             return false;
         }
     }
