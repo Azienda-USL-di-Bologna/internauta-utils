@@ -380,7 +380,17 @@ public class MasterjobsJobsQueuer {
             calcolaMD5 = worker.calcolaMD5();
             QJob qJob = QJob.job;
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-            List<Job> job = queryFactory.query().select(qJob).from(qJob).where(qJob.hash.eq(calcolaMD5)).fetch();
+            List<Job> job = queryFactory
+                .query()
+                .select(qJob)
+                .from(qJob)
+                .where(qJob.hash.eq(calcolaMD5)
+                    .and(
+                        qJob.state.eq(Job.JobState.READY.toString())
+                            .or(qJob.state.eq(Job.JobState.ERROR.toString()))
+                    )
+                )
+                .fetch();
             return !CollectionUtils.isEmpty(job);
         } catch (JsonProcessingException ex) {
             log.error("",ex);
