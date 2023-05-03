@@ -10,9 +10,9 @@ import java.util.Map;
  * @author gdm
  */
 public interface JobWorkerDataInterface {
-    
+
     public final String CLASS_NAME_KEY = "@class";
-    
+
     public static <T extends JobWorkerDataInterface> T parseFromJobData(ObjectMapper objectMapper, Map<String, Object> jobData) throws MasterjobsParsingException {
         if (jobData != null) {
             String className = (String) jobData.get(CLASS_NAME_KEY);
@@ -28,8 +28,16 @@ public interface JobWorkerDataInterface {
         }
     }
 
-    
     public default Map<String, Object> toJobData(ObjectMapper objectMapper) {
-        return objectMapper.convertValue(this, new TypeReference<Map<String, Object>>(){});
-    } 
+        return objectMapper.convertValue(this, new TypeReference<Map<String, Object>>() {
+        });
+    }
+
+//    /**
+//     *
+//     * @param <T>
+//     * @param jobData
+//     * @return true or false if the passed statement is equals
+//     */
+//    public <T extends JobWorkerDataInterface> Boolean equals(T jobData);
 }
