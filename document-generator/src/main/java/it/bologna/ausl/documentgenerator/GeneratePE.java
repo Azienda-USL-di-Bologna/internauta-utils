@@ -300,6 +300,7 @@ public class GeneratePE {
             params.put("allegati", mapAllegati);
 
             params.put("ID_CHIAMATA", ID_CHIAMATA);
+            params.put("insert_doc_check", false);
             // chiamo la web-api su Pico
             String urlChiamata = "";
 
@@ -346,7 +347,7 @@ public class GeneratePE {
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
                 resultJson = (String) myResponse.get("resultJson");
-
+                
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
                     throw new Http500ResponseException("500", (String) myResponse.get("error_message"));

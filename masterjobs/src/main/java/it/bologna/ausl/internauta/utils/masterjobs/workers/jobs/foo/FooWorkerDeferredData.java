@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.foo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDeferredData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

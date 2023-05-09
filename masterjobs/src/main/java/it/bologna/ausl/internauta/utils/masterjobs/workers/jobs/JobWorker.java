@@ -1,10 +1,15 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import java.time.ZonedDateTime;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +44,11 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     protected Integer executableCheckEveryMillis;
     protected ZonedDateTime jobExecutableCheckStart = null;
     
+    @Autowired
+    private JobReporitory jobRepository;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     
     /**
      * da chiamare, dopo aver istanziato il bean del worker, per creare un worker non deferred
@@ -127,4 +137,12 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     protected abstract R doRealWork() throws MasterjobsWorkerException;
+    
+    public UUID calcolaMD5() throws JsonProcessingException{
+     String calcolaMD5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
+     
+     return UUID.fromString(calcolaMD5.replaceFirst( 
+        "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5" 
+        ));
+    }
 }

@@ -6,6 +6,7 @@ import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
@@ -87,6 +88,11 @@ public class Job implements Serializable {
     @Column(name = "inserted_from")
     private String insertedFrom;
     
+    @Basic(optional = true)
+    @Column(name = "hash")
+    @Type(type="pg-uuid")
+    private UUID hash;
+    
     @Basic(optional = false)
     @Column(name = "executable_check_every_millis")
     @NotNull
@@ -156,6 +162,14 @@ public class Job implements Serializable {
 
     public void setInsertedFrom(String insertedFrom) {
         this.insertedFrom = insertedFrom;
+    }
+
+    public UUID getHash() {
+        return hash;
+    }
+
+    public void setHash(UUID hash) {
+        this.hash = hash;
     }
     
     public Boolean getDeferred() {

@@ -652,6 +652,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                         }
                         
                     } catch (Throwable ex) {
+                        log.error("error on executing job", ex);
                         /*
                         se c'è un errore nell'esecuzione del job:
                         setto in errore la riga in object_status (se esiste) e setto in errore anche il job

@@ -1,17 +1,23 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.foo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
  * @author gdm
  */
 public class FooWorkerData extends JobWorkerData {
+    @Autowired
+    private ObjectMapper objectMapper;
+    
     @JsonIgnore
     private static final Logger log = LoggerFactory.getLogger(FooWorkerData.class);
     
