@@ -299,6 +299,7 @@ public class ParerVersatoreService extends VersatoreDocs{
 //    prende in input il versamentodoc coi suoi allegati e ritorna l'xml di risposta del parer
 //    Qui vengono generati i 
     private Map<String, Object> versaDocumentoParer(VersamentoDocInformation versamentoInformation) throws DatatypeConfigurationException, JAXBException, java.text.ParseException {
+        log.info("Inizio con il versamento del doc: ", versamentoInformation.getIdDoc().toString());
         Integer idDoc = versamentoInformation.getIdDoc();
         String forzaCollegamento, forzaAccettazione, forzaConservazione;
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
