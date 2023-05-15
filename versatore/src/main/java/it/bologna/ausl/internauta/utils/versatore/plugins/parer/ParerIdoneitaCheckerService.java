@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.parer;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
+import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
@@ -13,6 +14,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,9 +25,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ParerIdoneitaCheckerService extends IdoneitaChecker {
 
+    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+
     @Override
     public Boolean checkDocImpl(Integer id, Map<String,Object> params) throws VersatoreProcessingException {
-        
+        log.info("Sto calcolando l'idoneita del doc ", id.toString());
         Doc doc = entityManager.find(Doc.class, id);
         DocDetail docDetail = entityManager.find(DocDetail.class, id);
         Boolean idoneo = true;
@@ -32,8 +37,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
         /*Faccio :
         - un controllo degli ultimi giorni dalla registrazione, leggendo quanti devono essere dal db
         - controllo se è stato fascicolato*/
+        
         if(params.get("giorniPrimaDiVersarePe")!= null && params.get("giorniPrimaDiVersarePu")!=null && params.get("giorniPrimaDiVersareDeli") !=null && params.get("giorniPrimaDiVersareDete") != null){
-            
+            log.info("Sto valutando le fascicolazioni del doc ", id.toString());
+
             Integer giorniPrimaDiVersarePe = Integer.parseInt((String) params.get("giorniPrimaDiVersarePe"));
             Integer giorniPrimaDiVersarePu = Integer.parseInt((String) params.get("giorniPrimaDiVersarePu"));
             Integer giorniPrimaDiVersareDeli = Integer.parseInt(params.get("giorniPrimaDiVersareDeli").toString());
@@ -48,14 +55,19 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                         idoneo = false;
                     }
                     if(doc.getAdditionalData().get("dati_pubblicazione") == null) {
+                        log.info("Delibera non idonea perche senza pubblicazione: ", id.toString());
+
                         idoneo = false;
                     }
                     break;
                 case DETERMINA:
                     if(ZonedDateTime.now().minusDays(giorniPrimaDiVersareDete).isBefore(docDetail.getDataRegistrazione())){ 
                         idoneo = false;
+                        
                     }
                     if(doc.getAdditionalData().get("dati_pubblicazione") == null) {
+                        log.info("Determina non idonea perche senza pubblicazione: ", id.toString());
+
                         idoneo = false;
                     }
                     break;
@@ -70,6 +82,7 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                     }
                     break;
                 case RGPICO:
+                    log.info("Registro giornaliero idoneo al versamento: ", id.toString());
                     idoneo = true;
                     
                     break;
@@ -86,10 +99,14 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
             Map<String,Object> mappaUnitaDocumentaria = new HashMap<>();
         
             if(archiviazioni == null || archiviazioni.isEmpty()) {
+                log.info("Documento non idoneo per assenza di fascicolazioni: ", id.toString());
+
                 idoneo = false;
             }
             
-        } else {
+        } else {            
+            log.info("Documento non idoneo per assenza di giorni di attesa sull'azienda: ", id.toString());
+
             idoneo = false;
         }
         
