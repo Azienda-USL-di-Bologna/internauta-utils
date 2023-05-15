@@ -140,8 +140,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                     }
                 }
             } else {
-            }
                 done = true;
+            }
         } while (!done);
     }
     
