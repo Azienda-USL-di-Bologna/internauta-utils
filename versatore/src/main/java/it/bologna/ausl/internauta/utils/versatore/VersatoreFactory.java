@@ -7,6 +7,8 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertIdone
 import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerIdoneitaCheckerService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoIdoneitaCheckerService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoVersatoreService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ public class VersatoreFactory {
     
      // Elenco dei vari provider supportati
     public static enum VersatoreProviders {
-        PARER, INFOCERT
+        PARER, INFOCERT, SDICO
     };
 
     @Autowired
@@ -72,6 +74,11 @@ public class VersatoreFactory {
                     versatoreDocsInstance = beanFactory.getBean(InfocertVersatoreService.class);
                     versatoreDocsInstance.init(configuration);
                     idoneitaCheckerInstance = beanFactory.getBean(InfocertIdoneitaCheckerService.class);;
+                    break;
+                case SDICO:
+                    versatoreDocsInstance = beanFactory.getBean(SdicoVersatoreService.class);
+                    versatoreDocsInstance.init(configuration);
+                    idoneitaCheckerInstance = beanFactory.getBean(SdicoIdoneitaCheckerService.class);;
                     break;
                 default:
                     throw new VersatoreProcessingException("Provider: " + provider + " not found");
