@@ -110,6 +110,7 @@ public abstract class ServiceWorker extends Worker implements Runnable {
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             transactionTemplate.executeWithoutResult(a -> {
                 try {
+                    Thread.sleep(1000);
                     preWork();
                 } catch (Throwable ex) {
                     String errorMessage = String.format("error on executing preWork of service %s", getName());

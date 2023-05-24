@@ -83,6 +83,11 @@ public class JobNotified implements Serializable {
     @Column(name = "priority")
     private SetPriority priority = SetPriority.NORMAL;
     
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "skip_if_already_present")
+    private Boolean skipIfAlreadyPresent = false;
+    
     public JobNotified() {
     }
 
@@ -156,6 +161,14 @@ public class JobNotified implements Serializable {
 
     public void setPriority(SetPriority priority) {
         this.priority = priority;
+    }
+
+    public Boolean getSkipIfAlreadyPresent() {
+        return skipIfAlreadyPresent;
+    }
+
+    public void setSkipIfAlreadyPresent(Boolean skipIfAlreadyPresent) {
+        this.skipIfAlreadyPresent = skipIfAlreadyPresent;
     }
 
     @Override
