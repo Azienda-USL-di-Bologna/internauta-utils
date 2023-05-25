@@ -133,15 +133,21 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     try {
                         // crea il file da firmare scaricamendolo dall'utr passato nei parametri di firma.
                         tmpFileToSign = File.createTempFile(filename, null, tempDir);
-                        InputStream in = new URL(file.getUrl()).openStream();
-                        logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
-                        Files.copy(in, Paths.get(tmpFileToSign.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+                        try (InputStream in = new URL(file.getUrl()).openStream();) {
+                            logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
+                            Files.copy(in, Paths.get(tmpFileToSign.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+                        }
                     } catch (Throwable ex) {
                         String errorMessage = "errore nella creazione del file temporaneo da firmare";
                         logger.error(errorMessage, ex);
                         throw new FirmaRemotaHttpException(errorMessage, ex);
                     }
 
+                    // se il file è più grande di 78MB (il limite è 80, ma ci teniamo leggermente più bassi per sicurezza) devo fare una chiamata ad un API diversa
+                    long fileSize = tmpFileToSign.length();
+                    boolean largeFile = fileSize > 78 * 1000000;
+                    logger.info(String.format("file size: %s Bytes, largeFile: %s", fileSize, largeFile));
+//                    largeFile = true;
                     // creo la richiesta multipart per la firma
                     MultipartBody.Builder formData = new MultipartBody.Builder().setType(MultipartBody.FORM);
 
@@ -149,11 +155,11 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     formData.addFormDataPart("credentials", credentialJson);
 
                     NamirialRestPathsEnum firmaPath;
+                    String filePartName;
                     switch (file.getFormatoFirma()) {
                         case PDF: // firma PADES
-                            firmaPath = NamirialRestPathsEnum.PADES_SIGN;
-                            logger.info("signAppearence: " + file.getSignAppearance());
                             logger.info(String.format("creating padesPreferences for file %s...", file.getFileId()));
+                            logger.info("signAppearence: " + file.getSignAppearance());
                             String padesPreferences;
                             try {
                                 // crea il json con la configurazione della firma PADES e le aggiunge alla multipart
@@ -163,11 +169,18 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                                 logger.error(errorMessage, ex);
                                 throw new FirmaRemotaHttpException(errorMessage, ex);
                             }
-                            formData.addFormDataPart("padesPreferences", padesPreferences);
+                            if (!largeFile) {
+                                firmaPath = NamirialRestPathsEnum.PADES_SIGN;
+                                filePartName = "buffer";
+                                formData.addFormDataPart("padesPreferences", padesPreferences);
+                            } else {
+                                firmaPath = NamirialRestPathsEnum.PADES_SIGN_LARGE;
+                                filePartName = "file";
+                                formData.addFormDataPart("preferences", padesPreferences);
+                            }
                             break;
                         case P7M: // firma CADES
                             logger.info(String.format("creating cadesPreferences for file %s...", file.getFileId()));
-                            firmaPath = NamirialRestPathsEnum.CADES_SIGN;
                             String cadesPreferences;
                             try {
                                 // crea il json con la configurazione della firma CADES e le aggiunge alla multipart
@@ -177,7 +190,15 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                                 logger.error(errorMessage, ex);
                                 throw new FirmaRemotaHttpException(errorMessage, ex);
                             }
-                            formData.addFormDataPart("cadesPreferences", cadesPreferences);
+                            if (!largeFile) {
+                                firmaPath = NamirialRestPathsEnum.CADES_SIGN;
+                                filePartName = "buffer";
+                                formData.addFormDataPart("cadesPreferences", cadesPreferences);
+                            } else {
+                                firmaPath = NamirialRestPathsEnum.CADES_SIGN_LARGE;
+                                filePartName = "file";
+                                formData.addFormDataPart("preferences", cadesPreferences);
+                            }
                             break;
                         default:
                             throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
@@ -186,7 +207,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     // aggiunge il file al multipart
                     logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
                     RequestBody dataBody = RequestBody.create(MediaType.parse("application/octet-stream"), tmpFileToSign);
-                    MultipartBody multipartBody = formData.addFormDataPart("buffer", filename, dataBody).build();
+                    MultipartBody multipartBody = formData.addFormDataPart(filePartName, filename, dataBody).build();
                     String signUrl = signServiceEndPointUri + firmaPath.getPath();
                     Request httpRequest = new Request.Builder().header("Content-Type", "multipart/form-data")
                         .url(signUrl)
@@ -535,6 +556,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private Map<String, Object> getCadesPreference() {
         Map<String, Object> cadesPreference = new HashMap<>();
         cadesPreference.put("level", "B");
+        cadesPreference.put("withTimestamp", false);
         return cadesPreference;
     }
 

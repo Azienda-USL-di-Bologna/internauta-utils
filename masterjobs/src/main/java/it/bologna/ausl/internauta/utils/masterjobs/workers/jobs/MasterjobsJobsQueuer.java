@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataE
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
+import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
@@ -24,11 +25,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.CollectionUtils;
 
 /**
  *
@@ -50,6 +52,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Component
 public class MasterjobsJobsQueuer {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
+    
+    @Autowired
+    private JobReporitory jobReporitory;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -114,7 +119,13 @@ public class MasterjobsJobsQueuer {
     }
     
     public void queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
-        queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority);
+        queue(worker, objectId, objectType, app, waitForObject, priority, false);
+    }
+    
+    public void queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker)){
+            queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority);
+        }
     }
     
     /**
@@ -128,7 +139,7 @@ public class MasterjobsJobsQueuer {
     }
     
     /**
-     * inserisce i jobs e un seti che li raggruppa nel database
+     * inserisce i jobs e un set che li raggruppa nel database
      * @param workers
      * @param objectId
      * @param objectType
@@ -140,7 +151,7 @@ public class MasterjobsJobsQueuer {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsBadDataException {
-
+        
         Set set = new Set();
         set.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
         if (objectId != null)
@@ -155,7 +166,7 @@ public class MasterjobsJobsQueuer {
         if (priority != null)
             set.setPriority(priority);
         entityManager.persist(set);
-        
+             
         List<Job> jobs = new ArrayList<>(); 
         for (JobWorker worker : workers) {
             Job job = new Job();
@@ -361,5 +372,29 @@ public class MasterjobsJobsQueuer {
         Map commands = new HashMap();
         commands.put(MasterjobsJobsExecutionThread.COMMAND_KEY, MasterjobsJobsExecutionThread.STOP_COMMAND);
         redisTemplate.opsForStream().add(masterjobsApplicationConfig.getCommandsStreamName(), commands);
+    }
+
+    private Boolean isAlreadyPresent(JobWorker worker) {
+        UUID calcolaMD5;
+        try {
+            calcolaMD5 = worker.calcolaMD5();
+            QJob qJob = QJob.job;
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            List<Job> job = queryFactory
+                .query()
+                .select(qJob)
+                .from(qJob)
+                .where(qJob.hash.eq(calcolaMD5)
+                    .and(
+                        qJob.state.eq(Job.JobState.READY.toString())
+                            .or(qJob.state.eq(Job.JobState.ERROR.toString()))
+                    )
+                )
+                .fetch();
+            return !CollectionUtils.isEmpty(job);
+        } catch (JsonProcessingException ex) {
+            log.error("",ex);
+            return false;
+        }
     }
 }

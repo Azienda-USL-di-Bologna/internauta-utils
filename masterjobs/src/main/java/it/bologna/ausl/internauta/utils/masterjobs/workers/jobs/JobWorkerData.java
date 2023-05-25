@@ -12,5 +12,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class JobWorkerData implements JobWorkerDataInterface {
-
+    
 }
