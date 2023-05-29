@@ -206,7 +206,7 @@ public class ParerVersatoreService extends VersatoreDocs{
         for (IdentityFile identityFile : identityFiles) {
             PaccoFile paccoFile = new PaccoFile();
             try{
-            InputStream is = minIOWrapper.getByFileId(identityFile.getUuidMongo());
+            InputStream is = minIOWrapper.getByUuid(identityFile.getUuidMongo());
             paccoFile.setInputStream(is);
             paccoFile.setMime(identityFile.getMime());
             paccoFile.setFileName(identityFile.getFileBase64());
