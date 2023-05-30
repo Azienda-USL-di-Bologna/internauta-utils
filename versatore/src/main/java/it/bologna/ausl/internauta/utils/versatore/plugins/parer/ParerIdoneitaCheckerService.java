@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ParerIdoneitaCheckerService extends IdoneitaChecker {
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerIdoneitaCheckerService.class);
 
     @Override
     public Boolean checkDocImpl(Integer id, Map<String,Object> params) throws VersatoreProcessingException {

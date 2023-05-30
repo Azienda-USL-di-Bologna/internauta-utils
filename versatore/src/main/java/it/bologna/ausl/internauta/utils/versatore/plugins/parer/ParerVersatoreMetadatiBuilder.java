@@ -84,7 +84,7 @@ public final class ParerVersatoreMetadatiBuilder {
     
     
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
 
     public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
        
@@ -462,14 +462,14 @@ public final class ParerVersatoreMetadatiBuilder {
             if (allegato.getTipo() != Allegato.TipoAllegato.ANNESSO && allegato.getTipo() != Allegato.TipoAllegato.ANNOTAZIONE) {
                 if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(getUuidMinIObyFileId(originale.getIdRepository())), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
+                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                     unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     
                 }else  if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO ||doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE )&& allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(getUuidMinIObyFileId(originale.getIdRepository())), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
+                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                     unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
