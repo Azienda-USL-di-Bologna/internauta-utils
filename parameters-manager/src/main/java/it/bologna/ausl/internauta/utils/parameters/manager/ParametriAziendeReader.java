@@ -7,6 +7,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.BooleanTemplate;
 import com.querydsl.core.types.dsl.Expressions;
 import it.bologna.ausl.internauta.utils.parameters.manager.repositories.ParametroAziendeRepository;
+import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.QParametroAziende;
 import java.util.ArrayList;
@@ -109,7 +110,7 @@ public class ParametriAziendeReader {
      * @param idAzienda
      * @return mappa di nome-valore dei parametri
      */
-    public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda) {
+    public AziendaParametriJson getAllAziendaApplicazioneParameters(String app, Integer idAzienda) {
 
         BooleanTemplate filterAzienda = Expressions.booleanTemplate(
                 "tools.array_overlap({0}, tools.string_to_integer_array({1}, ','))=true",
@@ -135,8 +136,10 @@ public class ParametriAziendeReader {
                 hashMapParams.put(parametroAziende.getNome(), parametroAziende.getValore());
             }
         }
-
-        return hashMapParams;
+        
+        AziendaParametriJson convertValue = objectMapper.convertValue(hashMapParams, new TypeReference<AziendaParametriJson>(){});
+        
+        return convertValue;
     }
 
     /**
