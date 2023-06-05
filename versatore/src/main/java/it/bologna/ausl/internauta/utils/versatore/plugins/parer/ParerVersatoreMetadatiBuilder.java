@@ -84,7 +84,7 @@ public final class ParerVersatoreMetadatiBuilder {
     
     
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
 
     public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
        

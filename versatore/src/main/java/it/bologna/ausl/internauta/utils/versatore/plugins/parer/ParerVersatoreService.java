@@ -69,7 +69,7 @@ import org.json.simple.parser.ParseException;
  * @author utente
  */
 @Component
-public class ParerVersatoreService extends VersatoreDocs{
+public class ParerVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
     
