@@ -18,6 +18,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenE
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
+import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
@@ -70,18 +71,27 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     private static final String INFOCERT_SIGN_SERVICE = "InfocertSignService";
 
     private final String signServiceEndPointUri;
-    private String sslCertPath;
-    private String sslCertPswd;
+    private final OkHttpClient okHttpClient;
 
-    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration, String sslCertPath, String sslCertPswd) throws FirmaRemotaConfigurationException {
+    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
         super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
-
-        // leggo le informazioni di configurazione della firma remota e del credential proxy
+        
+        // leggo le informazioni di configurazione della firma remota
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
         Map<String, Object> infocertServiceConfiguration = (Map<String, Object>) firmaRemotaConfiguration.get(INFOCERT_SIGN_SERVICE);
         signServiceEndPointUri = infocertServiceConfiguration.get("InfocertSignServiceEndPointUri").toString();
-        this.sslCertPath = sslCertPath;
-        this.sslCertPswd = sslCertPswd;
+        Map<String, Object> sslConfig = (Map<String, Object>) infocertServiceConfiguration.get("sslConfig");
+        String sslCertPath = (String) sslConfig.get("sslCertPath");
+        String sslCertPswd = (String) sslConfig.get("sslCertPswd");
+        Boolean ignoreCertificateValidation = (Boolean)sslConfig.get("ignoreCertificateValidation");
+        if (!ignoreCertificateValidation) {
+            // Costruisce un okHttpClient, partendo dalla proprietà impostate in internauta e configurando il contextSSL
+            this.okHttpClient = HttpUtils.buildNewOkHttpClientWithSSLContext(this.firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient(), sslCertPath, sslCertPswd);
+        }
+        else {
+            // Costruisce un okHttpClient, partendo dalla proprietà impostate in internauta configuranto però in modo da non verificare il certifiato dell'endpoint
+            this.okHttpClient = HttpUtils.buildNewOkHttpClientWithNoCertificateValidation(this.firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient());
+        }
     }
 
     /**
@@ -172,16 +182,9 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         .post(multipartBody)
                         .build();
 
-                OkHttpClient httpClient;
-                // eseguo la chiamata all'upload
-                if (sslCertPath != null && sslCertPswd != null) {
-                    httpClient = buildSSLHttpClient();
-                } else {
-                    OkHttpClient.Builder builder = new OkHttpClient.Builder();
-                    httpClient = builder.connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS).build();
-                }
 
-                Call call = httpClient.newCall(uploaderRequest);
+
+                Call call = okHttpClient.newCall(uploaderRequest);
                 okhttp3.Response response = call.execute();
 
                 try (ResponseBody responseBody = response.body()) {
@@ -191,12 +194,13 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                             // esegue l'upload (su mongo o usando l'uploader a seconda di file.getOutputType()) e setta il risultato sul campo adatto (file.setUuidFirmato() o file.setUrlFirmato())
                             super.upload(file, signedFileIs, codiceAzienda, request);
                             logger.info("File firmato");
-                        } catch (MinIOWrapperException e) {
-                            logger.error("error", e);
+                        } catch (MinIOWrapperException ex) {
+                            logger.error("error", ex);
                         }
                     } else {
-                        logger.warn("error", response);
-                        throwCorrectException(responseBody.string());
+                        String responseString = responseBody.string();
+                        logger.warn(String.format("http error code: %s string: %s", response.code(), responseString));
+                        throwCorrectException(responseString);
                     }
                 }
             } catch (IOException | EncryptionException ex) {
@@ -207,52 +211,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
 
         return firmaRemotaInformation;
     }
-
-    private OkHttpClient buildSSLHttpClient() {
-        SSLContext sslContext = null;
-        OkHttpClient httpClient = null;
-        try {
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream clientCertificateContent = new FileInputStream(sslCertPath);
-            keyStore.load(clientCertificateContent, sslCertPswd.toCharArray());
-
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(keyStore, sslCertPswd.toCharArray());
-
-            KeyStore trustedStore = loadJavaKeyStore();
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(trustedStore);
-
-            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers, new SecureRandom());
-
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            httpClient = builder
-                    .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS).build();
-
-        } catch (Throwable e) {
-            logger.error("errore buildSSLContext", e);
-        }
-        return httpClient;
-
-    }
-
-    private KeyStore loadJavaKeyStore() throws FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        String relativeCacertsPath = "/lib/security/cacerts".replace("/", File.separator);
-        String filename = System.getProperty("java.home") + relativeCacertsPath;
-        FileInputStream is = new FileInputStream(filename);
-
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        String password = "changeit";
-        keystore.load(is, password.toCharArray());
-
-        return keystore;
-    }
+ 
 
     /**
      * Implementazione della chiamata http per richiedere il token OTP.
