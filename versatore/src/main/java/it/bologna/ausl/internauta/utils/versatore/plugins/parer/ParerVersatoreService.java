@@ -329,9 +329,9 @@ public class ParerVersatoreService extends VersatoreDocs {
         String versioneDatiSpecificiDeli = (String) versamentoInformation.getParams().get("versionedatispecificideli");
      
         String tipoComponenteDefault = (String) versamentoInformation.getParams().get("tipocomponentedefault");
-        Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
+        Map<String, Object> unitaDocConIdentityFiles = parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
         List<JSONObject> identityFiles = (List<JSONObject>) unitaDocConIdentityFiles.get("identityFiles");
-        List<IdentityFile> identityFiless= new ArrayList<>();
+        List<IdentityFile> identityFiless = new ArrayList<>();
         for(JSONObject identityFile: identityFiles) {
             IdentityFile identityFilee = IdentityFile.parse(identityFile);
             identityFiless.add(identityFilee);
@@ -366,10 +366,13 @@ public class ParerVersatoreService extends VersatoreDocs {
             if (paccoConPacchiFiles.getFiles() != null) {
                 for (PaccoFile a : paccoConPacchiFiles.getFiles()) {
                     log.info("Inserisco nel body il file " + a.getId() + ", " + a.getFileName());
-                    InputStream is = a.getInputStream();
-                    byte[] bytes = IOUtils.toByteArray(is);
-                    is.close();
-                    builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    byte[] bytes;
+                    try (InputStream is = a.getInputStream()) {
+                        bytes = IOUtils.toByteArray(is);
+                        builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    } catch(Exception ex) {
+                        log.error("errore nella chiusura dell'input stream dei pacchi files", ex);
+                    }
                 }
             }
             log.info("Buildo il MultiPart...");
