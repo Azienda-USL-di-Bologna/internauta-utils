@@ -25,11 +25,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ParerIdoneitaCheckerService extends IdoneitaChecker {
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerIdoneitaCheckerService.class);
 
     @Override
     public Boolean checkDocImpl(Integer id, Map<String,Object> params) throws VersatoreProcessingException {
-        log.info("Sto calcolando l'idoneita del doc ", id.toString());
+        log.info("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
         DocDetail docDetail = entityManager.find(DocDetail.class, id);
         Boolean idoneo = true;
@@ -39,7 +39,7 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
         - controllo se è stato fascicolato*/
         
         if(params.get("giorniPrimaDiVersarePe")!= null && params.get("giorniPrimaDiVersarePu")!=null && params.get("giorniPrimaDiVersareDeli") !=null && params.get("giorniPrimaDiVersareDete") != null){
-            log.info("Sto valutando le fascicolazioni del doc ", id.toString());
+            log.info("Sto valutando le fascicolazioni del doc "+ id.toString());
 
             Integer giorniPrimaDiVersarePe = Integer.parseInt((String) params.get("giorniPrimaDiVersarePe"));
             Integer giorniPrimaDiVersarePu = Integer.parseInt((String) params.get("giorniPrimaDiVersarePu"));
