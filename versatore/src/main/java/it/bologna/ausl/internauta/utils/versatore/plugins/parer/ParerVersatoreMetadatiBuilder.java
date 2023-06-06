@@ -924,6 +924,6 @@ public final class ParerVersatoreMetadatiBuilder {
     private String getUuidMinIObyFileId(String fileId) throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
-        return fileInfoByFileId.getGeneratedUuid();
+        return fileInfoByFileId.getMongoUuid();
     }
 }
