@@ -366,10 +366,14 @@ public class ParerVersatoreService extends VersatoreDocs {
             if (paccoConPacchiFiles.getFiles() != null) {
                 for (PaccoFile a : paccoConPacchiFiles.getFiles()) {
                     log.info("Inserisco nel body il file " + a.getId() + ", " + a.getFileName());
-                    InputStream is = a.getInputStream();
-                    byte[] bytes = IOUtils.toByteArray(is);
-                    is.close();
-                    builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    byte[] bytes;
+                    try (InputStream is = a.getInputStream()) {
+                        bytes = IOUtils.toByteArray(is);
+                        builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    } catch(Exception ex) {
+                        log.error("Problemi con l'inputstream del file", ex);
+                    }
+                    
                 }
             }
             log.info("Buildo il MultiPart...");
