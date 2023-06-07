@@ -118,16 +118,23 @@ public class FirmaRemotaDownloaderUtils {
         }
     }
     
+    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl) throws FirmaRemotaHttpException {
+        return uploadToUploader(file, filename, mimeType, forceDownload, downloadUrl, uploadUrl, null);
+    }
+    
     /**
      * carica il file passato sul nostro repository servendosi della funzione upload del Downloader e ne torna l'url per poterlo scaricare attraverso il downloader
      * @param file il file da inviare
      * @param filename il nome che il file dovrà avere sul repository
      * @param mimeType il mimeType del file
      * @param forceDownload se "true" l'url tornato forzerà il download
+     * @param downloadUrl l'url da usare per generare queello di download
+     * @param uploadUrl l'url da usare per generare queello di upload
+     * @param downloadTokenExpireSeconds il tempo in secondi per la scadenza del token per scaricare il download
      * @return l'url per poter scaricare il file attraverso la funzione download del Downloader
      * @throws FirmaRemotaHttpException 
      */
-    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl) throws FirmaRemotaHttpException {
+    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl, Integer downloadTokenExpireSeconds) throws FirmaRemotaHttpException {
         String res;
         String token;
         
@@ -178,7 +185,7 @@ public class FirmaRemotaDownloaderUtils {
                 if (content != null) {
                     // se tutto ok creo l'url per il download e lo torno
                     Map<String, Object> downloadParams = objectMapper.readValue(content.byteStream(), new TypeReference<Map<String, Object>>(){});
-                    res = buildDownloadUrl(filename, mimeType, downloadParams, forceDownload, downloadUrl);
+                    res = buildDownloadUrl(filename, mimeType, downloadParams, forceDownload, downloadUrl, downloadTokenExpireSeconds);
                 }
                 else {
                     throw new FirmaRemotaHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
@@ -198,6 +205,10 @@ public class FirmaRemotaDownloaderUtils {
         }
     }
     
+    private String buildToken(Map<String,Object> context) throws IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
+        return buildToken(context, this.tokenExpireSeconds);
+    }
+    
     /**
      * Costruisce il token JWE per la chiamata al Downloader, servendosi della classe DownloaderTokenCreator fornita dal modulo authorization-utils
      * @param context il context da inserire nel token
@@ -207,11 +218,11 @@ public class FirmaRemotaDownloaderUtils {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException 
      */
-    private String buildToken(Map<String,Object> context) throws IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private String buildToken(Map<String,Object> context, Integer tokenExpireSeconds) throws IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
         DownloaderTokenCreator downloaderTokenCreator = new DownloaderTokenCreator();
         PrivateKey signTokenPrivateKey = downloaderTokenCreator.getSignTokenPrivateKey(signTokenPrivateKeyFileLocation, signTokenPrivateKeyAlias, signTokenPrivateKeyPassword);
         RSAPublicKey encryptionPublicKey = downloaderTokenCreator.getEncryptionPublicKey(this.downloaderEncryptionPublicKey);
-        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel, signTokenPrivateKey, encryptionPublicKey, this.tokenExpireSeconds, "firma-internauta");
+        return downloaderTokenCreator.getToken(context, this.downloaderPublicCertBabel, signTokenPrivateKey, encryptionPublicKey, tokenExpireSeconds, "firma-internauta");
     }
     
     /**
@@ -229,9 +240,14 @@ public class FirmaRemotaDownloaderUtils {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeySpecException 
      */
-    private String buildDownloadUrl(String fileName, String mimeType, Map<String, Object> downloadParams, Boolean forceDownload, String downloadUrl) throws FirmaRemotaConfigurationException, IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private String buildDownloadUrl(String fileName, String mimeType, Map<String, Object> downloadParams, Boolean forceDownload, String downloadUrl, Integer downloadTokenExpireSeconds) throws FirmaRemotaConfigurationException, IOException, AuthorizationUtilsException, NoSuchAlgorithmException, InvalidKeySpecException {
         Map<String, Object> downloaderContext = getDownloaderContext(downloadParams, fileName, mimeType);
-        String token = buildToken(downloaderContext);
+        String token;
+        if (downloadTokenExpireSeconds != null){
+            token = buildToken(downloaderContext, downloadTokenExpireSeconds);
+        }else {
+            token = buildToken(downloaderContext);
+        }
         return String.format("%s?token=%s&forceDownload=%s", downloadUrl, token, forceDownload);
     }
     
