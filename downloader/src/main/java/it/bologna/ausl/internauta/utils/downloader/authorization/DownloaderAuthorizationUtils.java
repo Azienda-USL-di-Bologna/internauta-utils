@@ -182,7 +182,7 @@ public class DownloaderAuthorizationUtils {
         Date expirationTime = signedJWTDecrypted.getJWTClaimsSet().getExpirationTime();
         Date maxLimitTokenTime = Date.from(LocalDateTime.now().plusSeconds(this.maxLimitTokenSeconds).atZone(ZoneId.systemDefault()).toInstant());
         if (expirationTime == null || new Date().after(expirationTime)) {
-            String errorMessage = "il token è scaduto";
+            String errorMessage = "Il link per il download non è più valido. Si prega di ripetere l'operazione.";
             logger.error(errorMessage);
             throw new DownloaderSecurityException(errorMessage);
         } else if (expirationTime.after(maxLimitTokenTime)) {
