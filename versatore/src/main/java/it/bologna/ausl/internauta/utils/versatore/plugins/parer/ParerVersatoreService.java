@@ -371,8 +371,9 @@ public class ParerVersatoreService extends VersatoreDocs {
                         bytes = IOUtils.toByteArray(is);
                         builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
                     } catch(Exception ex) {
-                        log.error("errore nella chiusura dell'input stream dei pacchi files", ex);
+                        log.error("Problemi con l'inputstream del file", ex);
                     }
+                    
                 }
             }
             log.info("Buildo il MultiPart...");

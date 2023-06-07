@@ -18,6 +18,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServi
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.TimeoutException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
+import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -53,7 +54,6 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 /**
  * Classe che implementa i metodi necessari per la firma remota Namirial.
@@ -66,16 +66,26 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private static final String NAMIRIAL_SIGN_SERVICE = "NamirialSignService";
 
     private final String signServiceEndPointUri;
-    private OkHttpClient okHttpClient;
+    private final OkHttpClient okHttpClient;
 
-    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration, String sslCertPath, String sslCertPswd) throws FirmaRemotaConfigurationException {
+    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
         super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
-        buildOkHttpClientWithSSLContext(sslCertPath, sslCertPswd);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
         Map<String, Object> namirialServiceConfiguration = (Map<String, Object>) firmaRemotaConfiguration.get(NAMIRIAL_SIGN_SERVICE);
         signServiceEndPointUri = namirialServiceConfiguration.get("NamirialSignServiceEndPointUri").toString();
+        Map<String, Object> sslConfig = (Map<String, Object>) namirialServiceConfiguration.get("sslConfig");
+        String sslCertPath = (String) sslConfig.get("sslCertPath");
+        String sslCertPswd = (String) sslConfig.get("sslCertPswd");
+        Boolean ignoreCertificateValidation = (Boolean)sslConfig.get("ignoreCertificateValidation");
+        if (!ignoreCertificateValidation)
+            // Costruisce un okHttpClient, partendo dalla proprietà impostate in internauta e configurando il contextSSL
+            this.okHttpClient = HttpUtils.buildNewOkHttpClientWithSSLContext(this.firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient(), sslCertPath, sslCertPswd);
+        else {
+            // Costruisce un okHttpClient, partendo dalla proprietà impostate in internauta configuranto però in modo da non verificare il certifiato dell'endpoint
+            this.okHttpClient = HttpUtils.buildNewOkHttpClientWithNoCertificateValidation(this.firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient());
+        }
     }
 
     /**
@@ -262,62 +272,6 @@ public class FirmaRemotaNamirial extends FirmaRemota {
         
 
         return firmaRemotaInformation;
-    }
-
-    /**
-     * Costruisce okHttpClient, partendo dalla proprietà impostante in internauta, inserendo la chiave nel keystore di java.
-     * Il formato della chiave deve essere p12
-     *
-     * @param sslCertPath il path del file p12 con la chiave
-     * @param sslCertPswd  la password del p12
-     */
-    private void buildOkHttpClientWithSSLContext(String sslCertPath, String sslCertPswd) {
-        SSLContext sslContext;
-        try {
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream clientCertificateContent = new FileInputStream(sslCertPath);
-            keyStore.load(clientCertificateContent, sslCertPswd.toCharArray());
-
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(keyStore, sslCertPswd.toCharArray());
-
-            KeyStore trustedStore = loadJavaKeyStore();
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(trustedStore);
-
-            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagerFactory.getKeyManagers(), trustManagers, new SecureRandom());
-            
-            this.okHttpClient = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient().newBuilder()
-                .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
-                .build();
-        } catch (Throwable ex) {
-            logger.error("errore buildOkHttpClientWithSSLContext", ex);
-        }
-
-    }
-
-    /**
-     * Carica il keystore di java
-     * @return
-     * @throws FileNotFoundException
-     * @throws KeyStoreException
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     * @throws CertificateException 
-     */
-    private KeyStore loadJavaKeyStore() throws FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
-        String relativeCacertsPath = "/lib/security/cacerts".replace("/", File.separator);
-        String filename = System.getProperty("java.home") + relativeCacertsPath;
-        FileInputStream is = new FileInputStream(filename);
-
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        String password = "changeit";
-        keystore.load(is, password.toCharArray());
-
-        return keystore;
     }
 
     /**
