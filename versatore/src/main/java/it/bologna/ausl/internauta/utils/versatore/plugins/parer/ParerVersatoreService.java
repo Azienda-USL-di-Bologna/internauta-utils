@@ -71,7 +71,7 @@ import org.json.simple.parser.ParseException;
 @Component
 public class ParerVersatoreService extends VersatoreDocs {
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerVersatoreService.class);
     
     @Autowired
     private ParametriAziendeReader parametriAziende;
@@ -299,7 +299,7 @@ public class ParerVersatoreService extends VersatoreDocs {
 //    prende in input il versamentodoc coi suoi allegati e ritorna l'xml di risposta del parer
 //    Qui vengono generati i 
     private Map<String, Object> versaDocumentoParer(VersamentoDocInformation versamentoInformation) throws DatatypeConfigurationException, JAXBException, java.text.ParseException {
-        log.info("Inizio con il versamento del doc: ", versamentoInformation.getIdDoc().toString());
+        log.info("Inizio con il versamento del doc: " + versamentoInformation.getIdDoc().toString());
         Integer idDoc = versamentoInformation.getIdDoc();
         String forzaCollegamento, forzaAccettazione, forzaConservazione;
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
