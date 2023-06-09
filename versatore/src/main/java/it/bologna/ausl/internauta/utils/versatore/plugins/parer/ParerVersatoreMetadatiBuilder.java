@@ -558,7 +558,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmatomissis.pdf", getUuidMinIObyFileId(testoOmissis.getIdRepository()), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(testoOmissis.getIdRepository()),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(testoOmissis.getIdRepository()),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
@@ -602,7 +602,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     } else {
                         Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("relata_" + indexCommittente.toString() + ".pdf", getUuidMinIObyFileId(albo.getIdRepository()), albo.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(albo.getIdRepository()),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(albo.getIdRepository()),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         indexAlbo = indexAlbo + 1;
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
@@ -610,7 +610,7 @@ public final class ParerVersatoreMetadatiBuilder {
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SMISTAMENTO) {
                     Allegato.DettaglioAllegato smistamenti = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("smistamenti.pdf", getUuidMinIObyFileId(smistamenti.getIdRepository()), smistamenti.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(smistamenti.getIdRepository()),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(smistamenti.getIdRepository()),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
