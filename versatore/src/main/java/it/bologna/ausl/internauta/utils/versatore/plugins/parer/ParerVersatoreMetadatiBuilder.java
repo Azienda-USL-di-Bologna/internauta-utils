@@ -487,17 +487,17 @@ public final class ParerVersatoreMetadatiBuilder {
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getFirmato() == true && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
+                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), originaleFirmato.getEstensione(), originaleFirmato.getMimeType());
                     i = i + 1;
                     unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(originaleFirmato.getIdRepository()),"GENERICO", "", originaleFirmato.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
-                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", getUuidMinIObyFileId(convertito.getIdRepository()), convertito.getHashMd5(), "PDF", "application/pdf");
+                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_convertito", getUuidMinIObyFileId(convertito.getIdRepository()), convertito.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
                     unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(convertito.getIdRepository()),"GENERICO", "", convertito.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
-                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
+                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.ALLEGATO) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
@@ -558,7 +558,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmatomissis.pdf", getUuidMinIObyFileId(testoOmissis.getIdRepository()), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(testoOmissis.getIdRepository()),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(testoOmissis.getIdRepository()),"DETERMINAZIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
@@ -602,7 +602,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     } else {
                         Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
                         IdentityFile identityFilePrincipale = new IdentityFile("relata_" + indexCommittente.toString() + ".pdf", getUuidMinIObyFileId(albo.getIdRepository()), albo.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(albo.getIdRepository()),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(albo.getIdRepository()),"RELATA DI PUBBLICAZIONE", "", albo.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                         indexAlbo = indexAlbo + 1;
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
@@ -610,7 +610,7 @@ public final class ParerVersatoreMetadatiBuilder {
                 } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SMISTAMENTO) {
                     Allegato.DettaglioAllegato smistamenti = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("smistamenti.pdf", getUuidMinIObyFileId(smistamenti.getIdRepository()), smistamenti.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(smistamenti.getIdRepository()),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().toString(), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(smistamenti.getIdRepository()),"ELENCO SMISTAMENTI", "", smistamenti.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
@@ -924,6 +924,6 @@ public final class ParerVersatoreMetadatiBuilder {
     private String getUuidMinIObyFileId(String fileId) throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
-        return fileInfoByFileId.getGeneratedUuid();
+        return fileInfoByFileId.getMongoUuid();
     }
 }
