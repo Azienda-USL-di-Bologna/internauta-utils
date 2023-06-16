@@ -329,9 +329,9 @@ public class ParerVersatoreService extends VersatoreDocs {
         String versioneDatiSpecificiDeli = (String) versamentoInformation.getParams().get("versionedatispecificideli");
      
         String tipoComponenteDefault = (String) versamentoInformation.getParams().get("tipocomponentedefault");
-        Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
+        Map<String, Object> unitaDocConIdentityFiles = parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
         List<JSONObject> identityFiles = (List<JSONObject>) unitaDocConIdentityFiles.get("identityFiles");
-        List<IdentityFile> identityFiless= new ArrayList<>();
+        List<IdentityFile> identityFiless = new ArrayList<>();
         for(JSONObject identityFile: identityFiles) {
             IdentityFile identityFilee = IdentityFile.parse(identityFile);
             identityFiless.add(identityFilee);
