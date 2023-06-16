@@ -63,6 +63,12 @@
             <artifactId>javax.servlet-api</artifactId>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.model</groupId>
+            <artifactId>internauta-model</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
