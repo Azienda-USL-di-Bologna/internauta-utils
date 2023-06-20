@@ -172,6 +172,9 @@ public class ParerVersatoreService extends VersatoreDocs {
                     if(errorCode.equals("UD-008-001")|| errorCode.startsWith("FIRMA") && !errorCode.equals("FIRMA-002-001")) {
                         versamentoInformation.setForzabile(Boolean.TRUE);
                     }
+                    if(errorCode.equals("FIRMA-002-001")) {
+                        versamentoInformation.setForzabileConcordato(Boolean.TRUE);
+                    }
                     for(VersamentoAllegatoInformation allegato: listaAllegati) {
                         allegato.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
                     }
