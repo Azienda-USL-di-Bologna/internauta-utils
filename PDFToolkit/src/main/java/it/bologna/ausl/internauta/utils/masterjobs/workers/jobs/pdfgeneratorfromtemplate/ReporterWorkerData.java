@@ -13,19 +13,19 @@ public class ReporterWorkerData extends JobWorkerData{
     @JsonIgnore
 //    private static final Logger log = LoggerFactory.getLogger(ReporterWorkerData.class);
 
-    private String nomeTemplate;
+    private String template;
     
     Map<String,Object> parametriTemplate;
-
+    
     public ReporterWorkerData() {
     }
 
-    public String getNomeTemplate() {
-        return nomeTemplate;
+    public String getTemplate() {
+        return template;
     }
 
-    public void setNomeTemplate(String nomeTemplate) {
-        this.nomeTemplate = nomeTemplate;
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public Map<String, Object> getParametriTemplate() {

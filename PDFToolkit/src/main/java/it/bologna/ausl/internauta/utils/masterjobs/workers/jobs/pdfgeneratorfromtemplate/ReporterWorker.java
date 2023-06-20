@@ -58,7 +58,6 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
         ByteArrayOutputStream baos = null;
         FileOutputStream qrCodeOutputStream = null;
 //        File qrcodeTmpFile = null;
-
         iccProfileStream = getClass().getResourceAsStream("/it/bologna/ausl/mavenchef/AdobeRGB1998.icc");
         if (iccProfileStream == null) {
 //            log.info("iccprofile è null cazoooo");
