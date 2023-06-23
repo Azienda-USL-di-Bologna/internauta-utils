@@ -116,7 +116,6 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             inoltre svuoto lo stato prossimo versamento (stato_versamento)
             */
             boolean forzabile = versamentoDocInformation.getForzabile();
-            boolean forzabileConcordato = versamentoDocInformation.getForzabileConcordato();
             if (versamentoDocInformation.getVersamentiAllegatiInformations() != null) {
                 for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVersamentiAllegatiInformations()) {
                     Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
@@ -143,7 +142,6 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             // alla fine scrive lo stato del doc e la forzabilità (calcolati in base agli allegati) sul versamento
             versamento.setStato(statoVersamentoDoc);
             versamento.setForzabile(forzabile);
-            versamento.setForzabileConcordato(forzabileConcordato);
             
             /* 
             se il versamento è andato a buon fine, oppure è stato annullato (lo stato è VERSATO, o ANNULLATO), 
@@ -164,7 +162,6 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
                 .set(QDocDetail.docDetail.dataUltimoVersamento, now)
                 .set(QDocDetail.docDetail.versamentoForzabile, forzabile)
-                .set(QDocDetail.docDetail.versamentoForzabileConcordato, forzabileConcordato)
                 .where(QDocDetail.docDetail.id.eq(idDoc))
                 .execute();
             
