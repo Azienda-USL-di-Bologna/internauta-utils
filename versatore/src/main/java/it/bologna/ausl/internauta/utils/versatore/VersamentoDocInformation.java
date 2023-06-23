@@ -21,6 +21,7 @@ public class VersamentoDocInformation {
     private Integer idVersamentoPrecedente;
     private Versamento.StatoVersamento statoVersamentoPrecedente;
     private Boolean forzabile = false;
+    private Boolean forzabileConcordato = false;
     private String rapporto;
     private String metadatiVersati;
     private String codiceErrore;
@@ -75,6 +76,23 @@ public class VersamentoDocInformation {
         this.forzabile = forzabile;
     }
 
+    /**
+     * indica il versamento è forzabile in accordo con il provider di archiviazione.
+     * Tipicamente è settato dal plugin, dopo un errore di tipo crittografico.
+     * @return se il versamento è forzabile
+     */
+    public Boolean getForzabileConcordato() {
+        return forzabileConcordato;
+    }
+
+    /**
+     * setta se il versamento è forzabile in accordo con il provider di archiviazione.
+     * Tipicamente viene settato dal plugin, dopo un errore di tipo crittografico.
+     * @param forzabileConcordato  
+     */
+    public void setForzabileConcordato(Boolean forzabileConcordato) {
+        this.forzabileConcordato = forzabileConcordato;
+    }
     public String getRapporto() {
         return rapporto;
     }
