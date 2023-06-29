@@ -1,8 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- */
-
-package it.bologna.ausl.pdftoolkit;
+package it.bologna.ausl.internauta.utils.pdftoolkit;
 
 /**
  *

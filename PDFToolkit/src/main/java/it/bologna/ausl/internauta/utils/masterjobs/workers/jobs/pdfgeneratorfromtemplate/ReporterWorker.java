@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
 
-import java.awt.color.ICC_Profile;
+import com.itextpdf.text.pdf.ICC_Profile;
 import com.itextpdf.text.pdf.PdfAConformanceLevel;
 import com.itextpdf.text.pdf.PdfAWriter;
 import com.itextpdf.text.pdf.PdfBoolean;
@@ -27,8 +27,15 @@ import freemarker.template.Template;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.cache.StringTemplateLoader;
+import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.Version;
 import freemarker.template.TemplateExceptionHandler;
+import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
+import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
+import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
+import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,111 +43,110 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
-
+import org.xhtmlrenderer.pdf.ITextRenderer;
+import org.xhtmlrenderer.pdf.PDFCreationListener;
 
 /**
  *
  * @author Top
  */
+@MasterjobsWorker
 public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResult> {
+    
+    @Autowired
+    private PdfToolkitConfigParams pdfToolkitConfigParams;
+    
+    @Autowired
+    private PdfToolkitDownloaderUtils pdfToolkitDownloaderUtils;
 
-//    private final static Logger log = LoggerFactory.getLogger(ReporterWorker.class);
+    private final static Logger log = LoggerFactory.getLogger(ReporterWorker.class);
     private final String name = ReporterWorker.class.getSimpleName();
     
     private InputStream iccProfileStream;
-    private static final String TEMPLATES_PATH = "templates";
+    private static final String RESOURCE_PATH_RELATIVE = "/resources/reporter";
+   
 
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
-        ReporterWorkerData data = getWorkerData();
+        ReporterWorkerData workerData = getWorkerData();
         ByteArrayOutputStream pdfOut = null;
         ByteArrayOutputStream baos = null;
         FileOutputStream qrCodeOutputStream = null;
+        String iccProfilePath = String.format("%s%s%s", pdfToolkitConfigParams.getWorkdir(), RESOURCE_PATH_RELATIVE, "AdobeRGB1998.icc");
 //        File qrcodeTmpFile = null;
-        iccProfileStream = getClass().getResourceAsStream("/it/bologna/ausl/mavenchef/AdobeRGB1998.icc");
+        iccProfileStream = getClass().getResourceAsStream(iccProfilePath);
         if (iccProfileStream == null) {
-//            log.info("iccprofile è null cazoooo");
-
+            log.info("iccprofile è null cazoooo");
         }
         Template temp = null;
         Map<String, Object> parametri = null;
         try {
-            String templateName = (String) data.getNomeTemplate();
+            String template = (String) workerData.getTemplate();
 
-            // TODO: lasciato per retrocompatibilità, è da togliere quando finiamo il refactoring dei template, il parametro giusto è templateName
-            //MIDO: ora è il momento di togliere
-//            String templatePath = (String) in.get("templatePath");
-
-//            log.info("templateName: " + templateName);
-//            log.info("TemplatePath: " + templatePath);
-
-            if ((templateName == null || templateName.equals("")) && (templatePath == null || templatePath.equals(""))) {
-                throw new MasterjobsWorkerException( "templateName o templatePath mancante");
+            if (template == null || template.equals("")) {
+                throw new MasterjobsWorkerException( "template mancante");
             }
-
-            parametri = data.getParametriTemplate();
+            
+            parametri = workerData.getParametriTemplate();
             if (parametri == null) {
                 throw new MasterjobsWorkerException( "data mancante");
             }
 
-            // generazione e inserimento del QrCode
-//            String titleQrcode = "Azienda USL di Bologna Codice AOO:ASL_BO:protocollo generale- numero data ora";
-//            JSONObject qrCodeData = null;
-            // il QrCode non è obbligatorio; se non viene passato ottengo un NullPointerException per cui lo ignoro
-//            try {
-//                qrCodeData = (JSONObject) in.get("qrCodeData");
-//            }
-//            catch (NullPointerException ex) {
-//            }
-//            if (qrCodeData != null) {
-//                String qrCodeFieldName = (String) qrCodeData.get("fieldName");
-//                if (qrCodeFieldName == null || qrCodeFieldName.equals("")){
-//                    throw new WorkerException(getJobType(), "campo fieldName del QrCode mancante");
-//                }
-//                String qrCodeValue = (String) qrCodeData.get("value");
-//                if (qrCodeValue == null || qrCodeValue.equals("")){
-//                    throw new WorkerException(getJobType(), "campo value del QrCode mancante");
-//                }
-////                BufferedImage bi = QRgenerator.generate(qrCodeValue, 200, 200);
-//                qrcodeTmpFile = File.createTempFile("reporter_qrcode_", null, tmpDir);
-//                qrCodeOutputStream = new FileOutputStream(qrcodeTmpFile);
-//                if (!ImageIO.write(bi, "png", qrCodeOutputStream)) {
-//                    throw new WorkerException(getJobType(), "Errore nella creazione del qrCodeFile");
-//                }
-//                qrCodeOutputStream.flush();
-//                data.put(qrCodeFieldName, qrcodeTmpFile.getAbsolutePath()); 
-//            }
-            File resourcePath = new File(workDir, resourcePathRelative);
+            /* // generazione e inserimento del QrCode JR: Lascio questo codice commentato per implementazione futura.
+            String titleQrcode = "Azienda USL di Bologna Codice AOO:ASL_BO:protocollo generale- numero data ora";
+            JSONObject qrCodeData = null;
+             il QrCode non è obbligatorio; se non viene passato ottengo un NullPointerException per cui lo ignoro
+            try {
+                qrCodeData = (JSONObject) in.get("qrCodeData");
+            }
+            catch (NullPointerException ex) {
+            }
+            if (qrCodeData != null) {
+                String qrCodeFieldName = (String) qrCodeData.get("fieldName");
+                if (qrCodeFieldName == null || qrCodeFieldName.equals("")){
+                    throw new WorkerException(getJobType(), "campo fieldName del QrCode mancante");
+                }
+                String qrCodeValue = (String) qrCodeData.get("value");
+                if (qrCodeValue == null || qrCodeValue.equals("")){
+                    throw new WorkerException(getJobType(), "campo value del QrCode mancante");
+                }
+                // BufferedImage bi = QRgenerator.generate(qrCodeValue, 200, 200);
+                qrcodeTmpFile = File.createTempFile("reporter_qrcode_", null, tmpDir);
+                qrCodeOutputStream = new FileOutputStream(qrcodeTmpFile);
+                if (!ImageIO.write(bi, "png", qrCodeOutputStream)) {
+                    throw new WorkerException(getJobType(), "Errore nella creazione del qrCodeFile");
+                }
+                qrCodeOutputStream.flush();
+                data.put(qrCodeFieldName, qrcodeTmpFile.getAbsolutePath()); 
+            }*/
 
-            Configuration cfg = new Configuration();
-//            log.info("resourcePath: " + resourcePath);
+            final File resourcePath = new File(pdfToolkitConfigParams.getWorkdir(), RESOURCE_PATH_RELATIVE);
+            
+            final Version version = new Version(2, 3, 20);
+            final Configuration cfg = new Configuration(version);
+            log.info("resourcePath: " + resourcePath);
             cfg.setDirectoryForTemplateLoading(resourcePath);
-            cfg.setObjectWrapper(new DefaultObjectWrapper());
+            cfg.setObjectWrapper(new DefaultObjectWrapper(version));
             cfg.setDefaultEncoding("UTF-8");
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.HTML_DEBUG_HANDLER);
-            cfg.setIncompatibleImprovements(new Version(2, 3, 20));
+            cfg.setIncompatibleImprovements(version);
 
-            data.put("resourcePath", resourcePath.getAbsolutePath().replace("\\", "/"));
-            String templateString;
-            if (templateName != null && !templateName.equals("")) {
-//                log.info("uso templateName");
-                Path templateFilePath = Paths.get(resourcePath.getAbsolutePath(), TEMPLATES_PATH, templateName);
-                templateString = IOUtils.toString(templateFilePath.toUri(), StandardCharsets.UTF_8.name());
-            } else {
-//                log.info("uso templatePath");
-                InputStream tempalteIs = mongoWrapper.getByPath(templatePath);
-                templateString = inputStreamToString(tempalteIs);
-            }
+            parametri.put("resourcePath", resourcePath.getAbsolutePath().replace("\\", "/"));          
+            // templateString = IOUtils.toString(templateFilePath.toUri(), StandardCharsets.UTF_8.name());
             StringTemplateLoader stl = new StringTemplateLoader();
-            stl.putTemplate("template", templateString);
+            stl.putTemplate("template", template);
             cfg.setTemplateLoader(stl);
 
             temp = cfg.getTemplate("template");
 
             baos = new ByteArrayOutputStream();
             Writer out = new OutputStreamWriter(baos);
-            temp.process(data, out);
+            temp.process(parametri, out);
 
             ITextRenderer renderer = new ITextRenderer();
             renderer.setListener(new PDFCreationListener() {
@@ -189,18 +195,42 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             pdfOut = new ByteArrayOutputStream();
             renderer.createPDF(pdfOut, true, true, PdfAConformanceLevel.PDF_A_1A);
             String tempFileName = String.format("reporter_%s.pdf", UUID.randomUUID().toString());
-            String outPdfUuidTemp = md.put(new ByteArrayInputStream(pdfOut.toByteArray()), tempFileName, "/tmp", false);
-            JSONObject res = new JSONObject();
-            res.put("pdf", outPdfUuidTemp);
-            return res;
+            ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray());
+//            String outPdfUuidTemp = md.put(new ByteArrayInputStream(pdfOut.toByteArray()), tempFileName, "/tmp", false);
+//            JSONObject res = new JSONObject();
+//            res.put("pdf", outPdfUuidTemp);
+            String downloaderUrl;
+            String uploaderUrl;
+            //carico e ottengo il url per il download con token valido per un minuto
+            String urlToDownload = null;
+            ReporterWorkerResult reporterWorkerResult = new ReporterWorkerResult();
+            if (workerData.getDownloadUrl() != null && workerData.getUploadUrl() != null) {
+                downloaderUrl = workerData.getDownloadUrl(); 
+                uploaderUrl = workerData.getUploadUrl();
+                try {
+                    urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, 3600);
+                } catch (PdfToolkitHttpException ex) {
+                    log.error("errore nell'upload e generazione del url per il download", ex);
+                }
+                reporterWorkerResult.setUrl(urlToDownload);
+            } else {
+                log.info(String.format("putting file %s on temp repository...", tempFileName));
+                // TODO: Chiedere a GDM dove fare l'upload dei pdf quando l'upload non viene fatto dal downloader
+                String pdfToolkitBucket = this.pdfToolkitConfigParams.getPdfToolkitBucket();
+                MinIOWrapper minIOWrapper = this.pdfToolkitConfigParams.getMinIOWrapper();
+                MinIOWrapperFileInfo uploadedFileInfo = minIOWrapper.putWithBucket(bis, workerData.getCodiceAzienda(), "/temp", tempFileName, null, false, UUID.randomUUID().toString(), pdfToolkitBucket);
+                String signedUuid = uploadedFileInfo.getMongoUuid();
+                log.info(String.format("file %s written on temp repository", signedUuid));
+            }
+            return reporterWorkerResult;
+                
         } catch (Exception ex) {
-
             File forTest = new File("output_wrong.html");
             Writer fileWriter = null;
             try {
                 fileWriter = new FileWriter(forTest);
-                if (temp != null && data != null) {
-                    temp.process(data, fileWriter);
+                if (temp != null && workerData != null) {
+                    temp.process(workerData, fileWriter);
                 }
             } catch (Exception subEx) {
 //                log.error("", subEx);
@@ -217,6 +247,7 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             org.apache.commons.io.IOUtils.closeQuietly(pdfOut);
             org.apache.commons.io.IOUtils.closeQuietly(baos);
             org.apache.commons.io.IOUtils.closeQuietly(qrCodeOutputStream);
+            org.apache.commons.io.IOUtils.closeQuietly(iccProfileStream);     // ?? è giusto ??       
             // cancellazione file temporaneo di qrcode
 //            if (qrcodeTmpFile != null) {
 //                boolean deleteted = qrcodeTmpFile.delete();
