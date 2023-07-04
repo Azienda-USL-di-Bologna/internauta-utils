@@ -32,7 +32,9 @@ import java.util.HashMap;
 public class PdfToolkitConfigParams {
     
     private static final Logger logger = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
-    private static final String WORKDIR = System.getProperty("java.io.tmpdir");
+    public static final String WORKDIR = System.getProperty("java.io.tmpdir");
+    public static final String RESOURCES_RELATIVE_PATH = "/resources/reporter";
+    public static final String TEMPLATES_RELATIVE_PATH = "/templates";
      
     public enum ParameterIds {
         downloader,
@@ -42,8 +44,7 @@ public class PdfToolkitConfigParams {
     public enum DownloaderParamsKey {
         uploadUrl,
         downloadUrl,
-        pdfToolkitBucket,
-        resourcesTemplatesMinIoPath
+        pdfToolkitBucket
     }
         
     @Autowired
@@ -82,10 +83,9 @@ public class PdfToolkitConfigParams {
         }
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
-
+        //TODO: Chiedere a GDM come passare il CODICE
         try {
-            String resourcesTemplatesMinIoPath = (String) this.downloaderParams.get(DownloaderParamsKey.resourcesTemplatesMinIoPath.toString());
-            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(resourcesTemplatesMinIoPath, "105");
+            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, "105");
             for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
                 try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
                     File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
@@ -139,14 +139,6 @@ public class PdfToolkitConfigParams {
     }
     
     /**
-     * Torna il Path relativo dei resources
-     * @return resourcesTemplatesMinIoPath
-     */
-    public String getResourcesTemplatesMinIoPath() {
-        return (String) this.downloaderParams.get(DownloaderParamsKey.resourcesTemplatesMinIoPath.toString());
-    }
-    
-    /**
      * inizializza la connessione a MinIO
      * @param minIOConfig 
      */
@@ -169,9 +161,5 @@ public class PdfToolkitConfigParams {
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
-    }
-    
-    public String getWorkdir() {
-        return WORKDIR;
     }
 }

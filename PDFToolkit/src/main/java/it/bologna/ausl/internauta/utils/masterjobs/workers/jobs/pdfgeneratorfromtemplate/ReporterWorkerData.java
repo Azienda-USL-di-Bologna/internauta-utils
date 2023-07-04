@@ -14,7 +14,7 @@ public class ReporterWorkerData extends JobWorkerData{
     private String codiceAzienda;
     private String downloadUrl;
     private String uploadUrl;
-    private String template;
+    private String templateName;
     
     Map<String,Object> parametriTemplate;
     
@@ -45,12 +45,12 @@ public class ReporterWorkerData extends JobWorkerData{
         this.uploadUrl = uploadUrl;
     }
 
-    public String getTemplate() {
-        return template;
+    public String getTemplateName() {
+        return templateName;
     }
 
-    public void setTemplate(String template) {
-        this.template = template;
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 
     public Map<String, Object> getParametriTemplate() {
