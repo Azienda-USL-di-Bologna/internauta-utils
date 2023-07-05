@@ -5,22 +5,30 @@ import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpCli
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import okhttp3.FormBody;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +70,56 @@ public class SdicoVersatoreService extends VersatoreDocs{
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
         return null;
     }
+    
+    public void versa() throws FileNotFoundException, IOException {
+        
+        String token = getJWT();
+        
+        FileInputStream fstream = new FileInputStream("C:\\tmp\\new_metadati_provvedimento.xml");
+        FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
+        String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        log.info(result);
+        
+        // inizializzazione http client
+        OkHttpClient okHttpClient = new OkHttpClient()
+            .newBuilder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .build();
+        
+        // Conversione file metadati.xml da inputstream to byte[]
+        byte[] fileMetadati = IOUtils.toByteArray(fstream);
+        
+        // Conversione file pdf da inputstream to byte[]
+        byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
+        
+        // creazione di body multipart
+        MultipartBody.Builder buildernew = new MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("file", "metadati.xml",RequestBody.create(MediaType.parse("application/xml"), fileMetadati)); 
+               
+        //buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
+    
+        MultipartBody requestBody = buildernew.build();  
+        
+        // richiesta
+        Request request = new Request.Builder()
+            .url("https://par.collaudo.regione.veneto.it/serviziPar/rest/versamento")
+            .addHeader("Authorization", "Bearer " + token)
+            .post(requestBody)
+            .build();
+        
+        Response response = okHttpClient.newCall(request).execute();
+        log.info(response.body().string());
+    }
+
+
+    public void getDete() {
+        
+        DeteBuilder db = new DeteBuilder();
+        db.build();
+    }
+
+    
     
     public String getJWT() throws IOException {
         
