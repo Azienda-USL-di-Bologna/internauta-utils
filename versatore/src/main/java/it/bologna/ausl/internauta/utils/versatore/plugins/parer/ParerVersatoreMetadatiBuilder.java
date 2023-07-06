@@ -276,8 +276,8 @@ public final class ParerVersatoreMetadatiBuilder {
             }
             datiSpecificiBuilder.insertNewTag("PubblicazioneRegistro", "ALBO ON LINE");
             if(datiPubblicazione != null) {
-                datiSpecificiBuilder.insertNewTag("PubblicazioneAnno", (String) datiPubblicazione.get("anno"));
-                datiSpecificiBuilder.insertNewTag("PubblicazioneNumero", (String) datiPubblicazione.get("numero"));
+                datiSpecificiBuilder.insertNewTag("PubblicazioneAnno", datiPubblicazione.get("anno").toString());
+                datiSpecificiBuilder.insertNewTag("PubblicazioneNumero", datiPubblicazione.get("numero").toString());
                 datiSpecificiBuilder.insertNewTag("PubblicazioneInizio", inizioPubblicazione.toLocalDate().toString());
                 datiSpecificiBuilder.insertNewTag("PubblicazioneFine", finePubblicazione.toLocalDate().toString());
             }

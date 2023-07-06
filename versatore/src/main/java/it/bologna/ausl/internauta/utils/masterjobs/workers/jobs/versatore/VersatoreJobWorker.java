@@ -363,8 +363,6 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
     private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
         
-        Persona personaForzatura = getPersonaForzatura();
-        
         List<VersatoreDocThread> versatoreDocThreads = new ArrayList<>();
         
         /*
@@ -379,27 +377,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             VersatoreDocThread versatoreDocThread = new VersatoreDocThread(
                     versamentoDaEffettuare,
                     sessioneVersamento,
-                    personaForzatura,
+                    getWorkerData().getIdPersonaForzatura(),
                     versatoreDocsInstance,
                     transactionTemplate,
                     entityManager);
             versatoreDocThreads.add(versatoreDocThread);
         }
         return versatoreDocThreads;
-    }
-    
-    /**
-     * Reperisce l'entità Persona che forza il versamento
-     * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
-     */
-    private Persona getPersonaForzatura() {
-        Persona personaForzatura = null;
-        if (getWorkerData().getIdPersonaForzatura() != null) {
-            personaForzatura = transactionTemplate.execute(a -> {
-                return entityManager.find(Persona.class, getWorkerData().getIdPersonaForzatura());
-            });
-        }
-        return personaForzatura;
     }
     
     /**
