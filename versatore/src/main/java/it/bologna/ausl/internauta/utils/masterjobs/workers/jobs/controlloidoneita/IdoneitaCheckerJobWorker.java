@@ -136,7 +136,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
         transactionTemplate.executeWithoutResult(a -> {
             queryFactory
                 .update(qDoc)
-                .set(qDoc.statoVersamento, statoVersamento.toString())
+                .set(qDoc.statoVersamento, statoVersamento)
                 .where(qDoc.id.eq(idDoc))
                 .execute();
             queryFactory
