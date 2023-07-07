@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Map;
 
 
@@ -12,8 +11,6 @@ import java.util.Map;
 public class ReporterWorkerData extends JobWorkerData{
 
     private String codiceAzienda;
-    private String downloadUrl;
-    private String uploadUrl;
     private String templateName;
     
     Map<String,Object> parametriTemplate;
@@ -21,28 +18,18 @@ public class ReporterWorkerData extends JobWorkerData{
     public ReporterWorkerData() {
     }
 
+    public ReporterWorkerData(String codiceAzienda, String templateName, Map<String, Object> parametriTemplate) {
+        this.codiceAzienda = codiceAzienda;
+        this.templateName = templateName;
+        this.parametriTemplate = parametriTemplate;
+    }
+        
     public String getCodiceAzienda() {
         return codiceAzienda;
     }
 
     public void setCodiceAzienda(String codiceAzienda) {
         this.codiceAzienda = codiceAzienda;
-    }
-
-    public String getDownloadUrl() {
-        return downloadUrl;
-    }
-
-    public void setDownloadUrl(String downloadUrl) {
-        this.downloadUrl = downloadUrl;
-    }
-
-    public String getUploadUrl() {
-        return uploadUrl;
-    }
-
-    public void setUploadUrl(String uploadUrl) {
-        this.uploadUrl = uploadUrl;
     }
 
     public String getTemplateName() {

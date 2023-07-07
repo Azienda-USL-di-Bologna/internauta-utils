@@ -60,6 +60,9 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     
     @Autowired
     private PdfToolkitDownloaderUtils pdfToolkitDownloaderUtils;
+    
+    @Autowired
+    private PdfToolkitConfigParams pdfToolkitConfigParams;
 
     private final static Logger log = LoggerFactory.getLogger(ReporterWorker.class);
     private final String name = ReporterWorker.class.getSimpleName();
@@ -165,20 +168,17 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             renderer.createPDF(pdfOut, true, true, PdfAConformanceLevel.PDF_A_1A);
             String tempFileName = String.format("reporter_%s.pdf", UUID.randomUUID().toString());
             ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray());
-            String downloaderUrl;
-            String uploaderUrl;
+            final String downloaderUrl = pdfToolkitConfigParams.getDownloaderUrl();
+            final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();
+            final Integer tokenExpireSeconds = pdfToolkitConfigParams.getTokenExpireSeconds();
             // Carica e ottiene l'url per il download, con token valido per un minuto
             String urlToDownload = null;
             ReporterWorkerResult reporterWorkerResult = new ReporterWorkerResult();
-            if (workerData.getDownloadUrl() != null && workerData.getUploadUrl() != null) {
-                downloaderUrl = workerData.getDownloadUrl(); 
-                uploaderUrl = workerData.getUploadUrl();
-                try {
-                    urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, 3600);
-                    reporterWorkerResult.setUrl(urlToDownload);
-                } catch (PdfToolkitHttpException ex) {
-                    log.error("Errore nell'upload e generazione l' url per il download", ex);
-                }
+            try {
+                urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
+                reporterWorkerResult.setUrl(urlToDownload);
+            } catch (PdfToolkitHttpException ex) {
+                log.error("Errore nell'upload e generazione l' url per il download", ex);
             }
             return reporterWorkerResult;
 

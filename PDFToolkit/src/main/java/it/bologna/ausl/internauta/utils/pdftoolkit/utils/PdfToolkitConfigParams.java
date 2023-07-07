@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import it.bologna.ausl.internauta.utils.pdftoolkit.repositories.ParameterRepository;
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  *
@@ -33,7 +33,7 @@ public class PdfToolkitConfigParams {
     
     private static final Logger logger = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
     public static final String WORKDIR = System.getProperty("java.io.tmpdir");
-    public static final String RESOURCES_RELATIVE_PATH = "/resources/reporter";
+    public static final String RESOURCES_RELATIVE_PATH = "resources/reporter";
     public static final String TEMPLATES_RELATIVE_PATH = "/templates";
      
     public enum ParameterIds {
@@ -44,7 +44,8 @@ public class PdfToolkitConfigParams {
     public enum DownloaderParamsKey {
         uploadUrl,
         downloadUrl,
-        pdfToolkitBucket
+        pdfToolkitBucket,
+        tokenExpireSeconds
     }
         
     @Autowired
@@ -58,11 +59,12 @@ public class PdfToolkitConfigParams {
     private Map<String, Object> downloaderParams;
        
     /**
-     * Questo metodo viene eseguito in fase di boot dell'applicazione.
-     * Inizializza il tutto
-     * @throws UnknownHostException
-     * @throws IOException
-     * @throws PdfToolkitConfigurationException 
+     * Metodo di inizializzazione chiamato dopo la creazione del bean.
+     * Effettua la lettura dei parametri di configurazione da MinIO e del downloader,
+     * quindi scarica tutti i file di risorse per il modulo PDFToolkit.
+     * @throws UnknownHostException se si verifica un errore durante la risoluzione dell'host
+     * @throws IOException se si verifica un errore di input/output
+     * @throws PdfToolkitConfigurationException se si verifica un errore di configurazione del PdfToolkit
      */
     @PostConstruct
     public void init() throws UnknownHostException, IOException, PdfToolkitConfigurationException {
@@ -83,59 +85,68 @@ public class PdfToolkitConfigParams {
         }
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
-        //TODO: Chiedere a GDM come passare il CODICE
+        //TODO: Chiedere a GDM come passare il CODICE AZIENDA
+        logger.info("Downloading all resource files for PDFToolkit module...");
         try {
             List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, "105");
+            logger.info("Found {} files in the resources path.", filesInPath.size());
             for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
-                try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
-                    File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
-
-                    java.nio.file.Files.copy(
-                        fileInputStream, 
-                        targetFile.toPath(), 
-                        StandardCopyOption.REPLACE_EXISTING);
+                File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
+                if (targetFile.exists())
+                    logger.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
+                else {
+                    logger.debug("Downloading file '{}'...", minIOFileInfo.getPath());
+                    try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
+                        String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
+                        if (Files.notExists(Paths.get(destination)))
+                            Files.createDirectories(Paths.get(destination));
+                        java.nio.file.Files.copy(
+                            fileInputStream, 
+                            targetFile.toPath(), 
+                            StandardCopyOption.REPLACE_EXISTING);
+                        logger.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
+                    } catch (IOException ex) {
+                        logger.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
+                    }
                 }
             }
+            logger.info("All resource files downloaded successfully.");
         } catch (MinIOWrapperException ex) {
-            logger.error("Errore durante il download dei resource files da minIO");
-//            throw new PdfToolkitConfigurationException(String.format("Errore durante il download dei resource files da minIO"));
+            logger.error("Error occurred in MinIOWrapper", ex);
+//        throw new PdfToolkitConfigurationException("Error occurred in MinIOWrapper", ex);
         }
     }
     
     /**
-     * Torna l'url del downloder sostituendo ai segnaposto (se ci sono) lo schema, l'hostname e la porta passati
-     * @param scheme schema dell'url chiamante (es: http, https)
-     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
-     * @param port la porta da sostituire
-     * @return
+     * Restituisce l'URL di download del downloader.
+     * @return L'URL di download come una stringa.
      */
-    public String getDownloaderUrl(String scheme, String hostname, Integer port) {
-        return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrl.toString()))
-                .replace("{scheme}", scheme)
-                .replace("{hostname}", hostname)
-                .replace("{port}", port.toString());
+    public String getDownloaderUrl() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrl.toString()));
     }
     
     /**
-     * Torna l'url dell'uploader sostituendo ai segnaposto (se ci sono) lo schema, l'hostname e la porta passati
-     * @param scheme schema dell'url chiamante (es: http, https)
-     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
-     * @param port la porta da sostituire
-     * @return
+     * Restituisce l'URL di upload del downloader.
+     * @return L'URL di upload come una stringa.
      */
-    public String getUploaderUrl(String scheme, String hostname, Integer port) {
-        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrl.toString()))
-                .replace("{scheme}", scheme)
-                .replace("{hostname}", hostname)
-                .replace("{port}", port.toString());
+    public String getUploaderUrl() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrl.toString()));
     }
     
     /**
-     * Torna il nome del bucket del pdfToolkitBucket
+     * Restituisce il nome del bucket del pdfToolkitBucket
      * @return il nome del bucket del pdfToolkitBucket
      */
     public String getPdfToolkitBucket() {
         return (String)this.downloaderParams.get(DownloaderParamsKey.pdfToolkitBucket.toString());
+    }
+    
+    /**
+     * Restituisce il numero di secondi di scadenza del token.
+     * @return Il numero di secondi di scadenza del token come una stringa.
+     */
+    public Integer getTokenExpireSeconds() {
+        return (Integer)this.downloaderParams.get(DownloaderParamsKey.tokenExpireSeconds.toString());
     }
     
     /**
