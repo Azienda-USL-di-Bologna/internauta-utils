@@ -222,7 +222,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                             QVersamento.versamento.idDoc.id, 
                             QVersamento.versamento.idArchivio.id, 
                             QVersamento.versamento.stato,
-                            QVersamento.versamento.forzabile)
+                            QVersamento.versamento.forzabile,
+                            QVersamento.versamento.forzabileConcordato)
                     .from(QVersamento.versamento)
                     .where(QVersamento.versamento.idSessioneVersamento.id.eq(idSessioneVersamento))
                     .fetch();
@@ -236,6 +237,9 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
                 StatoVersamento statoVersamentoEffettuato = StatoVersamento.valueOf(versamentoEffettuato.get(QVersamento.versamento.stato));
                 Boolean forzabileVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.forzabile);
+                // potrebbe essere comunque forzabile ma crittografico
+                Boolean forzabileConcordatoVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.forzabileConcordato);
+                
                 
                 /*
                 per calcolare lo stato della sessione in corso, leggo tutti gli stati devi versamenti e creo un oggetto
@@ -247,6 +251,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 versamentoDocInformation.setIdDoc(idDocVersamentoEffettuato);
                 versamentoDocInformation.setIdArchivio(idArchivioVersamentoEffettuato);
                 versamentoDocInformation.setForzabile(forzabileVersamentoEffettuato);
+                versamentoDocInformation.setForzabileConcordato(forzabileConcordatoVersamentoEffettuato);
                 versamentoDocInformation.setParams(getWorkerData().getParams());
                 versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
                 
@@ -358,8 +363,6 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
     private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
         
-        Persona personaForzatura = getPersonaForzatura();
-        
         List<VersatoreDocThread> versatoreDocThreads = new ArrayList<>();
         
         /*
@@ -374,27 +377,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             VersatoreDocThread versatoreDocThread = new VersatoreDocThread(
                     versamentoDaEffettuare,
                     sessioneVersamento,
-                    personaForzatura,
+                    getWorkerData().getIdPersonaForzatura(),
                     versatoreDocsInstance,
                     transactionTemplate,
                     entityManager);
             versatoreDocThreads.add(versatoreDocThread);
         }
         return versatoreDocThreads;
-    }
-    
-    /**
-     * Reperisce l'entità Persona che forza il versamento
-     * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
-     */
-    private Persona getPersonaForzatura() {
-        Persona personaForzatura = null;
-        if (getWorkerData().getIdPersonaForzatura() != null) {
-            personaForzatura = transactionTemplate.execute(a -> {
-                return entityManager.find(Persona.class, getWorkerData().getIdPersonaForzatura());
-            });
-        }
-        return personaForzatura;
     }
     
     /**
@@ -439,7 +428,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         boolean versamentoForzabile = false;
         for (Integer idDoc : versamentoDocs.keySet()) {
             VersamentoDocInformation versamentoDoc = versamentoDocs.get(idDoc);
-            versamentoForzabile = versamentoForzabile || versamentoDoc.getForzabile();
+            versamentoForzabile = versamentoForzabile || versamentoDoc.getForzabile() || versamentoDoc.getForzabileConcordato();
             
             if (statoVersamentoFascicolo == null) {
                 statoVersamentoFascicolo = versamentoDoc.getStatoVersamento();

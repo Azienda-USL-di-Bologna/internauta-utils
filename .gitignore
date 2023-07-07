@@ -22,4 +22,4 @@ versatore/target/
 ParerDocumentBuilder/target/
 parersender/target/
 *.p12
-/PDFToolkit/target/
+PDFToolkit/target/

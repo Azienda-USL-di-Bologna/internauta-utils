@@ -34,7 +34,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
     private final TransactionTemplate transactionTemplate;
     private final EntityManager entityManager;
     private final SessioneVersamento sessioneVersamento;
-    private final Persona personaForzatura;
+    private final Integer idPersonaForzatura;
     private static final Logger log = LoggerFactory.getLogger(VersatoreDocThread.class);
 
     /**
@@ -42,18 +42,18 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
      * @param vesamentiDoc contiene una lista di versamenti che il thread effettuerà.
      *  Sono tutti i versamenti per lo stesso doc
      * @param sessioneVersamento la sessione alla quale attaccare il versamento
-     * @param personaForzatura la persona che effettua la forzatura, se non è una forzatura passare null
+     * @param idPersonaForzatura l'id della persona che effettua la forzatura, se non è una forzatura passare null
      * @param versatoreDocsInstance l'istanza del versatore dell'azienda
      * @param transactionTemplate
      * @param entityManager 
      */
-    public VersatoreDocThread(List<VersamentoDocInformation> vesamentiDoc, SessioneVersamento sessioneVersamento, Persona personaForzatura, VersatoreDocs versatoreDocsInstance, TransactionTemplate transactionTemplate, EntityManager entityManager) {
+    public VersatoreDocThread(List<VersamentoDocInformation> vesamentiDoc, SessioneVersamento sessioneVersamento, Integer idPersonaForzatura, VersatoreDocs versatoreDocsInstance, TransactionTemplate transactionTemplate, EntityManager entityManager) {
         this.vesamentiDoc = vesamentiDoc;
         this.sessioneVersamento = sessioneVersamento;
         this.versatoreDocsInstance = versatoreDocsInstance;
         this.transactionTemplate = transactionTemplate;
         this.entityManager = entityManager;
-        this.personaForzatura = personaForzatura;
+        this.idPersonaForzatura = idPersonaForzatura;
     }
     
     
@@ -76,7 +76,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                     }
                     JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
                     ZonedDateTime now = ZonedDateTime.now();
-                    insertVersamentoAndUpdateAllegatiAndDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, personaForzatura, now);
+                    insertVersamentoAndUpdateAllegatiAndDoc(queryFactory, versamentoDocInformation.getIdDoc(), versamentoDocInformation, idPersonaForzatura, now);
                 } else {
                     /*
                     se lo stato del versamento era ERRORE, allora setto come stato ERRORE (in modo che ne tenga conto nel calcolo dello stato finale
@@ -99,7 +99,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
      * @param personaForzatura la persona che effettua la forzatura, se non è una forzatura passare null
      * @param now data da inserire come data di versamento
      */
-    private void insertVersamentoAndUpdateAllegatiAndDoc(JPAQueryFactory queryFactory, Integer idDoc, VersamentoDocInformation versamentoDocInformation, Persona personaForzatura, ZonedDateTime now) {       
+    private void insertVersamentoAndUpdateAllegatiAndDoc(JPAQueryFactory queryFactory, Integer idDoc, VersamentoDocInformation versamentoDocInformation, Integer idPersonaForzatura, ZonedDateTime now) {       
         transactionTemplate.executeWithoutResult(a -> {
             Doc doc = entityManager.find(Doc.class, versamentoDocInformation.getIdDoc());
             Archivio archivio = null;
@@ -107,6 +107,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
             }
             
+            Persona personaForzatura = getPersonaForzatura();
             // prima crea il versamento e lo salva
             Versamento versamento = buildVersamento(versamentoDocInformation, doc, personaForzatura, archivio, now);
             entityManager.persist(versamento);
@@ -116,6 +117,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             inoltre svuoto lo stato prossimo versamento (stato_versamento)
             */
             boolean forzabile = versamentoDocInformation.getForzabile();
+            boolean forzabileConcordato = versamentoDocInformation.getForzabileConcordato();
             if (versamentoDocInformation.getVersamentiAllegatiInformations() != null) {
                 for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentoDocInformation.getVersamentiAllegatiInformations()) {
                     Allegato allegato = entityManager.find(Allegato.class, versamentoAllegatoInformation.getIdAllegato());
@@ -142,6 +144,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             // alla fine scrive lo stato del doc e la forzabilità (calcolati in base agli allegati) sul versamento
             versamento.setStato(statoVersamentoDoc);
             versamento.setForzabile(forzabile);
+            versamento.setForzabileConcordato(forzabileConcordato);
             
             /* 
             se il versamento è andato a buon fine, oppure è stato annullato (lo stato è VERSATO, o ANNULLATO), 
@@ -162,6 +165,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
                 .set(QDocDetail.docDetail.dataUltimoVersamento, now)
                 .set(QDocDetail.docDetail.versamentoForzabile, forzabile)
+                .set(QDocDetail.docDetail.versamentoForzabileConcordato, forzabileConcordato)
                 .where(QDocDetail.docDetail.id.eq(idDoc))
                 .execute();
             
@@ -177,6 +181,21 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                 .execute();
             }
         });
+    }
+    
+        
+    /**
+     * Reperisce l'entità Persona che forza il versamento
+     * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
+     */
+    private Persona getPersonaForzatura() {
+        Persona personaForzatura = null;
+        if (idPersonaForzatura != null) {
+            personaForzatura = transactionTemplate.execute(a -> {
+                return entityManager.find(Persona.class, idPersonaForzatura);
+            });
+        }
+        return personaForzatura;
     }
     
     /**
