@@ -31,6 +31,7 @@ import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.Version;
 import freemarker.template.TemplateExceptionHandler;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
+import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfiguration;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
@@ -63,6 +64,9 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     
     @Autowired
     private PdfToolkitConfigParams pdfToolkitConfigParams;
+    
+    @Autowired
+    private PdfToolkitConfiguration pdfToolkitConfiguration;
 
     private final static Logger log = LoggerFactory.getLogger(ReporterWorker.class);
     private final String name = ReporterWorker.class.getSimpleName();
@@ -73,10 +77,8 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         
         ReporterWorkerData workerData = getWorkerData();
-
-        String iccProfilePath = String.format("%s%s%s", PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH, "AdobeRGB1998.icc");
-
-        iccProfileStream = getClass().getResourceAsStream(iccProfilePath);
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        iccProfileStream = classloader.getResourceAsStream(pdfToolkitConfiguration.getAdobeIccProfileResourcePath());
         if (iccProfileStream == null) {
             log.info("iccprofile è null cazoooo");
         }

@@ -9,8 +9,7 @@ import okhttp3.OkHttpClient;
  * setHttpClientManager della classe it.bologna.ausl.internauta.utils.firma.configuration.HttpClientConfiguration
  * @author gdm
  */
-public abstract class PdfToolkitHttpClientManager {
+public abstract class PdfToolkitConfigurationManager {
     
-    public abstract OkHttpClient getOkHttpClient();
-    
+    public abstract OkHttpClient getOkHttpClient();    
 }

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreator;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
-import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitHttpClientConfiguration;
-import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitHttpClientManager;
+import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfiguration;
+import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfigurationManager;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitConfigurationException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
 import java.io.File;
@@ -86,7 +86,7 @@ public class PdfToolkitDownloaderUtils {
     private Integer tokenExpireSeconds;
     
     @Autowired
-    private PdfToolkitHttpClientConfiguration pdfToolkitHttpClientConfiguration;
+    private PdfToolkitConfiguration pdfToolkitHttpClientConfiguration;
     
     @Autowired
     private ObjectMapper objectMapper;
