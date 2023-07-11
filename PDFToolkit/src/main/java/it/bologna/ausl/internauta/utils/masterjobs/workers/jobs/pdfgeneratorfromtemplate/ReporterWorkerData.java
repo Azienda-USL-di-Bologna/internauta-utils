@@ -12,15 +12,17 @@ public class ReporterWorkerData extends JobWorkerData{
 
     private String codiceAzienda;
     private String templateName;
+    private String fileName;
     
     Map<String,Object> parametriTemplate;
     
     public ReporterWorkerData() {
     }
 
-    public ReporterWorkerData(String codiceAzienda, String templateName, Map<String, Object> parametriTemplate) {
+    public ReporterWorkerData(String codiceAzienda, String templateName, String fileName, Map<String, Object> parametriTemplate) {
         this.codiceAzienda = codiceAzienda;
         this.templateName = templateName;
+        this.fileName = fileName;
         this.parametriTemplate = parametriTemplate;
     }
         
@@ -38,6 +40,14 @@ public class ReporterWorkerData extends JobWorkerData{
 
     public void setTemplateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     public Map<String, Object> getParametriTemplate() {

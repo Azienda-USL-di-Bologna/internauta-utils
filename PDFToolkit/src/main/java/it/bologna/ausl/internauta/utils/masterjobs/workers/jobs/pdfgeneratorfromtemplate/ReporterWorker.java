@@ -13,7 +13,6 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -27,17 +26,14 @@ import freemarker.template.Template;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.cache.StringTemplateLoader;
-import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.Version;
 import freemarker.template.TemplateExceptionHandler;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
-import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfiguration;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
-import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -47,7 +43,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 
 import org.xhtmlrenderer.pdf.ITextRenderer;
 import org.xhtmlrenderer.pdf.PDFCreationListener;
@@ -58,6 +53,7 @@ import org.xhtmlrenderer.pdf.PDFCreationListener;
  */
 @MasterjobsWorker
 public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResult> {
+    private static final Logger log = LoggerFactory.getLogger(ReporterWorker.class);
     
     @Autowired
     private PdfToolkitDownloaderUtils pdfToolkitDownloaderUtils;
@@ -65,28 +61,20 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     @Autowired
     private PdfToolkitConfigParams pdfToolkitConfigParams;
     
-    @Autowired
-    private PdfToolkitConfiguration pdfToolkitConfiguration;
-
-    private final static Logger log = LoggerFactory.getLogger(ReporterWorker.class);
     private final String name = ReporterWorker.class.getSimpleName();
-    
-    private InputStream iccProfileStream;   // Chiedere a GDM se vale la pena inizializzarlo nei conf
 
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         
         ReporterWorkerData workerData = getWorkerData();
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        iccProfileStream = classloader.getResourceAsStream(pdfToolkitConfiguration.getAdobeIccProfileResourcePath());
-        if (iccProfileStream == null) {
-            log.info("iccprofile è null cazoooo");
-        }
+        File adobeProfileFile = new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH + "/AdobeRGB1998.icc");
+ 
         Template temp = null;
         Map<String, Object> parametri = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Writer out = new OutputStreamWriter(baos);
-            ByteArrayOutputStream pdfOut = new ByteArrayOutputStream()) {
+            ByteArrayOutputStream pdfOut = new ByteArrayOutputStream();
+            InputStream iccProfileStream = new FileInputStream(adobeProfileFile)) {
             String templateName = (String) workerData.getTemplateName();
 
             if (templateName == null || templateName.equals("")) {
@@ -99,7 +87,8 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             }
             /* TODO: Qui c'era la parte del QR Code, rimossa per tenere pulito il codice */
             
-            final File resourcePath = new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH);
+            final File resourcePath = 
+                    new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH + PdfToolkitConfigParams.INTERNAUTA_RELATIVE_PATH);
             
             final Version version = new Version(2, 3, 20);
             final Configuration cfg = new Configuration(version);
@@ -168,7 +157,7 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             renderer.layout();
           
             renderer.createPDF(pdfOut, true, true, PdfAConformanceLevel.PDF_A_1A);
-            String tempFileName = String.format("reporter_%s.pdf", UUID.randomUUID().toString());
+            String tempFileName = workerData.getFileName() != null ?  workerData.getFileName() : String.format("reporter_%s.pdf", UUID.randomUUID().toString());
             ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray());
             final String downloaderUrl = pdfToolkitConfigParams.getDownloaderUrl();
             final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();

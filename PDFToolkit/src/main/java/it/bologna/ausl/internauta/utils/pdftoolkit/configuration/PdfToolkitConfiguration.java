@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 public class PdfToolkitConfiguration {
     
     private PdfToolkitConfigurationManager httpClientManager;
-    private String adobeIccProfileResourcePath;
 
     public PdfToolkitConfigurationManager getHttpClientManager() {
         return httpClientManager;
@@ -20,13 +19,5 @@ public class PdfToolkitConfiguration {
 
     public void setHttpClientManager(PdfToolkitConfigurationManager httpClientManager) {
         this.httpClientManager = httpClientManager;
-    }
-
-    public String getAdobeIccProfileResourcePath() {
-        return adobeIccProfileResourcePath;
-    }
-
-    public void setAdobeIccProfileResourcePath(String adobeIccProfileResourcePath) {
-        this.adobeIccProfileResourcePath = adobeIccProfileResourcePath;
     }
 }
