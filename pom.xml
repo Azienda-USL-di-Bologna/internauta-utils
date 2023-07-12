@@ -44,6 +44,7 @@
         <module>versatore</module>
         <module>ParerDocumentBuilder</module>
         <module>parersender</module>
+        <module>PDFToolkit</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 <!--    <dependencies>
