@@ -5,11 +5,12 @@ import java.util.Map;
 
 
 /**
- *
- * @author Top
+ * Classe che contiene i dati necessari al worker del reporter per generare i PDF.
+ * 
+ * @author Giuseppe Russo <g.russo@dilaxia.com>
  */
 public class ReporterWorkerData extends JobWorkerData{
-
+    //
     private String codiceAzienda;
     private String templateName;
     private String fileName;
@@ -19,6 +20,14 @@ public class ReporterWorkerData extends JobWorkerData{
     public ReporterWorkerData() {
     }
 
+    /**
+     * Costruttore con tutti i parametri
+     * 
+     * @param codiceAzienda Il codice azienda per generare il pdf. Verrà utilizzato per identificare il giusto template.
+     * @param templateName Il nome del template eg. gd_frontespizio
+     * @param fileName Il nome con il quale verrà generato il pdf.
+     * @param parametriTemplate I parametri che andranno a compilare il template.
+     */
     public ReporterWorkerData(String codiceAzienda, String templateName, String fileName, Map<String, Object> parametriTemplate) {
         this.codiceAzienda = codiceAzienda;
         this.templateName = templateName;

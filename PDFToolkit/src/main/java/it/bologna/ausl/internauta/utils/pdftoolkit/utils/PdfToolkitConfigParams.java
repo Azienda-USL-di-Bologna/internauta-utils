@@ -25,13 +25,15 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- *
+ * Classe per la configurazione iniziare del modulo. 
+ * Legge i parametri dal DB e inizializza gli oggetti necessari del reporter.
+ * 
  * @author Giuseppe Russo <g.russo@dilaxia.com>
  */
 @Service
 public class PdfToolkitConfigParams {
     
-    private static final Logger logger = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
+    private static final Logger log = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
     public static final String WORKDIR = System.getProperty("java.io.tmpdir");
     public static final String RESOURCES_RELATIVE_PATH = "/resources/reporter";
     public static final String INTERNAUTA_RELATIVE_PATH = "/internauta";
@@ -45,8 +47,7 @@ public class PdfToolkitConfigParams {
     public enum DownloaderParamsKey {
         uploadUrl,
         downloadUrl,
-        pdfToolkitBucket,
-        tokenExpireSeconds
+        pdfToolkitBucket
     }
         
     @Autowired
@@ -63,6 +64,7 @@ public class PdfToolkitConfigParams {
      * Metodo di inizializzazione chiamato dopo la creazione del bean.
      * Effettua la lettura dei parametri di configurazione da MinIO e del downloader,
      * quindi scarica tutti i file di risorse per il modulo PDFToolkit.
+     * 
      * @throws UnknownHostException se si verifica un errore durante la risoluzione dell'host
      * @throws IOException se si verifica un errore di input/output
      * @throws PdfToolkitConfigurationException se si verifica un errore di configurazione del PdfToolkit
@@ -86,17 +88,17 @@ public class PdfToolkitConfigParams {
         }
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
-        logger.info("Downloading all resource files for PDFToolkit module...");
+        log.info("Downloading all resource files for PDFToolkit module...");
         try {
             List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, getPdfToolkitBucket());
             if (filesInPath != null && !filesInPath.isEmpty()) {
-                logger.info("Found {} files in the resources path.", filesInPath.size());
+                log.info("Found {} files in the resources path.", filesInPath.size());
                 for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
                     File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
                     if (targetFile.exists())
-                        logger.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
+                        log.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
                     else {
-                        logger.debug("Downloading file '{}'...", minIOFileInfo.getPath());
+                        log.debug("Downloading file '{}'...", minIOFileInfo.getPath());
                         try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
                             String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
                             if (Files.notExists(Paths.get(destination)))
@@ -105,18 +107,18 @@ public class PdfToolkitConfigParams {
                                 fileInputStream, 
                                 targetFile.toPath(), 
                                 StandardCopyOption.REPLACE_EXISTING);
-                            logger.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
+                            log.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
                         } catch (IOException ex) {
-                            logger.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
+                            log.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
                         }
                     }
                 }  
-                logger.info("All resource files downloaded successfully.");
+                log.info("All resource files downloaded successfully.");
             } else {
-                logger.info("There aren't any files to download.");
+                log.info("There aren't any files to download.");
             }
         } catch (MinIOWrapperException ex) {
-            logger.error("Error occurred in MinIOWrapper", ex);
+            log.error("Error occurred in MinIOWrapper when trying to download the files.", ex);
 //        throw new PdfToolkitConfigurationException("Error occurred in MinIOWrapper", ex);
         }
     }
@@ -143,14 +145,6 @@ public class PdfToolkitConfigParams {
      */
     public String getPdfToolkitBucket() {
         return (String)this.downloaderParams.get(DownloaderParamsKey.pdfToolkitBucket.toString());
-    }
-    
-    /**
-     * Restituisce il numero di secondi di scadenza del token.
-     * @return Il numero di secondi di scadenza del token come una stringa.
-     */
-    public Integer getTokenExpireSeconds() {
-        return (Integer)this.downloaderParams.get(DownloaderParamsKey.tokenExpireSeconds.toString());
     }
     
     /**

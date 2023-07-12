@@ -43,6 +43,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import org.xhtmlrenderer.pdf.ITextRenderer;
 import org.xhtmlrenderer.pdf.PDFCreationListener;
@@ -60,6 +61,10 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     
     @Autowired
     private PdfToolkitConfigParams pdfToolkitConfigParams;
+    
+    // durata del token
+    @Value("${pdf-toolkit.downloader.token-expire-seconds:60}")
+    private Integer tokenExpireSeconds;
     
     private final String name = ReporterWorker.class.getSimpleName();
 
@@ -161,15 +166,14 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray());
             final String downloaderUrl = pdfToolkitConfigParams.getDownloaderUrl();
             final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();
-            final Integer tokenExpireSeconds = pdfToolkitConfigParams.getTokenExpireSeconds();
             // Carica e ottiene l'url per il download, con token valido per un minuto
-            String urlToDownload = null;
+            String urlToDownload;
             ReporterWorkerResult reporterWorkerResult = new ReporterWorkerResult();
             try {
                 urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
                 reporterWorkerResult.setUrl(urlToDownload);
             } catch (PdfToolkitHttpException ex) {
-                log.error("Errore nell'upload e generazione l' url per il download", ex);
+                log.error("Errore nell'upload e generazione dell'url per il download", ex);
             }
             return reporterWorkerResult;
 

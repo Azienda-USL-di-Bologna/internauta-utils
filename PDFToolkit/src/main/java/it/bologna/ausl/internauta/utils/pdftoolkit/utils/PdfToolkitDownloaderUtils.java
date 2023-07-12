@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreator;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfiguration;
-import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfigurationManager;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitConfigurationException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
 import java.io.File;
@@ -32,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 /**
