@@ -53,7 +53,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>it.bologna.ausl.mavenchef.utils</groupId>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>flying-saucer-pdf-itext5-local</artifactId>
             <version>1.0</version>
             <type>jar</type>
