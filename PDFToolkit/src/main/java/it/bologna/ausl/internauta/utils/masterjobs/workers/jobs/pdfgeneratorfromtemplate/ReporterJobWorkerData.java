@@ -9,7 +9,7 @@ import java.util.Map;
  * 
  * @author Giuseppe Russo <g.russo@dilaxia.com>
  */
-public class ReporterWorkerData extends JobWorkerData{
+public class ReporterJobWorkerData extends JobWorkerData{
     //
     private String codiceAzienda;
     private String templateName;
@@ -17,7 +17,7 @@ public class ReporterWorkerData extends JobWorkerData{
     
     Map<String,Object> parametriTemplate;
     
-    public ReporterWorkerData() {
+    public ReporterJobWorkerData() {
     }
 
     /**
@@ -28,7 +28,7 @@ public class ReporterWorkerData extends JobWorkerData{
      * @param fileName Il nome con il quale verrà generato il pdf.
      * @param parametriTemplate I parametri che andranno a compilare il template.
      */
-    public ReporterWorkerData(String codiceAzienda, String templateName, String fileName, Map<String, Object> parametriTemplate) {
+    public ReporterJobWorkerData(String codiceAzienda, String templateName, String fileName, Map<String, Object> parametriTemplate) {
         this.codiceAzienda = codiceAzienda;
         this.templateName = templateName;
         this.fileName = fileName;

@@ -6,13 +6,13 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
  *
  * @author Top
  */
-public class ReporterWorkerResult extends JobWorkerResult {
+public class ReporterJobWorkerResult extends JobWorkerResult {
     
     private String url;
 
-    public ReporterWorkerResult() { }
+    public ReporterJobWorkerResult() { }
 
-    public ReporterWorkerResult(String url) {
+    public ReporterJobWorkerResult(String url) {
         this.url = url;
     }
     
