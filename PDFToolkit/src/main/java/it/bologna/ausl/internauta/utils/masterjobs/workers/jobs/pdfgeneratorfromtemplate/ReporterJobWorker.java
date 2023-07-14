@@ -53,8 +53,8 @@ import org.xhtmlrenderer.pdf.PDFCreationListener;
  * @author Top
  */
 @MasterjobsWorker
-public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResult> {
-    private static final Logger log = LoggerFactory.getLogger(ReporterWorker.class);
+public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorkerResult> {
+    private static final Logger log = LoggerFactory.getLogger(ReporterJobWorker.class);
     
     @Autowired
     private PdfToolkitDownloaderUtils pdfToolkitDownloaderUtils;
@@ -66,12 +66,12 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
     @Value("${pdf-toolkit.downloader.token-expire-seconds:60}")
     private Integer tokenExpireSeconds;
     
-    private final String name = ReporterWorker.class.getSimpleName();
+    private final String name = ReporterJobWorker.class.getSimpleName();
 
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         
-        ReporterWorkerData workerData = getWorkerData();
+        ReporterJobWorkerData workerData = getWorkerData();
         File adobeProfileFile = new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH + "/AdobeRGB1998.icc");
  
         Template temp = null;
@@ -168,7 +168,7 @@ public class ReporterWorker extends JobWorker<ReporterWorkerData, JobWorkerResul
             final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();
             // Carica e ottiene l'url per il download, con token valido per un minuto
             String urlToDownload;
-            ReporterWorkerResult reporterWorkerResult = new ReporterWorkerResult();
+            ReporterJobWorkerResult reporterWorkerResult = new ReporterJobWorkerResult();
             try {
                 urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
                 reporterWorkerResult.setUrl(urlToDownload);
