@@ -189,13 +189,10 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
      * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
      */
     private Persona getPersonaForzatura() {
-        Persona personaForzatura = null;
         if (idPersonaForzatura != null) {
-            personaForzatura = transactionTemplate.execute(a -> {
-                return entityManager.find(Persona.class, idPersonaForzatura);
-            });
+            return entityManager.find(Persona.class, idPersonaForzatura);
         }
-        return personaForzatura;
+        return null;
     }
     
     /**
