@@ -22,3 +22,5 @@ versatore/target/
 ParerDocumentBuilder/target/
 parersender/target/
 *.p12
+PDFToolkit/target/
+/flying-saucer-pdf-itext5/target/
