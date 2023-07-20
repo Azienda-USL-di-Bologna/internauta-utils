@@ -25,7 +25,7 @@
    
     <!-- sub modules -->
     <modules>
-        <module>bds-types</module>
+<!--        <module>bds-types</module>-->
         <module>jpa-tools</module>
         <module>parameters-manager</module>
         <module>minIO-manager</module>
@@ -44,6 +44,8 @@
         <module>versatore</module>
         <module>ParerDocumentBuilder</module>
         <module>parersender</module>
+        <module>PDFToolkit</module>
+        <module>flying-saucer-pdf-itext5</module>
     </modules>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
 <!--    <dependencies>

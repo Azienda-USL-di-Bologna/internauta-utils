@@ -44,7 +44,7 @@ public class DownloaderRestConfiguration {
         configResources.addAllowedMethod(HttpMethod.POST);
 
 
-        source.registerCorsConfiguration("/downloader-api/login/**", configResources);
+        source.registerCorsConfiguration("/downloader-api/**", configResources);
         return new CorsFilter(source);
     }
 }
