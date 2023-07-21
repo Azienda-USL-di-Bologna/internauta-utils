@@ -162,7 +162,7 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
             // viene settato lo stato ultimo versamento sul doc
             queryFactory
                 .update(QDocDetail.docDetail)
-                .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc.toString(): null)
+                .set(QDocDetail.docDetail.statoUltimoVersamento, statoVersamentoDoc != null ? statoVersamentoDoc: null)
                 .set(QDocDetail.docDetail.dataUltimoVersamento, now)
                 .set(QDocDetail.docDetail.versamentoForzabile, forzabile)
                 .set(QDocDetail.docDetail.versamentoForzabileConcordato, forzabileConcordato)

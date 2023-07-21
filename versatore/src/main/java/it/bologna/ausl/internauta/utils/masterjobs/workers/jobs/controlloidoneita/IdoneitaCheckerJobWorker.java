@@ -141,7 +141,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
                 .execute();
             queryFactory
                 .update(qDocDetail)
-                .set(qDocDetail.statoUltimoVersamento, statoVersamento.toString())
+                .set(qDocDetail.statoUltimoVersamento, statoVersamento)
                 .where(qDocDetail.id.eq(idDoc))
                 .execute();
         });
