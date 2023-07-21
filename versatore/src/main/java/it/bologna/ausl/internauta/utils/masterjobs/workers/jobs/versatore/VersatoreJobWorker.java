@@ -13,7 +13,6 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
-import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
@@ -161,7 +160,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 .from(QSessioneVersamento.sessioneVersamento)
                 .where(
                     QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()).and(
-                    QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING.toString()))
+                    QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING))
                 )
                 .fetchOne();
             }
@@ -195,7 +194,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             Range<ZonedDateTime> newInterval = Range.open(actualInterval.lower(), ZonedDateTime.now());
             queryFactory
                 .update(QSessioneVersamento.sessioneVersamento)
-                .set(QSessioneVersamento.sessioneVersamento.stato, statoSessioneVersamento.toString())
+                .set(QSessioneVersamento.sessioneVersamento.stato, statoSessioneVersamento)
                 .set(QSessioneVersamento.sessioneVersamento.timeInterval, newInterval)
                 .where(QSessioneVersamento.sessioneVersamento.id.eq(idSessioneVersamento))
                 .execute();   

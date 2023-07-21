@@ -27,7 +27,6 @@ import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
@@ -339,7 +338,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             case PROTOCOLLO_IN_USCITA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
-                if (docDetail.getStato() == DocDetailInterface.StatoDoc.SMISTAMENTO) {
+                if (docDetail.getStato() == Doc.StatoDoc.SMISTAMENTO) {
                     addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
                 } else {
                     addMittenteAzienda(docAttributes, docDetail, index);
