@@ -22,6 +22,8 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +43,13 @@ public class DownloaderController {
     
     @Autowired
     private DownloaderRepositoryConfiguration downloaderRepositoryConfiguration;
+    
+    @RequestMapping(value = "/verifyToken", method = RequestMethod.GET)
+    public ResponseEntity<?> verifyToken(HttpServletRequest request, HttpServletResponse response,
+            @RequestParam(required = true, name = "token") String stringToken,
+            @RequestParam(required = true, defaultValue = "false", name = "forceDownload") Boolean forceDownload) {
+        return new ResponseEntity("token valido", HttpStatus.OK);
+    }
     
     /**
      * Servlet chiamata per lo scaricamento di un file.
