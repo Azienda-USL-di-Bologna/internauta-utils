@@ -11,16 +11,15 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileN
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
+import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +71,13 @@ public abstract class FirmaRemota {
             }
             String uploadedFileUrl;
             try {
-                uploadedFileUrl = firmaRemotaDownloaderUtils.uploadToUploader(file.getInputStream(), fileName, null, false, request);
+                String scheme = request.getScheme();
+                String hostname = CommonUtils.getHostname(request);
+                Integer port = request.getServerPort();
+
+                String downloadUrl = this.configParams.getDownloaderUrl(scheme, hostname, port);
+                String uploadUrl = this.configParams.getUploaderUrl(scheme, hostname, port);
+                uploadedFileUrl = firmaRemotaDownloaderUtils.uploadToUploader(file.getInputStream(), fileName, null, false, downloadUrl, uploadUrl);
             } catch (Exception ex) {
                 String errorMessage = "errore nell'upload sull'uploader dei file multipart";
                 logger.error(errorMessage, ex);
@@ -129,8 +134,14 @@ public abstract class FirmaRemota {
             }
             logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
             
+            String scheme = request.getScheme();
+            String hostname = CommonUtils.getHostname(request);
+            Integer port = request.getServerPort();
+
+            String downloadUrl = this.configParams.getDownloaderUrl(scheme, hostname, port);
+            String uploadUrl = this.configParams.getUploaderUrl(scheme, hostname, port);
             // invio il file all'uploader e ottengo l'url per il suo scaricamento
-            String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, false, request);
+            String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, false, downloadUrl, uploadUrl);
             
             // una volta ottenuto l'url, lo setto
             file.setUrlFirmato(res);

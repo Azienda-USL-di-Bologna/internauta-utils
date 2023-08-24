@@ -40,7 +40,9 @@ public class ParametriAziendeReader {
         downloader,
         versatoreConfiguration,
         attivitaMailSender,
-        usaGediInternauta
+        usaGediInternauta,
+        chiusuraArchivio,
+        ricalcoloPermessiArchivi
     }
     
     @Autowired

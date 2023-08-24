@@ -13,7 +13,6 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
-import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
@@ -161,7 +160,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 .from(QSessioneVersamento.sessioneVersamento)
                 .where(
                     QSessioneVersamento.sessioneVersamento.idAzienda.id.eq(getWorkerData().getIdAzienda()).and(
-                    QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING.toString()))
+                    QSessioneVersamento.sessioneVersamento.stato.eq(StatoSessioneVersamento.RUNNING))
                 )
                 .fetchOne();
             }
@@ -195,7 +194,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             Range<ZonedDateTime> newInterval = Range.open(actualInterval.lower(), ZonedDateTime.now());
             queryFactory
                 .update(QSessioneVersamento.sessioneVersamento)
-                .set(QSessioneVersamento.sessioneVersamento.stato, statoSessioneVersamento.toString())
+                .set(QSessioneVersamento.sessioneVersamento.stato, statoSessioneVersamento)
                 .set(QSessioneVersamento.sessioneVersamento.timeInterval, newInterval)
                 .where(QSessioneVersamento.sessioneVersamento.id.eq(idSessioneVersamento))
                 .execute();   
@@ -222,7 +221,8 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                             QVersamento.versamento.idDoc.id, 
                             QVersamento.versamento.idArchivio.id, 
                             QVersamento.versamento.stato,
-                            QVersamento.versamento.forzabile)
+                            QVersamento.versamento.forzabile,
+                            QVersamento.versamento.forzabileConcordato)
                     .from(QVersamento.versamento)
                     .where(QVersamento.versamento.idSessioneVersamento.id.eq(idSessioneVersamento))
                     .fetch();
@@ -236,6 +236,9 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 Integer idArchivioVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.idArchivio.id);
                 StatoVersamento statoVersamentoEffettuato = StatoVersamento.valueOf(versamentoEffettuato.get(QVersamento.versamento.stato));
                 Boolean forzabileVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.forzabile);
+                // potrebbe essere comunque forzabile ma crittografico
+                Boolean forzabileConcordatoVersamentoEffettuato = versamentoEffettuato.get(QVersamento.versamento.forzabileConcordato);
+                
                 
                 /*
                 per calcolare lo stato della sessione in corso, leggo tutti gli stati devi versamenti e creo un oggetto
@@ -247,6 +250,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 versamentoDocInformation.setIdDoc(idDocVersamentoEffettuato);
                 versamentoDocInformation.setIdArchivio(idArchivioVersamentoEffettuato);
                 versamentoDocInformation.setForzabile(forzabileVersamentoEffettuato);
+                versamentoDocInformation.setForzabileConcordato(forzabileConcordatoVersamentoEffettuato);
                 versamentoDocInformation.setParams(getWorkerData().getParams());
                 versamentiPerCalcoloStatoSessione.add(versamentoDocInformation);
                 
@@ -358,8 +362,6 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
     private List<VersatoreDocThread> buildVersatoreDocThreadsList(Map<Integer, List<VersamentoDocInformation>> versamentiDaEffettuare, SessioneVersamento sessioneVersamento) throws VersatoreProcessingException {
         VersatoreDocs versatoreDocsInstance = versatoreFactory.getVersatoreDocsInstance(getWorkerData().getHostId());
         
-        Persona personaForzatura = getPersonaForzatura();
-        
         List<VersatoreDocThread> versatoreDocThreads = new ArrayList<>();
         
         /*
@@ -374,27 +376,13 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             VersatoreDocThread versatoreDocThread = new VersatoreDocThread(
                     versamentoDaEffettuare,
                     sessioneVersamento,
-                    personaForzatura,
+                    getWorkerData().getIdPersonaForzatura(),
                     versatoreDocsInstance,
                     transactionTemplate,
                     entityManager);
             versatoreDocThreads.add(versatoreDocThread);
         }
         return versatoreDocThreads;
-    }
-    
-    /**
-     * Reperisce l'entità Persona che forza il versamento
-     * @return l'entità Persona che forza il versamento, oppure null se non è stata passata dei dati del job
-     */
-    private Persona getPersonaForzatura() {
-        Persona personaForzatura = null;
-        if (getWorkerData().getIdPersonaForzatura() != null) {
-            personaForzatura = transactionTemplate.execute(a -> {
-                return entityManager.find(Persona.class, getWorkerData().getIdPersonaForzatura());
-            });
-        }
-        return personaForzatura;
     }
     
     /**
@@ -439,7 +427,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         boolean versamentoForzabile = false;
         for (Integer idDoc : versamentoDocs.keySet()) {
             VersamentoDocInformation versamentoDoc = versamentoDocs.get(idDoc);
-            versamentoForzabile = versamentoForzabile || versamentoDoc.getForzabile();
+            versamentoForzabile = versamentoForzabile || versamentoDoc.getForzabile() || versamentoDoc.getForzabileConcordato();
             
             if (statoVersamentoFascicolo == null) {
                 statoVersamentoFascicolo = versamentoDoc.getStatoVersamento();
@@ -645,14 +633,14 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
      */
     private Map<Integer, List<VersamentoDocInformation>> addDocsDaProcessareDaDocs(Map<Integer, List<VersamentoDocInformation>> versamentiDaProcessare, TipologiaVersamento tipologiaVersamento, JPAQueryFactory queryFactory) { 
         List<Integer> docsIdDaProcessare;
-        List<String> tipologieDoc ;
+        List<StatoVersamento> statiVersamento ;
         // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
         if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
-            tipologieDoc = Arrays.asList(Versamento.StatoVersamento.FORZARE.toString());
+            statiVersamento = Arrays.asList(Versamento.StatoVersamento.FORZARE);
         } else { // altrimenti prendo tutti quelli da versare o aggiornare
-            tipologieDoc = Arrays.asList(
-                Versamento.StatoVersamento.VERSARE.toString(), 
-                Versamento.StatoVersamento.AGGIORNARE.toString());
+            statiVersamento = Arrays.asList(
+                Versamento.StatoVersamento.VERSARE, 
+                Versamento.StatoVersamento.AGGIORNARE);
         }
         QDoc qDoc = QDoc.doc;
         docsIdDaProcessare = queryFactory
@@ -661,7 +649,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             .where(
                     qDoc.statoVersamento.isNotNull()
                 .and(
-                    qDoc.statoVersamento.in(tipologieDoc))
+                    qDoc.statoVersamento.in(statiVersamento))
                 .and(
                     qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
                 )
@@ -712,19 +700,19 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             TipologiaVersamento tipologiaVersamento, 
             JPAQueryFactory queryFactory) throws MasterjobsWorkerException {
         List<Integer> docsIdDaProcessare;
-        String tipologiaDoc = null;
+        StatoVersamento statoVersamento = null;
         // se la siamo in una sessione di forzatura, prenso solo i doc in stato FORZARE 
         if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
-            tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
+            statoVersamento = Versamento.StatoVersamento.FORZARE;
         } else { // altrimenti prendo tutti quelli da ritentare
-            tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
+            statoVersamento = Versamento.StatoVersamento.ERRORE_RITENTABILE;
         }
         switch (tipologiaVersamento) {
             case FORZATURA:
-                tipologiaDoc = Versamento.StatoVersamento.FORZARE.toString();
+                statoVersamento = Versamento.StatoVersamento.FORZARE;
                 break;
             case RITENTA:
-                tipologiaDoc = Versamento.StatoVersamento.ERRORE_RITENTABILE.toString();
+                statoVersamento = Versamento.StatoVersamento.ERRORE_RITENTABILE;
                 break;
             default:
                 throw new MasterjobsWorkerException("Tipologia versamento non prevista");
@@ -736,7 +724,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             .select(qDoc.id)
             .from(qDoc)
             .where(
-                    qDoc.statoVersamento.eq(tipologiaDoc)
+                    qDoc.statoVersamento.eq(statoVersamento)
                 .and(
                     qDoc.idAzienda.id.eq(getWorkerData().getIdAzienda())
                 )
@@ -807,7 +795,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             qDocDetail.numeroRegistrazione.isNotNull());
             // se sono in una sessione FORZATURA, allora considero solo i doc nello stato FORZARE
             if (tipologiaVersamento == TipologiaVersamento.FORZATURA) {
-                filter = filter.and(qArchivioDoc.idDoc.statoVersamento.eq(Versamento.StatoVersamento.FORZARE.toString()));
+                filter = filter.and(qArchivioDoc.idDoc.statoVersamento.eq(Versamento.StatoVersamento.FORZARE));
             }
             
             docsIdDaProcessare = queryFactory

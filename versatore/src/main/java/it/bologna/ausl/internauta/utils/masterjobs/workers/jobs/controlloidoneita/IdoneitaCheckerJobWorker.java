@@ -136,12 +136,12 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
         transactionTemplate.executeWithoutResult(a -> {
             queryFactory
                 .update(qDoc)
-                .set(qDoc.statoVersamento, statoVersamento.toString())
+                .set(qDoc.statoVersamento, statoVersamento)
                 .where(qDoc.id.eq(idDoc))
                 .execute();
             queryFactory
                 .update(qDocDetail)
-                .set(qDocDetail.statoUltimoVersamento, statoVersamento.toString())
+                .set(qDocDetail.statoUltimoVersamento, statoVersamento)
                 .where(qDocDetail.id.eq(idDoc))
                 .execute();
         });
@@ -162,7 +162,8 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
 //                qArchivioDetail.id.eq(1116221).and(
                 qArchivioDetail.livello.eq(1).and(
                 qArchivioDetail.statoUltimoVersamento.isNull().and(
-                qArchivioDetail.stato.eq(Archivio.StatoArchivio.CHIUSO.toString())))
+                qArchivioDetail.stato.eq(Archivio.StatoArchivio.CHIUSO.toString())
+                .and(qArchivioDetail.idAzienda.id.eq(getWorkerData().getIdAzienda()))))
 //                )
             )
             .fetch();
@@ -182,7 +183,8 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
             .from(qDocDetail)
             .where(
                 qDocDetail.statoUltimoVersamento.isNull().and(
-                qDocDetail.numeroRegistrazione.isNotNull())
+                qDocDetail.numeroRegistrazione.isNotNull().and(
+                        qDocDetail.idAzienda.id.eq(getWorkerData().getIdAzienda())))
             )
             .fetch();
         return docsDaControllare;

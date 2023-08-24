@@ -66,7 +66,7 @@ public final class AziendaParamsManager {
 
         // popolo le mappe con le connssioni per ogni azienda
         for (String codiceAzienda : aziendeParams.keySet()) {
-            AziendaParametriJson aziendaParams = aziendeParams.get(codiceAzienda);
+                AziendaParametriJson aziendaParams = aziendeParams.get(codiceAzienda);
             AziendaParametriJson.DbConnParams dbConnParams = aziendaParams.getDbConnParams();
             HikariConfig hikariConfig = new HikariConfig();
             hikariConfig.setDriverClassName(dbConnParams.getDriverClass());

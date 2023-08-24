@@ -69,9 +69,9 @@ import org.json.simple.parser.ParseException;
  * @author utente
  */
 @Component
-public class ParerVersatoreService extends VersatoreDocs{
+public class ParerVersatoreService extends VersatoreDocs {
 
-    private static final Logger log = LoggerFactory.getLogger(InfocertVersatoreService.class);
+    private static final Logger log = LoggerFactory.getLogger(ParerVersatoreService.class);
     
     @Autowired
     private ParametriAziendeReader parametriAziende;
@@ -172,6 +172,9 @@ public class ParerVersatoreService extends VersatoreDocs{
                     if(errorCode.equals("UD-008-001")|| errorCode.startsWith("FIRMA") && !errorCode.equals("FIRMA-002-001")) {
                         versamentoInformation.setForzabile(Boolean.TRUE);
                     }
+                    if(errorCode.equals("FIRMA-002-001")) {
+                        versamentoInformation.setForzabileConcordato(Boolean.TRUE);
+                    }
                     for(VersamentoAllegatoInformation allegato: listaAllegati) {
                         allegato.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
                     }
@@ -206,7 +209,7 @@ public class ParerVersatoreService extends VersatoreDocs{
         for (IdentityFile identityFile : identityFiles) {
             PaccoFile paccoFile = new PaccoFile();
             try{
-            InputStream is = minIOWrapper.getByFileId(identityFile.getUuidMongo());
+            InputStream is = minIOWrapper.getByUuid(identityFile.getUuidMongo());
             paccoFile.setInputStream(is);
             paccoFile.setMime(identityFile.getMime());
             paccoFile.setFileName(identityFile.getFileBase64());
@@ -299,7 +302,7 @@ public class ParerVersatoreService extends VersatoreDocs{
 //    prende in input il versamentodoc coi suoi allegati e ritorna l'xml di risposta del parer
 //    Qui vengono generati i 
     private Map<String, Object> versaDocumentoParer(VersamentoDocInformation versamentoInformation) throws DatatypeConfigurationException, JAXBException, java.text.ParseException {
-        log.info("Inizio con il versamento del doc: ", versamentoInformation.getIdDoc().toString());
+        log.info("Inizio con il versamento del doc: " + versamentoInformation.getIdDoc().toString());
         Integer idDoc = versamentoInformation.getIdDoc();
         String forzaCollegamento, forzaAccettazione, forzaConservazione;
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
@@ -329,9 +332,9 @@ public class ParerVersatoreService extends VersatoreDocs{
         String versioneDatiSpecificiDeli = (String) versamentoInformation.getParams().get("versionedatispecificideli");
      
         String tipoComponenteDefault = (String) versamentoInformation.getParams().get("tipocomponentedefault");
-        Map<String, Object> unitaDocConIdentityFiles= parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
+        Map<String, Object> unitaDocConIdentityFiles = parerVersatoreMetadatiBuilder.ParerVersatoreMetadatiBuilder(doc, docDetail, enteVersamento, userID,version, ambiente,struttura, tipoConservazione, codifica, versioneDatiSpecificiPico,versioneDatiSpecificiDete,versioneDatiSpecificiDeli, includiNote, tipoComponenteDefault, forzaCollegamento, forzaAccettazione, forzaConservazione);
         List<JSONObject> identityFiles = (List<JSONObject>) unitaDocConIdentityFiles.get("identityFiles");
-        List<IdentityFile> identityFiless= new ArrayList<>();
+        List<IdentityFile> identityFiless = new ArrayList<>();
         for(JSONObject identityFile: identityFiles) {
             IdentityFile identityFilee = IdentityFile.parse(identityFile);
             identityFiless.add(identityFilee);
@@ -366,10 +369,14 @@ public class ParerVersatoreService extends VersatoreDocs{
             if (paccoConPacchiFiles.getFiles() != null) {
                 for (PaccoFile a : paccoConPacchiFiles.getFiles()) {
                     log.info("Inserisco nel body il file " + a.getId() + ", " + a.getFileName());
-                    InputStream is = a.getInputStream();
-                    byte[] bytes = IOUtils.toByteArray(is);
-                    is.close();
-                    builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    byte[] bytes;
+                    try (InputStream is = a.getInputStream()) {
+                        bytes = IOUtils.toByteArray(is);
+                        builder.addFormDataPart(a.getId(), a.getFileName(),RequestBody.create( okhttp3.MediaType.parse(a.getMime()), bytes));
+                    } catch(Exception ex) {
+                        log.error("Problemi con l'inputstream del file", ex);
+                    }
+                    
                 }
             }
             log.info("Buildo il MultiPart...");

@@ -46,12 +46,12 @@
             <version>2.10.2</version>
             <type>jar</type>
         </dependency>
-        <dependency>
+<!--        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>jpa-tools</artifactId>
             <scope>provided</scope>
             <version>1.0-SNAPSHOT</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>it.nextsw</groupId>
             <artifactId>next-spring-data-rest-framework</artifactId>
@@ -63,6 +63,12 @@
             <artifactId>javax.servlet-api</artifactId>
             <type>jar</type>
         </dependency>
+<!--        <dependency>
+            <groupId>it.bologna.ausl.internauta.model</groupId>
+            <artifactId>internauta-model</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>-->
     </dependencies>
     <build>
         <plugins>

@@ -234,7 +234,7 @@ public class MinIOWrapper {
         }
     }
 
-    private MinioClient getMinIOClientFromCodiceAzienda(String codiceAzienda) {
+    public MinioClient getMinIOClientFromCodiceAzienda(String codiceAzienda) {
         Integer serverId = minIOServerAziendaMap.get(codiceAzienda);
         return minIOServerClientMap.get(serverId);
     }
