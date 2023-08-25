@@ -1,8 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +18,7 @@ public class DeteBuilder {
         versamentoBuilder = new VersamentoBuilder();
     }
     
-    public void build() {
+    public VersamentoBuilder build() {
         versamentoBuilder.setDocType("82");
         
        
@@ -45,6 +43,8 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList("123123"), "TESTO");
         
         log.info(versamentoBuilder.toString());
+        
+        return versamentoBuilder;
     }
     
     

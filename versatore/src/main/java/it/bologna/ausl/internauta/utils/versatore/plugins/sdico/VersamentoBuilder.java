@@ -61,6 +61,7 @@ public class VersamentoBuilder {
         
         Values v = new Values();
         v.getValue().addAll(c);
+        sm.setValues(v);
         sm.setType(type);
         
         this.metadata.getSinglemetadata().add(sm);
@@ -73,6 +74,7 @@ public class VersamentoBuilder {
     public void addFile(File f) {
         this.files.getFile().add(f);
     }
+    
     
     /**
      * 
