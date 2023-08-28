@@ -15,13 +15,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,49 +42,52 @@ public class DownloaderController {
     
     @Autowired
     private DownloaderRepositoryConfiguration downloaderRepositoryConfiguration;
-    
+   
     /**
-     * Servlet chiamata per lo scaricamento di un file.
+     * Servlet chiamata per lo scaricamento di un file.Anche il token è passato in input, non viene usato direttamente:
+  La chiamata è intercettata da un filter (vedi classe it.bologna.ausl.internauta.utils.downloader.authorization.DownloaderRegistrationBean)
+  Questo filter decritta e controlla il token e lo inserisce nel contesto.
      * 
-     * Anche il token è passato in input, non viene usato direttamente:
-     *  La chiamata è intercettata da un filter (vedi classe it.bologna.ausl.internauta.utils.downloader.authorization.DownloaderRegistrationBean)
-     *  Questo filter decritta e controlla il token e lo inserisce nel contesto.
-     *  La servlet estrae il token dal contesto e reperisce il context-claim, che contiene le informazioni sul file da scaricare, grazie alle quali ne può reperire e tornare lo stream
+     * La servlet estrae il token dal contesto e reperisce il context-claim, che contiene le informazioni sul file da scaricare, grazie alle quali ne può reperire e tornare lo stream
      *
      * @param request
      * @param response
      * @param stringToken il token in stringa
      * @param forceDownload indica se forzare lo scaricamento del file settando l'apposito Content-Disposition
+     * @param onlyVerify indica se tornare solo la conferma della validità del token senza il file
      * @throws DownloaderParsingContextException
      * @throws DownloaderDownloadException 
      */
     @RequestMapping(value = "/download", method = RequestMethod.GET)
     public void download(HttpServletRequest request, HttpServletResponse response,
             @RequestParam(required = true, name = "token") String stringToken,
-            @RequestParam(required = true, defaultValue = "false", name = "forceDownload") Boolean forceDownload) throws DownloaderParsingContextException, DownloaderDownloadException {
+            @RequestParam(required = true, defaultValue = "false", name = "forceDownload") Boolean forceDownload,
+            @RequestParam(required = false, defaultValue = "false", name = "onlyVerify") Boolean onlyVerify) throws DownloaderParsingContextException, DownloaderDownloadException {
+        
+        if (!onlyVerify) {
+            DownloaderDownloadPlugin downloadPlugin;
+            Map<String, Object> contextClaim;
+            try {
+                // reperisco il context-claim
+                contextClaim = getContextClaimFromToken();
 
-        DownloaderDownloadPlugin downloadPlugin;
-        Map<String, Object> contextClaim;
-        try {
-            // reperisco il context-claim
-            contextClaim = getContextClaimFromToken();
-            
-            // dal context-claim estraggo le informazioni per instanziare il corretto download plugin e lo reperisco
-            downloadPlugin = getDownloadPluginInstance(contextClaim);
-        } catch (DownloaderPluginException | ParseException ex) {
-            String errorMessage = "errore nel parsing dei parametri per il download del file";
-            logger.error(errorMessage, ex);
-            throw new DownloaderParsingContextException(errorMessage, ex);
-        }
+                // dal context-claim estraggo le informazioni per instanziare il corretto download plugin e lo reperisco
+                downloadPlugin = getDownloadPluginInstance(contextClaim);
+            } catch (DownloaderPluginException | ParseException ex) {
+                String errorMessage = "errore nel parsing dei parametri per il download del file";
+                logger.error(errorMessage, ex);
+                throw new DownloaderParsingContextException(errorMessage, ex);
+            }
 
-        // reperisco il file e setto gli header, poi copio lo stream nella responde per far partire il download
-        try (InputStream file = downloadPlugin.getFile()) {
-            setDownloadResponseHeader(response, downloadPlugin, contextClaim, forceDownload);
-            IOUtils.copyLarge(file, response.getOutputStream());
-        } catch (Exception ex) {
-            String errorMessage = "errore nel reperimento del file";
-            logger.error(errorMessage, ex);
-            throw new DownloaderDownloadException(errorMessage, ex);
+            // reperisco il file e setto gli header, poi copio lo stream nella responde per far partire il download
+            try (InputStream file = downloadPlugin.getFile()) {
+                setDownloadResponseHeader(response, downloadPlugin, contextClaim, forceDownload);
+                IOUtils.copyLarge(file, response.getOutputStream());
+            } catch (Exception ex) {
+                String errorMessage = "errore nel reperimento del file";
+                logger.error(errorMessage, ex);
+                throw new DownloaderDownloadException(errorMessage, ex);
+            }
         }
     }
     
