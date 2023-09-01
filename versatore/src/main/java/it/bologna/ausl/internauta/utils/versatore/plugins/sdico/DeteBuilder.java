@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
+import it.bologna.ausl.model.entities.scripta.DocDetail;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,11 @@ public class DeteBuilder {
 
     private VersamentoBuilder versamentoBuilder;
     
-    public DeteBuilder() {
+    private DocDetail docDetail;
+    
+    public DeteBuilder(DocDetail docDetail) {
         versamentoBuilder = new VersamentoBuilder();
+        this.docDetail = docDetail;
     }
     
     public VersamentoBuilder build() {
@@ -32,7 +36,7 @@ public class DeteBuilder {
 
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList("illimitato"), "TESTO");
       
-        versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList("Determinazione n. DD/0000001/2023"), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(this.docDetail.getOggetto()), "TESTO");
         
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList("DD - Decreti e Determinazioni"), "TESTO");
         

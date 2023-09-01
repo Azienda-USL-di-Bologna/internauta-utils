@@ -4,6 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
+import it.bologna.ausl.model.entities.scripta.DocDetail;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,11 @@ public class RgPicoBuilder {
     
     private VersamentoBuilder versamentoBuilder;
     
-    public RgPicoBuilder() {
+    private DocDetail docDetail;
+    
+    public RgPicoBuilder(DocDetail docDetail) {
         versamentoBuilder = new VersamentoBuilder();
+        this.docDetail = docDetail;
     }
     
     public VersamentoBuilder build() {
@@ -30,7 +34,7 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList("8001"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3035"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("C.101.15.2.a1"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList("Registro giornaliero di protocollo"), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList(this.docDetail.getOggetto()), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList("r_veneto"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList("aoogiunta"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList("1"), "TESTO");

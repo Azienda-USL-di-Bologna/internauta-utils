@@ -7,10 +7,13 @@ import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.model.entities.versatore.Provider;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.xml.bind.JAXBException;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,22 +29,27 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class TestSdico {
     
     private static final Logger log = LoggerFactory.getLogger(TestSdico.class);
-    
    
-    private static EntityManager entityManager;
-    
     private static VersamentoDocInformation versamentoDocInformation;
     
     public static void main(String[] args) throws IOException, JAXBException {
         
-        DocDetail docDetail = new DocDetail();
-        docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
+        //DocDetail docDetail = new DocDetail();
+        //docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
         
         SdicoVersatoreService service = new SdicoVersatoreService();
-//        String jwt = service.getJWT();
-//        log.info("jwt: {}", jwt);
-       // service.versa();
-        service.getDoc(docDetail);
+        
+        FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
+        
+        String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        
+        //service.getDoc(docDetail, archivioScelto);
+        
+        
+        //String jwt = service.getJWT();
+        //log.info("jwt: {}", jwt);
+        System.out.println(service.versa(result));
+        
     }
     
 //    @Test

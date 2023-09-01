@@ -4,6 +4,7 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
+import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
@@ -20,6 +21,7 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -34,6 +36,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -48,10 +51,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SdicoVersatoreService extends VersatoreDocs {
 
-    private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
-
-    private static EntityManager entityManager;
-
+    private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);    
     private static final String SDICO_VERSATORE_SERVICE = "SdicoVersatoreService";
     private static final String SDICO_LOGIN_URI = "SdicoLoginURI";
     private static final String SDICO_SERVIZIO_VERSAMENTO_URI = "sdicoServizioVersamentoURI";
@@ -79,14 +79,18 @@ public class SdicoVersatoreService extends VersatoreDocs {
         return null;
     }
 
-    public void versa() throws FileNotFoundException, IOException {
+    public String versa(String documento) throws FileNotFoundException, IOException {
+        
+        log.info("Sono entrato in versa");
 
         String token = getJWT();
 
-        FileInputStream fstream = new FileInputStream("C:\\tmp\\new_metadati_provvedimento.xml");
+        //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
         FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
-        String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
-        log.info(result);
+        //qui creo il documentBuilder
+        //String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        //log.info(result);
+        log.info(documento);
 
         // inizializzazione http client
         OkHttpClient okHttpClient = new OkHttpClient()
@@ -95,17 +99,17 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .build();
 
         // Conversione file metadati.xml da inputstream to byte[]
-        byte[] fileMetadati = IOUtils.toByteArray(fstream);
+        byte[] fileMetadati = IOUtils.toByteArray(documento);
 
         // Conversione file pdf da inputstream to byte[]
         byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
-
+         
         // creazione di body multipart
         MultipartBody.Builder buildernew = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
 
-        //buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
+        buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
         MultipartBody requestBody = buildernew.build();
 
         // richiesta
@@ -116,37 +120,43 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .build();
 
         Response response = okHttpClient.newCall(request).execute();
-        log.info(response.body().string());
+        //log.info(response.body().string());
+        
+        //SdicoResponse sdicoResponse = response.body();
+        
+        //JSONObject jsonObject = new JSONObject(response.body().string());
+        return response.body().string();
     }
 
-    public void getDoc(DocDetail docDetail) {
+    //o lo chiamiamo dentro il versa o restituisce il documento xml
+    public String getDoc(DocDetail docDetail, Archivio archivioScelto) {
         
+        log.info(docDetail.getTipologia().toString());
+           
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+        
+        String documento = "";
 
         switch (docDetail.getTipologia()) {
             case DETERMINA: {
-                DeteBuilder db = new DeteBuilder();
-                versamentoBuilder = db.build();
+                DeteBuilder db = new DeteBuilder(docDetail);
+                //documento = db.build();
                 break;
             }
             case DELIBERA: {
-                DeliBuilder db = new DeliBuilder();
+                DeliBuilder db = new DeliBuilder(docDetail, archivioScelto);
                 versamentoBuilder = db.build();
                 break;
             }
             case RGPICO: {
-                RgPicoBuilder rb = new RgPicoBuilder();
-                versamentoBuilder = rb.build();
-                break;
-            }
-            case DOCUMENT_PEC: {
-                PecBuilder pb = new PecBuilder();
-                versamentoBuilder = pb.build();
+                RgPicoBuilder rb = new RgPicoBuilder(docDetail);
+                //versamentoBuilder = rb.build();
                 break;
             }
             default:
                 throw new AssertionError();
         }
+        
         
         try {
             FileWriter w;
@@ -160,6 +170,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
         } catch (Exception e) {
             System.err.println("File non presente");
         }
+        
+        documento = versamentoBuilder.toString();
+        
+        return documento;
 
     }
 
