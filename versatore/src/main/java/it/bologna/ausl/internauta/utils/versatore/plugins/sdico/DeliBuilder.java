@@ -43,11 +43,9 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3111"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("0101003"), "TESTO");
         
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(docDetail.getTipologia().toString()), "TESTO");
-        
-        
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList("Delibera"), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList(this.docDetail.getOggetto()), "TESTO");
+//        versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList(this.docDetail.getOggetto()), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList("DL - Delibere dell'Ente"), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList("0000011"), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(""), "DATA");
@@ -97,9 +95,7 @@ public class DeliBuilder {
 
         //qui ricomincia
         versamentoBuilder.addFileByParams("Documento_di_prova_test_1.pdf", "application/pdf", "FE6330A16F73E08BA0BCDF0249F6A815CE88840B044F0C6415090F2B35255FC0");
-
-        log.info(versamentoBuilder.toString());
-        
+  
         return versamentoBuilder;
 
     }

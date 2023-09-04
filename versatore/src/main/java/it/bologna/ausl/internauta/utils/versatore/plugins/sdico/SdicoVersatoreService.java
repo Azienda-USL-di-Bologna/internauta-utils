@@ -50,18 +50,18 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SdicoVersatoreService extends VersatoreDocs {
-
+    
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);    
     private static final String SDICO_VERSATORE_SERVICE = "SdicoVersatoreService";
     private static final String SDICO_LOGIN_URI = "SdicoLoginURI";
     private static final String SDICO_SERVIZIO_VERSAMENTO_URI = "sdicoServizioVersamentoURI";
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-
+    
     @Autowired
     VersatoreHttpClientConfiguration versatoreHttpClientConfiguration;
-
+    
     private String sdicoLoginURI, sdicoServizioVersamentoURI;
-
+    
     @Override
     public void init(VersatoreConfiguration versatoreConfiguration) {
         super.init(versatoreConfiguration);
@@ -72,71 +72,65 @@ public class SdicoVersatoreService extends VersatoreDocs {
         log.info("SDICO login URI: {}", sdicoLoginURI);
         log.info("SDICO servizio versamento URI: {}", sdicoServizioVersamentoURI);
     }
-
+    
     @Override
     protected VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
         return null;
     }
-
-    public String versa(String documento) throws FileNotFoundException, IOException {
+    
+    public String versa(String documento) throws IOException {
         
         log.info("Sono entrato in versa");
-
+        
         String token = getJWT();
-
-        //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
-        FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
+        
+        FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
+        //FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
         //qui creo il documentBuilder
-        //String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
-        //log.info(result);
-        log.info(documento);
-
+        String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        log.info("XML:\n" + result);
         // inizializzazione http client
+        
         OkHttpClient okHttpClient = new OkHttpClient()
                 .newBuilder()
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .build();
-
+        
         // Conversione file metadati.xml da inputstream to byte[]
-        byte[] fileMetadati = IOUtils.toByteArray(documento);
-
+       byte[] fileMetadati = IOUtils.toByteArray(result);
         // Conversione file pdf da inputstream to byte[]
-        byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
-         
+        //byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
         // creazione di body multipart
         MultipartBody.Builder buildernew = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
-
-        buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
+//        buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
         MultipartBody requestBody = buildernew.build();
-
         // richiesta
         Request request = new Request.Builder()
                 .url("https://par.collaudo.regione.veneto.it/serviziPar/rest/versamento")
                 .addHeader("Authorization", "Bearer " + token)
                 .post(requestBody)
                 .build();
-
         Response response = okHttpClient.newCall(request).execute();
-        //log.info(response.body().string());
         
-        //SdicoResponse sdicoResponse = response.body();
+        log.info(Integer.toString(response.code()));
+        log.info(response.message());
         
-        //JSONObject jsonObject = new JSONObject(response.body().string());
-        return response.body().string();
+        JSONObject jsonObject = new JSONObject(response.body().string());
+        
+        return jsonObject.toString();
+        
     }
 
     //o lo chiamiamo dentro il versa o restituisce il documento xml
     public String getDoc(DocDetail docDetail, Archivio archivioScelto) {
         
         log.info(docDetail.getTipologia().toString());
-           
+        
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
         
-        String documento = "";
-
         switch (docDetail.getTipologia()) {
             case DETERMINA: {
                 DeteBuilder db = new DeteBuilder(docDetail);
@@ -156,8 +150,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
             default:
                 throw new AssertionError();
         }
-        
-        
+
+        /*
         try {
             FileWriter w;
             w = new FileWriter("C:\\tmp\\metadati.xml");
@@ -170,13 +164,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
         } catch (Exception e) {
             System.err.println("File non presente");
         }
-        
-        documento = versamentoBuilder.toString();
+         */
+        String documento = versamentoBuilder.toString();
         
         return documento;
-
+        
     }
-
+    
     public String getJWT() throws IOException {
 
         /**
@@ -195,12 +189,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
         String token = null;
         String json = "{\"username\":\"AZERO01\",\"password\":\"AZERO01\"}";
         RequestBody body = RequestBody.create(JSON, json);
-
+        
         Request request = new Request.Builder()
                 .url(sdicoLoginURI)
                 .post(body)
                 .build();
-
+        
         Response response = okHttpClient.newCall(request).execute();
         JSONObject jsonObject = new JSONObject(response.body().string());
         return (String) jsonObject.get("token");
@@ -215,13 +209,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 X509Certificate[] empty = {};
                 return empty;
             }
-
+            
             @Override
             public void checkClientTrusted(
                     X509Certificate[] certs, String authType) {
                 log.info("checkClientTrusted =============");
             }
-
+            
             @Override
             public void checkServerTrusted(
                     X509Certificate[] certs, String authType) {
@@ -257,13 +251,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 log.info("getAcceptedIssuers =============");
                 return null;
             }
-
+            
             @Override
             public void checkClientTrusted(
                     X509Certificate[] certs, String authType) {
                 log.info("checkClientTrusted =============");
             }
-
+            
             @Override
             public void checkServerTrusted(
                     X509Certificate[] certs, String authType) {
@@ -271,5 +265,5 @@ public class SdicoVersatoreService extends VersatoreDocs {
             }
         };
     }
-
+    
 }

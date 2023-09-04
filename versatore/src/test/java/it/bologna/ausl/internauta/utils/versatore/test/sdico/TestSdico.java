@@ -27,31 +27,36 @@ import org.springframework.boot.test.context.SpringBootTest;
 //@RunWith(SpringRunner.class)
 @SpringBootTest
 public class TestSdico {
-    
+
     private static final Logger log = LoggerFactory.getLogger(TestSdico.class);
-   
+
     private static VersamentoDocInformation versamentoDocInformation;
-    
-    public static void main(String[] args) throws IOException, JAXBException {
-        
-        //DocDetail docDetail = new DocDetail();
-        //docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
-        
+
+    public static void main(String[] args) throws IOException, JAXBException, Exception {
+
+        DocDetail docDetail = new DocDetail();
+
+        Archivio archivio = new Archivio();
+        docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
+
         SdicoVersatoreService service = new SdicoVersatoreService();
+
+        //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
+        // String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        String res = service.getDoc(docDetail, archivio);
         
-        FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
+        //log.info("XML: " + res);
         
-        String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+        String output = service.versa(res);
         
-        //service.getDoc(docDetail, archivioScelto);
+        log.info(output);
         
-        
+
+
         //String jwt = service.getJWT();
         //log.info("jwt: {}", jwt);
-        System.out.println(service.versa(result));
-        
     }
-    
+
 //    @Test
 //    public void test() throws Throwable {
 //                
@@ -62,4 +67,5 @@ public class TestSdico {
 //        String jwt = service.getJWT();
 //        log.info("jwt: {}", jwt);
 //    }
+
 }
