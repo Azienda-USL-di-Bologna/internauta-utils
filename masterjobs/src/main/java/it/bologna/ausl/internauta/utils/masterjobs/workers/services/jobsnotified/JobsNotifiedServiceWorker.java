@@ -22,6 +22,7 @@ import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  *
@@ -35,6 +36,9 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
 
     @Autowired
     private ObjectMapper objectMapper;
+    
+    @Value("${masterjobs.manager.services-executor.jobs-notified-polling:false}")
+    private Boolean usePolling;
     
     private JPAQueryFactory queryFactory;
     private final QJobNotified qJobNotified = QJobNotified.jobNotified;
@@ -75,7 +79,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     @Override
     public WorkerResult doWork() throws MasterjobsWorkerException {
-        log.info(String.format("starting %s...", getName()));
+        log.info(String.format("starting %s with %spolling...", getName(), !usePolling? "no ": ""));
         Session session = entityManager.unwrap(Session.class);
         session.doWork((Connection connection) -> {
             try {
@@ -87,8 +91,11 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                         // attendo una notifica per 10 secondi poi mi rimetto in attesa. In modo da fermarmi nel caso isStopped sia "true"
                         PGNotification notifications[] = pgc.getNotifications(10000);
 
-                        if (notifications != null && notifications.length > 0) {
-                            log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
+                        if (usePolling || (notifications != null && notifications.length > 0)) {
+                            if (notifications != null && notifications.length > 0)
+                                log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
+                            else
+                                log.info("no notification received, polling on jobs_notified table...");
                             log.info("Launching extractCreateAndQueueJobs()...");
                             transactionTemplate.executeWithoutResult(a -> {
                                 try {
