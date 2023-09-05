@@ -7,6 +7,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingE
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.WorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
@@ -22,6 +23,8 @@ import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.TransactionDefinition;
 
 /**
  *
@@ -36,13 +39,18 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     @Autowired
     private ObjectMapper objectMapper;
     
+    @Value("${masterjobs.manager.services-executor.jobs-notified-polling:false}")
+    private Boolean usePolling;
+    
+//    @Value("${masterjobs.manager.services-executor.polling-seconds:20}")
+//    private Boolean pollingSeconds;
+    
     private JPAQueryFactory queryFactory;
     private final QJobNotified qJobNotified = QJobNotified.jobNotified;
     
     @Override
     public void preWork() throws MasterjobsWorkerException {
         queryFactory = new JPAQueryFactory(entityManager);
-        Session session = entityManager.unwrap(Session.class);
 
         // all'avvio schedulo il job per recuperare il pregresso
         transactionTemplate.executeWithoutResult(a -> {
@@ -53,19 +61,22 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             }
         });
         
-        session.doWork((Connection connection) -> {
-            try {
-                try (Statement listenStatement = connection.createStatement()) {
-                    log.info(String.format("executing LISTEN on %s", NEW_JOB_NOTIFIED_NOTIFY));
-                    listenStatement.execute(String.format("LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY));
-                    log.info("LISTEN completed");
+        if (!usePolling) {
+            Session session = entityManager.unwrap(Session.class);
+            session.doWork((Connection connection) -> {
+                try {
+                    try (Statement listenStatement = connection.createStatement()) {
+                        log.info(String.format("executing LISTEN on %s", NEW_JOB_NOTIFIED_NOTIFY));
+                        listenStatement.execute(String.format("LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY));
+                        log.info("LISTEN completed");
+                    }
+                } catch (Throwable ex) {
+                    String errorMessage = String.format("error executing LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY);
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
                 }
-            } catch (Throwable ex) {
-                String errorMessage = String.format("error executing LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY);
-                log.error(errorMessage, ex);
-                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
-            }
-        });
+            });
+        }
     }
     
     @Override
@@ -75,37 +86,50 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     @Override
     public WorkerResult doWork() throws MasterjobsWorkerException {
-        log.info(String.format("starting %s...", getName()));
-        Session session = entityManager.unwrap(Session.class);
-        session.doWork((Connection connection) -> {
-            try {
-                PGConnection pgc;
-                while (!isStopped()) {
-                    if (connection.isWrapperFor(PGConnection.class)) {
-                        pgc = (PGConnection) connection.unwrap(PGConnection.class);
+        log.info(String.format("starting %s with %spolling...", getName(), !usePolling? "no ": ""));
+        if (usePolling) {
+            transactionTemplate.executeWithoutResult(a -> {
+                try {
+                    extractCreateAndQueueJobs();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
+                }
+            });
+        } else {
+            Session session = entityManager.unwrap(Session.class);
+            session.doWork((Connection connection) -> {
+                try {
+                    PGConnection pgc;
+                    while (!isStopped()) {
+                        if (connection.isWrapperFor(PGConnection.class)) {
+                            pgc = (PGConnection) connection.unwrap(PGConnection.class);
 
-                        // attendo una notifica per 10 secondi poi mi rimetto in attesa. In modo da fermarmi nel caso isStopped sia "true"
-                        PGNotification notifications[] = pgc.getNotifications(10000);
+                            // attendo una notifica per 10 secondi poi mi rimetto in attesa. In modo da fermarmi nel caso isStopped sia "true"
+                            PGNotification notifications[] = pgc.getNotifications(10000);
 
-                        if (notifications != null && notifications.length > 0) {
-                            log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
-                            log.info("Launching extractCreateAndQueueJobs()...");
-                            transactionTemplate.executeWithoutResult(a -> {
-                                try {
-                                    extractCreateAndQueueJobs();
-                                } catch (MasterjobsWorkerException ex) {
-                                    throw new MasterjobsRuntimeExceptionWrapper(ex);
-                                }
-                            });
+                            if (usePolling || (notifications != null && notifications.length > 0)) {
+                                if (notifications != null && notifications.length > 0)
+                                    log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
+                                else
+                                    log.info("no notification received, polling on jobs_notified table...");
+                                log.info("Launching extractCreateAndQueueJobs()...");
+                                transactionTemplate.executeWithoutResult(a -> {
+                                    try {
+                                        extractCreateAndQueueJobs();
+                                    } catch (MasterjobsWorkerException ex) {
+                                        throw new MasterjobsRuntimeExceptionWrapper(ex);
+                                    }
+                                });
+                            }
                         }
                     }
+                } catch (Throwable ex) {
+                    String errorMessage = String.format("error on managing %s notification", NEW_JOB_NOTIFIED_NOTIFY);
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
                 }
-            } catch (Throwable ex) {
-                String errorMessage = String.format("error on managing %s notification", NEW_JOB_NOTIFIED_NOTIFY);
-                log.error(errorMessage, ex);
-                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
-            }
-        });
+            });
+        }
         log.info(String.format("%s ended", getName()));
         return null;
     }
@@ -123,18 +147,33 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             if (jobsNotified != null && !jobsNotified.isEmpty()) {
                 for (JobNotified jobNotified : jobsNotified) {
                     try {
-                        createAndQueueJobs(jobNotified);
-                        log.info(String.format("job %s, with jobs_notifies id: %s queued", jobNotified.getJobName(), jobNotified.getId()));
+                        // per ogni job letto, lo inserisco nella tabella dei jobs, lo elimino dalla tabella dei jobs_notified, committo e lo accodo in redis
+                        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                        MasterjobsQueueData masterjobsQueueData = transactionTemplate.execute( a -> {
+                            MasterjobsQueueData res;
+                            try {
+                                res = createMasterjobsQueueData(jobNotified);
+                                log.info(String.format("job %s, with jobs_notifies id: %s queued", jobNotified.getJobName(), jobNotified.getId()));
+                            } catch (Exception ex) {
+                                String errorMessage = String.format("error on create job %s, jobs_notifies id: %s", jobNotified.getJobName(), jobNotified.getId());
+                                log.error(errorMessage, ex);
+                                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                            }
+                            try {
+                                deleteJobNotified(jobNotified.getId());
+                                log.info(String.format("jobs_notifies with id: %s deleted ",jobNotified.getId()));
+                            } catch (Exception ex) {
+                                String errorMessage = String.format("error on delete jobs_notifies with id: %s", jobNotified.getId());
+                                log.error(errorMessage, ex);
+                                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                            }
+                            return res;
+                        });
+                        if (masterjobsQueueData != null) {
+                            masterjobsJobsQueuer.insertInQueue(masterjobsQueueData);
+                        }
                     } catch (Exception ex) {
-                        String errorMessage = String.format("error on create job %s, jobs_notifies id: %s", jobNotified.getJobName(), jobNotified.getId());
-                        log.error(errorMessage, ex);
-                        throw new MasterjobsWorkerException(errorMessage, ex);
-                    }
-                    try {
-                        deleteJobNotifiedAndCommit(jobNotified.getId());
-                        log.info(String.format("jobs_notifies with id: %s deleted ",jobNotified.getId()));
-                    } catch (Exception ex) {
-                        String errorMessage = String.format("error on delete jobs_notifies with id: %s", jobNotified.getId());
+                        String errorMessage = "error on manage jobs_notified";
                         log.error(errorMessage, ex);
                         throw new MasterjobsWorkerException(errorMessage, ex);
                     }
@@ -145,23 +184,24 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private void createAndQueueJobs(JobNotified jobNotified) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
         JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred());
-        masterjobsJobsQueuer.queue(
+        return masterjobsJobsQueuer.queue(
             jobWorker, 
             jobNotified.getObjectId(), 
             jobNotified.getObjectType(), 
             jobNotified.getApp(), 
             jobNotified.getWaitObject(), 
             jobNotified.getPriority(),
-            jobNotified.getSkipIfAlreadyPresent());
+            jobNotified.getSkipIfAlreadyPresent(),
+            true);
     }
     
-    private void deleteJobNotifiedAndCommit(Long jobNotifiedId) {
+    private void deleteJobNotified(Long jobNotifiedId) {
 //        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        transactionTemplate.executeWithoutResult( a -> {
+//        transactionTemplate.executeWithoutResult( a -> {
             queryFactory.delete(qJobNotified).where(qJobNotified.id.eq(jobNotifiedId)).execute();
-        });
+//        });
     }
 }
