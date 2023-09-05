@@ -96,10 +96,13 @@ public class MasterjobsJobsQueuer {
      * degli altri job per lo stesso oggetto. (l'oggetto viene indentificato per objectId, objectType (se presente), app(se presente)
      * se non viene passato almeno objectId, questo parametro non ha effetto
      * @param priority la priortà con il quale il job deve essere eseguito
+     * @param notQueue indica di non accodare in redis i jobs e non committare dopo l'inserimento nel DB, serve per poter e far si che li possa inserire il chiamante dopo il commit
+     * @return i jobs che che sono stati creati, possono servire nel caso si passi notQueue = true, per poterli inserire in redis tramite la funzione insertInQueue
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
-    public void queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue) throws MasterjobsQueuingException {
+        if (!notQueue)
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             try {
                 return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority);
@@ -109,32 +112,42 @@ public class MasterjobsJobsQueuer {
                 throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
             }
         });
-        try {
-            insertInQueue(queueData);
-        } catch (Exception ex) {
-            String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
-            log.error(errorMessage, ex);
-            throw new MasterjobsQueuingException(errorMessage, ex);
+        if (!notQueue) {
+            try {
+                insertInQueue(queueData);
+            } catch (Exception ex) {
+                String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
+                log.error(errorMessage, ex);
+                throw new MasterjobsQueuingException(errorMessage, ex);
+            }
         }
+        return queueData;
     }
     
-    public void queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
-        queue(worker, objectId, objectType, app, waitForObject, priority, false);
+    public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
+        return queue(worker, objectId, objectType, app, waitForObject, priority, false , false);
     }
     
-    public void queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+    public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
         if (!skipIfAlreadyPresent || !isAlreadyPresent(worker)){
-            queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority);
+            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, false);
         }
+        return null;
+    }
+    
+    public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue) throws MasterjobsQueuingException {
+        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker)){
+            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue);
+        }
+        return null;
     }
     
     /**
      * crea un set di jobs e lo inserisce nella coda redis di esecuzione
      * @param queueData
      * @throws JsonProcessingException
-     * @throws MasterjobsBadDataException 
      */
-    private void insertInQueue(MasterjobsQueueData queueData) throws JsonProcessingException {
+    public void insertInQueue(MasterjobsQueueData queueData) throws JsonProcessingException {
         redisTemplate.opsForList().rightPush(queueData.getQueue(), queueData.dump());
     }
     
