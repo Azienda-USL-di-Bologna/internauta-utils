@@ -73,6 +73,8 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
                     } catch (Throwable ex) {
                         log.error("errore nel versamento", ex);
                         versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                        versamentoDocInformation.setCodiceErrore("INTERNAL");
+                        versamentoDocInformation.setDescrizioneErrore("Errore tecnico durante il processo di versamento");
                     }
                     JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
                     ZonedDateTime now = ZonedDateTime.now();

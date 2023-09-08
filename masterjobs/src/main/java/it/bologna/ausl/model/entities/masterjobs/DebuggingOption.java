@@ -3,7 +3,7 @@ package it.bologna.ausl.model.entities.masterjobs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import it.nextsw.common.annotations.GenerateProjections;
+import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.util.Objects;
 import javax.persistence.Basic;
