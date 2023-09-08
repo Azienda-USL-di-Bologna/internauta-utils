@@ -698,7 +698,7 @@ public final class ParerVersatoreMetadatiBuilder {
                case RGPICO:
                    documenti = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
                            .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
-                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA.toString(), DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA.toString()))
+                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA, DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
                                    .and(QDocDetail.docDetail.annullato.eq(Boolean.FALSE))).fetchOne();
                    //            documenti = (Integer) entityManager.createQuery("select count(*) "
 //                    + "from scripta.docs_details dd2 "
@@ -708,7 +708,7 @@ public final class ParerVersatoreMetadatiBuilder {
 //                    .setParameter("value1", d ).getSingleResult();
                    documentiAnnullati = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
                            .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
-                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA.toString(), DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA.toString()))
+                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA, DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
                                    .and(QDocDetail.docDetail.annullato.eq(Boolean.TRUE))).fetchOne();
                    //            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
 //                    + "from scripta.docs_details dd2 "
