@@ -104,6 +104,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                 idoneo = false;
             }
             
+            if (doc.getPregresso()) {
+                idoneo = false;
+            }
+            
         } else {            
             log.info("Documento non idoneo per assenza di giorni di attesa sull'azienda: ", id.toString());
 
