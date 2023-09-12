@@ -402,11 +402,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
      */
     protected void manageQueue(Set.SetPriority priority) throws MasterjobsReadQueueTimeout, MasterjobsExecutionThreadsException, MasterjobsInterruptException {
         try {
+            checkCommand();
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             transactionTemplate.executeWithoutResult(a -> {
                 // come prima cosa verifica se ci sono comandi da eseguire e nel caso gli esegue
                 try {
-                    checkCommand();
                     // legge dalla coda della priorità passata e se ci sono, esegue i job
                     readFromQueueAndManageJobs(masterjobsUtils.getQueueBySetPriority(priority));
                 } catch (Throwable ex) {
