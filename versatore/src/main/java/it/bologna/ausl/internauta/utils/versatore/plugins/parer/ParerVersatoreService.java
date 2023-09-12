@@ -186,13 +186,15 @@ public class ParerVersatoreService extends VersatoreDocs {
                 }
                 versamentoInformation.setVersamentiAllegatiInformations(listaAllegati);
 
-            } catch (ParsingException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ParsingException | ParseException ex) {
+                log.error("Errore di parsing", ex);
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
             } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (ParseException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                log.error("Errore di input/output", ex);
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            } //catch (ParseException ex) {
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            //}
         } else {
             versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
             versamentoInformation.setCodiceErrore("SERVIZIO");

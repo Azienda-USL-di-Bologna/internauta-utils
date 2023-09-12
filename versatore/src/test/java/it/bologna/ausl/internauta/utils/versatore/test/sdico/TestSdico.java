@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.versatore.test.sdico;
 
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.VersaTest;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.VersamentoBuilder;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
@@ -33,23 +34,27 @@ public class TestSdico {
     private static VersamentoDocInformation versamentoDocInformation;
 
     public static void main(String[] args) throws IOException, JAXBException, Exception {
+        
+        //VersaTest test = new VersaTest();
+        
+        //test.versa();
 
-        DocDetail docDetail = new DocDetail();
+       DocDetail docDetail = new DocDetail();
 
-        Archivio archivio = new Archivio();
+       Archivio archivio = new Archivio();
         docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
 
         SdicoVersatoreService service = new SdicoVersatoreService();
 
         //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
         // String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
-        String res = service.getDoc(docDetail, archivio);
+ //      String res = service.getDoc(doc, docDetail, archivio, registro, firmatari);
         
         //log.info("XML: " + res);
         
-        String output = service.versa(res);
+   //     String output = service.versa(res);
         
-        log.info(output);
+  //      log.info(output);
         
 
 
