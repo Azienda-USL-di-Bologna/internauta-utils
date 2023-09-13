@@ -4,7 +4,6 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
-import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreSdicoUtilities;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -51,6 +50,10 @@ public class DeliBuilder {
         this.parametriVersamento = parametriVersamento;
     }
 
+    /**
+     * Metodo che costruisce i metadati per le delibere (id tipo doc 83)
+     * @return 
+     */
     public VersamentoBuilder build() {
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -88,8 +91,10 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), "TESTO");
         
         //da vedere se cambiano in base alla tipologia
-        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3412"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("01-02"), "TESTO");
+        
+        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList((String) parametriVersamento.get("idClassifica")), "TESTO");
+        
+        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList((String) parametriVersamento.get("classificazioneArchivistica")), "TESTO");
 
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), "TESTO");
         
@@ -108,7 +113,7 @@ public class DeliBuilder {
 //        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(""), "DATA");
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), "TESTO");
         //da chiedere
-        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList("Direttore generale"), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList((String) parametriVersamento.get("ufficioProduttore")), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), "TESTO");
         
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(Integer.toString(archivio.getId()) + "_" + archivio.getOggetto()), "TESTO MULTIPLO");
@@ -125,9 +130,8 @@ public class DeliBuilder {
 //        versamentoBuilder.addSinglemetadataByParams(false, "note2", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(""), "TESTO");
         //valori da verificare se fissi
-        versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList("SI"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList("NO"), "TESTO");
-        
+        versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList((String) parametriVersamento.get("firmatoDigitalmente")), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList((String) parametriVersamento.get("marcaturaTemporale")), "TESTO");
         
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), "TESTO");
         
@@ -135,7 +139,9 @@ public class DeliBuilder {
         
 //        versamentoBuilder.addSinglemetadataByParams(false, "livelloRiservatezza", Arrays.asList(""), "TESTO");
         //valore da verificare se fisso
-        versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList("NO"), "TESTO");
+        
+        versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList((String) parametriVersamento.get("riservato")), "TESTO");   
+        
 //        versamentoBuilder.addSinglemetadataByParams(false, "esistenzaOriginaleAnalogico", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "oggettoProcedimento", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "materiaargomentostruttura_procedimento", Arrays.asList(""), "TESTO");
@@ -145,7 +151,6 @@ public class DeliBuilder {
         for (Persona firmatario : firmatari) {
             stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
         }
-        
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(""), "TESTO");

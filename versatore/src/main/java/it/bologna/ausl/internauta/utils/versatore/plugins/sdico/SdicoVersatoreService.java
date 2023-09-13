@@ -22,7 +22,9 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import nu.xom.Builder;
+import nu.xom.Document;
 
 /**
  *
@@ -80,11 +84,27 @@ public class SdicoVersatoreService extends VersatoreDocs {
     protected VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoInformation) throws VersatoreProcessingException {
         //OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
         //versamentoInformation.setMetadatiVersati(versaDocumentoSDICO(versamentoInformation));
+
+        Map<String, Object> mappaResultAndAllegati = new HashMap<>();
+        mappaResultAndAllegati = versaDocumentoSDICO(versamentoInformation, entityManager);
+        String response = (String) mappaResultAndAllegati.get("response");
+        String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
+        //TODO carico la lista dei VersamentoAllegatoInformation
         
+        versamentoInformation.setMetadatiVersati(xmlVersato);
+        versamentoInformation.setDataVersamento(ZonedDateTime.now());
+        if (response != null && !response.equals("")) {
+            /*Builder parser = new Builder();
+            try {
+                Document resd = parser.build(response, null);
+            }*/
+        }
+                
+
         return versamentoInformation;
     }
 
-   /* public String versa(String documento) throws IOException {
+    /* public String versa(String documento) throws IOException {
 
         log.info("Sono entrato in versa");
 
@@ -130,44 +150,48 @@ public class SdicoVersatoreService extends VersatoreDocs {
         return jsonObject.toString();
 
     }*/
-
-    //o lo chiamiamo dentro il versa o restituisce il documento xml
-    public String versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager) {
+    /**
+     * Metodo che si occupa di fare la chiamata a SDICO per versare il documento
+     * indicato in versamentoDocInformation. Restituisce una mappa contenete i
+     * metadati versati, la response proveniente da SDICO e la lista dei VersamentoAllegatoInformation dei file versati.
+     *
+     * @param versamentoDocInformation
+     * @param entityManager
+     * @return
+     */
+    public Map<String, Object> versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager) {
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
+        //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
-        
+        Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
         Doc doc = entityManager.find(Doc.class, idDoc);
-        DocDetail docDetail = entityManager.find(DocDetail.class,idDoc);
-        
-        
-        
-        
+        DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         log.info(doc.getTipologia().toString());
-        
         Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
-        
-        //come arrivo al registro????
+        //TODO come arrivo al registro????
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
         if (listaRegistri.size() != 0) {
             registro = listaRegistri.get(0).getIdRegistro();
-        } 
-        
+        }
         List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
         List<Persona> firmatari = new ArrayList<>();
         for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
             Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
             firmatari.add(p);
         }
-        
         Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
+        String username = (String) parametriVersamento.get("username");
+        String password = (String) parametriVersamento.get("password");
+        String sdicoLoginURI = (String) parametriVersamento.get("sdicoLoginURI");
+        String urlVersatore = (String) parametriVersamento.get("urlVersatore");
 
+        //in basa alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
-
         switch (doc.getTipologia()) {
             case DETERMINA: {
                 DeteBuilder db = new DeteBuilder(docDetail);
-                //documento = db.build();
+                //TODO documento = db.build();
                 break;
             }
             case DELIBERA: {
@@ -177,34 +201,93 @@ public class SdicoVersatoreService extends VersatoreDocs {
             }
             case RGPICO: {
                 RgPicoBuilder rb = new RgPicoBuilder(docDetail);
-                //versamentoBuilder = rb.build();
+                //TODOversamentoBuilder = rb.build();
                 break;
             }
+            //TODO altre tipologie
             default:
                 throw new AssertionError("Tipologia documentale non presente");
         }
 
-        /*
+        String metadati = versamentoBuilder.toString();
+
+        //TODO carico gli allegati
+        
+        risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+        //TODO aggiungo alla mappa i versamentoAllegatoInformation dei file da caricare
+
         try {
-            FileWriter w;
-            w = new FileWriter("C:\\tmp\\metadati.xml");
+            //effettuo il login a SDICO per ricevere il token
+            String token = "";
+            token = getJWT(username, password, sdicoLoginURI);
 
-            BufferedWriter b;
-            b = new BufferedWriter(w);
+            //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
+            FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
+            //qui creo il documentBuilder
+            //String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
+            log.info("XML:\n" + metadati);
 
-            b.write(versamentoBuilder.toString());
-            b.flush();
-        } catch (Exception e) {
-            System.err.println("File non presente");
+            // inizializzazione http client
+            //TODO si dovrà poi usare la configurazione già instanziata
+            OkHttpClient okHttpClient = new OkHttpClient()
+                    .newBuilder()
+                    .connectTimeout(60, TimeUnit.SECONDS)
+                    .build();
+
+            // Conversione file metadati.xml da inputstream to byte[]
+            byte[] fileMetadati = IOUtils.toByteArray(metadati);
+            // Conversione file pdf da inputstream to byte[]
+            byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
+
+            // creazione di body multipart
+            log.info("Costruisco il MultiPart");
+            MultipartBody.Builder buildernew = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+            buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
+            MultipartBody requestBody = buildernew.build();
+            // richiesta
+            log.info("Costruisco la request");
+            Request request = new Request.Builder()
+                    .url(urlVersatore)
+                    .addHeader("Authorization", token)
+                    .post(requestBody)
+                    .build();
+            log.info("Uri: " + urlVersatore);
+            log.info("Effettuo la chiamata a SDICO");
+            String response = null;
+            try (Response resp = okHttpClient.newCall(request).execute()) {
+                if (resp.isSuccessful()) {
+                    log.info("Message: " + resp.message());
+                    String resBodyString = resp.body().string();
+                    log.info("Body: " + resBodyString);
+                    response = resBodyString;
+                    risultatoEVersamentiAllegati.put("response", response);
+                } else {
+                    String message = resp.message();
+                    log.error("ERROR: message = " + resp.message());
+                    String resBodyString = resp.body().string();
+                    log.error("Body: " + resBodyString);
+                    log.error(resp.toString());
+                }
+                resp.close(); // chiudo la response
+            } catch (Throwable ex) {
+                log.error("Errore chiamata riversamento", ex);
+                ex.printStackTrace();
+                risultatoEVersamentiAllegati.put("response", null);
+            }
+            
+            return risultatoEVersamentiAllegati;
+
+        } catch (IOException ex) {
+            log.error("Errore nell'invio del versamento", ex);
         }
-         */
-        String documento = versamentoBuilder.toString();
 
-        return documento;
+        return risultatoEVersamentiAllegati;
 
     }
 
-    public String getJWT() throws IOException {
+    public String getJWT(String username, String password, String sdicoLoginURI) throws IOException {
 
         /**
          * ora si usa una istanza di okhttp fissa per i test, poi si dovrà usare
@@ -218,9 +301,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
         // 
         OkHttpClient okHttpClient = new OkHttpClient();
         okHttpClient = buildNewClient(okHttpClient);
-        String sdicoLoginURI = "https://par.collaudo.regione.veneto.it/serviziPar/rest/login";
+        //String sdicoLoginURI = "https://par.collaudo.regione.veneto.it/serviziPar/rest/login";
         String token = null;
-        String json = "{\"username\":\"AZERO01\",\"password\":\"AZERO01\"}";
+        String json = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
         RequestBody body = RequestBody.create(JSON, json);
 
         Request request = new Request.Builder()
