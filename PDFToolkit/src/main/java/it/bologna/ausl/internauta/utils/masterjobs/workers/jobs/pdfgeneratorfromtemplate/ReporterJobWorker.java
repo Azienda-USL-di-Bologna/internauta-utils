@@ -165,17 +165,18 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
           
             renderer.createPDF(pdfOut, true, true, PdfAConformanceLevel.PDF_A_1A);
             String tempFileName = workerData.getFileName() != null ?  workerData.getFileName() : String.format("reporter_%s.pdf", UUID.randomUUID().toString());
-            ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray());
-            final String downloaderUrl = pdfToolkitConfigParams.getDownloaderUrl();
-            final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();
-            // Carica e ottiene l'url per il download, con token valido per un minuto
-            String urlToDownload;
             ReporterJobWorkerResult reporterWorkerResult = new ReporterJobWorkerResult();
-            try {
-                urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
-                reporterWorkerResult.setUrl(urlToDownload);
-            } catch (PdfToolkitHttpException ex) {
-                log.error("Errore nell'upload e generazione dell'url per il download", ex);
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray())) {
+                final String downloaderUrl = pdfToolkitConfigParams.getDownloaderUrl();
+                final String uploaderUrl = pdfToolkitConfigParams.getUploaderUrl();
+                // Carica e ottiene l'url per il download, con token valido per un minuto
+                String urlToDownload;
+                try {
+                    urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
+                    reporterWorkerResult.setUrl(urlToDownload);
+                } catch (PdfToolkitHttpException ex) {
+                    log.error("Errore nell'upload e generazione dell'url per il download", ex);
+                }
             }
             return reporterWorkerResult;
 
