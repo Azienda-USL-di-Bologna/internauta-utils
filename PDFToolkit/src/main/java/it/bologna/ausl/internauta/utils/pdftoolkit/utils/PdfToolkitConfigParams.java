@@ -89,38 +89,38 @@ public class PdfToolkitConfigParams {
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
         log.info("Downloading all resource files for PDFToolkit module...");
-        try {
-            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, getPdfToolkitBucket());
-            if (filesInPath != null && !filesInPath.isEmpty()) {
-                log.info("Found {} files in the resources path.", filesInPath.size());
-                for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
-                    File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
-                    if (targetFile.exists())
-                        log.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
-                    else {
-                        log.debug("Downloading file '{}'...", minIOFileInfo.getPath());
-                        try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
-                            String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
-                            if (Files.notExists(Paths.get(destination)))
-                                Files.createDirectories(Paths.get(destination));
-                            java.nio.file.Files.copy(
-                                fileInputStream, 
-                                targetFile.toPath(), 
-                                StandardCopyOption.REPLACE_EXISTING);
-                            log.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
-                        } catch (IOException ex) {
-                            log.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
-                        }
-                    }
-                }  
-                log.info("All resource files downloaded successfully.");
-            } else {
-                log.info("There aren't any files to download.");
-            }
-        } catch (MinIOWrapperException ex) {
-            log.error("Error occurred in MinIOWrapper when trying to download the files.", ex);
-//        throw new PdfToolkitConfigurationException("Error occurred in MinIOWrapper", ex);
-        }
+//        try {
+//            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, getPdfToolkitBucket());
+//            if (filesInPath != null && !filesInPath.isEmpty()) {
+//                log.info("Found {} files in the resources path.", filesInPath.size());
+//                for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
+//                    File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
+//                    if (targetFile.exists())
+//                        log.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
+//                    else {
+//                        log.debug("Downloading file '{}'...", minIOFileInfo.getPath());
+//                        try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
+//                            String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
+//                            if (Files.notExists(Paths.get(destination)))
+//                                Files.createDirectories(Paths.get(destination));
+//                            java.nio.file.Files.copy(
+//                                fileInputStream, 
+//                                targetFile.toPath(), 
+//                                StandardCopyOption.REPLACE_EXISTING);
+//                            log.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
+//                        } catch (IOException ex) {
+//                            log.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
+//                        }
+//                    }
+//                }  
+//                log.info("All resource files downloaded successfully.");
+//            } else {
+//                log.info("There aren't any files to download.");
+//            }
+//        } catch (MinIOWrapperException ex) {
+//            log.error("Error occurred in MinIOWrapper when trying to download the files.", ex);
+////        throw new PdfToolkitConfigurationException("Error occurred in MinIOWrapper", ex);
+//        }
     }
     
     /**

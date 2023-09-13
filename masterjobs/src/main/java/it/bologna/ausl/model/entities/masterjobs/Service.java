@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import com.vladmihalcea.hibernate.type.range.PostgreSQLRangeType;
 import com.vladmihalcea.hibernate.type.range.Range;
-import it.nextsw.common.annotations.GenerateProjections;
+import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;

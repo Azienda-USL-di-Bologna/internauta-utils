@@ -3,7 +3,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.configuration;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsConfigurationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
