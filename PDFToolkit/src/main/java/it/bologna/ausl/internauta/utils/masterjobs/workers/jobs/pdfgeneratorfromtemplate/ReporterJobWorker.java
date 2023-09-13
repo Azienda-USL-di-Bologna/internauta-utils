@@ -70,10 +70,12 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
 
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
+
+        pdfToolkitConfigParams.downloadFilesFromMinIO();
         
         ReporterJobWorkerData workerData = getWorkerData();
         File adobeProfileFile = new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH + "/AdobeRGB1998.icc");
- 
+        
         Template temp = null;
         Map<String, Object> parametri = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -81,7 +83,7 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
             ByteArrayOutputStream pdfOut = new ByteArrayOutputStream();
             InputStream iccProfileStream = new FileInputStream(adobeProfileFile)) {
             String templateName = (String) workerData.getTemplateName();
-
+            
             if (templateName == null || templateName.equals("")) {
                 throw new MasterjobsWorkerException("TemplateName mancante nei worker data.");
             }
