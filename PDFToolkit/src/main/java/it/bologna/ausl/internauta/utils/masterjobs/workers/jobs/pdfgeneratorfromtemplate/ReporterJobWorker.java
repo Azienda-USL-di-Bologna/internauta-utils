@@ -79,7 +79,7 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
         Template temp = null;
         Map<String, Object> parametri = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Writer out = new OutputStreamWriter(baos);
+            Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
             ByteArrayOutputStream pdfOut = new ByteArrayOutputStream();
             InputStream iccProfileStream = new FileInputStream(adobeProfileFile)) {
             String templateName = (String) workerData.getTemplateName();
@@ -120,7 +120,7 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
 
             ITextRenderer renderer = new ITextRenderer();
             renderer.setListener(new PDFCreationListener() {
-
+                
                 @Override
                 public void preOpen(ITextRenderer itr) {
                     PdfAWriter writer = (PdfAWriter) itr.getWriter();
