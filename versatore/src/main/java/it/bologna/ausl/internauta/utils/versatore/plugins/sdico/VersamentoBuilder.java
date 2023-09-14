@@ -63,8 +63,9 @@ public class VersamentoBuilder {
         v.getValue().addAll(c);
         sm.setValues(v);
         sm.setType(type);
-        
-        this.metadata.getSinglemetadata().add(sm);
+        if (sm.getValues() != null) { //TODO da togliere if
+            this.metadata.getSinglemetadata().add(sm);
+        }
     }
     
     public void setDocType(String docType){

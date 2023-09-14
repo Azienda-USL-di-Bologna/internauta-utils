@@ -19,6 +19,12 @@ public class SdicoResponse {
     private String numDocVersati;
     
     private String numDocNonVersati;
+    
+    private String sizeTot;
+    
+    private String stackTrace;
+    
+    private String timeTot;
 
     public String getResponseCode() {
         return responseCode;
@@ -59,6 +65,32 @@ public class SdicoResponse {
     public void setNumDocNonVersati(String numDocNonVersati) {
         this.numDocNonVersati = numDocNonVersati;
     }
+
+    public String getSizeTot() {
+        return sizeTot;
+    }
+
+    public void setSizeTot(String sizeTot) {
+        this.sizeTot = sizeTot;
+    }
+
+    public String getStackTrace() {
+        return stackTrace;
+    }
+
+    public void setStackTrace(String stackTrace) {
+        this.stackTrace = stackTrace;
+    }
+
+    public String getTimeTot() {
+        return timeTot;
+    }
+
+    public void setTimeTot(String timeTot) {
+        this.timeTot = timeTot;
+    }
+    
+    
 
     @Override
     public String toString() {

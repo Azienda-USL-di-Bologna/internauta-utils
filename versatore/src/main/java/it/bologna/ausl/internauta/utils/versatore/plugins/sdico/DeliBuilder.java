@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class DeliBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(DeliBuilder.class);
+    private static final String COD_DELIBERA = "DELIBERA";
 
     private VersamentoBuilder versamentoBuilder;
     private Doc doc;
@@ -39,7 +40,7 @@ public class DeliBuilder {
     private Registro registro;
     private List<Persona> firmatari = new ArrayList<>();
     private Map<String, Object> parametriVersamento = new HashMap<>();
-
+    
     public DeliBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
         versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
@@ -58,12 +59,13 @@ public class DeliBuilder {
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         
-        Map<DocDetailInterface.TipologiaDoc, Object> idTipoDoc = (Map<DocDetailInterface.TipologiaDoc, Object>) parametriVersamento.get("idTipoDoc");
-        String docType = (String) idTipoDoc.get(doc.getTipologia());
+        Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(COD_DELIBERA);
+        String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        Map<DocDetailInterface.TipologiaDoc, Object> mappaDescrizioniClassificazione = (Map<DocDetailInterface.TipologiaDoc, Object>) parametriVersamento.get("descrizioneClassificazione");
-        String descrizioneClassificazione = (String) mappaDescrizioniClassificazione.get(doc.getTipologia());
-        String codiceRegistro = "";
+        String idClassifica = (String) mappaParametri.get("idClassifica");
+        String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
+        String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
+        String codiceRegistro = null;
         if (registro.getCodice() != null) {
             codiceRegistro = registro.getCodice().toString();
         }
@@ -71,9 +73,12 @@ public class DeliBuilder {
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
-        Map<DocDetailInterface.TipologiaDoc, Object> mappaTipologieDiFlusso = (Map<DocDetailInterface.TipologiaDoc, Object>) parametriVersamento.get("tipologiaDiFlusso");
-        String tipologiaDiFlusso = (String) mappaTipologieDiFlusso.get(doc.getTipologia());
+        String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
+        String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
+        String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         HashMap<String, Object> additionalData = doc.getAdditionalData();
+        String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
+        String riservato = (String) mappaParametri.get("riservato");
         String dataEsecutiva = null;
         if (additionalData != null) {
             if (additionalData.containsKey("data_esecutiva")) {
@@ -92,9 +97,9 @@ public class DeliBuilder {
         
         //da vedere se cambiano in base alla tipologia
         
-        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList((String) parametriVersamento.get("idClassifica")), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), "TESTO");
         
-        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList((String) parametriVersamento.get("classificazioneArchivistica")), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), "TESTO");
 
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), "TESTO");
         
@@ -113,7 +118,7 @@ public class DeliBuilder {
 //        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(""), "DATA");
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), "TESTO");
         //da chiedere
-        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList((String) parametriVersamento.get("ufficioProduttore")), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), "TESTO");
         
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(Integer.toString(archivio.getId()) + "_" + archivio.getOggetto()), "TESTO MULTIPLO");
@@ -129,18 +134,19 @@ public class DeliBuilder {
 //        versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "note2", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(""), "TESTO");
+
         //valori da verificare se fissi
-        versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList((String) parametriVersamento.get("firmatoDigitalmente")), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList((String) parametriVersamento.get("marcaturaTemporale")), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), "TESTO"); 
         
-        versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), "TESTO");
+        versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), "TESTO"); 
         
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), "TESTO");
         
 //        versamentoBuilder.addSinglemetadataByParams(false, "livelloRiservatezza", Arrays.asList(""), "TESTO");
         //valore da verificare se fisso
         
-        versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList((String) parametriVersamento.get("riservato")), "TESTO");   
+        versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), "TESTO");   
         
 //        versamentoBuilder.addSinglemetadataByParams(false, "esistenzaOriginaleAnalogico", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "oggettoProcedimento", Arrays.asList(""), "TESTO");
@@ -163,18 +169,21 @@ public class DeliBuilder {
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
-        }
+        } 
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), "TESTO");
+        
 //        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(""), "TESTO");
         //abbiamo solo anno proposta
-        //versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(""), "DATA");
+        //versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(""), "DATA"); 
+        
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(Integer.toString(docDetail.getNumeroProposta())), "TESTO");
         if (dataEsecutiva != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "data_esecutiva", Arrays.asList(dataEsecutiva), "DATA");
         }
-
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), "DATA");
+        
+        
         //versamentoBuilder.addSinglemetadataByParams(false, "autore_pubblicazione", Arrays.asList(""), "TESTO");
         //qui ricomincia
         versamentoBuilder.addFileByParams("Documento_di_prova.pdf", "application/pdf", "FE6330A16F73E08BA0BCDF0249F6A815CE88840B044F0C6415090F2B35255FC0");
