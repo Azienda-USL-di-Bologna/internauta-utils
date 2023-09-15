@@ -44,7 +44,7 @@ public class TestSdico {
        Archivio archivio = new Archivio();
         docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
 
-        SdicoVersatoreService service = new SdicoVersatoreService();
+        //SdicoVersatoreService service = new SdicoVersatoreService(entityManager, versatoreRepositoryConfiguration, MinIOWrapper);
 
         //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
         // String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);

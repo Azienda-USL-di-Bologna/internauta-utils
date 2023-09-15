@@ -91,38 +91,26 @@ public class DeliBuilder {
         }
 
         versamentoBuilder.setDocType(docType);
-
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), "TESTO");
-        
-        //da vedere se cambiano in base alla tipologia
-        
+        //TODO da vedere se cambiano in base alla tipologia
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), "TESTO");
-        
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), "TESTO");
-
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), "TESTO");
-        
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), "TESTO");
-        
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList(doc.getOggetto()), "TESTO");
-        
-        //diverso da descrizione classificazione?
+        //TODO diverso da descrizione classificazione?
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), "TESTO");
-        
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), "DATA");
 //        versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(""), "DATA");
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), "TESTO");
-        //da chiedere
+        //TODO da chiedere
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), "TESTO");
-        
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(Integer.toString(archivio.getId()) + "_" + archivio.getOggetto()), "TESTO MULTIPLO");
-        
         if (registro != null && registro.getCodice() != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), "TESTO");
         }
@@ -134,20 +122,14 @@ public class DeliBuilder {
 //        versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "note2", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(""), "TESTO");
-
-        //valori da verificare se fissi
+        //TODO valori da verificare se fissi
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), "TESTO"); 
-        
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), "TESTO"); 
-        
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), "TESTO");
-        
 //        versamentoBuilder.addSinglemetadataByParams(false, "livelloRiservatezza", Arrays.asList(""), "TESTO");
-        //valore da verificare se fisso
-        
+        //TODO valore da verificare se fisso
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), "TESTO");   
-        
 //        versamentoBuilder.addSinglemetadataByParams(false, "esistenzaOriginaleAnalogico", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "oggettoProcedimento", Arrays.asList(""), "TESTO");
 //        versamentoBuilder.addSinglemetadataByParams(false, "materiaargomentostruttura_procedimento", Arrays.asList(""), "TESTO");
@@ -170,23 +152,19 @@ public class DeliBuilder {
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         } 
-        versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), "TESTO");
-        
+        versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), "TESTO"); 
 //        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(""), "TESTO");
-        //abbiamo solo anno proposta
+        //TODO abbiamo solo anno proposta
         //versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(""), "DATA"); 
-        
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(Integer.toString(docDetail.getNumeroProposta())), "TESTO");
         if (dataEsecutiva != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "data_esecutiva", Arrays.asList(dataEsecutiva), "DATA");
         }
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), "TESTO");
         versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), "DATA");
-        
-        
         //versamentoBuilder.addSinglemetadataByParams(false, "autore_pubblicazione", Arrays.asList(""), "TESTO");
         //qui ricomincia
-        versamentoBuilder.addFileByParams("Documento_di_prova.pdf", "application/pdf", "FE6330A16F73E08BA0BCDF0249F6A815CE88840B044F0C6415090F2B35255FC0");
+//        versamentoBuilder.addFileByParams("Documento_di_prova.pdf", "application/pdf", "FE6330A16F73E08BA0BCDF0249F6A815CE88840B044F0C6415090F2B35255FC0");
 
         return versamentoBuilder;
 

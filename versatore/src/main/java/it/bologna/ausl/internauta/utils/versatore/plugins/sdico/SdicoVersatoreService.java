@@ -53,8 +53,16 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
+import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.QAllegato;
+import it.bologna.ausl.riversamento.builder.IdentityFile;
+import it.bologna.ausl.riversamento.sender.Pacco;
+import it.bologna.ausl.riversamento.sender.PaccoFile;
+import java.io.InputStream;
+import java.util.logging.Level;
 
 /**
  *
@@ -63,18 +71,30 @@ import it.bologna.ausl.model.entities.scripta.QAllegato;
 @Component
 public class SdicoVersatoreService extends VersatoreDocs {
     
+    private EntityManager entityManager;
+    
+    private VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
+    
+    private MinIOWrapper minIOWrapper;
+
+    public SdicoVersatoreService(EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, MinIOWrapper minIOWrapper) {
+        this.entityManager = entityManager;
+        this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
+        this.minIOWrapper = minIOWrapper;
+    }
+
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
     private static final String SDICO_VERSATORE_SERVICE = "SdicoVersatoreService";
     private static final String SDICO_LOGIN_URI = "SdicoLoginURI";
     private static final String SDICO_SERVIZIO_VERSAMENTO_URI = "sdicoServizioVersamentoURI";
     private static final String WS_OK = "WS_OK";
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-     
-    @Autowired
-    VersatoreHttpClientConfiguration versatoreHttpClientConfiguration;
-    
+
+//    @Autowired
+//    AllegatiBuilder allegatiBuilder;
+
     private String sdicoLoginURI, sdicoServizioVersamentoURI;
-    
+
     @Override
     public void init(VersatoreConfiguration versatoreConfiguration) {
         super.init(versatoreConfiguration);
@@ -85,31 +105,58 @@ public class SdicoVersatoreService extends VersatoreDocs {
         log.info("SDICO login URI: {}", sdicoLoginURI);
         log.info("SDICO servizio versamento URI: {}", sdicoServizioVersamentoURI);
     }
-    
+
     @Override
     protected VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         //OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
         //versamentoInformation.setMetadatiVersati(versaDocumentoSDICO(versamentoInformation));
 
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
-        mappaResultAndAllegati = versaDocumentoSDICO(versamentoDocInformation, entityManager);
+        mappaResultAndAllegati = versaDocumentoSDICO(versamentoDocInformation);
         String response = (String) mappaResultAndAllegati.get("response");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
+        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
+        
         //TODO carico la lista dei VersamentoAllegatoInformation
-
         versamentoDocInformation.setMetadatiVersati(xmlVersato);
         versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
+        SdicoResponse sdicoResponse = new SdicoResponse();
         if (response != null && !response.equals("")) {
             ObjectMapper objectMapper = new ObjectMapper();
             try {
-                SdicoResponse sdicoResponse = objectMapper.readValue(response, SdicoResponse.class);
-                log.info(sdicoResponse.toString());
-                versamentoDocInformation.setRapporto(response);
+                sdicoResponse = objectMapper.readValue(response, SdicoResponse.class);
+                if (sdicoResponse.getResponseCode().equals(WS_OK)) {
+                    versamentoDocInformation.setRapporto(response);
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    //TODO guardare se serve
+                    //doc.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                        versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    }
+                } else {
+                    versamentoDocInformation.setCodiceErrore(sdicoResponse.getResponseCode());
+                    versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    //TODO cosa mettere per forzabile???
+                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                        versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    }
+                    log.error("SDICO ha risposto con il seguente errore: " + sdicoResponse.getErrorMessage());
+                }
+                versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInformationList);
             } catch (JsonProcessingException ex) {
                 log.error("Errore nel parsing della response arrivata da SDICO");
             }
+        } else {
+            versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
+            versamentoDocInformation.setCodiceErrore("SERVIZIO");
         }
-        
+
+        //TODO da togliere
+        //risultatoEVersamentiAllegati.put("vdi", versamentoDocInformation);
+
         return versamentoDocInformation;
     }
 
@@ -169,7 +216,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
      * @param entityManager
      * @return
      */
-    public Map<String, Object> versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager) { //TODO togliere entityManager
+    public Map<String, Object> versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation) { //TODO togliere entityManager
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
         //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
@@ -184,12 +231,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         if (listaRegistri.size() != 0) {
             registro = listaRegistri.get(0).getIdRegistro();
         }
-        JPAQueryFactory jpaqf = new JPAQueryFactory(entityManager);
-        List<Allegato> allegati = jpaqf
-                .select(QAllegato.allegato)
-                .from(QAllegato.allegato)
-                .where(QAllegato.allegato.idDoc.id.eq(idDoc))
-                .fetch();
         List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
         List<Persona> firmatari = new ArrayList<>();
         for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
@@ -224,25 +265,41 @@ public class SdicoVersatoreService extends VersatoreDocs {
             default:
                 throw new AssertionError("Tipologia documentale non presente");
         }
-        
+
         String metadati = versamentoBuilder.toString();
 
         //TODO carico gli allegati
-        risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+//        JPAQueryFactory jpaqf = new JPAQueryFactory(entityManager);
+//        List<Allegato> allegati = jpaqf
+//                .select(QAllegato.allegato)
+//                .from(QAllegato.allegato)
+//                .where(QAllegato.allegato.idDoc.id.eq(idDoc))
+//                .fetch();
+//List<Allegato> allegati = entityManager.createQuery("SELECT a FROM Allegato a WHERE a.idDoc = :value").setParameter("value", idDoc).getResultList();
+        List<Allegato> allegati = doc.getAllegati();
+
         //TODO aggiungo alla mappa i versamentoAllegatoInformation dei file da caricare
-        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = new ArrayList<>();
+        AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
+        Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati);
+        List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
+        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
+        for (VersamentoAllegatoInformation vai : versamentiAllegatiInformationList) {
+            metadati += vai.getMetadatiVersati();
+        }
+        risultatoEVersamentiAllegati.put("xmlVersato", metadati);
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
-        
- /*     TODO da reinserire  
-            String response = null;
+
+//             TODO da reinserire  
+        String response = null;
 
         try {
+            List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
             //effettuo il login a SDICO per ricevere il token
             String token = "";
             token = getJWT(username, password, sdicoLoginURI);
 
             //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
-            FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
+            //FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf");
             //qui creo il documentBuilder
             //String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
             log.info("XML:\n" + metadati);
@@ -256,15 +313,28 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
             // Conversione file metadati.xml da inputstream to byte[]
             byte[] fileMetadati = IOUtils.toByteArray(metadati);
-            // Conversione file pdf da inputstream to byte[]
-            byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
-
-            // creazione di body multipart
-            log.info("Costruisco il MultiPart");
             MultipartBody.Builder buildernew = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
-            buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato));
+            // Conversione file pdf da inputstream to byte[]
+            // byte[] allegato = IOUtils.toByteArray(fstreamAllegato);
+
+            log.info("Ciclo i file...");
+            if (paccoFiles.size() > 0) {
+                for (PaccoFile paccoFile : paccoFiles) {
+                    log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+                    byte[] bytes;
+                    try (InputStream is = paccoFile.getInputStream()) {
+                        bytes = IOUtils.toByteArray(is);
+                        buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                    } catch (Exception ex) {
+                        log.error("Problemi con l'inputstream dei file", ex);
+                    }
+                }
+            }
+            
+            // creazione di body multipart
+            log.info("Costruisco il MultiPart");
             MultipartBody requestBody = buildernew.build();
             // richiesta
             log.info("Costruisco la request");
@@ -300,67 +370,28 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         } catch (IOException ex) {
             log.error("Errore nell'invio del versamento", ex);
-        }*/
-
-//TODO da togliere
-        String response = "{\n" +
-                "    \"errorMessage\": null,\n" +
-                "    \"idConservazione\": \"3067134\",\n" +
-                "    \"numDocNonVersati\": \"0\",\n" +
-                "    \"numDocVersati\": \"1\",\n" +
-                "    \"responseCode\": \"WS_OK\",\n" +
-                "    \"sizeTot\": \"643215\",\n" +
-                "    \"stackTrace\": null,\n" +
-                "    \"timeTot\": \"4879\"\n" +
-                "}";
-        risultatoEVersamentiAllegati.put("response", response);
-        
-        //da qui in poi versaImpl
-
-        versamentoDocInformation.setMetadatiVersati(metadati);
-        versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
-        SdicoResponse sdicoResponse = new SdicoResponse();
-        if (response != null && !response.equals("")) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            try {
-                sdicoResponse = objectMapper.readValue(response, SdicoResponse.class);
-                if (sdicoResponse.getResponseCode().equals(WS_OK)) {
-                    versamentoDocInformation.setRapporto(response);
-                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
-                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
-                    doc.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
-                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
-                        versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
-                    }
-                } else {
-                    versamentoDocInformation.setCodiceErrore(sdicoResponse.getResponseCode());
-                    versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
-                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
-                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-                    //TODO cosa mettere per forzabile???
-                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
-                        versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-                    }
-                    log.error("SDICO ha risposto con il seguente errore: " + sdicoResponse.getErrorMessage());
-                }
-                versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInformationList);
-            } catch (JsonProcessingException ex) {
-                log.error("Errore nel parsing della response arrivata da SDICO");
-            }
-        } else {
-            versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
-            versamentoDocInformation.setCodiceErrore("SERVIZIO");
         }
+//TODO da togliere
+//        String response = "{\n"
+//                + "    \"errorMessage\": null,\n"
+//                + "    \"idConservazione\": \"3067134\",\n"
+//                + "    \"numDocNonVersati\": \"0\",\n"
+//                + "    \"numDocVersati\": \"1\",\n"
+//                + "    \"responseCode\": \"WS_OK\",\n"
+//                + "    \"sizeTot\": \"643215\",\n"
+//                + "    \"stackTrace\": null,\n"
+//                + "    \"timeTot\": \"4879\"\n"
+//                + "}";
+        risultatoEVersamentiAllegati.put("response", response);
+
+        //da qui in poi versaImpl
         
-        //TODO da togliere
-        risultatoEVersamentiAllegati.put("vdi", versamentoDocInformation);
-        
+
         //fine di versaImpl
-        
         return risultatoEVersamentiAllegati;
-        
+
     }
-    
+
     public String getJWT(String username, String password, String sdicoLoginURI) throws IOException {
 
         /**
@@ -379,12 +410,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
         String token = null;
         String json = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
         RequestBody body = RequestBody.create(JSON, json);
-        
+
         Request request = new Request.Builder()
                 .url(sdicoLoginURI)
                 .post(body)
                 .build();
-        
+
         Response response = okHttpClient.newCall(request).execute();
         JSONObject jsonObject = new JSONObject(response.body().string());
         return (String) jsonObject.get("token");
@@ -399,13 +430,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 X509Certificate[] empty = {};
                 return empty;
             }
-            
+
             @Override
             public void checkClientTrusted(
                     X509Certificate[] certs, String authType) {
                 log.info("checkClientTrusted =============");
             }
-            
+
             @Override
             public void checkServerTrusted(
                     X509Certificate[] certs, String authType) {
@@ -441,13 +472,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 log.info("getAcceptedIssuers =============");
                 return null;
             }
-            
+
             @Override
             public void checkClientTrusted(
                     X509Certificate[] certs, String authType) {
                 log.info("checkClientTrusted =============");
             }
-            
+
             @Override
             public void checkServerTrusted(
                     X509Certificate[] certs, String authType) {
@@ -455,5 +486,23 @@ public class SdicoVersatoreService extends VersatoreDocs {
             }
         };
     }
-    
+
+    private List<PaccoFile> creazionePaccoFile(List<IdentityFile> identityFiles) {
+        List<PaccoFile> filesList = new ArrayList<>();
+        for (IdentityFile identityFile : identityFiles) {
+            PaccoFile paccoFile = new PaccoFile();
+            try {
+                InputStream is = minIOWrapper.getByUuid(identityFile.getUuidMongo());
+                paccoFile.setInputStream(is);
+                paccoFile.setMime(identityFile.getMime());
+                paccoFile.setFileName(identityFile.getFileName());
+                paccoFile.setId(identityFile.getId());
+                filesList.add(paccoFile);
+            } catch (MinIOWrapperException ex) {
+                log.error("Errore nel reperire il file da MinIO", ex);
+            }
+        }
+        return filesList;
+    }
+
 }
