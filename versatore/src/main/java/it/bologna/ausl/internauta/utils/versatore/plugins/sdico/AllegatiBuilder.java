@@ -45,10 +45,10 @@ public class AllegatiBuilder {
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
 
-    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati) {
+    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) {
         Map<String, Object> mappaAllegati = new HashMap<>();
         try {
-            mappaAllegati = buildAllegati(doc, docDetail, allegati);
+            mappaAllegati = buildAllegati(doc, docDetail, allegati, versamentoBuilder);
         } catch (MinIOWrapperException ex) {
             log.error("Errore di comunicazione con MinIO per recuperare i dati degli allegati");
         }
@@ -62,7 +62,7 @@ public class AllegatiBuilder {
      *
      * @return
      */
-    public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati) throws MinIOWrapperException {
+    public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws MinIOWrapperException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         Integer i = 1;
         Integer indexCommittente = 1;
@@ -76,10 +76,11 @@ public class AllegatiBuilder {
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
             IdentityFile identityFile = new IdentityFile(originale.getNome(),
                     getUuidMinIObyFileId(originale.getIdRepository()),
-                    originale.getHashSha256(),
+                    originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5
+                    null, //TODO da chiedere se posso lasciarlo vuoto
                     originale.getMimeType());
             identityFiles.add(identityFile);
-            VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile);
+            VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
             versamentiAllegatiInfo.add(allegatoInformation);
         }
 
@@ -428,18 +429,18 @@ public class AllegatiBuilder {
         return fileInfoByFileId.getMongoUuid();
     }
 
-    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile) {
-        VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
-        allegatoInformation.setIdAllegato(idAllegato);
-        allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE);
-        allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
-        allegatoInformation.setDataVersamento(ZonedDateTime.now());
-        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
-        VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
-        versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());
-        allegatoInformation.setMetadatiVersati(versamentoBuilder.toString());
-        return allegatoInformation;
-    }
+//    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile) {
+//        VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
+//        allegatoInformation.setIdAllegato(idAllegato);
+//        allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE);
+//        allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
+//        allegatoInformation.setDataVersamento(ZonedDateTime.now());
+//        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
+//        VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+//        versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());
+//        allegatoInformation.setMetadatiVersati(versamentoBuilder.toString());
+//        return allegatoInformation;
+//    }
 
 //     private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile) {
 //        VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
@@ -450,13 +451,20 @@ public class AllegatiBuilder {
 //        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
 //        return allegatoInformation;
 //    }
-    private VersamentoAllegatoInformation createVersamentoAllegatoFirmato(Integer idAllegato, IdentityFile identityFile) {
+    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile, VersamentoBuilder versamentoBuilder, Boolean firmato) {
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
         allegatoInformation.setIdAllegato(idAllegato);
-        allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO);
+        if (firmato) {
+            allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO);
+        } else {
+            allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE);
+        }
         allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
         allegatoInformation.setDataVersamento(ZonedDateTime.now());
-        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
+        allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
+//        VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+        versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());
+//        allegatoInformation.setMetadatiVersati(versamentoBuilder.toString());
         return allegatoInformation;
     }
 

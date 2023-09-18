@@ -65,10 +65,11 @@ public class DeliBuilder {
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        String codiceRegistro = null;
-        if (registro.getCodice() != null) {
-            codiceRegistro = registro.getCodice().toString();
-        }
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+//        String codiceRegistro = null;
+//        if (registro.getCodice() != null) {
+//            codiceRegistro = registro.getCodice().toString();
+//        }
         String anniTenuta = "illimitato";
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());

@@ -39,10 +39,10 @@ public class TestSdico {
         
         //test.versa();
 
-       DocDetail docDetail = new DocDetail();
-
-       Archivio archivio = new Archivio();
-        docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
+//       DocDetail docDetail = new DocDetail();
+//
+//       Archivio archivio = new Archivio();
+//        docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
 
         //SdicoVersatoreService service = new SdicoVersatoreService(entityManager, versatoreRepositoryConfiguration, MinIOWrapper);
 

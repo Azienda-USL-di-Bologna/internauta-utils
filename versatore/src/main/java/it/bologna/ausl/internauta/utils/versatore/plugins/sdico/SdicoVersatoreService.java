@@ -70,17 +70,14 @@ import java.util.logging.Level;
  */
 @Component
 public class SdicoVersatoreService extends VersatoreDocs {
-    
-    private EntityManager entityManager;
-    
-    private VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-    
-    private MinIOWrapper minIOWrapper;
 
-    public SdicoVersatoreService(EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, MinIOWrapper minIOWrapper) {
+    private EntityManager entityManager;
+
+    private VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
+
+    public SdicoVersatoreService(EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
         this.entityManager = entityManager;
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
-        this.minIOWrapper = minIOWrapper;
     }
 
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
@@ -92,7 +89,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
 //    @Autowired
 //    AllegatiBuilder allegatiBuilder;
-
     private String sdicoLoginURI, sdicoServizioVersamentoURI;
 
     @Override
@@ -108,6 +104,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
     @Override
     protected VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
+        return versamentoDocInformation;
+    }
+
+    //TODO cambiare tutto questo è versaImpl
+    public VersamentoDocInformation versaFake(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         //OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
         //versamentoInformation.setMetadatiVersati(versaDocumentoSDICO(versamentoInformation));
 
@@ -116,7 +117,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         String response = (String) mappaResultAndAllegati.get("response");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
-        
+
         //TODO carico la lista dei VersamentoAllegatoInformation
         versamentoDocInformation.setMetadatiVersati(xmlVersato);
         versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
@@ -135,6 +136,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                     }
                 } else {
+                    //TODO se da errore non settare?
+                    versamentoDocInformation.setRapporto(response);
                     versamentoDocInformation.setCodiceErrore(sdicoResponse.getResponseCode());
                     versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
                     versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
@@ -156,7 +159,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         //TODO da togliere
         //risultatoEVersamentiAllegati.put("vdi", versamentoDocInformation);
-
         return versamentoDocInformation;
     }
 
@@ -266,8 +268,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 throw new AssertionError("Tipologia documentale non presente");
         }
 
-        String metadati = versamentoBuilder.toString();
-
         //TODO carico gli allegati
 //        JPAQueryFactory jpaqf = new JPAQueryFactory(entityManager);
 //        List<Allegato> allegati = jpaqf
@@ -280,12 +280,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         //TODO aggiungo alla mappa i versamentoAllegatoInformation dei file da caricare
         AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
-        Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati);
+        Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
         List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
-        for (VersamentoAllegatoInformation vai : versamentiAllegatiInformationList) {
-            metadati += vai.getMetadatiVersati();
-        }
+//        for (VersamentoAllegatoInformation vai : versamentiAllegatiInformationList) {
+//            metadati += vai.getMetadatiVersati();
+//        }
+        String metadati = versamentoBuilder.toString();
         risultatoEVersamentiAllegati.put("xmlVersato", metadati);
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
@@ -332,7 +333,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     }
                 }
             }
-            
+
             // creazione di body multipart
             log.info("Costruisco il MultiPart");
             MultipartBody requestBody = buildernew.build();
@@ -350,8 +351,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     log.info("Message: " + resp.message());
                     String resBodyString = resp.body().string();
                     log.info("Body: " + resBodyString);
-                    response = resBodyString;
-                    risultatoEVersamentiAllegati.put("response", response);
+                    risultatoEVersamentiAllegati.put("response", resBodyString);
                 } else {
                     log.error("ERROR: message = " + resp.message());
                     String resBodyString = resp.body().string();
@@ -385,8 +385,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         risultatoEVersamentiAllegati.put("response", response);
 
         //da qui in poi versaImpl
-        
-
         //fine di versaImpl
         return risultatoEVersamentiAllegati;
 
@@ -488,6 +486,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
     }
 
     private List<PaccoFile> creazionePaccoFile(List<IdentityFile> identityFiles) {
+        MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         List<PaccoFile> filesList = new ArrayList<>();
         for (IdentityFile identityFile : identityFiles) {
             PaccoFile paccoFile = new PaccoFile();
