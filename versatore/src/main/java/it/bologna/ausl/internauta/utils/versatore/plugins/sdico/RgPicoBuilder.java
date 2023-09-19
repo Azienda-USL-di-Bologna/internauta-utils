@@ -4,8 +4,17 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.scripta.Archivio;
+import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import it.bologna.ausl.model.entities.scripta.Registro;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,33 +25,59 @@ import org.slf4j.LoggerFactory;
 public class RgPicoBuilder {
     
     private static final Logger log = LoggerFactory.getLogger(DeliBuilder.class);
+    private static final String CODICE = "RGPICO";
+    private static final String TESTO = "TESTO";
+    private static final String DATA = "DATA";
+    private static final String TESTO_MULTIPLO = "TESTO MULTIPLO";
     
     private VersamentoBuilder versamentoBuilder;
-    
+    private Doc doc;
     private DocDetail docDetail;
-    
-    public RgPicoBuilder(DocDetail docDetail) {
-        versamentoBuilder = new VersamentoBuilder();
+    private Archivio archivio;
+    private Registro registro;
+    private List<Persona> firmatari;
+    private Map<String, Object> parametriVersamento;
+
+    public RgPicoBuilder(VersamentoBuilder versamentoBuilder, Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
+        this.versamentoBuilder = versamentoBuilder;
+        this.doc = doc;
         this.docDetail = docDetail;
+        this.archivio = archivio;
+        this.registro = registro;
+        this.firmatari = firmatari;
+        this.parametriVersamento = parametriVersamento;
     }
     
+    /**
+     * Metodo che costruisce i metadati per i registri giornalieri di PICO (id tipo doc 8001)
+     * @return 
+     */
     public VersamentoBuilder build() {
         
-        versamentoBuilder.setDocType("8001");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
+        String docType = (String) mappaParametri.get("idTipoDoc");
+        String codiceEneteVersatore = (String) parametriVersamento.get("ente");
+        String idClassifica = (String) mappaParametri.get("idClassifica");
+        String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
+        String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         
-        versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList("r_veneto"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList("8001"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3035"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("C.101.15.2.a1"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "oggettodeldocumento", Arrays.asList(this.docDetail.getOggetto()), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList("r_veneto"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList("aoogiunta"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList("1"), "TESTO");
-        versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList("329/I"), "TESTO");
-        
-        versamentoBuilder.addFileByParams("Documento_di_prova.pdf", "application/pdf", "106cdc73f652bfa0349910d7d1c9a541dc326e729e22d779c7c2a64920034e0f");
-        
-        log.info(versamentoBuilder.toString());
+        versamentoBuilder.setDocType(docType);
+        versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
+        //TODO da vedere se cambiano in base alla tipologia
+        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
+        //TODO da azero sapere se aggiungere: Cognome_responsabile_gestione_documentale
+        //TODO da azero sapere se aggiungere: Nome_responsabile_gestione_documentale
+        //TODO da azero sapere se aggiungere: Codice_fiscale_responsabile_gestione_documentale
+        //TODO da azero sapere se aggiungere: Denominazione_dellamministrazione
+        versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
+        //TODO da azero sapere se aggiungere: ufficioProduttore
         
         return versamentoBuilder;
         

@@ -13,7 +13,6 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,10 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,7 +36,7 @@ public class AllegatiBuilder {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
 
-    //TODO riaggiungere
+    //TODO riaggiungere? o lo passo dalla classe sdicoVersatoreService?
 //    @Autowired
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
@@ -57,8 +53,8 @@ public class AllegatiBuilder {
     }
 
     /**
-     * Metodo che crea i dati per gli allegati (SdicoFile) e le loro
-     * informazioni per il versatore (VersatoreAllegatoInformation
+     * Metodo che crea i dati per gli allegati (IdentityFile) e le loro
+     * informazioni per il versatore (VersatoreAllegatoInformation)
      *
      * @return
      */
@@ -68,11 +64,11 @@ public class AllegatiBuilder {
         Integer indexCommittente = 1;
         Integer indexAlbo = 1;
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
-        //Map<Integer, IdentityFile> identityFiles = new HashMap<>();
         List<IdentityFile> identityFiles = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
 
         for (Allegato allegato : allegati) {
+            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation)
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
             IdentityFile identityFile = new IdentityFile(originale.getNome(),
                     getUuidMinIObyFileId(originale.getIdRepository()),
@@ -423,34 +419,27 @@ public class AllegatiBuilder {
         return mappaPerAllegati;
     }
 
+    /**
+     * Metodo che recupera il MongoUuid dell'allegato da MinIO
+     * @param fileId
+     * @return
+     * @throws MinIOWrapperException 
+     */
     private String getUuidMinIObyFileId(String fileId) throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
         return fileInfoByFileId.getMongoUuid();
     }
 
-//    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile) {
-//        VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
-//        allegatoInformation.setIdAllegato(idAllegato);
-//        allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE);
-//        allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
-//        allegatoInformation.setDataVersamento(ZonedDateTime.now());
-//        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
-//        VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
-//        versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());
-//        allegatoInformation.setMetadatiVersati(versamentoBuilder.toString());
-//        return allegatoInformation;
-//    }
-
-//     private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile) {
-//        VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
-//        allegatoInformation.setIdAllegato(idAllegato);
-//        allegatoInformation.setTipoDettaglioAllegato(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE);
-//        allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
-//        allegatoInformation.setDataVersamento(ZonedDateTime.now());
-//        //allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
-//        return allegatoInformation;
-//    }
+    /**
+     * Metodo che inserisce le informazioni relative all'allegato in VersamentoAllegatoInformatio 
+     * e aggiunge al versamentoBuilder la parte di XML relativa
+     * @param idAllegato
+     * @param identityFile
+     * @param versamentoBuilder
+     * @param firmato
+     * @return 
+     */
     private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile, VersamentoBuilder versamentoBuilder, Boolean firmato) {
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
         allegatoInformation.setIdAllegato(idAllegato);
@@ -461,10 +450,10 @@ public class AllegatiBuilder {
         }
         allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
         allegatoInformation.setDataVersamento(ZonedDateTime.now());
+        //TODO vedere se va bene come JSON
         allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
-//        VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+        //aggiungo i metadati dell'allegato al file XML
         versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());
-//        allegatoInformation.setMetadatiVersati(versamentoBuilder.toString());
         return allegatoInformation;
     }
 
