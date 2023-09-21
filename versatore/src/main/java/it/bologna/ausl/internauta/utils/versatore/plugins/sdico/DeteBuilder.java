@@ -30,11 +30,12 @@ public class DeteBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
+    //TODO è da aggiungere registro?
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
 
-    public DeteBuilder(VersamentoBuilder versamentoBuilder, Doc doc, DocDetail docDetail, Archivio archivio, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
-        this.versamentoBuilder = versamentoBuilder;
+    public DeteBuilder(Doc doc, DocDetail docDetail, Archivio archivio, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
+        versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;

@@ -9,6 +9,7 @@ import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
+import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +39,8 @@ public class RgPicoBuilder {
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
 
-    public RgPicoBuilder(VersamentoBuilder versamentoBuilder, Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
-        this.versamentoBuilder = versamentoBuilder;
+    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
+        this.versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;
@@ -55,12 +56,15 @@ public class RgPicoBuilder {
     public VersamentoBuilder build() {
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+        DecimalFormat df = new DecimalFormat("0000000");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+        String annoRegistrazione = docDetail.getAnnoRegistrazione().toString();
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -78,6 +82,18 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
         //TODO da azero sapere se aggiungere: ufficioProduttore
+        versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(annoRegistrazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(), TESTO);
+        //TODO lo calcolo dall'oggetto o faccio query?
+        versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(""), TESTO);
+        //TODO
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(""), DATA);
+        //TODO
+        versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(""), TESTO);
+        //TODO
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(""), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         
         return versamentoBuilder;
         

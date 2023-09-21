@@ -36,6 +36,7 @@ public class DeliBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
+    //TODO serve?
     private Registro registro;
     private List<Persona> firmatari = new ArrayList<>();
     private Map<String, Object> parametriVersamento = new HashMap<>();
@@ -93,7 +94,9 @@ public class DeliBuilder {
         HashMap<String, Object> additionalData = doc.getAdditionalData();
         String dataEsecutiva = null;
         if (additionalData != null) {
-            if (additionalData.containsKey("data_esecutiva")) {
+            if (additionalData.containsKey("dati_pubblicazione")) {
+                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+                if (datiPubblicazione.containsKey("data_esecutivita"))
                 dataEsecutiva = additionalData.get("data_esecutivita").toString();
             }
         }

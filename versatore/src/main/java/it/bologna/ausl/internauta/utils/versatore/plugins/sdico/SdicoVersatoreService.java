@@ -181,10 +181,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         //in basa alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+        log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
         switch (doc.getTipologia()) {
             case DETERMINA: {
-                //DeteBuilder db = new DeteBuilder(docDetail);
-                //TODO documento = db.build();
+                DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, firmatari, parametriVersamento);
+                versamentoBuilder = db.build();
                 break;
             }
             case DELIBERA: {
@@ -193,8 +194,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 break;
             }
             case RGPICO: {
-                RgPicoBuilder rb = new RgPicoBuilder(docDetail);
-                //TODOversamentoBuilder = rb.build();
+                RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                versamentoBuilder = rb.build();
                 break;
             }
             //TODO altre tipologie
@@ -202,7 +203,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 throw new AssertionError("Tipologia documentale non presente");
         }
    
-        //accedo ai dati degli allegati e li inserisco nel XML
+        //accedo ai dati degli allegati e li inserisco nell'XML
+        log.info("accedo ai dati degli allegati e li inserisco nell'XML");
         List<Allegato> allegati = doc.getAllegati();
         AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
         Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
@@ -217,6 +219,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         try {
             List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
             //effettuo il login a SDICO per ricevere il token
+            log.info("Effettuo il login");
             String token = "";
             token = getJWT(username, password, sdicoLoginURI);
 
@@ -407,6 +410,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         //MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         List<PaccoFile> filesList = new ArrayList<>();
         for (IdentityFile identityFile : identityFiles) {
+            log.info("Cerco l'allegato: " + identityFile.getFileName());
             PaccoFile paccoFile = new PaccoFile();
             try {
                 InputStream is = minIOWrapper.getByUuid(identityFile.getUuidMongo());
