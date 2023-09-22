@@ -23,6 +23,9 @@ import org.springframework.stereotype.Service;
 import it.bologna.ausl.internauta.utils.pdftoolkit.repositories.ParameterRepository;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Formatter;
 
 /**
  * Classe per la configurazione iniziare del modulo. 
@@ -33,8 +36,7 @@ import java.nio.file.Paths;
 @Service
 public class PdfToolkitConfigParams {
     
-    private static final Logger log = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
-    public static final String WORKDIR = System.getProperty("java.io.tmpdir");
+    public static final String WORKDIR = Paths.get("").toAbsolutePath().toString();
     public static final String RESOURCES_RELATIVE_PATH = "/resources/reporter";
     public static final String INTERNAUTA_RELATIVE_PATH = "/internauta";
     public static final String TEMPLATES_RELATIVE_PATH = "/templates";
@@ -59,6 +61,7 @@ public class PdfToolkitConfigParams {
     
     private MinIOWrapper minIOWrapper;
     private Map<String, Object> downloaderParams;
+    private static final Logger log = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
        
     /**
      * Metodo di inizializzazione chiamato dopo la creazione del bean.
@@ -88,39 +91,55 @@ public class PdfToolkitConfigParams {
         }
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
         this.downloaderParams = downloaderParameterOp.get().getValue();
-        log.info("Downloading all resource files for PDFToolkit module...");
-//        try {
-//            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, getPdfToolkitBucket());
-//            if (filesInPath != null && !filesInPath.isEmpty()) {
-//                log.info("Found {} files in the resources path.", filesInPath.size());
-//                for (MinIOWrapperFileInfo minIOFileInfo : filesInPath) {
-//                    File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
-//                    if (targetFile.exists())
-//                        log.debug("The file '{}' already exists, download skipped.", minIOFileInfo.getPath());
-//                    else {
-//                        log.debug("Downloading file '{}'...", minIOFileInfo.getPath());
-//                        try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
-//                            String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
-//                            if (Files.notExists(Paths.get(destination)))
-//                                Files.createDirectories(Paths.get(destination));
-//                            java.nio.file.Files.copy(
-//                                fileInputStream, 
-//                                targetFile.toPath(), 
-//                                StandardCopyOption.REPLACE_EXISTING);
-//                            log.debug("File '{}' downloaded successfully.", minIOFileInfo.getPath());
-//                        } catch (IOException ex) {
-//                            log.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
-//                        }
-//                    }
-//                }  
-//                log.info("All resource files downloaded successfully.");
-//            } else {
-//                log.info("There aren't any files to download.");
-//            }
-//        } catch (MinIOWrapperException ex) {
-//            log.error("Error occurred in MinIOWrapper when trying to download the files.", ex);
-////        throw new PdfToolkitConfigurationException("Error occurred in MinIOWrapper", ex);
-//        }
+    }
+    
+    /**
+     * Scarica i file di risorsa per il modulo PDFToolkit da MinIO, verificando l'integrità tramite l'MD5 hash.
+     * Questo metodo recupera i file da un bucket MinIO specificato e li salva nel sistema di file locale.
+     * Prima di scaricare un file, verifica se il file già esiste localmente e se l'MD5 hash del file corrisponde
+     * a quello specificato nei metadati del file su MinIO. Se l'MD5 hash non corrisponde o il file non esiste
+     * localmente, il file verrà scaricato.
+     */
+    public void downloadFilesFromMinIO() {
+        log.info("Check reporter files for PDFToolkit module to download...");
+        try {
+            List<MinIOWrapperFileInfo> filesInPath = minIOWrapper.getFilesInPath(RESOURCES_RELATIVE_PATH, getPdfToolkitBucket());
+            if (filesInPath != null && !filesInPath.isEmpty()) {
+
+                filesInPath.parallelStream().forEach(minIOFileInfo -> {
+                    File targetFile = new File(String.format("%s%s%s", WORKDIR, "/", minIOFileInfo.getPath()));
+                    try {
+                        if (!Files.exists(targetFile.toPath()) || 
+                                !getHashFromBytes(Files.readAllBytes(targetFile.toPath()), "MD5").equals(minIOFileInfo.getMd5().toUpperCase())) {                       
+                            log.debug("Downloading file '{}'...", minIOFileInfo.getPath());
+                            try (InputStream fileInputStream = minIOWrapper.getByFileId(minIOFileInfo.getFileId())) {
+                                String destination = targetFile.getPath().replace(minIOFileInfo.getFileName(), "");
+                                if (Files.notExists(Paths.get(destination)))
+                                    Files.createDirectories(Paths.get(destination));
+                                java.nio.file.Files.copy(
+                                    fileInputStream, 
+                                    targetFile.toPath(), 
+                                    StandardCopyOption.REPLACE_EXISTING);
+                                log.info("File '{}' downloaded successfully.", minIOFileInfo.getPath());
+                            } catch (MinIOWrapperException ex) {
+                                log.error("Error occurred in MinIOWrapper during the download of file '{}'.", minIOFileInfo.getPath(), ex);
+                            } catch (IOException ex) {
+                                log.error("Error occurred during the download of file '{}' from MinIO", minIOFileInfo.getPath(), ex);
+                            }
+                        }
+                    } catch (NoSuchAlgorithmException ex) {
+                        log.error("Cryptographic algorithm requested not available in the environment'.", ex);
+                    } catch (IOException ex) {
+                        log.error("Error occurred while reading the file'{}'", targetFile.getAbsolutePath());
+                    } 
+                });
+            } else {
+                log.info("There aren't any files to download.");
+            }
+        } catch (MinIOWrapperException ex) {
+            log.error("Error occurred in MinIOWrapper when trying to download the files.", ex);
+        }
+        log.info("Check reporter files for PDFToolkit complete.");
     }
     
     /**
@@ -146,6 +165,43 @@ public class PdfToolkitConfigParams {
     public String getPdfToolkitBucket() {
         return (String)this.downloaderParams.get(DownloaderParamsKey.pdfToolkitBucket.toString());
     }
+
+    /**
+     * Torna l'ogetto per interagire conMinIO
+     * @return l'ogetto per interagire conMinIO
+     */
+    public MinIOWrapper getMinIOWrapper() {
+        return minIOWrapper;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+    
+    /**
+     * Torna l'hash in esadecimale del file, passato come bytes
+     *
+     * @param file i bytes del file
+     * @param algorithm l'algoritmo da usare ES. SHA-256, MD5, ecc.
+     * @return l'hash in esadecimale del file calcolato con l'algoritmo passato
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public String getHashFromBytes(byte[] file, String algorithm) throws IOException, NoSuchAlgorithmException {
+
+        MessageDigest mdigest = MessageDigest.getInstance(algorithm);
+        // read the data from file and update that data in the message digest
+        mdigest.update(file);
+        // store the bytes returned by the digest() method
+        byte[] hashBytes = mdigest.digest(); 
+        Formatter fmt = new Formatter();
+        // loop through the bytes array
+        for (int i = 0; i < hashBytes.length; i++) {
+            fmt.format("%02X", hashBytes[i]);
+        }
+        // finally we return the complete hash
+        return fmt.toString();
+    }
     
     /**
      * inizializza la connessione a MinIO
@@ -158,17 +214,5 @@ public class PdfToolkitConfigParams {
         String minIODBPassword = (String) minIOConfig.get("DBPassword");
         Integer maxPoolSize = (Integer) minIOConfig.get("maxPoolSize");
         minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, objectMapper);
-    }
-
-    /**
-     * Torna l'ogetto per interagire conMinIO
-     * @return l'ogetto per interagire conMinIO
-     */
-    public MinIOWrapper getMinIOWrapper() {
-        return minIOWrapper;
-    }
-
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
     }
 }
