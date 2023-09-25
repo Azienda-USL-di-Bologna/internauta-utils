@@ -69,8 +69,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
     private static final String SDICO_VERSATORE_SERVICE = "SdicoVersatoreService";
-    private static final String SDICO_LOGIN_URI = "SdicoLoginURI";
-    private static final String SDICO_SERVIZIO_VERSAMENTO_URI = "sdicoServizioVersamentoURI";
     private static final String WS_OK = "WS_OK";
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -84,8 +82,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
         super.init(versatoreConfiguration);
         Map<String, Object> versatoreConfigurationMap = this.versatoreConfiguration.getParams();
         Map<String, Object> sdicoServiceConfiguration = (Map<String, Object>) versatoreConfigurationMap.get(SDICO_VERSATORE_SERVICE);
-        sdicoLoginURI = sdicoServiceConfiguration.get(SDICO_LOGIN_URI).toString();
-        sdicoServizioVersamentoURI = sdicoServiceConfiguration.get(SDICO_SERVIZIO_VERSAMENTO_URI).toString();
+        sdicoLoginURI = sdicoServiceConfiguration.get("SdicoLoginURI").toString();
+        sdicoServizioVersamentoURI = sdicoServiceConfiguration.get("SdicoServizioVersamentoURI").toString();
         log.info("SDICO login URI: {}", sdicoLoginURI);
         log.info("SDICO servizio versamento URI: {}", sdicoServizioVersamentoURI);
     }
@@ -203,6 +201,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
             case PROTOCOLLO_IN_USCITA: {
                 PicoBuilder pb = new PicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
                 versamentoBuilder = pb.build();
+            }
+            case DOCUMENT_UTENTE: {
+                DocumentoGEDIBuilder dgb = new DocumentoGEDIBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                versamentoBuilder = dgb.build();
             }
             //TODO altre tipologie
             default:
