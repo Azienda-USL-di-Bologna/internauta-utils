@@ -38,7 +38,9 @@ public class DeliBuilder {
     private Archivio archivio;
     //TODO serve?
     private Registro registro;
+    //TODO uniformare
     private List<Persona> firmatari = new ArrayList<>();
+    //TODO uniformare
     private Map<String, Object> parametriVersamento = new HashMap<>();
     
     public DeliBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {

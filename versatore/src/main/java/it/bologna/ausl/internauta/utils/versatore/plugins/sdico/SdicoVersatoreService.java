@@ -45,6 +45,7 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
@@ -197,6 +198,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
                 versamentoBuilder = rb.build();
                 break;
+            }
+            case PROTOCOLLO_IN_ENTRATA:
+            case PROTOCOLLO_IN_USCITA: {
+                PicoBuilder pb = new PicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                versamentoBuilder = pb.build();
             }
             //TODO altre tipologie
             default:
