@@ -47,9 +47,14 @@ import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Allegato;
+import it.bologna.ausl.model.entities.scripta.ArchivioDetail;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.logging.Level;
 
 /**
  *
@@ -95,7 +100,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
         //OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
-        mappaResultAndAllegati = versaDocumentoSDICO(versamentoDocInformation);
+        try { //TODO togli try e catch
+            mappaResultAndAllegati = versaDocumentoSDICO(versamentoDocInformation);
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(SdicoVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+        }
         String response = (String) mappaResultAndAllegati.get("response");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
@@ -151,7 +160,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
      * @param versamentoDocInformation
      * @return
      */
-    public Map<String, Object> versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation) {
+    public Map<String, Object> versaDocumentoSDICO(VersamentoDocInformation versamentoDocInformation) throws FileNotFoundException, IOException {
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
         //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
@@ -159,7 +168,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         log.info(doc.getTipologia().toString());
+        //TODO meglio archivioDetail ??
         Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+        ArchivioDetail archivioDetail = entityManager.find(ArchivioDetail.class, versamentoDocInformation.getIdArchivio());
         //TODO come arrivo al registro????
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
@@ -201,112 +212,124 @@ public class SdicoVersatoreService extends VersatoreDocs {
             case PROTOCOLLO_IN_USCITA: {
                 PicoBuilder pb = new PicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
                 versamentoBuilder = pb.build();
+                break;
             }
             case DOCUMENT_UTENTE: {
                 DocumentoGEDIBuilder dgb = new DocumentoGEDIBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
                 versamentoBuilder = dgb.build();
+                break;
             }
             //TODO altre tipologie
             default:
                 throw new AssertionError("Tipologia documentale non presente");
         }
-   
+        
+        //TODO
+        versamentoBuilder.addFileByParams("Documento_di_prova.pdf", "application/pdf", "74c9ba0564fa465c2641df12c5df35ba");
+       
         //accedo ai dati degli allegati e li inserisco nell'XML
         log.info("accedo ai dati degli allegati e li inserisco nell'XML");
-        List<Allegato> allegati = doc.getAllegati();
-        AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
-        Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
-        List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
-        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
+        //List<Allegato> allegati = doc.getAllegati();
+        //AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
+ //       Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
+  //      List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
+  //      List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
+        FileInputStream fstreamAllegato = new FileInputStream("C:\\tmp\\Documento_di_prova.pdf"); //TODO togliere il throw e l'import
+        byte[] allegato = IOUtils.toByteArray(fstreamAllegato); //TODO togliere il throw
         String metadati = versamentoBuilder.toString();
         risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+        log.info("XML\n" + metadati); //TODO da togliere
+        //TODO da togliere
+        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = new ArrayList<>();
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList); 
         
         // parte di collegamento con SDICO e versamento
-        String response = null;
-        try {
-            List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
-            //effettuo il login a SDICO per ricevere il token
-            log.info("Effettuo il login");
-            String token = "";
-            token = getJWT(username, password, sdicoLoginURI);
-
-            // inizializzazione http client
-            //TODO si dovrà poi usare la configurazione già instanziata
-            OkHttpClient okHttpClient = new OkHttpClient()
-                    .newBuilder()
-                    .connectTimeout(60, TimeUnit.SECONDS)
-                    .build();
-
-            // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
-            byte[] fileMetadati = IOUtils.toByteArray(metadati);
-            MultipartBody.Builder buildernew = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
-
-            // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
-            log.info("Ciclo i file...");
-            if (paccoFiles.size() > 0) {
-                for (PaccoFile paccoFile : paccoFiles) {
-                    log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
-                    byte[] bytes;
-                    try (InputStream is = paccoFile.getInputStream()) {
-                        bytes = IOUtils.toByteArray(is);
-                        buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
-                    } catch (Exception ex) {
-                        log.error("Problemi con l'inputstream dei file", ex);
-                    }
-                }
-            }
-
-            // creazione di body multipart
-            log.info("Costruisco il MultiPart");
-            MultipartBody requestBody = buildernew.build();
-            // richiesta
-            log.info("Costruisco la request");
-            Request request = new Request.Builder()
-                    .url(sdicoServizioVersamentoURI)
-                    .addHeader("Authorization", token)
-                    .post(requestBody)
-                    .build();
-            log.info("Uri: " + sdicoServizioVersamentoURI);
-            log.info("Effettuo la chiamata a SDICO");
-            try (Response resp = okHttpClient.newCall(request).execute()) {
-                if (resp.isSuccessful()) {
-                    log.info("Message: " + resp.message());
-                    String resBodyString = resp.body().string();
-                    log.info("Body: " + resBodyString);
-                    risultatoEVersamentiAllegati.put("response", resBodyString);
-                } else {
-                    log.error("ERROR: message = " + resp.message());
-                    String resBodyString = resp.body().string();
-                    log.error("Body: " + resBodyString);
-                    log.error(resp.toString());
-                    risultatoEVersamentiAllegati.put("response", null);
-                }
-                resp.close(); // chiudo la response
-            } catch (Throwable ex) {
-                log.error("Errore chiamata riversamento", ex);
-                ex.printStackTrace();
-                risultatoEVersamentiAllegati.put("response", null);
-            }
-
-            return risultatoEVersamentiAllegati;
-
-        } catch (IOException ex) {
-            log.error("Errore nell'invio del versamento", ex);
-        }
+//        String response = null;
+//        try {
+//            //List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
+//            //effettuo il login a SDICO per ricevere il token
+//            log.info("Effettuo il login");
+//            String token = "";
+//            token = getJWT(username, password, sdicoLoginURI);
+//
+//            // inizializzazione http client
+//            //TODO si dovrà poi usare la configurazione già instanziata
+//            OkHttpClient okHttpClient = new OkHttpClient()
+//                    .newBuilder()
+//                    .connectTimeout(60, TimeUnit.SECONDS)
+//                    .build();
+//
+//            // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
+//            byte[] fileMetadati = IOUtils.toByteArray(metadati);
+//            MultipartBody.Builder buildernew = new MultipartBody.Builder()
+//                    .setType(MultipartBody.FORM)
+//                    .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+//            
+//            buildernew.addFormDataPart("file", "Documento_di_prova.pdf", RequestBody.create(MediaType.parse("application/pdf"), allegato)); //TODO
+//
+//            // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
+//            log.info("Ciclo i file...");
+////            if (paccoFiles.size() > 0) {
+////                for (PaccoFile paccoFile : paccoFiles) {
+////                    log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+////                    byte[] bytes;
+////                    try (InputStream is = paccoFile.getInputStream()) {
+////                        bytes = IOUtils.toByteArray(is);
+////                        buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+////                    } catch (Exception ex) {
+////                        log.error("Problemi con l'inputstream dei file", ex);
+////                    }
+////                }
+////            }
+//
+//            // creazione di body multipart
+//            log.info("Costruisco il MultiPart");
+//            MultipartBody requestBody = buildernew.build();
+//            // richiesta
+//            log.info("Costruisco la request");
+//            Request request = new Request.Builder()
+//                    .url(sdicoServizioVersamentoURI)
+//                    .addHeader("Authorization", token)
+//                    .post(requestBody)
+//                    .build();
+//            log.info("Uri: " + sdicoServizioVersamentoURI);
+//            log.info("Effettuo la chiamata a SDICO");
+//            try (Response resp = okHttpClient.newCall(request).execute()) {
+//                if (resp.isSuccessful()) {
+//                    log.info("Message: " + resp.message());
+//                    String resBodyString = resp.body().string();
+//                    log.info("Body: " + resBodyString);
+//                    risultatoEVersamentiAllegati.put("response", resBodyString);
+//                } else {
+//                    log.error("ERROR: message = " + resp.message());
+//                    String resBodyString = resp.body().string();
+//                    log.error("Body: " + resBodyString);
+//                    log.error(resp.toString());
+//                    risultatoEVersamentiAllegati.put("response", null);
+//                }
+//                resp.close(); // chiudo la response
+//            } catch (Throwable ex) {
+//                log.error("Errore chiamata riversamento", ex);
+//                ex.printStackTrace();
+//                risultatoEVersamentiAllegati.put("response", null);
+//            }
+//
+//            return risultatoEVersamentiAllegati;
+//
+//        } catch (IOException ex) {
+//            log.error("Errore nell'invio del versamento", ex);
+//        }
 //TODO da togliere
-//        String response = "{\n"
-//                + "    \"errorMessage\": null,\n"
-//                + "    \"idConservazione\": \"3067134\",\n"
-//                + "    \"numDocNonVersati\": \"0\",\n"
-//                + "    \"numDocVersati\": \"1\",\n"
-//                + "    \"responseCode\": \"WS_OK\",\n"
-//                + "    \"sizeTot\": \"643215\",\n"
-//                + "    \"stackTrace\": null,\n"
-//                + "    \"timeTot\": \"4879\"\n"
-//                + "}";
+        String response = "{\n"
+                + "    \"errorMessage\": null,\n"
+                + "    \"idConservazione\": \"3067134\",\n"
+                + "    \"numDocNonVersati\": \"0\",\n"
+                + "    \"numDocVersati\": \"1\",\n"
+                + "    \"responseCode\": \"WS_OK\",\n"
+                + "    \"sizeTot\": \"643215\",\n"
+                + "    \"stackTrace\": null,\n"
+                + "    \"timeTot\": \"4879\"\n"
+                + "}";
         risultatoEVersamentiAllegati.put("response", response);
         
         return risultatoEVersamentiAllegati;
@@ -434,4 +457,24 @@ public class SdicoVersatoreService extends VersatoreDocs {
         return filesList;
     }
 
+    //TODO probabilmente inutile
+    private void addMetadatiFascicolo(VersamentoBuilder versamentoBuilder, ArchivioDetail archivioDetail, Archivio archivio) {
+        List<String> datiFascicolo = new ArrayList<>();
+        //TODO da vedere la formattazione
+        datiFascicolo.add("Numero " + Integer.toString(archivio.getNumero()));
+        datiFascicolo.add("Anno " + Integer.toString(archivio.getAnno()));
+        datiFascicolo.add("Tipo " + archivio.getTipo().toString());
+        datiFascicolo.add("Responsabile " + archivioDetail.getIdPersonaResponsabile().getDescrizione());
+        //TODO qual è la struttura del responsabile? datiFascicolo.add("Struttura del responsabile " + archivioDetail.getIdPersonaResponsabile().getI)
+        Integer[] idVicari = archivioDetail.getIdVicari();
+        for (int i = 0; i < idVicari.length; i++) {
+            Persona vicario = entityManager.find(Persona.class, idVicari[i]);
+            datiFascicolo.add("Vicario " + vicario.getDescrizione());
+        }
+        datiFascicolo.add("Oggetto " + archivioDetail.getOggetto());
+        //TODO cos'è la classificazione? datiFascicolo.add("Classificazione " + archivioDetail.)
+        datiFascicolo.add("Anni tenuta " + archivio.getAnniTenuta());
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", datiFascicolo, "TESTO MULTIPLO");
+    }
+    
 }
