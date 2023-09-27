@@ -2,14 +2,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
+package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,15 +40,22 @@ public class RgPicoBuilder {
     private Registro registro;
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
+    private String numeroIniziale;
+    private String numeroFinale;
+    private ZonedDateTime dataIniziale;
+    private ZonedDateTime dataFinale;
 
-    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
-        this.versamentoBuilder = new VersamentoBuilder();
+    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale) {
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;
         this.registro = registro;
         this.firmatari = firmatari;
         this.parametriVersamento = parametriVersamento;
+        this.numeroIniziale = numeroIniziale;
+        this.numeroFinale = numeroFinale;
+        this.dataIniziale = dataIniziale;
+        this.dataFinale = dataFinale;
     }
     
     /**
@@ -86,13 +95,13 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(annoRegistrazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(), TESTO);
         //TODO lo calcolo dall'oggetto o faccio query?
-        versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(""), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(numeroFinale), TESTO);
         //TODO
-        versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(""), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.format(formatter)), DATA);
         //TODO
-        versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(""), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(numeroIniziale), TESTO);
         //TODO
-        versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(""), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         
         return versamentoBuilder;

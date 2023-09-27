@@ -2,8 +2,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
+package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Archivio;
@@ -93,7 +94,8 @@ public class PicoBuilder {
         //TODO da inserire??
         versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(Integer.toString(archivio.getId()) + "_" + archivio.getOggetto()), TESTO_MULTIPLO);
+        //TODO anche il numero del fascicolo va formattato a 7 cifre?
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO); 

@@ -1,5 +1,11 @@
-package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
+package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.File;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.Files;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.Metadata;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.Singlemetadata;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.Values;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.Versamento;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
