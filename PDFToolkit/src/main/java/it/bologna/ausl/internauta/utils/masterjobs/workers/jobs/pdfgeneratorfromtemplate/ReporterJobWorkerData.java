@@ -9,7 +9,7 @@ import java.util.Map;
  * 
  * @author Giuseppe Russo <g.russo@dilaxia.com>
  */
-public class ReporterJobWorkerData extends JobWorkerData{
+public class ReporterJobWorkerData extends JobWorkerData {
     //
     private String codiceAzienda;
     private String templateName;

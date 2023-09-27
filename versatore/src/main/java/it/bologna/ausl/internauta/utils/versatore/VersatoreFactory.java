@@ -28,7 +28,7 @@ public class VersatoreFactory {
     
      // Elenco dei vari provider supportati
     public static enum VersatoreProviders {
-        PARER, INFOCERT
+        PARER, INFOCERT, SDICO
     };
 
     @Autowired
