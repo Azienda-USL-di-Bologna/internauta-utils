@@ -46,6 +46,7 @@ public class RgPicoBuilder {
     private ZonedDateTime dataFinale;
 
     public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale) {
+        this.versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;
@@ -72,7 +73,9 @@ public class RgPicoBuilder {
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+        //TODO
+        //String codiceRegistro = registro.getCodice().toString();
+        String codiceRegistro = "RGPICO";
         String annoRegistrazione = docDetail.getAnnoRegistrazione().toString();
         
         versamentoBuilder.setDocType(docType);
@@ -94,13 +97,10 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(annoRegistrazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(), TESTO);
-        //TODO lo calcolo dall'oggetto o faccio query?
+        //TODO bisogna testare se il metodo funziona
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(numeroFinale), TESTO);
-        //TODO
         versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.format(formatter)), DATA);
-        //TODO
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(numeroIniziale), TESTO);
-        //TODO
         versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         

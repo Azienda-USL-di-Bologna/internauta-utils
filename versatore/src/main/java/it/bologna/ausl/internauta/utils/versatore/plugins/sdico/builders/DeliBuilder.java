@@ -37,12 +37,9 @@ public class DeliBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
-    //TODO serve?
     private Registro registro;
-    //TODO uniformare
-    private List<Persona> firmatari = new ArrayList<>();
-    //TODO uniformare
-    private Map<String, Object> parametriVersamento = new HashMap<>();
+    private List<Persona> firmatari;
+    private Map<String, Object> parametriVersamento;
     
     public DeliBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
         versamentoBuilder = new VersamentoBuilder();
@@ -67,18 +64,14 @@ public class DeliBuilder {
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
-        //TODO vedere come chiamare il registro
-//        String codiceRegistro = null;
-//        if (registro.getCodice() != null) {
-//            codiceRegistro = registro.getCodice().toString();
-//        }
+        //TODO da vede quando si crea la riga in registri_docs
+        //String codiceRegistro = registro.getCodice().toString();
+        String codiceRegistro = "DELI";
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
         DecimalFormat df = new DecimalFormat("0000000");
-        //TODO il documento deve essere per forza registrato per essere versato?
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
@@ -96,13 +89,15 @@ public class DeliBuilder {
         }
         HashMap<String, Object> additionalData = doc.getAdditionalData();
         String dataEsecutiva = null;
-        if (additionalData != null) {
-            if (additionalData.containsKey("dati_pubblicazione")) {
-                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
-                if (datiPubblicazione.containsKey("data_esecutivita"))
-                dataEsecutiva = additionalData.get("data_esecutivita").toString();
-            }
-        }
+        //TODO vedere se dataesecutiva può essere nulla
+//        if (additionalData != null) {
+//            if (additionalData.containsKey("dati_pubblicazione")) {
+//                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+//                if (datiPubblicazione.containsKey("data_esecutivita") || additionalData.get("data_esecutiva") != null) {
+//                    dataEsecutiva = additionalData.get("data_esecutivita").toString();   
+//                } 
+//            }
+//        }
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -123,7 +118,6 @@ public class DeliBuilder {
         //TODO da chiedere ad AZERO cosa inserire
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);

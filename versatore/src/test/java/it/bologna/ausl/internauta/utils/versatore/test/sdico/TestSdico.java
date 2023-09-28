@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.versatore.test.sdico;
 
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoVersatoreService;
-import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.VersamentoBuilder;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;

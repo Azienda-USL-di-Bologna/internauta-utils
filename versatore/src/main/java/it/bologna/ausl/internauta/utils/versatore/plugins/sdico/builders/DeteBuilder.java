@@ -5,6 +5,7 @@ import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,15 +32,16 @@ public class DeteBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
-    //TODO è da aggiungere registro?
+    private Registro registro;
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
 
-    public DeteBuilder(Doc doc, DocDetail docDetail, Archivio archivio, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
+    public DeteBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
         versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;
+        this.registro = registro;
         this.firmatari = firmatari;
         this.parametriVersamento = parametriVersamento;
     }
@@ -62,12 +64,13 @@ public class DeteBuilder {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
         DecimalFormat df = new DecimalFormat("0000000");
-        //TODO il documento deve essere per forza registrato per essere versato?
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
         //TODO da capire chi è il firmatario visto che ce ne sono più di uno
         String ufficioProduttore = "struttura del firmatario";
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+        //TODO
+        //String codiceRegistro = registro.getCodice().toString();
+        String codiceRegistro = "DETE";
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
@@ -94,7 +97,6 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);

@@ -17,15 +17,10 @@ import javax.persistence.EntityManager;
 public class SdicoVersatoreUtils {
 
     public static String buildIdFascicolo(Archivio archivio) {
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
-        DecimalFormat df = new DecimalFormat("0000000");
-        String numeroFascicolo = df.format(archivio.getNumero());
-        return ("Id: " + archivio.getId() + " - n° " + numeroFascicolo + "/" + archivio.getAnno());
+        return ("Id" + archivio.getId() + "-n" + archivio.getNumero() + "/" + archivio.getAnno());
     }
 
     public static String buildNoteFascicolo(Archivio archivio, ArchivioDetail archivioDetails, EntityManager entityManager) {
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
-        DecimalFormat df = new DecimalFormat("0000000");
         Integer[] idVicari = archivioDetails.getIdVicari();
         String vicari = "";
         for (int i = 0; i < idVicari.length; i++) {
@@ -50,17 +45,17 @@ public class SdicoVersatoreUtils {
                 throw new AssertionError();
         }
         vicari = vicari.substring(0, vicari.length() - 2);
-        String note1 = "Fascicolo di appartenenza del documento\n"
-                + "Numero: " + df.format(archivioDetails.getNumero())
-                + "Anno: " + archivioDetails.getAnno()
-                + "Tipo: " + archivioDetails.getTipo()
-                + "Responsabile: " + archivioDetails.getIdPersonaResponsabile().getDescrizione()
-                + "Struttura del responsabile: " //TODO chiedere come sapere la struttura del responsabile
-                + "Vicari: " + vicari
-                + "Oggetto: " + archivioDetails.getOggetto()
-                + "Classificazione: " //TODO capire cos'è
-                + "Anni tenuta" + archivio.getAnniTenuta()
-                + "Gerarchia" + gerarchia;
+        String note1 = "Fascicolo di appartenenza del documento" + "\n"
+                + "Numero: " + archivioDetails.getNumero() + "\n"
+                + "Anno: " + archivioDetails.getAnno() + "\n"
+                + "Tipo: " + archivioDetails.getTipo() + "\n"
+                + "Responsabile: " + archivioDetails.getIdPersonaResponsabile().getDescrizione() + "\n"
+                + "Struttura del responsabile: " + "\n" //TODO chiedere come sapere la struttura del responsabile
+                + "Vicari: " + vicari + "\n"
+                + "Oggetto: " + archivioDetails.getOggetto() + "\n"
+                + "Classificazione: " + "\n" //TODO capire cos'è
+                + "Anni tenuta: " + archivio.getAnniTenuta() + "\n"
+                + "Gerarchia: " + gerarchia;
 
         return note1;
     }

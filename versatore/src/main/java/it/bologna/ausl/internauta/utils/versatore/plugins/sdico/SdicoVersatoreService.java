@@ -117,7 +117,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                     }
                 } else {
-                    //TODO se da errore (non la response proprio non funziona la chiamate) non settare?
+                    //TODO se da errore (non la response proprio non funziona la chiamata) non settare?
                     versamentoDocInformation.setRapporto(response);
                     versamentoDocInformation.setCodiceErrore(sdicoResponse.getResponseCode());
                     versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
@@ -158,20 +158,21 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         log.info(doc.getTipologia().toString());
-        //TODO meglio archivioDetail ?? dipende da cosa metto nelle note
         Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
-        ArchivioDetail archivioDetail = entityManager.find(ArchivioDetail.class, versamentoDocInformation.getIdArchivio());
-        //TODO come arrivo al registro????
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
-        if (listaRegistri.size() != 0) {
-            registro = listaRegistri.get(0).getIdRegistro();
+        for (RegistroDoc reg : listaRegistri) {
+            if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
+                registro = reg.getIdRegistro();
+            }
         }
         List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
         List<Persona> firmatari = new ArrayList<>();
-        for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
-            Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
-            firmatari.add(p);
+        if (listaFirmatari != null) {
+            for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
+                Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
+                firmatari.add(p);
+            } 
         }
         Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
         String username = (String) parametriVersamento.get("username");
@@ -182,7 +183,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
         switch (doc.getTipologia()) {
             case DETERMINA: {
-                DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, firmatari, parametriVersamento);
+                DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
                 versamentoBuilder = db.build();
                 break;
             }
@@ -231,7 +232,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
         // parte di collegamento con SDICO e versamento
-        String response = null;
         try {
             List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
             //effettuo il login a SDICO per ricevere il token
@@ -327,7 +327,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 //TODO istanziazione di HTTPClient ereditata vedere se funziona
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 //        okHttpClient = buildNewClient(okHttpClient);
-        //String sdicoLoginURI = "https://par.collaudo.regione.veneto.it/serviziPar/rest/login";
         String token = null;
         String json = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
         RequestBody body = RequestBody.create(JSON, json);
@@ -416,8 +415,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
      * @return
      */
     private List<PaccoFile> creazionePaccoFile(List<IdentityFile> identityFiles) {
-        //TODO già istanziato nella classe estesa
-        //MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         List<PaccoFile> filesList = new ArrayList<>();
         for (IdentityFile identityFile : identityFiles) {
             log.info("Cerco l'allegato: " + identityFile.getFileName());

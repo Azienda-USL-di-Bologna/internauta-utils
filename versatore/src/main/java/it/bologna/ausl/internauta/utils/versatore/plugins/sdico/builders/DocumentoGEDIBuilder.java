@@ -39,13 +39,11 @@ public class DocumentoGEDIBuilder {
     private Archivio archivio;
     //TODO serve?
     private Registro registro;
-    //TODO uniformare
     private List<Persona> firmatari;
-    //TODO uniformare
     private Map<String, Object> parametriVersamento;
 
     public DocumentoGEDIBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
-        this.versamentoBuilder = versamentoBuilder;
+        this.versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
         this.archivio = archivio;
@@ -55,7 +53,7 @@ public class DocumentoGEDIBuilder {
     }
     
      /**
-     * Metodo che costruisce i metadati per i documenti GEDI (tipologia generica id tipo doc ???TODO cercare id)
+     * Metodo che costruisce i metadati per i documenti GEDI (tipologia generica id tipo doc ???TODO cercare id chiedere a SDICO??)
      * @return 
      */
     public VersamentoBuilder build() {
@@ -70,13 +68,15 @@ public class DocumentoGEDIBuilder {
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+        //TODO
+        //String codiceRegistro = registro.getCodice().toString();
+        String codiceRegistro = "GEDI";
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
         
-        //TODO dati da aggiornare
+        //TODO dati da aggiornare cercarli da SDICO
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
@@ -89,7 +89,6 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
         //TODO da concordare

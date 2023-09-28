@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * @author boria
  */
 public class PicoBuilder {
-    
+
     private static final Logger log = LoggerFactory.getLogger(PicoBuilder.class);
     private static final String CODICE = "PROTOCOLLO";
     private static final String TESTO = "TESTO";
@@ -37,11 +37,10 @@ public class PicoBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
-    //TODO serve?
     private Registro registro;
-    private List<Persona> firmatari = new ArrayList<>();
-    private Map<String, Object> parametriVersamento = new HashMap<>();
-    
+    private List<Persona> firmatari;
+    private Map<String, Object> parametriVersamento;
+
     public PicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento) {
         versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
@@ -51,10 +50,11 @@ public class PicoBuilder {
         this.firmatari = firmatari;
         this.parametriVersamento = parametriVersamento;
     }
-    
+
     /**
      * Metodo che costruisce i metadati per i protocolli (id tipo doc 800)
-     * @return 
+     *
+     * @return
      */
     public VersamentoBuilder build() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
@@ -71,16 +71,21 @@ public class PicoBuilder {
             stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
         }
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        //TODO vedere come viene chiamato
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
-        
-        
+        //TODO 
+        //String codiceRegistro = registro.getCodice().toString();
+        String codiceRegistro = "PG";
+        String responsabileProcedimento = null;
+        //TODO è vuoto?
+        if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
+            responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
+        }
+
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
         //TODO da vedere se cambiano in base alla tipologia
-        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3036"), TESTO); //TODO
-        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("C.101.15.2.a2"), TESTO); //TODO
+        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3036"), TESTO); // TODO vedere il vero valore
+        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("C.101.15.2.a2"), TESTO); //TODO vedere il vero valore
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
@@ -88,20 +93,24 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numeroProctocollo", Arrays.asList(numeroProtocollo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
-        versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList("1"), TESTO); //TODO
+        versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         //TODO è id_struttura_registrazione? o codice interno dell'ente?
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getCodice().toString()), TESTO);
         //TODO da inserire??
         versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        //TODO anche il numero del fascicolo va formattato a 7 cifre?
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
+        //TODO responsabile procedimento può essere nullo?
+        if (responsabileProcedimento != null) {
+            versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
+        }
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO_MULTIPLO);
+        if (!stringaDiFirmatari.isEmpty()) {
+            versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
+        }
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO); 
+        versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
-        
+
         return versamentoBuilder;
     }
-    
+
 }

@@ -68,7 +68,7 @@ public class AllegatiBuilder {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
 
         for (Allegato allegato : allegati) {
-            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation)
+            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation documentazione)
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
             IdentityFile identityFile = new IdentityFile(originale.getNome(),
                     getUuidMinIObyFileId(originale.getIdRepository()),
@@ -82,7 +82,7 @@ public class AllegatiBuilder {
 
         mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
         mappaPerAllegati.put("identityFiles", identityFiles);
-
+//TODO questo è il codice di Chiara:
 //        for (Allegato allegato : allegati) {/*
 //            if (allegato.getTipo() != Allegato.TipoAllegato.ANNESSO && allegato.getTipo() != Allegato.TipoAllegato.ANNOTAZIONE) {
 //                if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
