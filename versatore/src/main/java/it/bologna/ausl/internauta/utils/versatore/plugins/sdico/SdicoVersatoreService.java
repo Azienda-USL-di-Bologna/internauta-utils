@@ -22,20 +22,11 @@ import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -53,7 +44,6 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
-import it.bologna.ausl.model.entities.scripta.ArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
@@ -157,7 +147,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
-        log.info(doc.getTipologia().toString());
         Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
@@ -181,6 +170,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         //in basa alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
         log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
+        //TODO si potrebbe catchare un errore di nullpointer
         switch (doc.getTipologia()) {
             case DETERMINA: {
                 DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
@@ -217,6 +207,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 break;
             }
             default:
+                //TODO da togliere?
                 throw new AssertionError("Tipologia documentale non presente");
         }
 
@@ -228,6 +219,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
         String metadati = versamentoBuilder.toString();
+        log.info("XML\n" + metadati);
         risultatoEVersamentiAllegati.put("xmlVersato", metadati);
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
