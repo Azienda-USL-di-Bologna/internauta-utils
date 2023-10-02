@@ -70,7 +70,8 @@ public class DeteBuilder {
         String ufficioProduttore = "struttura del firmatario";
         //TODO
         //String codiceRegistro = registro.getCodice().toString();
-        String codiceRegistro = "DETE";
+        //TODO in futuro prendere da db scripta.registro
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");

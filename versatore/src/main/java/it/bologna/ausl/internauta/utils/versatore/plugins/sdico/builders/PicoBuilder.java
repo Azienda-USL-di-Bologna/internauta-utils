@@ -73,7 +73,8 @@ public class PicoBuilder {
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
         //TODO 
         //String codiceRegistro = registro.getCodice().toString();
-        String codiceRegistro = "PG";
+        //TODO in futuro prendere da db scripta.registro
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String responsabileProcedimento = null;
         //TODO è vuoto?
         if (docDetail.getIdPersonaResponsabileProcedimento() != null) {

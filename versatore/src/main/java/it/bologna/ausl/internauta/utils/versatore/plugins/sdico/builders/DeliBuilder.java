@@ -66,7 +66,8 @@ public class DeliBuilder {
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
         //TODO da vede quando si crea la riga in registri_docs
         //String codiceRegistro = registro.getCodice().toString();
-        String codiceRegistro = "DELI";
+        //TODO in futuro prendere da db scripta.registro
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());

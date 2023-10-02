@@ -45,6 +45,7 @@ import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpCli
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
+import it.bologna.ausl.model.entities.scripta.QRegistro;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
 import java.io.InputStream;
@@ -147,13 +148,20 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
         Doc doc = entityManager.find(Doc.class, idDoc);
         DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
-        Archivio archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+        Archivio archivio = new Archivio();
+        if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
+            archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+        }
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
+        String codiceRegistro;
         for (RegistroDoc reg : listaRegistri) {
-            if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
-                registro = reg.getIdRegistro();
-            }
+            //if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
+            Registro regTemp = reg.getIdRegistro();
+                if (regTemp.getAttivo() && regTemp.getUfficiale()) {
+                    registro = regTemp;
+                }
+            //}
         }
         List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
         List<Persona> firmatari = new ArrayList<>();
@@ -171,6 +179,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
         log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
         //TODO si potrebbe catchare un errore di nullpointer
+        //TODO levare parametri passati alle funzioni che non servono
         switch (doc.getTipologia()) {
             case DETERMINA: {
                 DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
@@ -191,7 +200,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 String numeroFinale = matcher.group(3);
                 ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroIniziale);
                 ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroFinale);
-                RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale);
+                RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale);
                 versamentoBuilder = rb.build();
                 break;
             }
@@ -219,7 +228,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
         List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
         String metadati = versamentoBuilder.toString();
-        log.info("XML\n" + metadati);
+        log.warn("XML da versare: \n" + metadati);
+        //TODO da togliere
+        //log.info("XML da versare: \n" + metadati);
         risultatoEVersamentiAllegati.put("xmlVersato", metadati);
         risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
@@ -440,6 +451,18 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .fetchOne();
 
         return dataRegistrazione;
+    }
+    
+    private Registro.CodiceRegistro getCodiceRegistro(Integer id) {
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+        Registro.CodiceRegistro codice = jPAQueryFactory
+                .select(QRegistro.registro.codice)
+                .from(QRegistro.registro)
+                .where(QRegistro.registro.id.eq(id)
+                        .and(QRegistro.registro.attivo.eq(Boolean.TRUE))
+                        .and(QRegistro.registro.ufficiale.eq(Boolean.TRUE)))
+                .fetchOne();
+        return codice;
     }
 
 }

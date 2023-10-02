@@ -69,8 +69,9 @@ public class DocumentoGEDIBuilder {
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
         //TODO
-        //String codiceRegistro = registro.getCodice().toString();
-        String codiceRegistro = "GEDI";
+        String codiceRegistro = registro.getCodice().toString();
+        //TODO in futuro prendere da db scripta.registro
+        //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());

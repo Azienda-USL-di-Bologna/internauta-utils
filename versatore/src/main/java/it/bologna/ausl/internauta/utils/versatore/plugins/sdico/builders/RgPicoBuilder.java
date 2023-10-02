@@ -36,7 +36,6 @@ public class RgPicoBuilder {
     private VersamentoBuilder versamentoBuilder;
     private Doc doc;
     private DocDetail docDetail;
-    private Archivio archivio;
     private Registro registro;
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
@@ -45,11 +44,10 @@ public class RgPicoBuilder {
     private ZonedDateTime dataIniziale;
     private ZonedDateTime dataFinale;
 
-    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale) {
+    public RgPicoBuilder(Doc doc, DocDetail docDetail, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale) {
         this.versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
-        this.archivio = archivio;
         this.registro = registro;
         this.firmatari = firmatari;
         this.parametriVersamento = parametriVersamento;
@@ -73,15 +71,16 @@ public class RgPicoBuilder {
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
-        //TODO
+        //TODO in futuro prendere da db scripta.registro
+        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         //String codiceRegistro = registro.getCodice().toString();
-        String codiceRegistro = "RGPICO";
         String annoRegistrazione = docDetail.getAnnoRegistrazione().toString();
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
         //TODO da vedere se cambiano in base alla tipologia
+        //TODO ANCORA DA avere
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
@@ -96,7 +95,8 @@ public class RgPicoBuilder {
         //TODO da azero sapere se aggiungere: ufficioProduttore
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(annoRegistrazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(), TESTO);
+        //TODO chiedere se è corretto
+        versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(docDetail.getAnnoRegistrazione().toString()), TESTO);
         //TODO bisogna testare se il metodo funziona
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(numeroFinale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.format(formatter)), DATA);
