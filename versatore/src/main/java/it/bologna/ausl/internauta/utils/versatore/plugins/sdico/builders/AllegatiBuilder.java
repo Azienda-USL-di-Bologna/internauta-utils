@@ -72,9 +72,12 @@ public class AllegatiBuilder {
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
             IdentityFile identityFile = new IdentityFile(originale.getNome(),
                     getUuidMinIObyFileId(originale.getIdRepository()),
-                    originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5
+                    originale.getHashSha256() != null ? originale.getHashSha256() : originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5
                     null, //TODO da chiedere se posso lasciarlo vuoto
                     originale.getMimeType());
+            //if (identityFile.getUuidMongo() == null) {
+                identityFile.setFileBase64(originale.getIdRepository());
+            //}
             identityFiles.add(identityFile);
             VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
             versamentiAllegatiInfo.add(allegatoInformation);
@@ -430,7 +433,7 @@ public class AllegatiBuilder {
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
         return fileInfoByFileId.getMongoUuid();
     }
-
+    
     /**
      * Metodo che inserisce le informazioni relative all'allegato in VersamentoAllegatoInformatio 
      * e aggiunge al versamentoBuilder la parte di XML relativa

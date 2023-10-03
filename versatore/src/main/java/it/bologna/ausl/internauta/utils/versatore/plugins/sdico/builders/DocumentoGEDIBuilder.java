@@ -102,7 +102,7 @@ public class DocumentoGEDIBuilder {
         //TODO vedere come arrivarci (vedi PICO)
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList("Struttura del responsabile"), TESTO);
         //TODO data registrazione già inserita in data protocollo
-        versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(""), DATA);
+        //versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(""), DATA);
         
         return versamentoBuilder;
     }

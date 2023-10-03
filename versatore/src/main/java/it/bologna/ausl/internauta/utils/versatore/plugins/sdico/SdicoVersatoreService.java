@@ -152,24 +152,23 @@ public class SdicoVersatoreService extends VersatoreDocs {
         if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
             archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
         }
+
         List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
         Registro registro = new Registro();
-        String codiceRegistro;
         for (RegistroDoc reg : listaRegistri) {
-            //if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
-            Registro regTemp = reg.getIdRegistro();
-                if (regTemp.getAttivo() && regTemp.getUfficiale()) {
-                    registro = regTemp;
-                }
-            //}
+            if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
+                registro = reg.getIdRegistro();
+            }
         }
+        
         List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
         List<Persona> firmatari = new ArrayList<>();
-        if (listaFirmatari != null) {
+        if (listaFirmatari
+                != null) {
             for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
                 Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
                 firmatari.add(p);
-            } 
+            }
         }
         Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
         String username = (String) parametriVersamento.get("username");
@@ -177,7 +176,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         //in basa alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
         VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
-        log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
+
+        log.info(
+                "Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
         //TODO si potrebbe catchare un errore di nullpointer
         //TODO levare parametri passati alle funzioni che non servono
         switch (doc.getTipologia()) {
@@ -218,21 +219,25 @@ public class SdicoVersatoreService extends VersatoreDocs {
             default:
                 //TODO da togliere?
                 throw new AssertionError("Tipologia documentale non presente");
-        }
-
-        //accedo ai dati degli allegati e li inserisco nell'XML
-        log.info("accedo ai dati degli allegati e li inserisco nell'XML");
+        } //accedo ai dati degli allegati e li inserisco nell'XML
+        log
+                .info(
+                        "accedo ai dati degli allegati e li inserisco nell'XML");
         List<Allegato> allegati = doc.getAllegati();
         AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
         Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
         List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
         String metadati = versamentoBuilder.toString();
-        log.warn("XML da versare: \n" + metadati);
+
+        log.warn(
+                "XML da versare: \n" + metadati);
         //TODO da togliere
         //log.info("XML da versare: \n" + metadati);
-        risultatoEVersamentiAllegati.put("xmlVersato", metadati);
-        risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
+        risultatoEVersamentiAllegati.put(
+                "xmlVersato", metadati);
+        risultatoEVersamentiAllegati.put(
+                "versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
         // parte di collegamento con SDICO e versamento
         try {
@@ -386,7 +391,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 //        log.info("Client builded with SSLContext " + tlsString);
 //        return client;
 //    }
-
     // TODO: metodo da togliere quando si userà versatoreHttpClientConfiguration
 //    private X509TrustManager getX509TrustManager() {
 //        return new X509TrustManager() {
@@ -409,7 +413,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 //            }
 //        };
 //    }
-
     /**
      * Metodo che impacchetta i dati degli allegati, reperisce i file e li
      * prepara per essere versati
@@ -423,7 +426,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
             log.info("Cerco l'allegato: " + identityFile.getFileName());
             PaccoFile paccoFile = new PaccoFile();
             try {
-                InputStream is = minIOWrapper.getByUuid(identityFile.getUuidMongo());
+                InputStream is = identityFile.getUuidMongo() != null 
+                        ? minIOWrapper.getByUuid(identityFile.getUuidMongo()) 
+                        : minIOWrapper.getByFileId(identityFile.getFileBase64());
                 paccoFile.setInputStream(is);
                 paccoFile.setMime(identityFile.getMime());
                 paccoFile.setFileName(identityFile.getFileName());
@@ -452,7 +457,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         return dataRegistrazione;
     }
-    
+
     private Registro.CodiceRegistro getCodiceRegistro(Integer id) {
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
         Registro.CodiceRegistro codice = jPAQueryFactory
