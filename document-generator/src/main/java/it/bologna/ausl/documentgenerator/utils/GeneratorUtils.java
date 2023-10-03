@@ -10,6 +10,7 @@ import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,24 +23,23 @@ public class GeneratorUtils {
 
     private static final Logger log = LoggerFactory.getLogger(GeneratorUtils.class);
     
-    @Autowired
-    BabelUtils babelUtils;
+    
     
 
-    public boolean isAcceptedMimeType(MultipartFile allegato, String codiceAzienda) {
-        boolean accepted = false;
-        log.info("verifico allegato " + allegato.getName() + " -> " + allegato.getContentType());
-        try {
-//            accepted = SupportedMimeTypes.contains(allegato.getContentType());
-            accepted = babelUtils.isSupportedMimeType(codiceAzienda, allegato.getContentType());
-            //JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
- 
-            log.info("E' supportato? " + accepted);
-        } catch (Exception e) {
-            log.error("Il tipo di allegato non è supportato");
-        }
-        return accepted;
-    }
+//    public boolean isAcceptedMimeType(MultipartFile allegato, String codiceAzienda) {
+//        boolean accepted = false;
+//        log.info("verifico allegato " + allegato.getName() + " -> " + allegato.getContentType());
+//        try {
+////            accepted = SupportedMimeTypes.contains(allegato.getContentType());
+//            accepted = isSupportedMimeType(codiceAzienda, allegato.getContentType());
+//            //JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+// 
+//            log.info("E' supportato? " + accepted);
+//        } catch (Exception e) {
+//            log.error("Il tipo di allegato non è supportato");
+//        }
+//        return accepted;
+//    }
 
     public enum SupportedArchiveTypes {
         EML("message/rfc822"),

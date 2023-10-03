@@ -137,7 +137,7 @@ public class GeneratePE {
         this.documentoPrincipale = documentoPrincipale;
 
         //il principale allegato non può essere di tipo estraibile
-        if (!generatorUtils.isAcceptedMimeType(documentoPrincipale,codiceAzienda)) {
+        if (!babelUtils.isSupportedMimeType(codiceAzienda, documentoPrincipale.getContentType())) {
 
             throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName()
                     + "' ha un mime-type non supportato dal sistema" + documentoPrincipale.getContentType());
@@ -233,7 +233,7 @@ public class GeneratePE {
                 recursiveExtractAndUpload(allegato, mapAllegati, folderToSave);
 
                 // è un tipo di allegato accettabile?
-            } else if (!generatorUtils.isAcceptedMimeType(allegato, codiceAzienda)) {
+            } else if (!babelUtils.isSupportedMimeType(codiceAzienda, allegato.getContentType())) {
                 log.error("allegato con formato non supportato: " + allegato.getName());
                 throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
                         + "' ha un mime-type non supportato dal sistema" + allegato.getContentType());
