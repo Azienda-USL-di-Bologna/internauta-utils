@@ -68,7 +68,6 @@ public class DeteBuilder {
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
         //TODO da capire chi è il firmatario visto che ce ne sono più di uno
         String ufficioProduttore = "struttura del firmatario";
-        //TODO
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");

@@ -13,6 +13,7 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,6 +61,7 @@ public class AllegatiBuilder {
      */
     public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws MinIOWrapperException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
+        //TODO queste variabili probabilmente non servono
         Integer i = 1;
         Integer indexCommittente = 1;
         Integer indexAlbo = 1;
@@ -70,7 +72,16 @@ public class AllegatiBuilder {
         for (Allegato allegato : allegati) {
             //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation documentazione)
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-            IdentityFile identityFile = new IdentityFile(originale.getNome(),
+            //Controllo se nel nome del file è già inserita l'estensione
+            int lastDotIndex = originale.getNome().lastIndexOf(".");
+            String estensione = "";
+            if (lastDotIndex >= 0) estensione = originale.getNome().substring(lastDotIndex + 1);
+            IdentityFile identityFile = new IdentityFile(originale.getNome() 
+                    //TODO chiedere
+                    //Nel caso dei documenti provenienti da argo l'estensione del file è già inserita nel nome del file; per quelli invece caricati da internauta
+                    //in "dettagli" nome del file ed estensione sono separati. Al momento solo i doc GEDI (tiplogia DOCUMENT_UTENTE) vengo caricati direttamente da
+                    //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
+                    + (!(originale.getEstensione().equals(estensione)) ? "." + originale.getEstensione() : ""),
                     getUuidMinIObyFileId(originale.getIdRepository()),
                     originale.getHashSha256() != null ? originale.getHashSha256() : originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5
                     null, //TODO da chiedere se posso lasciarlo vuoto

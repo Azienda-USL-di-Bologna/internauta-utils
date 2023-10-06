@@ -20,6 +20,7 @@ public class SdicoVersatoreUtils {
         return ("Id" + archivio.getId() + "-n" + archivio.getNumero() + "/" + archivio.getAnno());
     }
 
+    //TODO vedere se serve
     public static String buildNoteFascicolo(Archivio archivio, ArchivioDetail archivioDetails, EntityManager entityManager) {
         Integer[] idVicari = archivioDetails.getIdVicari();
         String vicari = "";

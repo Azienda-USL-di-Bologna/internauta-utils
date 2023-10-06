@@ -71,7 +71,6 @@ public class PicoBuilder {
             stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
         }
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        //TODO 
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
@@ -97,7 +96,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         //TODO è id_struttura_registrazione? o codice interno dell'ente?
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getCodice().toString()), TESTO);
-        //TODO da inserire??
+        //TODO da inserire, capire se è obbligatorio o meno, direi i no??
         versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
         //TODO responsabile procedimento può essere nullo?
         if (responsabileProcedimento != null) {

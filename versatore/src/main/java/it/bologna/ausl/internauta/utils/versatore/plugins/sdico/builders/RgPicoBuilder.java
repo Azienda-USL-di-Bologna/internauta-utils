@@ -95,9 +95,8 @@ public class RgPicoBuilder {
         //TODO da azero sapere se aggiungere: ufficioProduttore
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(annoRegistrazione), TESTO);
-        //TODO chiedere se è corretto
+        //TODO chiedere se è corretto prendere annoRegistrazione, direi di sì
         versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(docDetail.getAnnoRegistrazione().toString()), TESTO);
-        //TODO bisogna testare se il metodo funziona
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(numeroFinale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(numeroIniziale), TESTO);

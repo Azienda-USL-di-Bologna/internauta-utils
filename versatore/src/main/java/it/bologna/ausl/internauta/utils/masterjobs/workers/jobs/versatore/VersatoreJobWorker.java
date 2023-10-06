@@ -790,7 +790,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
             di tutti nella mappa, indipendentemente dallo stato del doc
             */  
             BooleanExpression filter = 
-            qArchivioDoc.idArchivio.id.eq(idArchivioDaVersare)
+            qArchivioDoc.idArchivio.idArchivioRadice.id.eq(idArchivioDaVersare)
                 .and(
             qDocDetail.numeroRegistrazione.isNotNull());
             // se sono in una sessione FORZATURA, allora considero solo i doc nello stato FORZARE

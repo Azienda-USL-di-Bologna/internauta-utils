@@ -37,7 +37,6 @@ public class DocumentoGEDIBuilder {
     private Doc doc;
     private DocDetail docDetail;
     private Archivio archivio;
-    //TODO serve?
     private Registro registro;
     private List<Persona> firmatari;
     private Map<String, Object> parametriVersamento;
@@ -53,7 +52,7 @@ public class DocumentoGEDIBuilder {
     }
     
      /**
-     * Metodo che costruisce i metadati per i documenti GEDI (tipologia generica id tipo doc ???TODO cercare id chiedere a SDICO??)
+     * Metodo che costruisce i metadati per i documenti GEDI (tipologia generica id tipo doc 999)
      * @return 
      */
     public VersamentoBuilder build() {
@@ -63,12 +62,10 @@ public class DocumentoGEDIBuilder {
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
         String idClassifica = (String) mappaParametri.get("idClassifica");
         String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
-        //TODO vedere se il numero deve essere formattato così
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
-        //TODO
         String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
@@ -77,7 +74,6 @@ public class DocumentoGEDIBuilder {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
         
-        //TODO dati da aggiornare cercarli da SDICO
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
@@ -101,7 +97,7 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
         //TODO vedere come arrivarci (vedi PICO)
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList("Struttura del responsabile"), TESTO);
-        //TODO data registrazione già inserita in data protocollo
+        //TODO data registrazione già inserita in data protocollo, quale più giusta? forse questa
         //versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(""), DATA);
         
         return versamentoBuilder;

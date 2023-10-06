@@ -108,7 +108,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                     }
                 } else {
-                    //TODO se da errore (non la response proprio non funziona la chiamata) non settare?
                     versamentoDocInformation.setRapporto(response);
                     versamentoDocInformation.setCodiceErrore(sdicoResponse.getResponseCode());
                     versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
@@ -456,18 +455,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .fetchOne();
 
         return dataRegistrazione;
-    }
-
-    private Registro.CodiceRegistro getCodiceRegistro(Integer id) {
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        Registro.CodiceRegistro codice = jPAQueryFactory
-                .select(QRegistro.registro.codice)
-                .from(QRegistro.registro)
-                .where(QRegistro.registro.id.eq(id)
-                        .and(QRegistro.registro.attivo.eq(Boolean.TRUE))
-                        .and(QRegistro.registro.ufficiale.eq(Boolean.TRUE)))
-                .fetchOne();
-        return codice;
     }
 
 }
