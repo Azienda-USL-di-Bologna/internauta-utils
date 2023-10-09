@@ -16,6 +16,11 @@ import javax.persistence.EntityManager;
  */
 public class SdicoVersatoreUtils {
 
+    /**
+     * Metodo che compone la stringa da inserire nell'attributo dei tracciati idFascicolo
+     * @param archivio
+     * @return 
+     */
     public static String buildIdFascicolo(Archivio archivio) {
         return ("Id" + archivio.getId() + "-n" + archivio.getNumero() + "/" + archivio.getAnno());
     }
