@@ -90,6 +90,18 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>it.nextsw.common</groupId>
+            <artifactId>next-spring-data-rest-framework-core</artifactId>
+            <version>1.9.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.nextsw.common</groupId>
+            <artifactId>next-spring-data-rest-framework-data</artifactId>
+            <version>1.9.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>ParerDocumentBuilder</artifactId>
             <version>1.0-SNAPSHOT</version>

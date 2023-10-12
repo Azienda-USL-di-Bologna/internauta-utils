@@ -2,8 +2,8 @@ package it.bologna.ausl.model.entities.configurazione;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.bologna.ausl.internauta.utils.jpa.tools.GenericArrayUserType;
-import it.nextsw.common.annotations.GenerateProjections;
+import com.vladmihalcea.hibernate.type.array.StringArrayType;
+import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import javax.persistence.Basic;
@@ -17,21 +17,15 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.Parameter;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author spritz
  */
-@TypeDefs(
-        {
-            @TypeDef(name = "array", typeClass = GenericArrayUserType.class)
-        }
-)
+@TypeDef(name = "string-array", typeClass = StringArrayType.class)
 @Entity
 @Table(name = "parametri_aziende", schema = "configurazione")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -57,12 +51,12 @@ public class ParametroAziende implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_applicazioni", columnDefinition = "text[]")
-    @Type(type = "array", parameters = @Parameter(name = "elements-type", value = GenericArrayUserType.TEXT_ELEMENT_TYPE))
+    @Type(type = "string-array")
     private String[] idApplicazioni;
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_aziende", columnDefinition = "integer[]")
-    @Type(type = "array", parameters = @Parameter(name = "elements-type", value = GenericArrayUserType.INTEGER_ELEMENT_TYPE))
+    @Type(type = "string-array")
     private Integer[] idAziende;
 
     @Version()
