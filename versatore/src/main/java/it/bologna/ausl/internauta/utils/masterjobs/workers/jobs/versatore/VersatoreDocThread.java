@@ -245,7 +245,10 @@ public class VersatoreDocThread implements Callable<List<VersamentoDocInformatio
         versamento.setIdDoc(doc);
         versamento.setIdArchivio(archivio);
         versamento.setIdPersonaForzatura(personaForzatura);
-        versamento.setIdSessioneVersamento(sessioneVersamento);
+        //sessioneVersamento = entityManager.find(SessioneVersamento.class, sessioneVersamento.getId());
+        //facciamo in questo modo perché altrementi si verifica un errore, in quanto la sessioneVersamento risulta detached quando si esegue la persistenza del versamento
+        SessioneVersamento sessioneVersamento1 = entityManager.find(SessioneVersamento.class, sessioneVersamento.getId());
+        versamento.setIdSessioneVersamento(sessioneVersamento1);
         versamento.setMetadatiVersati(versamentoDocInformation.getMetadatiVersati());
         versamento.setRapporto(versamentoDocInformation.getRapporto());
         versamento.setStato(versamentoDocInformation.getStatoVersamento());
