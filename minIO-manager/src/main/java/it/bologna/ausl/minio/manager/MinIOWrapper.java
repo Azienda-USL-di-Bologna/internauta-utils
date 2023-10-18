@@ -32,12 +32,15 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -163,8 +166,9 @@ public class MinIOWrapper {
      */
     private void buildConnectionsMap() {
         try ( Connection conn = (Connection) sql2oConnection.open()) {
-            List<Map<String, Object>> res = conn.createQuery(" select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key "
-                    + "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
+            List<Map<String, Object>> res = conn.createQuery(
+                    " select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key, s.retry_on_connection_failure " +
+                    "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
                     .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
                 Integer serverId = (Integer) row.get("server_id");
@@ -177,24 +181,26 @@ public class MinIOWrapper {
 //                    endPointUrl = "https://s3.eu-west-1.amazonaws.com";
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
-//                    System.out.println("aaaaaaaaaa");
-
+                    Boolean retryOnConnectionFailure = (Boolean) row.get("retry_on_connection_failure");
+                    
 //                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
-//                    OkHttpClient httpClient = new OkHttpClient.Builder()
-//                    .connectTimeout(1, TimeUnit.HOURS)
-//                    .readTimeout(1, TimeUnit.HOURS)
-//                    .writeTimeout(1, TimeUnit.HOURS)
-//                    .callTimeout(1, TimeUnit.HOURS)
-//                    .connectionPool(p)
-//                    .build();
+                    OkHttpClient customHttpClient = new OkHttpClient().newBuilder()
+                            .connectTimeout(1, TimeUnit.HOURS)
+                            .readTimeout(1, TimeUnit.HOURS)
+                            .writeTimeout(1, TimeUnit.HOURS)
+                            .callTimeout(1, TimeUnit.HOURS)
+                            .protocols(Arrays.asList(Protocol.HTTP_1_1))
+                            .retryOnConnectionFailure(retryOnConnectionFailure)
+//                            .connectionPool(p)
+                    .build();
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
                     MinioClient minioClient = MinioClient.builder()
-                            //                            .httpClient(httpClient)
+                            .httpClient(customHttpClient)
                             .endpoint(endPointUrl)
                             .credentials(accessKey, secretKey)
                             .build();
-                    minioClient.setTimeout(0, 0, 0);
-                    minioClient.setTimeout(TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1));
+//                    minioClient.setTimeout(0, 0, 0);
+//                    minioClient.setTimeout(TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1));
                     minIOServerClientMap.put(serverId, minioClient);
                 }
             }
