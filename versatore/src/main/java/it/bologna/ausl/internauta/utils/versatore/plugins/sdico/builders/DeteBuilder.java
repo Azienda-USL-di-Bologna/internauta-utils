@@ -66,7 +66,7 @@ public class DeteBuilder {
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
-        //TODO da capire chi è il firmatario visto che ce ne sono più di uno
+        //TODO da capire chi è il firmatario visto che ce ne sono più di uno :: la prendo da attori_docs FIRMA
         String ufficioProduttore = "struttura del firmatario";
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
@@ -83,7 +83,7 @@ public class DeteBuilder {
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
-        //TODO da vedere se cambiano in base alla tipologia
+        //TODO da vedere se cambiano in base alla tipologia:: si
         //TODO da avere ancora e cambiare nei parametri della configurazione
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
@@ -92,7 +92,7 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
-        //TODO diverso da descrizione classificazione?
+        //TODO diverso da descrizione classificazione? vedi deli
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);

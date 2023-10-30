@@ -88,16 +88,16 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
-        //TODO da concordare
+        //TODO da concordare:: per ora "Registrazioni in fascicolo"
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
         //TODO vedere anche qui come settare il registro
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
-        //TODO vedere come arrivarci (vedi PICO)
+        //TODO vedere come arrivarci (vedi PICO):: la prendo da archivio_detalis, prendo id_struttura
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList("Struttura del responsabile"), TESTO);
-        //TODO data registrazione già inserita in data protocollo, quale più giusta? forse questa
+        //TODO data registrazione già inserita in data protocollo, quale più giusta? forse questa :: la mettiamo anche qua
         //versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(""), DATA);
         
         return versamentoBuilder;

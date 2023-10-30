@@ -75,7 +75,7 @@ public class PicoBuilder {
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String responsabileProcedimento = null;
-        //TODO è vuoto?
+        //TODO è vuoto?:: nei pu c'è sempre, se non c'è è errore, nei pe invece nun c'è
         if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
             responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
         }
@@ -94,11 +94,11 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numeroProctocollo", Arrays.asList(numeroProtocollo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
-        //TODO è id_struttura_registrazione? o codice interno dell'ente?
+        //TODO è id_struttura_registrazione? o codice interno dell'ente? ::  nome id_struttura_registrazione
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getCodice().toString()), TESTO);
-        //TODO da inserire, capire se è obbligatorio o meno, direi i no??
+        //TODO da inserire, capire se è obbligatorio o meno, direi di no?? :: mettiamolo
         versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
-        //TODO responsabile procedimento può essere nullo?
+        //TODO responsabile procedimento può essere nullo? :: vedi sopra
         if (responsabileProcedimento != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
         }
@@ -109,6 +109,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
+        //TODO da aggiungere tag note1 con: "tipologia di flusso: Protocollo in entrata/uscita"
 
         return versamentoBuilder;
     }

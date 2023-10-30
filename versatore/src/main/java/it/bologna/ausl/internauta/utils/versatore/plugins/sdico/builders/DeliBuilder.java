@@ -90,11 +90,11 @@ public class DeliBuilder {
         }
         HashMap<String, Object> additionalData = doc.getAdditionalData();
         String dataEsecutiva = null;
-        //TODO vedere se dataesecutiva può essere nulla
+        //TODO vedere se dataesecutiva può essere nulla:: in realtà no ma comunque fare i controlli
 //        if (additionalData != null) {
 //            if (additionalData.containsKey("dati_pubblicazione")) {
 //                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
-//                if (datiPubblicazione.containsKey("data_esecutivita") || additionalData.get("data_esecutiva") != null) {
+//                if (datiPubblicazione.containsKey("data_esecutivita") && additionalData.get("data_esecutiva") != null) {
 //                    dataEsecutiva = additionalData.get("data_esecutivita").toString();   
 //                } 
 //            }
@@ -103,7 +103,7 @@ public class DeliBuilder {
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
-        //TODO da vedere se cambiano in base alla tipologia
+        //TODO cambiano in base alla tipologia:: entrambi li prendo dal fasicolo
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -111,12 +111,12 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
-        //TODO diverso da descrizione classificazione?
+        //TODO diverso da descrizione classificazione? si ora metto un valore segnaposto perché ci deve essere dato
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
-        //TODO da chiedere ad AZERO cosa inserire
+        //TODO la prendo da attori_docs
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
@@ -135,15 +135,15 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), TESTO);
-        //TODO abbiamo solo anno proposta
+        //TODO abbiamo solo anno proposta:: prendo datacreazione
         //versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(""), "DATA"); 
-        //TODO da formattare 2023-0000003?
+        //TODO da formattare 2023-0000003? :: sì
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(Integer.toString(docDetail.getNumeroProposta())), TESTO);
         if (dataEsecutiva != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "data_esecutiva", Arrays.asList(dataEsecutiva), DATA);
         }
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), TESTO);
-        //TODO questa quando è null?
+        //TODO questa quando è null? :: come sopra
         versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
 
         return versamentoBuilder;

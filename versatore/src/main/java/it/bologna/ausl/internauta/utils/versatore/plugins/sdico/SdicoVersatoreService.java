@@ -69,7 +69,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
     private String sdicoLoginURI, sdicoServizioVersamentoURI;
 
-    //TODO chiedere se funziona così
     @Autowired
     VersatoreHttpClientConfiguration versatoreHttpClientConfiguration;
 
@@ -94,7 +93,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
 
-        //TODO capire se sono da vagliare le casisitiche degli altri statoVersamento sia di VersamentoDocInformation che dei VersamentoAllegatoInformation
         //Imposto i dati del DocInformation con i risultati
         versamentoDocInformation.setMetadatiVersati(xmlVersato);
         versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
@@ -117,7 +115,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     versamentoDocInformation.setDescrizioneErrore(sdicoResponse.getErrorMessage());
                     versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
                     versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-                    //TODO cosa mettere per forzabile???
                     for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
                         versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
                     }
@@ -182,7 +179,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
         log.info(
                 "Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
-        //TODO si potrebbe catchare un errore di nullpointer
+        //TODO si potrebbe catchare un errore di nullpointer ?? catcho qua il tutto, avendo già però info sull'errore
         //TODO levare parametri passati alle funzioni che non servono
         switch (doc.getTipologia()) {
             case DETERMINA: {
@@ -220,7 +217,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 break;
             }
             default:
-                //TODO da togliere?
+                //TODO anzi sdicoException
                 throw new AssertionError("Tipologia documentale non presente");
         }
         
@@ -245,12 +242,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
             token = getJWT(username, password, sdicoLoginURI);
 
             // inizializzazione http client
-            //TODO si dovrà poi usare la configurazione già instanziata
-//            OkHttpClient okHttpClient = new OkHttpClient()
-//                    .newBuilder()
-//                    .connectTimeout(60, TimeUnit.SECONDS)
-//                    .build();
-//TODO istanziazione di HTTPClient ereditata vedere se funziona
             OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
             // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
@@ -317,18 +308,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
     public String getJWT(String username, String password, String sdicoLoginURI) throws IOException {
 
-        /**
-         * ora si usa una istanza di okhttp fissa per i test, poi si dovrà usare
-         * questo: OkHttpClient okHttpClient =
-         * versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
-         *
-         * non viene usata dall'interno di Versatore perchè questa deve essere
-         * settata dall'applicazione nella quale il modulo è inserito
-         * (attualmente internauta) tramite il metodo setHttpClientManager
-         */
-        // 
-//        OkHttpClient okHttpClient = new OkHttpClient();
-//TODO istanziazione di HTTPClient ereditata vedere se funziona
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 //        okHttpClient = buildNewClient(okHttpClient);
         String json = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
@@ -343,70 +322,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
         return (String) jsonObject.get("token");
     }
 
-    // TODO: metodo da togliere quando si userà versatoreHttpClientConfiguration
-//    private OkHttpClient buildNewClient(OkHttpClient client) {
-//        X509TrustManager x509TrustManager = new X509TrustManager() {
-//            @Override
-//            public X509Certificate[] getAcceptedIssuers() {
-//                log.info("getAcceptedIssuers =============");
-//                X509Certificate[] empty = {};
-//                return empty;
-//            }
-//
-//            @Override
-//            public void checkClientTrusted(
-//                    X509Certificate[] certs, String authType) {
-//                log.info("checkClientTrusted =============");
-//            }
-//
-//            @Override
-//            public void checkServerTrusted(
-//                    X509Certificate[] certs, String authType) {
-//                log.info("checkServerTrusted =============");
-//            }
-//        };
-//        SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-//        String tlsString = "TLSv1.2";               //  "TLS"
-//        try {
-//            SSLContext sslContext = SSLContext.getInstance(tlsString);
-//            sslContext.init(null, new TrustManager[]{getX509TrustManager()}, new SecureRandom());
-//            socketFactory = sslContext.getSocketFactory();
-//        } catch (NoSuchAlgorithmException ex) {
-//            log.error(ex.getMessage());
-//        } catch (KeyManagementException ex) {
-//            log.error(ex.getMessage());
-//        }
-//        client = client.newBuilder()
-//                .sslSocketFactory(socketFactory, x509TrustManager)
-//                .connectTimeout(600, TimeUnit.SECONDS)
-//                .readTimeout(600, TimeUnit.SECONDS)
-//                .writeTimeout(600, TimeUnit.SECONDS)
-//                .build();
-//        log.info("Client builded with SSLContext " + tlsString);
-//        return client;
-//    }
-    // TODO: metodo da togliere quando si userà versatoreHttpClientConfiguration
-//    private X509TrustManager getX509TrustManager() {
-//        return new X509TrustManager() {
-//            @Override
-//            public X509Certificate[] getAcceptedIssuers() {
-//                log.info("getAcceptedIssuers =============");
-//                return null;
-//            }
-//
-//            @Override
-//            public void checkClientTrusted(
-//                    X509Certificate[] certs, String authType) {
-//                log.info("checkClientTrusted =============");
-//            }
-//
-//            @Override
-//            public void checkServerTrusted(
-//                    X509Certificate[] certs, String authType) {
-//                log.info("checkServerTrusted =============");
-//            }
-//        };
-//    }
     /**
      * Metodo che impacchetta i dati degli allegati, reperisce i file e li
      * prepara per essere versati

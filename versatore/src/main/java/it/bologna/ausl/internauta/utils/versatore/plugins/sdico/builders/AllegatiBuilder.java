@@ -37,7 +37,7 @@ public class AllegatiBuilder {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
 
-    //TODO riaggiungere? o lo passo dalla classe sdicoVersatoreService?
+    //TODO riaggiungere? o lo passo dalla classe sdicoVersatoreService? provo a usarlo
 //    @Autowired
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
@@ -70,7 +70,8 @@ public class AllegatiBuilder {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
 
         for (Allegato allegato : allegati) {
-            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation documentazione)
+            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation documentazione) per ogni tipologia se esiste il file te lo invio, tranne la lettera che mando sempre firmato
+            //TODO inviare sia l'originale che il converito
             Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
             //Controllo se nel nome del file è già inserita l'estensione
             int lastDotIndex = originale.getNome().lastIndexOf(".");
@@ -83,8 +84,8 @@ public class AllegatiBuilder {
                     //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
                     + (!(originale.getEstensione().equals(estensione)) ? "." + originale.getEstensione() : ""),
                     getUuidMinIObyFileId(originale.getIdRepository()),
-                    originale.getHashSha256() != null ? originale.getHashSha256() : originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5
-                    null, //TODO da chiedere se posso lasciarlo vuoto
+                    originale.getHashSha256() != null ? originale.getHashSha256() : originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5 :: bisogna calcolarlo - chiedere GDM - fuori versatore?
+                    null,
                     originale.getMimeType());
             //if (identityFile.getUuidMongo() == null) {
                 identityFile.setFileBase64(originale.getIdRepository());
