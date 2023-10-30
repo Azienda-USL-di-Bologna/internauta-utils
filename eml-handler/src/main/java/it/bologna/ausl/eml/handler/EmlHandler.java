@@ -159,7 +159,11 @@ public class EmlHandler {
         try {
             Address[] from = m.getFrom();
             if (from != null && from[0] != null) {
-                res.setFrom(MimeUtility.decodeText(from[0].toString()));
+                try {
+                    res.setFrom(MimeUtility.decodeText(from[0].toString()));
+                } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                    res.setFrom(MimeUtility.decodeText(from[0].toString().replace("?", "_")));
+                }
             }
         } catch (MessagingException e1) {
             // TODO Auto-generated catch block
@@ -170,7 +174,11 @@ public class EmlHandler {
             if (recipients != null) {
                 String[] rec = new String[recipients.length];
                 for (int i = 0; i < recipients.length; i++) {
-                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    try {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString().replace("?", "_"));
+                    }
                 }
                 res.setTo(rec);
             }
@@ -183,7 +191,11 @@ public class EmlHandler {
             if (recipients != null) {
                 String[] rec = new String[recipients.length];
                 for (int i = 0; i < recipients.length; i++) {
-                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    try {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString().replace("?", "_"));
+                    }
                 }
                 res.setCc(rec);
             }
