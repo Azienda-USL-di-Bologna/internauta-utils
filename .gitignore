@@ -24,3 +24,4 @@ parersender/target/
 *.p12
 PDFToolkit/target/
 /flying-saucer-pdf-itext5/target/
+.idea/
