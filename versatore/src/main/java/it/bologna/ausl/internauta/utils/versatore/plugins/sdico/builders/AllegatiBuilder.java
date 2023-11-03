@@ -13,10 +13,8 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,13 +29,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AllegatiBuilder {
 
+    //TODO vedere se l'autowired funziona
     private static VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-
     public AllegatiBuilder(VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
-
-    //TODO riaggiungere? o lo passo dalla classe sdicoVersatoreService? provo a usarlo
 //    @Autowired
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
@@ -61,399 +57,91 @@ public class AllegatiBuilder {
      */
     public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws MinIOWrapperException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
-        //TODO queste variabili probabilmente non servono
-        Integer i = 1;
-        Integer indexCommittente = 1;
-        Integer indexAlbo = 1;
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
         List<IdentityFile> identityFiles = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
-
+        
         for (Allegato allegato : allegati) {
-            //TODO vedere diverse tipologie (vedi tipoDettaglioAllegato in VersamentoAllegatoInformation documentazione) per ogni tipologia se esiste il file te lo invio, tranne la lettera che mando sempre firmato
-            //TODO inviare sia l'originale che il converito
-            Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-            //Controllo se nel nome del file è già inserita l'estensione
-            int lastDotIndex = originale.getNome().lastIndexOf(".");
-            String estensione = "";
-            if (lastDotIndex >= 0) estensione = originale.getNome().substring(lastDotIndex + 1);
-            IdentityFile identityFile = new IdentityFile(originale.getNome() 
-                    //TODO chiedere
-                    //Nel caso dei documenti provenienti da argo l'estensione del file è già inserita nel nome del file; per quelli invece caricati da internauta
-                    //in "dettagli" nome del file ed estensione sono separati. Al momento solo i doc GEDI (tiplogia DOCUMENT_UTENTE) vengo caricati direttamente da
-                    //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
-                    + (!(originale.getEstensione().equals(estensione)) ? "." + originale.getEstensione() : ""),
-                    getUuidMinIObyFileId(originale.getIdRepository()),
-                    originale.getHashSha256() != null ? originale.getHashSha256() : originale.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5 :: bisogna calcolarlo - chiedere GDM - fuori versatore?
-                    null,
-                    originale.getMimeType());
-            //if (identityFile.getUuidMongo() == null) {
-                identityFile.setFileBase64(originale.getIdRepository());
-            //}
-            identityFiles.add(identityFile);
-            VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
-            versamentiAllegatiInfo.add(allegatoInformation);
+            //prendo l'allegato originale (se è firmato scelgo quello firmato)
+            //TODO vedere se va bene SPRITZ e capire il numero allegati quale deve essere e capire quando c'è il segnaposto e vedere altri casi come P7m
+            if (allegato.getFirmato()) {
+                Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
+                IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
+                identityFiles.add(identityFile);
+                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
+                versamentiAllegatiInfo.add(allegatoInformation);
+            } else {
+                Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
+                IdentityFile identityFile = getAllegatoInformation(originale);
+                identityFiles.add(identityFile);
+                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
+                versamentiAllegatiInfo.add(allegatoInformation);
+                //se c'è prendo anche il converito
+                Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
+                if (convertito != null) {
+                    identityFile = getAllegatoInformation(convertito);
+                    identityFiles.add(identityFile);
+                    allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, allegato.getFirmato());
+                    versamentiAllegatiInfo.add(allegatoInformation);
+                }
+            }
         }
-
         mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
         mappaPerAllegati.put("identityFiles", identityFiles);
-//TODO questo è il codice di Chiara:
-//        for (Allegato allegato : allegati) {/*
-//            if (allegato.getTipo() != Allegato.TipoAllegato.ANNESSO && allegato.getTipo() != Allegato.TipoAllegato.ANNOTAZIONE) {
-//                if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
-//                    Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale",
-//                            getUuidMinIObyFileId(originale.getIdRepository()),
-//                            originale.getHashMd5(),
-//                            originale.getEstensione(),
-//                            originale.getMimeType());
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA 
-//                        && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
-//                    Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("letterafirmata.pdf", 
-//                            getUuidMinIObyFileId(originaleFirmato.getIdRepository()),
-//                            originaleFirmato.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf"); 
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI 
-//                        || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO 
-//                        ||doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE )
-//                        && allegato.getPrincipale() == true) {
-//                    Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato principale",
-//                            getUuidMinIObyFileId(originale.getIdRepository()), 
-//                            originale.getHashMd5(), 
-//                            originale.getEstensione(),
-//                            originale.getMimeType());
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA
-//                        || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)
-//                        && allegato.getFirmato() == true
-//                        && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
-//                    Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("testofirmato.pdf",
-//                            getUuidMinIObyFileId(originaleFirmato.getIdRepository()),
-//                            originaleFirmato.getHashMd5(),
-//                            "PDF",
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getFirmato() == true && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
-//                    Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_firmato", 
-//                            getUuidMinIObyFileId(originaleFirmato.getIdRepository()), 
-//                            originaleFirmato.getHashMd5(), 
-//                            originaleFirmato.getEstensione(), 
-//                            originaleFirmato.getMimeType());
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
-//                    Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_convertito", 
-//                            getUuidMinIObyFileId(convertito.getIdRepository()), 
-//                            convertito.getHashMd5(),
-//                            "PDF",
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.ALLEGATO) {
-//                    Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato" + i.toString(), 
-//                            getUuidMinIObyFileId(originale.getIdRepository()), 
-//                            originale.getHashMd5(), 
-//                            originale.getEstensione(), 
-//                            originale.getMimeType());
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                }
-//            } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
-//                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
-//                    Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", 
-//                            getUuidMinIObyFileId(destinatari.getIdRepository()),
-//                            destinatari.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                }
-//                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RELATA) {
-//                    if (allegato.getNome().startsWith("relata_COMMITTENTE")) {
-//                        Allegato.DettaglioAllegato committente = allegato.getDettagli().getOriginale();
-//                        IdentityFile identityFilePrincipale = new IdentityFile("relata committente " + indexCommittente.toString() + ".pdf",
-//                                getUuidMinIObyFileId(committente.getIdRepository()),
-//                                committente.getHashMd5(), 
-//                                "PDF",
-//                                "application/pdf");
-//                        identityFiles.add(identityFilePrincipale);
-//                        indexCommittente = indexCommittente + 1;
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    } else {
-//                        Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
-//                        IdentityFile identityFilePrincipale = new IdentityFile("relata committente " + indexAlbo.toString() + ".pdf", 
-//                                getUuidMinIObyFileId(albo.getIdRepository()), 
-//                                albo.getHashMd5(), 
-//                                "PDF",
-//                                "application/pdf");
-//                        identityFiles.add(identityFilePrincipale);
-//                        indexAlbo = indexAlbo + 1;
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    }
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.STAMPA_UNICA) {
-//                    Allegato.DettaglioAllegato stampaUnica = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("stampaunica.pdf", 
-//                            getUuidMinIObyFileId(stampaUnica.getIdRepository()),
-//                            stampaUnica.getHashMd5(), 
-//                            "PDF",
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS) {
-//                    Allegato.DettaglioAllegato stampaUnicaOmissis = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("stampaunicaconomissis.pdf", 
-//                            getUuidMinIObyFileId(stampaUnicaOmissis.getIdRepository()),
-//                            stampaUnicaOmissis.getHashMd5(), 
-//                            "PDF",
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
-//                    Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("deliberazioneomissis.pdf", 
-//                            getUuidMinIObyFileId(testoOmissis.getIdRepository()), 
-//                            testoOmissis.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
-//                    Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("testofirmatomissis.pdf", 
-//                            getUuidMinIObyFileId(testoOmissis.getIdRepository()), 
-//                            testoOmissis.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                }
-//            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
-//                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
-//                    Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", 
-//                            getUuidMinIObyFileId(destinatari.getIdRepository()),
-//                            destinatari.getHashMd5(),
-//                            "PDF", "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_ACCETTAZIONE_PEC) {
-//                    Allegato.DettaglioAllegato accettazione = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_di_accettazione_" + i.toString(), 
-//                            getUuidMinIObyFileId(accettazione.getIdRepository()), 
-//                            accettazione.getHashMd5(), 
-//                            "EML", 
-//                            "message/rfc822");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_CONSEGNA_PEC) {
-//                    Allegato.DettaglioAllegato consegna = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_consegna_" + i.toString(),
-//                            getUuidMinIObyFileId(consegna.getIdRepository()), 
-//                            consegna.getHashMd5(), 
-//                            "EML", 
-//                            "message/rfc822");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RICEVUTA_ERRORE_PEC) {
-//                    Allegato.DettaglioAllegato consegna = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("ricevuta_errore_consegna_" + i.toString(), 
-//                            getUuidMinIObyFileId(consegna.getIdRepository()), 
-//                            consegna.getHashMd5(), 
-//                            "EML", 
-//                            "message/rfc822");
-//                    identityFiles.add(identityFilePrincipale);
-//                    i = i + 1;
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.RELATA) {
-//                    if (allegato.getNome().startsWith("relata_COMMITTENTE")) {
-//                        Allegato.DettaglioAllegato committente = allegato.getDettagli().getOriginale();
-//                        indexCommittente = indexCommittente + 1;
-//                        IdentityFile identityFilePrincipale = new IdentityFile("relata_COMMITTENTE_" + indexCommittente.toString()+ ".pdf", 
-//                                getUuidMinIObyFileId(committente.getIdRepository()), 
-//                                committente.getHashMd5(), 
-//                                "PDF", 
-//                                "application/pdf");
-//                        identityFiles.add(identityFilePrincipale);
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    } else {
-//                        Allegato.DettaglioAllegato albo = allegato.getDettagli().getOriginale();
-//                        IdentityFile identityFilePrincipale = new IdentityFile("relata_" + indexCommittente.toString() + ".pdf",
-//                                getUuidMinIObyFileId(albo.getIdRepository()), 
-//                                albo.getHashMd5(), 
-//                                "PDF", 
-//                                "application/pdf");
-//                        identityFiles.add(identityFilePrincipale);
-//                        indexAlbo = indexAlbo + 1;
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    }
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SMISTAMENTO) {
-//                    Allegato.DettaglioAllegato smistamenti = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("smistamenti.pdf", 
-//                            getUuidMinIObyFileId(smistamenti.getIdRepository()), 
-//                            smistamenti.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                }
-//            } else if ( (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)) {
-//                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
-//                    Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("segnatura.xml", 
-//                            getUuidMinIObyFileId(segnatura.getIdRepository()), 
-//                            segnatura.getHashMd5(), 
-//                            "XML",
-//                            "text/xml");
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.FRONTESPIZIO) {
-//                    Allegato.DettaglioAllegato frontespizio = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("frontespizio.pdf", 
-//                            getUuidMinIObyFileId(frontespizio.getIdRepository()), 
-//                            frontespizio.getHashMd5(), 
-//                            "PDF",
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
-//                    Allegato.DettaglioAllegato schedaSintesiTrasparenza = allegato.getDettagli().getOriginale();
-//                    IdentityFile identityFilePrincipale = new IdentityFile("sintesitrasparenza.pdf",
-//                            getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), 
-//                            schedaSintesiTrasparenza.getHashMd5(), 
-//                            "PDF", 
-//                            "application/pdf");
-//                    identityFiles.add(identityFilePrincipale);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.NOTE_DOCUMENTO) {
-//                    //TODO vedere se è roba che ci interessa
-//                    /*if (includiNoteParer) {
-//                        Allegato.DettaglioAllegato noteDocumento = allegato.getDettagli().getOriginale();
-//                        IdentityFile identityFilePrincipale = new IdentityFile("notedocumento.pdf", getUuidMinIObyFileId(noteDocumento.getIdRepository()), noteDocumento.getHashMd5(), "PDF", "application/pdf");
-//                        identityFiles.add(identityFilePrincipale);
-//                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(noteDocumento.getIdRepository()),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    }*/
-//                }
-//            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
-//                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
-//                    Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
-//                    IdentityFile infoDocumento = new IdentityFile("segnatura.xml", 
-//                            getUuidMinIObyFileId(segnatura.getIdRepository()), 
-//                            segnatura.getHashMd5(),
-//                            segnatura.getEstensione(),
-//                            segnatura.getMimeType());
-//                    identityFiles.add(infoDocumento);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getTipo() == Allegato.TipoAllegato.FRONTESPIZIO) {
-//                    Allegato.DettaglioAllegato frontespizio = allegato.getDettagli().getOriginale();
-//                    //TODO da verificare
-//                    IdentityFile infoDocumento = new IdentityFile("frontespizio.pdf", 
-//                            getUuidMinIObyFileId(frontespizio.getIdRepository()), 
-//                            frontespizio.getHashMd5(),
-//                            frontespizio.getMimeType());
-//                    identityFiles.add(infoDocumento);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
-//                    Allegato.DettaglioAllegato schedaSintesiTrasparenza = allegato.getDettagli().getOriginale();
-//                    //TODO come sopra
-//                    IdentityFile infoDocumento = new IdentityFile("sintesitrasparenza.pdf", 
-//                            getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), 
-//                            schedaSintesiTrasparenza.getHashMd5(), 
-//                            schedaSintesiTrasparenza.getMimeType());
-//                    identityFiles.add(infoDocumento);
-//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
-//                    versamentiAllegatiInfo.add(allegatoInformation);
-//                } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.NOTE_DOCUMENTO) {
-//                    //TODO vedere se è roba che ci interessa
-//                    /*
-//                    if (includiNoteParer) {
-//                        Allegato.DettaglioAllegato noteDocumento = allegato.getDettagli().getOriginale();
-//                        IdentityFile infoDocumento = new IdentityFile("notedelibera.pdf", getUuidMinIObyFileId(noteDocumento.getIdRepository()), noteDocumento.getHashMd5(), noteDocumento.getMimeType());
-//                        identityFiles.add(infoDocumento);
-//                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(noteDocumento.getIdRepository()),"NOTE DOCUMENTO", "", noteDocumento.getNome(), i, infoDocumento, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null , null);
-//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), infoDocumento);
-//                        versamentiAllegatiInfo.add(allegatoInformation);
-//                    }*/
-//                }
-////            }*/
-//            mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
-//            mappaPerAllegati.put("identityFiles", identityFiles);
-//        }
         return mappaPerAllegati;
     }
 
     /**
+     * Mettodo che prende e inserisce in un IdentityFile i dati di un allegato
+     *
+     * @param dettaglio
+     * @return
+     * @throws MinIOWrapperException
+     */
+    private IdentityFile getAllegatoInformation(Allegato.DettaglioAllegato dettaglio) throws MinIOWrapperException {
+        //Controllo se nel nome del file è già inserita l'estensione
+        int lastDotIndex = dettaglio.getNome().lastIndexOf(".");
+        String estensione = "";
+        if (lastDotIndex >= 0) {
+            estensione = dettaglio.getNome().substring(lastDotIndex + 1);
+        }
+        //Nel caso dei documenti provenienti da argo l'estensione del file è già inserita nel nome del file; per quelli invece caricati da internauta
+        //in "dettagli" nome del file ed estensione sono separati. Al momento solo i doc GEDI (tiplogia DOCUMENT_UTENTE) vengo caricati direttamente da
+        //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
+        IdentityFile identityFile = new IdentityFile(dettaglio.getNome()
+                + (!(dettaglio.getEstensione().equals(estensione)) ? "." + dettaglio.getEstensione() : ""),
+                getUuidMinIObyFileId(dettaglio.getIdRepository()),
+                dettaglio.getHashSha256() != null ? dettaglio.getHashSha256() : dettaglio.getHashMd5(), //TODO originale.getHashSha256() hash 256 non presente, solo hashMd5 :: bisogna calcolarlo - chiedere GDM - fuori versatore?
+                null,
+                dettaglio.getMimeType());
+        //if (identityFile.getUuidMongo() == null) {
+        identityFile.setFileBase64(dettaglio.getIdRepository());
+        //}
+        return identityFile;
+    }
+
+    /**
      * Metodo che recupera il MongoUuid dell'allegato da MinIO
+     *
      * @param fileId
      * @return
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     private String getUuidMinIObyFileId(String fileId) throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
         return fileInfoByFileId.getMongoUuid();
     }
-    
+
     /**
-     * Metodo che inserisce le informazioni relative all'allegato in VersamentoAllegatoInformatio 
-     * e aggiunge al versamentoBuilder la parte di XML relativa
+     * Metodo che inserisce le informazioni relative all'allegato in
+     * VersamentoAllegatoInformatio e aggiunge al versamentoBuilder la parte di
+     * XML relativa
+     *
      * @param idAllegato
      * @param identityFile
      * @param versamentoBuilder
      * @param firmato
-     * @return 
+     * @return
      */
     private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, IdentityFile identityFile, VersamentoBuilder versamentoBuilder, Boolean firmato) {
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
@@ -465,7 +153,6 @@ public class AllegatiBuilder {
         }
         allegatoInformation.setStatoVersamento(it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO);
         allegatoInformation.setDataVersamento(ZonedDateTime.now());
-        //TODO vedere se va bene come JSON
         allegatoInformation.setMetadatiVersati(identityFile.getJSON().toJSONString());
         //aggiungo i metadati dell'allegato al file XML
         versamentoBuilder.addFileByParams(identityFile.getFileName(), identityFile.getMime(), identityFile.getHash());

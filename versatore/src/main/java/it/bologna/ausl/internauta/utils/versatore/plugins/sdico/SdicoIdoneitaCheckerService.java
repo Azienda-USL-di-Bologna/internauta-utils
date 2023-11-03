@@ -24,7 +24,7 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
         Boolean idoneo = false;
         log.warn("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
-        //voglio versare solo gli RGPICO TODO tutti quelli che non son stati versati? sì -  Il parametro lo aggiungo alla configurazione?
+        //voglio versare solo gli RGPICO
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.RGPICO))
         {
             idoneo = true;
@@ -35,7 +35,6 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
 
     @Override
     public Boolean checkArchivioImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
-        // momentaneamente per i test ritorno sempre true
         log.info("Prendo da versare il fasciolo id: " + id);
         return true;
     }

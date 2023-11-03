@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class VersamentoBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(VersamentoBuilder.class);
-
+//TODO da chiedere ad andrea come funzioni SPRITZ
     private Versamento versamento;
     private Metadata metadata;
     private Files files;

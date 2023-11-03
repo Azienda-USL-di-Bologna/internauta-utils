@@ -4,6 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -13,7 +14,6 @@ import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,15 +56,17 @@ public class DeliBuilder {
      *
      * @return
      */
-    public VersamentoBuilder build() {
+    public VersamentoBuilder build() throws VersatoreSdicoException {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
-        String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = (String) mappaParametri.get("idClassifica");
-        String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
-        String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
+        String codiceEnteVersatore = (String) parametriVersamento.get("ente");
+        //TODO vedere se sono giuste SPRITZ
+        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
+        String descrizioneClassificazione = archivio.getIdTitolo().getNome();
+        String repertorio = mappaParametri.get("repertorio");
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
@@ -76,50 +78,60 @@ public class DeliBuilder {
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
+        //TODO controllare da dove deve arrivare
         String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
         String riservato = (String) mappaParametri.get("riservato");
+        String numeroProposta = docDetail.getAnnoProposta().toString() + "-" + df.format(docDetail.getNumeroProposta());
         String stringaDiFirmatari = "";
-        for (Persona firmatario : firmatari) {
-            stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+        if (firmatari.size() > 0) {
+            for (Persona firmatario : firmatari) {
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+            }
+        } else {
+            throw new VersatoreSdicoException("La Delibera non ha firmatari");
         }
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         }
         HashMap<String, Object> additionalData = doc.getAdditionalData();
-        String dataEsecutiva = null;
-        //TODO vedere se dataesecutiva può essere nulla:: in realtà no ma comunque fare i controlli
-//        if (additionalData != null) {
-//            if (additionalData.containsKey("dati_pubblicazione")) {
-//                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
-//                if (datiPubblicazione.containsKey("data_esecutivita") && additionalData.get("data_esecutiva") != null) {
-//                    dataEsecutiva = additionalData.get("data_esecutivita").toString();   
-//                } 
-//            }
-//        }
+        String dataEsecutivita;
+        if (additionalData != null) {
+            if (additionalData.containsKey("dati_pubblicazione")) {
+                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+                if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
+                    dataEsecutivita = datiPubblicazione.get("data_esecutivita").toString();
+                } else {
+                    throw new VersatoreSdicoException("La Delibera non ha data esecutivita");
+                }
+            } else {
+                throw new VersatoreSdicoException("La Delibera non ha i dati di pubblicazione");
+            }
+        } else {
+            throw new VersatoreSdicoException("La Delibera non gli additionalData");
+        }
 
         versamentoBuilder.setDocType(docType);
-        versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
-        //TODO cambiano in base alla tipologia:: entrambi li prendo dal fasicolo
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         //TODO diverso da descrizione classificazione? si ora metto un valore segnaposto perché ci deve essere dato
-        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
-        //TODO la prendo da attori_docs
+        //TODO la prendo da attori_docs, da chiedere se è id_struttura_registrazione o altrimenti come individuo qual è? SPRITZ (e togliere da db)
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(archivio), TESTO_MULTIPLO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //}
@@ -135,16 +147,15 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), TESTO);
-        //TODO abbiamo solo anno proposta:: prendo datacreazione
-        //versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(""), "DATA"); 
-        //TODO da formattare 2023-0000003? :: sì
-        versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(Integer.toString(docDetail.getNumeroProposta())), TESTO);
-        if (dataEsecutiva != null) {
-            versamentoBuilder.addSinglemetadataByParams(false, "data_esecutiva", Arrays.asList(dataEsecutiva), DATA);
-        }
+        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), TESTO);
-        //TODO questa quando è null? :: come sopra
-        versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
+        if (docDetail.getDataPubblicazione() != null) {
+            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
+        } else {
+            throw new VersatoreSdicoException("La Delibera non ha data pubblicazione");
+        }
 
         return versamentoBuilder;
 

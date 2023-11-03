@@ -1,16 +1,16 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Archivio;
+import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea
  */
 public class DeteBuilder {
-    
+
     private static final Logger log = LoggerFactory.getLogger(DeteBuilder.class);
     private static final String CODICE = "DETERMINA";
     private static final String TESTO = "TESTO";
@@ -45,20 +45,22 @@ public class DeteBuilder {
         this.firmatari = firmatari;
         this.parametriVersamento = parametriVersamento;
     }
-    
+
     /**
      * Metodo che costruisce i metadati per le determine (id tipo doc 82)
-     * @return 
+     *
+     * @return
      */
-    public VersamentoBuilder build() {
-        
+    public VersamentoBuilder build() throws VersatoreSdicoException {
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = (String) mappaParametri.get("idClassifica");
-        String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
-        String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
+        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
+        String descrizioneClassificazione = archivio.getIdTitolo().getNome();
+        String repertorio = mappaParametri.get("repertorio");
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
@@ -66,8 +68,16 @@ public class DeteBuilder {
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
-        //TODO da capire chi è il firmatario visto che ce ne sono più di uno :: la prendo da attori_docs FIRMA
-        String ufficioProduttore = "struttura del firmatario";
+        String ufficioProduttore = null;
+        List<AttoreDoc> attoriDocList = doc.getAttoriList();
+        for (AttoreDoc attoreDoc : attoriDocList) {
+            if (attoreDoc.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {
+                ufficioProduttore = attoreDoc.getIdStruttura().getNome();
+            }
+        }
+        if (ufficioProduttore == null) {
+            throw new VersatoreSdicoException("La Determina non ha Ufficio Produttore");
+        }
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
@@ -76,15 +86,17 @@ public class DeteBuilder {
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
         String riservato = (String) mappaParametri.get("riservato");
         String stringaDiFirmatari = "";
-        for (Persona firmatario : firmatari) {
-            stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+        if (firmatari.size() > 0) {
+            for (Persona firmatario : firmatari) {
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+            }
+        } else {
+            throw new VersatoreSdicoException("La Determina non ha firmatari");
         }
-        
+
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
-        //TODO da vedere se cambiano in base alla tipologia:: si
-        //TODO da avere ancora e cambiare nei parametri della configurazione
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -92,14 +104,13 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
-        //TODO diverso da descrizione classificazione? vedi deli
-        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO_MULTIPLO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(archivio), TESTO_MULTIPLO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
@@ -111,7 +122,7 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
-        
+
         return versamentoBuilder;
-    }   
+    }
 }

@@ -4,18 +4,17 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
+import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -56,36 +55,32 @@ public class PicoBuilder {
      *
      * @return
      */
-    public VersamentoBuilder build() {
+    public VersamentoBuilder build() throws VersatoreSdicoException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         DecimalFormat df = new DecimalFormat("0000000");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = (String) mappaParametri.get("idClassifica");
-        String classificazioneArchivistica = (String) mappaParametri.get("classificazioneArchivistica");
+        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String numeroProtocollo = df.format(docDetail.getNumeroRegistrazione());
         String stringaDiFirmatari = "";
-        for (Persona firmatario : firmatari) {
-            stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
-        }
-        String descrizioneClassificazione = (String) mappaParametri.get("descrizioneClassificazione");
+        String repertorio = (String) mappaParametri.get("repertorio");
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
-        String responsabileProcedimento = null;
-        //TODO è vuoto?:: nei pu c'è sempre, se non c'è è errore, nei pe invece nun c'è
-        if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
-            responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
+        String responsabileProcedimento;
+        String anniTenuta = "tenuta illimitata";
+        if (archivio.getAnniTenuta() != 999) {
+            anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
-        //TODO da vedere se cambiano in base alla tipologia
-        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList("3036"), TESTO); // TODO vedere il vero valore
-        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList("C.101.15.2.a2"), TESTO); //TODO vedere il vero valore
+        versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
@@ -94,22 +89,33 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numeroProctocollo", Arrays.asList(numeroProtocollo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
-        //TODO è id_struttura_registrazione? o codice interno dell'ente? ::  nome id_struttura_registrazione
-        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getCodice().toString()), TESTO);
-        //TODO da inserire, capire se è obbligatorio o meno, direi di no?? :: mettiamolo
+        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
+        //TODO da inserire, capire se è obbligatorio o meno, direi di no?? :: mettiamolo -- è uguale a sopra SPRITZ
         versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
-        //TODO responsabile procedimento può essere nullo? :: vedi sopra
-        if (responsabileProcedimento != null) {
-            versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
-        }
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicolo(archivio)), TESTO_MULTIPLO);
-        if (!stringaDiFirmatari.isEmpty()) {
-            versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
-        }
-        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(archivio), TESTO_MULTIPLO);
+        versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
-        //TODO da aggiungere tag note1 con: "tipologia di flusso: Protocollo in entrata/uscita"
+        versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList("Tipologia di flusso: " + doc.getTipologia().toString()), TESTO);
+        //attributi presenti solo nei pu
+        if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
+            if (firmatari.size() > 0) {//TODO i pe hanno firmatari? SPRITZ
+                for (Persona firmatario : firmatari) {
+                    stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+                }
+                versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
+            } else {
+                throw new VersatoreSdicoException("Il protocollo non ha firmatari");
+            }
+            //TODO è vuoto?:: nei pu c'è sempre, se non c'è è errore, nei pe invece non c'è --- ma se è pe ed è presente è errore? SPRITZ
+            if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
+                responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
+                versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
+            } else {
+                throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+            }
+        }
 
         return versamentoBuilder;
     }
