@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.BooleanTemplate;
 import com.querydsl.core.types.dsl.Expressions;
 import it.bologna.ausl.internauta.utils.parameters.manager.repositories.ParametroAziendeRepository;
@@ -104,14 +105,14 @@ public class ParametriAziendeReader {
     }
 
     /**
-     * Metodo per estrarre tutti i parametri di un'applicazione, in una determinata azienda.
-     * Tipico di un processo di inizializzazione.
+     * Metodo per estrarre tutti i parametri di un'applicazione, in una determinata azienda.Tipico di un processo di inizializzazione.
      * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente.
      * @param app
      * @param idAzienda
+     * @param includeHiddenFromApi
      * @return mappa di nome-valore dei parametri
      */
-    public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda) {
+    public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda, boolean includeHiddenFromApi) {
 
         BooleanTemplate filterAzienda = Expressions.booleanTemplate(
                 "tools.array_overlap({0}, tools.string_to_integer_array({1}, ','))=true",
@@ -125,10 +126,15 @@ public class ParametriAziendeReader {
 
         BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
 
+        
         BooleanExpression filter = filterAzienda.and(applicazioniOverlap
                 .or(applicazioniEmptyArray)
                 .or(applicazioniIsNull));
-
+        if (!includeHiddenFromApi) {
+            BooleanExpression onlyVisibleOnApi = QParametroAziende.parametroAziende.hideFromApi.eq(false);
+            filter = filter.and(onlyVisibleOnApi);
+        }
+        
         Iterable<ParametroAziende> parametriFound = parametroAziendeRepository.findAll(filter);
         Map<String, Object> hashMapParams = new HashMap();
 

@@ -35,30 +35,40 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class ParametroAziende implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "nome", columnDefinition = "text")
     private String nome;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "valore", columnDefinition = "text")
     private String valore;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_applicazioni", columnDefinition = "text[]")
     @Type(type = "string-array")
     private String[] idApplicazioni;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_aziende", columnDefinition = "integer[]")
     @Type(type = "string-array")
     private Integer[] idAziende;
 
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "hide_from_api", columnDefinition = "boolean")
+    private Boolean hideFromApi = true;
+    
     @Version()
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -125,6 +135,14 @@ public class ParametroAziende implements Serializable {
 
     public void setIdAziende(Integer[] idAziende) {
         this.idAziende = idAziende;
+    }
+
+    public Boolean getHideFromApi() {
+        return hideFromApi;
+    }
+
+    public void setHideFromApi(Boolean hideFromApi) {
+        this.hideFromApi = hideFromApi;
     }
 
     @Override
