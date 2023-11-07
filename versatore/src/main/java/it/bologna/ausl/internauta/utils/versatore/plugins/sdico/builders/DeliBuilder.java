@@ -62,7 +62,7 @@ public class DeliBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEnteVersatore = (String) parametriVersamento.get("ente");
-        //TODO vedere se sono giuste SPRITZ
+        //TODO vedere se sono giuste SPRITZ ma quelle del padre son diverse dai figli
         String idClassifica = archivio.getIdTitolo().getId().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
@@ -78,7 +78,7 @@ public class DeliBuilder {
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
-        //TODO controllare da dove deve arrivare
+        //TODO da chiedere ad AZERO
         String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
@@ -99,7 +99,7 @@ public class DeliBuilder {
         HashMap<String, Object> additionalData = doc.getAdditionalData();
         String dataEsecutivita;
         if (additionalData != null) {
-            if (additionalData.containsKey("dati_pubblicazione")) {
+            if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
                 HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = datiPubblicazione.get("data_esecutivita").toString();
@@ -120,7 +120,9 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        //TODO per ora così, capire come va inserita
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList("Deliberazioni"), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         //TODO diverso da descrizione classificazione? si ora metto un valore segnaposto perché ci deve essere dato
@@ -128,10 +130,10 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
-        //TODO la prendo da attori_docs, da chiedere se è id_struttura_registrazione o altrimenti come individuo qual è? SPRITZ (e togliere da db)
+        //TODO la prendo da attori_docs, da chiedere se è id_struttura_registrazione o altrimenti come individuo qual è? SPRITZ (e togliere da db nel caso)
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(archivio), TESTO_MULTIPLO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(doc, archivio), TESTO_MULTIPLO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //}

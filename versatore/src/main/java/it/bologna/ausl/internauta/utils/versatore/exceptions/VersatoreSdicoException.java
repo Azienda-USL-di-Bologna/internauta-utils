@@ -10,4 +10,8 @@ public class VersatoreSdicoException extends Exception {
         super(message);
     }
     
+    public VersatoreSdicoException(Throwable cause) {
+        super(cause);
+    }
+    
 }

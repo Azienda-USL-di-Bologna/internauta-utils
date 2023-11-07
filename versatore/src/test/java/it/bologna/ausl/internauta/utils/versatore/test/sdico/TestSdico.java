@@ -23,52 +23,13 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * @author Andrea
  */
-//@RunWith(SpringRunner.class)
 @SpringBootTest
 public class TestSdico {
 
     private static final Logger log = LoggerFactory.getLogger(TestSdico.class);
 
-    private static VersamentoDocInformation versamentoDocInformation;
-
     public static void main(String[] args) throws IOException, JAXBException, Exception {
         
-        //VersaTest test = new VersaTest();
         
-        //test.versa();
-
-//       DocDetail docDetail = new DocDetail();
-//
-//       Archivio archivio = new Archivio();
-//        docDetail.setTipologia(DocDetailInterface.TipologiaDoc.DELIBERA);
-
-        //SdicoVersatoreService service = new SdicoVersatoreService(entityManager, versatoreRepositoryConfiguration, MinIOWrapper);
-
-        //FileInputStream fstream = new FileInputStream("C:\\tmp\\metadati.xml");
-        // String result = IOUtils.toString(fstream, StandardCharsets.UTF_8);
- //      String res = service.getDoc(doc, docDetail, archivio, registro, firmatari);
-        
-        //log.info("XML: " + res);
-        
-   //     String output = service.versa(res);
-        
-  //      log.info(output);
-        
-
-
-        //String jwt = service.getJWT();
-        //log.info("jwt: {}", jwt);
     }
-
-//    @Test
-//    public void test() throws Throwable {
-//                
-////        String test = "test";
-////        log.info("SDICO login URI: {}", test);
-//
-//        SdicoVersatoreService service = new SdicoVersatoreService();
-//        String jwt = service.getJWT();
-//        log.info("jwt: {}", jwt);
-//    }
-
 }

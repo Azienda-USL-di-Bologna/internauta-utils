@@ -90,9 +90,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
-        //TODO da inserire, capire se è obbligatorio o meno, direi di no?? :: mettiamolo -- è uguale a sopra SPRITZ
-        versamentoBuilder.addSinglemetadataByParams(false, "DENOMINAZIONE_STRUTTURA", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(archivio), TESTO_MULTIPLO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(doc, archivio), TESTO_MULTIPLO);
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
@@ -100,7 +98,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList("Tipologia di flusso: " + doc.getTipologia().toString()), TESTO);
         //attributi presenti solo nei pu
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
-            if (firmatari.size() > 0) {//TODO i pe hanno firmatari? SPRITZ
+            if (firmatari != null) {
                 for (Persona firmatario : firmatari) {
                     stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
                 }
@@ -108,7 +106,6 @@ public class PicoBuilder {
             } else {
                 throw new VersatoreSdicoException("Il protocollo non ha firmatari");
             }
-            //TODO è vuoto?:: nei pu c'è sempre, se non c'è è errore, nei pe invece non c'è --- ma se è pe ed è presente è errore? SPRITZ
             if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
                 responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
                 versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);

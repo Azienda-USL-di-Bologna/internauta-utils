@@ -5,6 +5,8 @@
 package it.bologna.ausl.internauta.utils.versatore.utils;
 
 import it.bologna.ausl.model.entities.scripta.Archivio;
+import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
+import it.bologna.ausl.model.entities.scripta.Doc;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,13 +32,11 @@ public class SdicoVersatoreUtils {
         return (numero + "/" + archivio.getAnno() + " [id_"+ archivio.getId() + "]");
     }
     
-    public static List<String> buildListaIdFascicolo(Archivio archivio) {
+    public static List<String> buildListaIdFascicolo(Doc doc, Archivio archivio) {
         List<String> listaFascicoli = new ArrayList<>();
-        listaFascicoli.add(buildIdFascicolo(archivio));
-        if (archivio.getIdArchivioPadre() != null) {
-            listaFascicoli.add(buildIdFascicolo(archivio.getIdArchivioPadre()));
-            if (archivio.getIdArchivioPadre().getIdArchivioPadre() != null) {
-                listaFascicoli.add(buildIdFascicolo(archivio.getIdArchivioPadre().getIdArchivioPadre()));
+        for (ArchivioDoc archivioDoc : doc.getArchiviDocList()) {
+            if (archivioDoc.getDataEliminazione() == null && archivioDoc.getIdArchivio().getIdArchivioRadice().getId() == archivio.getIdArchivioRadice().getId() ) {
+                listaFascicoli.add(buildIdFascicolo(archivioDoc.getIdArchivio()));
             }
         }
         return listaFascicoli;

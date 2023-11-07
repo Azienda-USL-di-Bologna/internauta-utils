@@ -48,6 +48,7 @@ import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.ArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
+import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
 import java.io.InputStream;
@@ -176,202 +177,214 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Integer idDoc = versamentoDocInformation.getIdDoc();
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
         SdicoResponse response = new SdicoResponse();
-        Doc doc = entityManager.find(Doc.class, idDoc);
-        DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
         try {
-            Archivio archivio = new Archivio();
-            List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
-            if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
-                archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
-                if (archivio.getId() != null && listaArchivioDocs.size() > 0) {
-                    Archivio archivioDaLista = new Archivio();
-                    for (ArchivioDoc archivioDoc : listaArchivioDocs) {
-                        //controllo se il documento appartiene a un sottofasicolo o a un inserto anziché al fasciolo radice e controllo che non sia stato eliminato logicamente -- 
-                        //TODO mi sembra possibile che appartenga a più fascicoli della stessa famiglia, inoltre bisogna controllare i cancellati SPRITZ
-                        //TODO metto lo stato dell'archivio != da versato? pernso non serva -- non verso due volte perch SDICO non lo concede, evviva!
-                        if (archivioDoc.getIdArchivio().getIdArchivioRadice().getId().equals(archivio.getId()) && archivioDoc.getDataEliminazione() == null) {
-                            archivioDaLista = archivioDoc.getIdArchivio();
+            Doc doc = entityManager.find(Doc.class, idDoc);
+            DocDetail docDetail = entityManager.find(DocDetail.class, idDoc);
+            try {
+                Archivio archivio = new Archivio();
+                List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
+                if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
+                    //controllo che il documento non sia già stato versato per questo archivio radice
+                    if (!(numeroVersamentiDocPerArchivio(idDoc, versamentoDocInformation.getIdArchivio()) > 0)) {
+                        archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
+                        if (archivio.getId() != null && !listaArchivioDocs.isEmpty()) {
+                            Archivio archivioDaLista = new Archivio();
+                            for (ArchivioDoc archivioDoc : listaArchivioDocs) {
+                                //controllo se il documento appartiene a un sottofasicolo o a un inserto anziché al fasciolo radice 
+                                //e controllo che non sia stato eliminato logicamente
+                                if (archivioDoc.getIdArchivio().getIdArchivioRadice().getId().equals(archivio.getId()) && archivioDoc.getDataEliminazione() == null) {
+                                    archivioDaLista = archivioDoc.getIdArchivio();
+                                }
+                            }
+                            if (archivioDaLista.getId() != null) {
+                                archivio = archivioDaLista;
+                            } else {
+                                //se archivioDaLista è vuoto allora il documento è stato eliminato logicamente dal fasicolo, e non è collegato ad altri fascicoli, 
+                                //in quel caso non verso il documento
+                                response.setErrorMessage("Il documento è stato cancellato logicamente dal fascicolo");
+                                response.setResponseCode(CANCELLATO);
+                                risultatoEVersamentiAllegati.put("response", response);
+                                return risultatoEVersamentiAllegati;
+                            }
+                        } else {
+                            throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                         }
-                    }
-                    if (archivioDaLista.getId() != null) {
-                        archivio = archivioDaLista;
                     } else {
-                        //se archivioDaLista è vuoto allora il documento è stato eliminato logicamente dal fasicolo, e non è collegato ad altri fascicoli, 
-                        //in quel caso non verso il documento
-                        response.setErrorMessage("Il documento è stato cancellato logicamente dal fascicolo");
+                        //se il documento è già stato versato per questo fascicolo radice non proseguo con il versamento
+                        response.setErrorMessage("Il documento è già stato versato per questa fasicolazione");
                         response.setResponseCode(CANCELLATO);
                         risultatoEVersamentiAllegati.put("response", response);
                         return risultatoEVersamentiAllegati;
                     }
                 } else {
-                    throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
-                }
-            } else {
-                if (listaArchivioDocs.get(0).getId() != null) {
-                    //TODO da chiedere se va bene SPRITZ
-                    archivio = listaArchivioDocs.get(0).getIdArchivio();
-                } else {
-                    throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
-                }
-            }
-            List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
-            Registro registro = new Registro();
-            if (listaRegistri != null) {
-                for (RegistroDoc reg : listaRegistri) {
-                    if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
-                        registro = reg.getIdRegistro();
-                    }
-                }
-            }
-            List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
-            List<Persona> firmatari = new ArrayList<>();
-            if (listaFirmatari != null) {
-                for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
-                    Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
-                    firmatari.add(p);
-                }
-            }
-            Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
-            String username = (String) parametriVersamento.get("username");
-            String password = (String) parametriVersamento.get("password");
-
-            //in basa alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
-            VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
-
-            log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
-            switch (doc.getTipologia()) {
-                case DETERMINA: {
-                    DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
-                    versamentoBuilder = db.build();
-                    break;
-                }
-                case DELIBERA: {
-                    DeliBuilder db = new DeliBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
-                    versamentoBuilder = db.build();
-                    break;
-                }
-                case RGPICO: {
-                    Pattern pattern = Pattern.compile("(.*)n\\.\\s(.*)\\sal\\sn\\.\\s(.*)\\sdel\\s(.*)", Pattern.MULTILINE);
-                    Matcher matcher = pattern.matcher(doc.getOggetto());
-                    matcher.matches();
-                    matcher.groupCount();
-                    String numeroIniziale = matcher.group(2);
-                    String numeroFinale = matcher.group(3);
-                    ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroIniziale);
-                    ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroFinale);
-                    RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale);
-                    versamentoBuilder = rb.build();
-                    break;
-                }
-                case PROTOCOLLO_IN_ENTRATA:
-                case PROTOCOLLO_IN_USCITA: {
-                    PicoBuilder pb = new PicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
-                    versamentoBuilder = pb.build();
-                    break;
-                }
-                case DOCUMENT_UTENTE: {
-                    ArchivioDetail archivioDetail = entityManager.find(ArchivioDetail.class, archivio.getId());
-                    DocumentoGEDIBuilder dgb = new DocumentoGEDIBuilder(doc, docDetail, archivio, archivioDetail, registro, parametriVersamento);
-                    versamentoBuilder = dgb.build();
-                    break;
-                }
-                default:
-                    throw new VersatoreProcessingException("Tipologia documentale non presente");
-            }
-
-            log.info("accedo ai dati degli allegati e li inserisco nell'XML");
-            List<Allegato> allegati = doc.getAllegati();
-            //TODO versatoreRepositoryConfiguration tolgo dall'argomento perché di là uso l'autowired
-            AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
-            Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
-            List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
-            List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
-            String metadati = versamentoBuilder.toString();
-
-            log.warn("XML da versare: \n" + metadati);
-            risultatoEVersamentiAllegati.put("xmlVersato", metadati);
-            risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
-
-            // --Sezione di collegamento con SDICO e versamento--
-            try {
-                List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
-                //effettuo il login a SDICO per ricevere il token
-                log.info("Effettuo il login");
-                String token = "";
-                token = getJWT(username, password, sdicoLoginURI);
-
-                // inizializzazione http client
-                OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
-
-                // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
-                byte[] fileMetadati = IOUtils.toByteArray(metadati);
-                MultipartBody.Builder buildernew = new MultipartBody.Builder()
-                        .setType(MultipartBody.FORM)
-                        .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
-
-                // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
-                log.info("Ciclo i file...");
-                if (paccoFiles.size() > 0) {//TODO da controllare con parer
-                    for (PaccoFile paccoFile : paccoFiles) {
-                        log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
-                        byte[] bytes;
-                        try (InputStream is = paccoFile.getInputStream()) {
-                            bytes = IOUtils.toByteArray(is);
-                            buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
-                        } catch (Exception ex) {
-                            log.error("Problemi con l'inputstream dei file", ex);
-                        }
-                    }
-                }
-
-                // creazione di body multipart
-                log.info("Costruisco il MultiPart");
-                MultipartBody requestBody = buildernew.build();
-                // richiesta
-                log.info("Costruisco la request");
-                Request request = new Request.Builder()
-                        .url(sdicoServizioVersamentoURI)
-                        .addHeader("Authorization", token)
-                        .post(requestBody)
-                        .build();
-                log.info("Uri: " + sdicoServizioVersamentoURI);
-                log.info("Effettuo la chiamata a SDICO");
-                try (Response resp = okHttpClient.newCall(request).execute()) {
-                    if (resp.isSuccessful()) {
-                        log.info("Message: " + resp.message());
-                        String resBodyString = resp.body().string();
-                        log.info("Body: " + resBodyString);
-                        risultatoEVersamentiAllegati.put("responseJson", resBodyString);
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        try {
-                            response = objectMapper.readValue(resBodyString, SdicoResponse.class);
-
-                        } catch (JsonProcessingException ex) {
-                            log.error("Errore nel parsing della response arrivata da SDICO");
-                        }
+                    if (listaArchivioDocs.get(0).getId() != null) {
+                        archivio = listaArchivioDocs.get(0).getIdArchivio();
                     } else {
-                        log.error("ERROR: message = " + resp.message());
-                        String resBodyString = resp.body().string();
-                        log.error("Body: " + resBodyString);
-                        log.error(resp.toString());
-                        response.setErrorMessage(resp.toString());
+                        throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                     }
-                    resp.close(); // chiudo la response
-                } catch (Throwable ex) {
-                    log.error("Errore chiamata riversamento", ex);
-                    ex.printStackTrace();
-                    response.setErrorMessage("Errore chiamata riversamento");
                 }
-                //TODO forese da togliere
-                //risultatoEVersamentiAllegati.put("response", response);
-                //return risultatoEVersamentiAllegati;
+                List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
+                Registro registro = new Registro();
+                if (listaRegistri != null) {
+                    for (RegistroDoc reg : listaRegistri) {
+                        if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
+                            registro = reg.getIdRegistro();
+                        }
+                    }
+                }
+                List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
+                List<Persona> firmatari = new ArrayList<>();
+                if (listaFirmatari != null) {
+                    for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
+                        Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
+                        firmatari.add(p);
+                    }
+                }
+                Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
+                String username = (String) parametriVersamento.get("username");
+                String password = (String) parametriVersamento.get("password");
 
-            } catch (IOException ex) {
-                log.error("Errore nell'invio del versamento", ex);
+                //in base alla tipologia di documento instanzio la relativa classe che ne costruisce i metadati
+                VersamentoBuilder versamentoBuilder = new VersamentoBuilder();
+
+                try {
+                    log.info("Creo i metadati di: " + doc.getTipologia() + " id " + doc.getId() + ", " + doc.getOggetto());
+                    switch (doc.getTipologia()) {
+                        case DETERMINA: {
+                            DeteBuilder db = new DeteBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                            versamentoBuilder = db.build();
+                            break;
+                        }
+                        case DELIBERA: {
+                            DeliBuilder db = new DeliBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                            versamentoBuilder = db.build();
+                            break;
+                        }
+                        case RGPICO: {
+                            Pattern pattern = Pattern.compile("(.*)n\\.\\s(.*)\\sal\\sn\\.\\s(.*)\\sdel\\s(.*)", Pattern.MULTILINE);
+                            Matcher matcher = pattern.matcher(doc.getOggetto());
+                            matcher.matches();
+                            matcher.groupCount();
+                            String numeroIniziale = matcher.group(2);
+                            String numeroFinale = matcher.group(3);
+                            ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroIniziale);
+                            ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroFinale);
+                            RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale);
+                            versamentoBuilder = rb.build();
+                            break;
+                        }
+                        case PROTOCOLLO_IN_ENTRATA:
+                        case PROTOCOLLO_IN_USCITA: {
+                            PicoBuilder pb = new PicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento);
+                            versamentoBuilder = pb.build();
+                            break;
+                        }
+                        case DOCUMENT_UTENTE: {
+                            ArchivioDetail archivioDetail = entityManager.find(ArchivioDetail.class, archivio.getId());
+                            DocumentoGEDIBuilder dgb = new DocumentoGEDIBuilder(doc, docDetail, archivio, archivioDetail, registro, parametriVersamento);
+                            versamentoBuilder = dgb.build();
+                            break;
+                        }
+                        default:
+                            throw new VersatoreSdicoException("Tipologia documentale non presente");
+                    }
+                } catch (NullPointerException e) {
+                    throw new VersatoreSdicoException("Trovato un valore nullo nella costruzione dei metadati");
+                }
+
+                log.info("accedo ai dati degli allegati e li inserisco nell'XML");
+                List<Allegato> allegati = doc.getAllegati();
+                AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
+                Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
+                List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
+                List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
+                String metadati = versamentoBuilder.toString();
+
+                log.warn("XML da versare: \n" + metadati);
+                risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+                risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
+
+                // --Sezione di collegamento con SDICO e versamento--
+                try {
+                    List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
+                    //effettuo il login a SDICO per ricevere il token
+                    log.info("Effettuo il login");
+                    String token = "";
+                    token = getJWT(username, password, sdicoLoginURI);
+
+                    // inizializzazione http client
+                    OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
+
+                    // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
+                    byte[] fileMetadati = IOUtils.toByteArray(metadati);
+                    MultipartBody.Builder buildernew = new MultipartBody.Builder()
+                            .setType(MultipartBody.FORM)
+                            .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+
+                    // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
+                    log.info("Ciclo i file...");
+                    if (paccoFiles != null) {
+                        for (PaccoFile paccoFile : paccoFiles) {
+                            log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+                            byte[] bytes;
+                            try (InputStream is = paccoFile.getInputStream()) {
+                                bytes = IOUtils.toByteArray(is);
+                                buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                            } catch (Exception ex) {
+                                log.error("Problemi con l'inputstream dei file", ex);
+                            }
+                        }
+                    }
+
+                    // creazione di body multipart
+                    log.info("Costruisco il MultiPart");
+                    MultipartBody requestBody = buildernew.build();
+                    // richiesta
+                    log.info("Costruisco la request");
+                    Request request = new Request.Builder()
+                            .url(sdicoServizioVersamentoURI)
+                            .addHeader("Authorization", token)
+                            .post(requestBody)
+                            .build();
+                    log.info("Uri: " + sdicoServizioVersamentoURI);
+                    log.info("Effettuo la chiamata a SDICO");
+                    try (Response resp = okHttpClient.newCall(request).execute()) {
+                        if (resp.isSuccessful()) {
+                            log.info("Message: " + resp.message());
+                            String resBodyString = resp.body().string();
+                            log.info("Body: " + resBodyString);
+                            risultatoEVersamentiAllegati.put("responseJson", resBodyString);
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            try {
+                                response = objectMapper.readValue(resBodyString, SdicoResponse.class);
+
+                            } catch (JsonProcessingException ex) {
+                                log.error("Errore nel parsing della response arrivata da SDICO");
+                            }
+                        } else {
+                            log.error("ERROR: message = " + resp.message());
+                            String resBodyString = resp.body().string();
+                            log.error("Body: " + resBodyString);
+                            log.error(resp.toString());
+                            response.setErrorMessage(resp.toString());
+                        }
+                        resp.close(); // chiudo la response
+                    } catch (Throwable ex) {
+                        log.error("Errore chiamata riversamento", ex);
+                        ex.printStackTrace();
+                        response.setErrorMessage("Errore chiamata riversamento");
+                    }
+                } catch (IOException ex) {
+                    log.error("Errore nell'invio del versamento", ex);
+                }
+            } catch (VersatoreSdicoException e) {
+                response.setErrorMessage(e.getMessage());
+                response.setResponseCode(ERRORE_PLUG_IN);
             }
-        } catch (VersatoreSdicoException e) {
-            response.setErrorMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setErrorMessage("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
             response.setResponseCode(ERRORE_PLUG_IN);
+            log.error("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
         }
         risultatoEVersamentiAllegati.put("response", response);
         return risultatoEVersamentiAllegati;
@@ -442,5 +455,24 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .fetchOne();
 
         return dataRegistrazione;
+    }
+
+    /**
+     * Metodo che conta quante volte un documento è stato versato per uno stesso
+     * archivio
+     *
+     * @param idDoc
+     * @param idArchivio
+     * @return
+     */
+    private Long numeroVersamentiDocPerArchivio(Integer idDoc, Integer idArchivio) {
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+        Long numeroDocVersati = jPAQueryFactory.select(QVersamento.versamento.count())
+                .from(QVersamento.versamento)
+                .where(QVersamento.versamento.idDoc.id.eq(idDoc)
+                        .and(QVersamento.versamento.idArchivio.id.eq(idArchivio))
+                        .and(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
+                .fetchOne();
+        return numeroDocVersati;
     }
 }
