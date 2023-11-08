@@ -1,10 +1,8 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
 
-import com.itextpdf.text.pdf.PdfAConformanceLevel;
 import com.itextpdf.xmp.options.SerializeOptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.xhtmlrenderer.pdf.ITextRenderer;
+import org.junit.jupiter.api.TestInstance;
 
 import java.nio.charset.StandardCharsets;
 
@@ -14,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * @author ferri
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ITextMetadataUtilsTest {
-
     @Test
     void getSerializeOptionsTest() {
         SerializeOptions serializeOptions = getSerializeOptions();

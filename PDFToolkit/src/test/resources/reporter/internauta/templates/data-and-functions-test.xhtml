@@ -7,6 +7,9 @@
         <style>
         html *
         {
+            font-family: "Arial";
+        }
+        body {
             font-family: "Times New Roman";
         }
         </style>
@@ -37,7 +40,10 @@
         <p><img src="data:image/png;base64,${(testDataAndFunctions.aBlankImageInBase64)}" height="100px"/></p>
         <p><img src="data:image/png;base64,${(defaultImage)}" height="50"/></p>
         <p><img src="file:///${(resourcePath)}/loghi/testImage.png" height="300"/></p>
-        <p>${convertZonedDateTimeToDate((testDataAndFunctions.aZonedDateTime))!"aZonedDateTime-not-found"}</p>
+        <p>${(testDataAndFunctions.aDate?date)!"aDate-not-found"}</p>
+        <p>${(testDataAndFunctions.aLocalDate)!"aLocalDate-not-found"}</p>
+        <p>${(testDataAndFunctions.aLocalDateTime)!"aLocalDateTime-not-found"}</p>
+        <p>${(testDataAndFunctions.aZonedDateTime)!"aZonedDateTime-not-found"}</p>
         <p>${(testDataAndFunctions.aObjectMap.testString)!"aObjectMap.testString-not-found"}</p>
     </body>
 </html>

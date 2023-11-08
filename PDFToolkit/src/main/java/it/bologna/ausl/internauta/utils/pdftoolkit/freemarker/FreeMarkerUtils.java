@@ -1,8 +1,7 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.freemarker;
 
 import freemarker.template.*;
-import it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.functions.ConvertZonedDateTimeToDate;
-import it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.functions.FormatFloatToCurrency;
+import it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.functions.*;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 
 import java.io.ByteArrayOutputStream;
@@ -25,7 +24,7 @@ public class FreeMarkerUtils {
     public static Configuration getDefaultConfiguration()
             throws TemplateModelException, IOException {
 
-        return getConfiguration(Configuration.VERSION_2_3_20, getAvCpFunctions(),
+        return getConfiguration(Configuration.VERSION_2_3_20, getCustomFunctions(),
                 Paths.get(PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH.toString(), PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH));
     }
 
@@ -58,10 +57,13 @@ public class FreeMarkerUtils {
         return configuration;
     }
 
-    public static Map<String, Object> getAvCpFunctions() {
+    public static Map<String, Object> getCustomFunctions() {
         Map<String, Object> customFunctions = new HashMap<>();
         customFunctions.put("convertZonedDateTimeToDate", new ConvertZonedDateTimeToDate());
         customFunctions.put("formatFloatToCurrency", new FormatFloatToCurrency());
+        customFunctions.put("formatDateWIthSlashes", new FormatDateWIthSlashes());
+        customFunctions.put("formatDateDMY", new FormatDateYMDToDMY());
+        customFunctions.put("invertTextOrder", new InvertTextOrder());
         return customFunctions;
     }
 

@@ -1,36 +1,40 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.utils;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.Locale;
+import java.time.temporal.ChronoField;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 
 /**
  * @author ferri
  */
 public class DateUtils {
+    public static final DateTimeFormatter DMY_DATE_FORMATTER =
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendValue(ChronoField.DAY_OF_MONTH)
+                    .appendLiteral('-')
+                    .appendValue(ChronoField.MONTH_OF_YEAR)
+                    .appendLiteral('-')
+                    .appendValue(ChronoField.YEAR)
+                    .toFormatter();
 
-    private final static DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
+    public static final DateTimeFormatter YMD_DATE_FORMATTER = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
-            .append(ISO_LOCAL_DATE)
-            .appendLiteral('T')
-            .appendValue(HOUR_OF_DAY, 2)
-            .appendLiteral(':')
-            .appendValue(MINUTE_OF_HOUR, 2)
-            .appendLiteral(':')
-            .appendValue(SECOND_OF_MINUTE, 2)
-            .toFormatter(Locale.ITALY);
+            .appendValue(YEAR, 4)
+            .appendLiteral('-')
+            .appendValue(MONTH_OF_YEAR, 2)
+            .appendLiteral('-')
+            .appendValue(DAY_OF_MONTH, 2)
+            .toFormatter();
 
-    public static String getItaCurrentIsoOffsetDate() {
-        String offset = ZoneId.of("Europe/Rome").getRules().getOffset(Instant.now()).toString();
-
-        LocalDateTime currentDate = LocalDateTime.now();
-
-        return dateTimeFormatter.format(currentDate) + offset;
-    }
+    public static final DateTimeFormatter DATE_WITH_SLASHES_FORMATTER = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .appendValue(DAY_OF_MONTH, 2)
+            .appendLiteral('/')
+            .appendValue(MONTH_OF_YEAR, 2)
+            .appendLiteral('/')
+            .appendValue(YEAR, 4)
+            .toFormatter();
 }

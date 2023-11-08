@@ -10,8 +10,7 @@ import org.junit.jupiter.api.TestInstance;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,19 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author ferri
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ConvertZonedDateTimeToDateTest {
+class FormatDateWIthSlashesTest {
     private final Version defaultVersion = Configuration.VERSION_2_3_20;
 
     @Test
     void execTest() throws TemplateModelException, IOException {
-        String templateName = "convert-zoned-datetime-to-date.ftlh";
+        String templateName = "format-date-with-slashes.ftlh";
         assertTrue(Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), TEMPLATES_RELATIVE_PATH, templateName).toFile().exists());
 
         Map<String, Object> dataModel = new HashMap<String, Object>() {{
-            put("aZonedDateTime", ZonedDateTime.of(2024, 4, 15, 12, 30, 5, 3, ZoneId.of("Europe/Rome")));
+            put("aLocalDate", LocalDate.of(2024, 4, 15));
         }};
         Map<String, Object> customFunction = new HashMap<String, Object>() {{
-            put("convertZonedDateTimeToDate", new ConvertZonedDateTimeToDate());
+            put("formatDateWIthSlashes", new FormatDateWIthSlashes());
         }};
 
         Configuration configuration = getConfiguration(defaultVersion, customFunction,
@@ -53,7 +52,7 @@ class ConvertZonedDateTimeToDateTest {
              BufferedReader reader = new BufferedReader(new FileReader(file))) {
 
             assertDoesNotThrow(() -> writer.write(templateOutput.toByteArray()));
-            assertTrue(reader.lines().anyMatch(line -> line.trim().equals("2024-04-15")));
+            assertTrue(reader.lines().anyMatch(line -> line.trim().equals("15/04/2024")));
         } finally {
             Files.deleteIfExists(file.toPath());
         }

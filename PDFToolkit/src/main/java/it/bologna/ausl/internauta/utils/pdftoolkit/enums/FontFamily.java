@@ -8,7 +8,8 @@ import java.nio.file.Paths;
  */
 public enum FontFamily {
     ARIAL("Arial", Paths.get("/fonts", "/Arial")),
-    TIMES_ROMAN("Times New Roman", Paths.get("/fonts", "/Times-Roman"));
+    TIMES_ROMAN("Times New Roman", Paths.get("/fonts", "/Times-Roman")),
+    COURIER_NEW("Courier New", Paths.get("/fonts", "/Courier-New"));
 
     private final String name;
     private final Path path;
@@ -17,7 +18,6 @@ public enum FontFamily {
         this.name = name;
         this.path = path;
     }
-
 
     public static Path getFolderRelativePath(String name) {
 

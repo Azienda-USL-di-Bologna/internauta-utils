@@ -7,7 +7,6 @@ import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateModelException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -19,8 +18,8 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import static freemarker.template.Configuration.VERSION_2_3_20;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getAvCpFunctions;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getConfiguration;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getCustomFunctions;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -28,14 +27,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FreeMarkerUtilsTest {
-
-    @BeforeEach
-    void setUp() {
-    }
-
     @Test
     void getDefaultConfigurationTest() throws TemplateModelException, IOException {
-        Configuration configuration = getConfiguration(Configuration.VERSION_2_3_20, getAvCpFunctions(),
+        Configuration configuration = getConfiguration(Configuration.VERSION_2_3_20, getCustomFunctions(),
                 Paths.get(PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString(), PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH));
         assertAll(
                 () -> assertTrue(configuration.isDateFormatSet()),
@@ -72,15 +66,5 @@ class FreeMarkerUtilsTest {
                 () -> assertEquals(AttemptExceptionReporter.LOG_ERROR_REPORTER, configuration.getAttemptExceptionReporter()),
                 () -> assertEquals(Configuration.getDefaultObjectWrapper(VERSION_2_3_20), configuration.getObjectWrapper())
         );
-    }
-
-    @Test
-    void getTemplateInputTest() {
-
-    }
-
-    @Test
-    void getTemplateOutputTest() {
-
     }
 }

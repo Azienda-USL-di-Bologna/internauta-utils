@@ -6,29 +6,15 @@ import freemarker.template.TemplateModelException;
 
 import java.sql.Date;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.ZonedDateTimeUtils.ZONED_DATE_FORMATTER;
 
 /**
  * @author ferri
  */
 public class ConvertZonedDateTimeToDate implements TemplateMethodModelEx {
-
-    public static final DateTimeFormatter ZONED_DATE_FORMATTER = new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .append(ISO_LOCAL_DATE_TIME)
-            .appendFraction(NANO_OF_SECOND, 0, 9, true)
-            .appendOffset("+HH:MM", "+00:00")
-            .appendLiteral('[')
-            .parseCaseSensitive()
-            .appendZoneRegionId()
-            .appendLiteral(']')
-            .toFormatter();
 
     @Override
     public Object exec(List args) throws TemplateModelException {

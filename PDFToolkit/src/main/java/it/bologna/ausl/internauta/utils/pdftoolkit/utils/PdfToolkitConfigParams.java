@@ -42,7 +42,6 @@ public class PdfToolkitConfigParams {
     public static final String RESOURCES_RELATIVE_PATH = "/resources/reporter";
     public static final String INTERNAUTA_RELATIVE_PATH = "/internauta";
     public static final String TEMPLATES_RELATIVE_PATH = "/templates";
-    public static final String ICC_PROFILE_RELATIVE_PATH = "/icc-profiles";
     public static final Path DIRECTORY_FOLDER_PATH = Paths.get(WORKDIR, RESOURCES_RELATIVE_PATH, INTERNAUTA_RELATIVE_PATH);
     private static final Logger log = LoggerFactory.getLogger(PdfToolkitConfigParams.class);
     @Autowired

@@ -1,18 +1,14 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
 
-import org.junit.jupiter.api.TestInstance;
-
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 
 /**
  * @author ferri
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestData {
     private Boolean aBoolean;
     private Integer aInteger;
@@ -25,6 +21,9 @@ public class TestData {
     private URI aUri;
     private Path aPath;
     private String aBlankImageInBase64;
+    private Date aDate;
+    private LocalDate aLocalDate;
+    private LocalDateTime aLocalDateTime;
     private ZonedDateTime aZonedDateTime;
     private Map<String, Object> aObjectMap;
 
@@ -43,8 +42,11 @@ public class TestData {
         testDataAndFunctions.setaStringList(stringListTest);
         testDataAndFunctions.setaPath(Paths.get("./"));
         testDataAndFunctions.setaUri(URI.create("https://example.com/ftp/test.xml"));
-        testDataAndFunctions.setaZonedDateTime(ZonedDateTime.of(2023, 10, 20,
-                15, 12, 0, 1234567, ZoneId.of("Europe/Rome")));
+        testDataAndFunctions.setaDate(new Date(Instant.now().toEpochMilli()));
+        testDataAndFunctions.setaLocalDate(LocalDate.of(2023, 10, 20));
+        testDataAndFunctions.setaLocalDateTime(LocalDateTime.of(2023, 10, 20, 15, 12, 0));
+        testDataAndFunctions.setaZonedDateTime(ZonedDateTime.of(2023, 10, 20, 15, 12, 0, 1234567,
+                ZoneId.of("Europe/Rome")));
         byte aByte = 42;
         testDataAndFunctions.setaByte(aByte);
         byte[] byteArray = {1, 2};
@@ -148,6 +150,30 @@ public class TestData {
 
     public void setaBlankImageInBase64(String aBlankImageInBase64) {
         this.aBlankImageInBase64 = aBlankImageInBase64;
+    }
+
+    public Date getaDate() {
+        return aDate;
+    }
+
+    public void setaDate(Date aDate) {
+        this.aDate = aDate;
+    }
+
+    public LocalDate getaLocalDate() {
+        return aLocalDate;
+    }
+
+    public void setaLocalDate(LocalDate aLocalDate) {
+        this.aLocalDate = aLocalDate;
+    }
+
+    public LocalDateTime getaLocalDateTime() {
+        return aLocalDateTime;
+    }
+
+    public void setaLocalDateTime(LocalDateTime aLocalDateTime) {
+        this.aLocalDateTime = aLocalDateTime;
     }
 
     public ZonedDateTime getaZonedDateTime() {

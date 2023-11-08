@@ -5,37 +5,35 @@ import com.itextpdf.text.pdf.PdfAConformanceLevel;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.xmp.XMPConst;
+import com.itextpdf.xmp.XMPMeta;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateModelException;
 import freemarker.template.Version;
-import it.bologna.ausl.internauta.utils.pdftoolkit.enums.FontFamily;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.ReporterJobWorkerData;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
-import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.*;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.getFontFilePaths;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUtils.getDeserializedMetadata;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUtils.setMetadata;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.getPdfA;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.setICCProfile;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.*;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.ICC_PROFILE_RELATIVE_PATH;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -43,73 +41,107 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ITextPdfUtilsTest {
-    private final Version defaultVersion = Configuration.VERSION_2_3_20;
-    private final PdfAConformanceLevel defaultConformanceLevel = PdfAConformanceLevel.PDF_A_1A;
-    private ITextRenderer iTextRenderer;
-
-    @BeforeEach
-    void setUp() {
-        iTextRenderer = new ITextRenderer();
-    }
+    private static final Version defaultVersion = Configuration.VERSION_2_3_20;
 
     @Test
-    void getPdfAOutputStreamTest() throws TemplateModelException, DocumentException, IOException {
+    void MetadataPdfStamperAndPdfATest() throws TemplateModelException, DocumentException, IOException, MasterjobsWorkerException {
         String documentTitle = "Test";
         Map<String, Object> dataModel = TestData.getTestInitialized();
         dataModel.put("title", documentTitle);
-        dataModel.put("resourcePath", PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString()
-                .replace("\\", "/"));
+        dataModel.put("resourcePath", formatPathForTemplate(TEST_DIRECTORY_FOLDER_PATH));
 
-        File file = File.createTempFile("test", ".pdf", new File(System.getProperty("java.io.tmpdir")));
-        Configuration configuration = getConfiguration(defaultVersion, getAvCpFunctions(),
-                Paths.get(PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString(), TEMPLATES_RELATIVE_PATH));
+        ReporterJobWorkerData workerData = new ReporterJobWorkerData("toolkit",
+                "data-and-functions-test.xhtml", "data-and-functions-test", dataModel);
 
-        Template template = configuration.getTemplate("data-and-functions-test.xhtml");
+        workerData.validateInputForPdfA(".ftlh", ".xhtml");
 
-        Path iccFile = Paths.get(PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString(), "AdobeRGB1998.icc");
+        Configuration configuration = getConfiguration(defaultVersion, getCustomFunctions(),
+                Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), TEMPLATES_RELATIVE_PATH));
+
+        Template template = configuration.getTemplate(workerData.getTemplateName());
+        Path iccFile = Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "AdobeRGB1998.icc");
 
         try (ByteArrayOutputStream templateOutput = getTemplateOutput(template, dataModel)) {
-
             String htmlContent = templateOutput.toString(StandardCharsets.UTF_8.name());
-            List<String> list = getFontFamilies(htmlContent);
+            List<String> listFont = getFontFamilies(htmlContent);
+            List<Path> listFontFilePaths = getFontFilePaths(listFont, TEST_DIRECTORY_FOLDER_PATH);
 
-            List<Path> listPaths = new ArrayList<>();
-            if (!list.isEmpty()) {
-                for (String font : list) {
-                    listPaths.add(Paths.get(PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString(),
-                            FontFamily.getFolderRelativePath(font).toString()));
-                }
-            }
+            PdfACreationListener listener = new PdfACreationListener(
+                    workerData.getParametriTemplate().get("title").toString(), listFontFilePaths, iccFile);
 
-            PdfACreationListener listener = new PdfACreationListener(dataModel.get("title").toString(), listPaths, iccFile);
+            File filePDFA1A = File.createTempFile("testPdfA1", ".pdf", new File(System.getProperty("java.io.tmpdir")));
+            File fileZUGFeRD = File.createTempFile("testPdfAZUGFeRDStamper", ".pdf", new File(System.getProperty("java.io.tmpdir")));
+            File filePDFA2A = File.createTempFile("testPdfA2Stamper", ".pdf", new File(System.getProperty("java.io.tmpdir")));
 
             try (ByteArrayOutputStream pdfOutputStream = getPdfA(templateOutput, listener);
-                 FileOutputStream writer = new FileOutputStream(file)) {
-                PdfReader pdfReader = new PdfReader(pdfOutputStream.toByteArray());
-                PdfStamper pdfStamper = new PdfStamper(pdfReader, pdfOutputStream);
+                 OutputStream fileZUGFeRDOutputStream = Files.newOutputStream(fileZUGFeRD.toPath());
+                 OutputStream filePDFA2OutputStream = Files.newOutputStream(filePDFA2A.toPath());
+                 FileOutputStream file2OutputStream = new FileOutputStream(filePDFA1A)) {
+
+                file2OutputStream.write(pdfOutputStream.toByteArray());
+
+                PdfStamper pdfStamper = new PdfStamper(new PdfReader(pdfOutputStream.toByteArray()), fileZUGFeRDOutputStream);
+                XMPMeta xmpMetaStamper = getDeserializedMetadata(pdfStamper.getReader().getMetadata());
+
                 assertAll(
+                        () -> assertEquals(2, listFontFilePaths.size()),
                         () -> assertNotNull(pdfOutputStream),
-                        () -> assertNull(pdfReader.getJavaScript()),
-                        () -> assertEquals(0, pdfReader.getCertificationLevel()),
-                        () -> assertEquals(-1, pdfReader.getCryptoMode()),
-                        () -> assertEquals(0, pdfReader.getPermissions()),
-                        () -> assertEquals("Test", pdfReader.getInfo().get("Title")),
-                        () -> assertEquals(36265, pdfReader.getFileLength()), // ofc, at minimum variation it fails
-                        () -> assertDoesNotThrow(() -> setMetadata(pdfStamper, documentTitle, defaultConformanceLevel)),
-                        () -> assertDoesNotThrow(() -> writer.write(pdfOutputStream.toByteArray())),
-                        () -> assertDoesNotThrow(pdfReader::close)
+                        () -> assertNull(pdfStamper.getReader().getJavaScript()),
+                        () -> assertEquals(0, pdfStamper.getReader().getCertificationLevel()),
+                        () -> assertEquals(-1, pdfStamper.getReader().getCryptoMode()),
+                        () -> assertEquals(0, pdfStamper.getReader().getPermissions()),
+                        () -> assertTrue(xmpMetaStamper.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().getHasLanguage()),
+                        () -> assertTrue(xmpMetaStamper.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().isExactly(80)),
+                        () -> assertTrue(StringUtils.startsWith(xmpMetaStamper.getProperty(XMPConst.NS_PDF, "Producer").getValue(), "iText®")),
+                        () -> assertTrue(StringUtils.contains(xmpMetaStamper.getProperty(XMPConst.NS_PDF, "Producer").getValue(), "AGPL-version")),
+                        () -> assertEquals("A", xmpMetaStamper.getProperty(XMPConst.NS_PDFA_ID, "conformance").getValue()),
+                        () -> assertEquals("1", xmpMetaStamper.getProperty(XMPConst.NS_PDFA_ID, "part").getValue()),
+                        () -> assertEquals(documentTitle, xmpMetaStamper.getArrayItem(XMPConst.NS_DC, "title", 1).getValue()),
+                        () -> assertEquals("Babel", xmpMetaStamper.getArrayItem(XMPConst.NS_DC, "creator", 1).getValue()),
+                        () -> assertEquals("begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"", xmpMetaStamper.getPacketHeader()),
+                        () -> assertEquals(documentTitle, pdfStamper.getReader().getInfo().get("Title")),
+                        () -> assertDoesNotThrow(() -> setMetadata(pdfStamper, documentTitle, PdfAConformanceLevel.ZUGFeRDBasic)),
+                        () -> assertEquals(29517, pdfStamper.getReader().getFileLength()), // ofc, at minimum variation it fails
+                        () -> assertDoesNotThrow(pdfStamper::close)
+                );
+
+                PdfStamper pdfStamperFirstResult = new PdfStamper(new PdfReader(Files.newInputStream(fileZUGFeRD.toPath())), filePDFA2OutputStream);
+                XMPMeta xmpMetaResult = getDeserializedMetadata(pdfStamperFirstResult.getReader().getMetadata());
+
+                assertAll(
+                        () -> assertTrue(xmpMetaResult.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().getHasLanguage()),
+                        () -> assertTrue(xmpMetaResult.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().isExactly(80)),
+                        () -> assertTrue(StringUtils.startsWith(xmpMetaResult.getProperty(XMPConst.NS_PDF, "Producer").getValue(), "iText®")),
+                        () -> assertTrue(StringUtils.contains(xmpMetaResult.getProperty(XMPConst.NS_PDF, "Producer").getValue(), "AGPL-version")),
+                        () -> assertEquals("A", xmpMetaResult.getProperty(XMPConst.NS_PDFA_ID, "conformance").getValue()),
+                        () -> assertEquals("3", xmpMetaResult.getProperty(XMPConst.NS_PDFA_ID, "part").getValue()),
+                        () -> assertEquals(documentTitle, xmpMetaResult.getArrayItem(XMPConst.NS_DC, "title", 1).getValue()),
+                        () -> assertEquals("BABEL", xmpMetaResult.getArrayItem(XMPConst.NS_DC, "creator", 1).getValue()),
+                        () -> assertEquals("begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"", xmpMetaResult.getPacketHeader()),
+                        () -> assertDoesNotThrow(() -> setMetadata(pdfStamperFirstResult, documentTitle, PdfAConformanceLevel.PDF_A_2A)),
+                        () -> assertDoesNotThrow(pdfStamperFirstResult::close)
+                );
+
+                PdfReader pdfResultFinalReader = new PdfReader(Files.newInputStream(filePDFA2A.toPath()));
+                XMPMeta xmpMetaFinal = getDeserializedMetadata(pdfResultFinalReader.getMetadata());
+
+                assertAll(
+                        () -> assertEquals("A", xmpMetaFinal.getProperty(XMPConst.NS_PDFA_ID, "conformance").getValue()),
+                        () -> assertEquals("2", xmpMetaFinal.getProperty(XMPConst.NS_PDFA_ID, "part").getValue()),
+                        () -> assertDoesNotThrow(pdfResultFinalReader::close)
                 );
             } finally {
-                Files.deleteIfExists(file.toPath());
+                Files.deleteIfExists(fileZUGFeRD.toPath());
+                Files.deleteIfExists(filePDFA2A.toPath());
+                Files.deleteIfExists(filePDFA1A.toPath());
             }
         }
     }
 
     @Test
     void setICCProfileTest() {
-        assertTrue(Paths.get(PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc").toFile().exists());
-        assertThrows(IOException.class, () -> setICCProfile(iTextRenderer,
-                Paths.get(PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH.toString(),
-                        ICC_PROFILE_RELATIVE_PATH, "/AdobeRGB1998.icc")));
+        assertTrue(Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc").toFile().exists());
+        assertThrows(IOException.class, () -> setICCProfile(new ITextRenderer(),
+                Paths.get(PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc")));
     }
 }

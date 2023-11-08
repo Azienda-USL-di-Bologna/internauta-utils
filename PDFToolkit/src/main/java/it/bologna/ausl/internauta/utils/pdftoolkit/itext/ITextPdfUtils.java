@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
 
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.ICC_Profile;
-import com.itextpdf.text.pdf.PdfAConformanceLevel;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -27,12 +26,16 @@ public class ITextPdfUtils {
         ByteArrayOutputStream pdfAOutput = new ByteArrayOutputStream();
 
         try {
-            renderer.createPDF(pdfAOutput, true, true, PdfAConformanceLevel.PDF_A_1A);
+            renderer.createPDF(pdfAOutput, true, true, listener.getPdfAConformanceLevel());
 
             return pdfAOutput;
         } catch (IOException e) {
             throw new DocumentException("Failed to create PDF in ITextRenderer with template title " + listener.getTitle(), e);
         }
+    }
+
+    public static String formatPathForTemplate(Path resourcePath) {
+        return resourcePath.toString().replace("\\", "/");
     }
 
     public static ITextRenderer basicInitialization(ByteArrayOutputStream template, PdfACreationListener creationListener)
@@ -61,7 +64,7 @@ public class ITextPdfUtils {
 
     public static void setICCProfile(ITextRenderer iTextRenderer, Path fileIcc) throws IOException {
         try {
-            iTextRenderer.getWriter().setOutputIntents("sRGB", "PDFA/A",
+            iTextRenderer.getWriter().setOutputIntents("AdobeRGB", "PDFA/A",
                     "http://www.color.org", "sRGB IEC61966-2.1",
                     ICC_Profile.getInstance(Files.newInputStream(fileIcc.toFile().toPath())));
         } catch (IOException e) {

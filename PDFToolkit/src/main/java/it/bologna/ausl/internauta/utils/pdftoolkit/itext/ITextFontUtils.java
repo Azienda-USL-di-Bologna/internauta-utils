@@ -2,12 +2,14 @@ package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
 
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.BaseFont;
+import it.bologna.ausl.internauta.utils.pdftoolkit.enums.FontFamily;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,5 +54,16 @@ public class ITextFontUtils {
         }
 
         return pathList;
+    }
+
+    public static List<Path> getFontFilePaths(List<String> fontsNameToInclude, Path directoryFolderPath) {
+        List<Path> listPaths = new ArrayList<>();
+        if (!fontsNameToInclude.isEmpty()) {
+            for (String font : fontsNameToInclude) {
+                listPaths.add(Paths.get(directoryFolderPath.toString(),
+                        FontFamily.getFolderRelativePath(font).toString()));
+            }
+        }
+        return listPaths;
     }
 }

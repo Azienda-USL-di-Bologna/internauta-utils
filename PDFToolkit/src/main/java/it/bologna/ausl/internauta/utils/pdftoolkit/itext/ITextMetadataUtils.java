@@ -3,24 +3,25 @@ package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.*;
 import com.itextpdf.text.xml.xmp.DublinCoreProperties;
-import com.itextpdf.xmp.XMPConst;
-import com.itextpdf.xmp.XMPException;
-import com.itextpdf.xmp.XMPMeta;
-import com.itextpdf.xmp.XMPMetaFactory;
+import com.itextpdf.xmp.*;
 import com.itextpdf.xmp.impl.XMPSerializerRDF;
+import com.itextpdf.xmp.options.ParseOptions;
 import com.itextpdf.xmp.options.SerializeOptions;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Locale;
-
-import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.DateUtils.getItaCurrentIsoOffsetDate;
 
 /**
  * @author ferri
  */
 public class ITextMetadataUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(ITextMetadataUtils.class);
+
     public static void setMetadata(ITextRenderer iTextRenderer, String fileTitle)
             throws XMPException {
         // bare minimum for standard B
@@ -37,21 +38,32 @@ public class ITextMetadataUtils {
         iTextRenderer.getWriter().getStructureTreeRoot();
     }
 
-    public static XMPMeta createXMPMetadata(String fileTitle, PdfAConformanceLevel conformanceLevel)
+    public static XMPMeta createXMPMetadata(PdfWriter writer, String fileTitle, PdfAConformanceLevel conformanceLevel)
             throws XMPException {
         try {
             XMPMeta xmp = XMPMetaFactory.create();
-            //writer.createXmpMetadata(); // align dates with producer
-            String currentDate = getItaCurrentIsoOffsetDate();
+            writer.createXmpMetadata();
+            String currentDate = XMPUtils.convertFromDate(writer.getXmpWriter().getXmpMeta().getPropertyDate(XMPConst.NS_XMP, "CreateDate"));
 
             xmp.setProperty(XMPConst.NS_XMP, "CreateDate", currentDate);
             xmp.setProperty(XMPConst.NS_XMP, "ModifyDate", currentDate);
 
-            DublinCoreProperties.addAuthor(xmp, "Babel");
+            DublinCoreProperties.addAuthor(xmp, "BABEL");
             DublinCoreProperties.setTitle(xmp, fileTitle, Locale.US.getLanguage(), Locale.ITALY.getLanguage());
 
-            xmp.setProperty(XMPConst.NS_PDFA_ID, "part", conformanceLevel.name().charAt(conformanceLevel.name().length() - 1));
-            xmp.setProperty(XMPConst.NS_PDFA_ID, "conformance", conformanceLevel.name().charAt(conformanceLevel.name().length() - 2));
+            String conformance;
+            String part;
+            if (StringUtils.contains(conformanceLevel.name(), PdfAConformanceLevel.ZUGFeRD.name())) {
+                part = "3";
+                conformance = "A";
+            } else {
+                part = String.valueOf(conformanceLevel.name().charAt(conformanceLevel.name().length() - 2));
+                conformance = String.valueOf(conformanceLevel.name().charAt(conformanceLevel.name().length() - 1));
+            }
+            xmp.setProperty(XMPConst.NS_PDFA_ID, "part", part);
+            xmp.setProperty(XMPConst.NS_PDFA_ID, "conformance", conformance);
+
+            log.info(XMPUtils.convertFromDate(xmp.getPropertyDate(XMPConst.NS_XMP, "CreateDate")));
 
             return xmp;
         } catch (XMPException e) {
@@ -71,7 +83,7 @@ public class ITextMetadataUtils {
     public static void setMetadata(PdfStamper stamper, String fileTitle, PdfAConformanceLevel conformanceLevel)
             throws DocumentException {
         try {
-            stamper.getWriter().setXmpMetadata(getSerializedMetadata(createXMPMetadata(fileTitle, conformanceLevel)));
+            stamper.setXmpMetadata(getSerializedMetadata(createXMPMetadata(stamper.getWriter(), fileTitle, conformanceLevel)));
         } catch (XMPException e) {
             throw new DocumentException("Failed to set Metadata to pdf using PdfStamper", e);
         }
@@ -85,6 +97,15 @@ public class ITextMetadataUtils {
             return metadataOutputStream.toByteArray();
         } catch (IOException | XMPException e) {
             throw new DocumentException("Failed to serialize Metadata for pdf", e);
+        }
+    }
+
+    public static XMPMeta getDeserializedMetadata(byte[] xmp)
+            throws DocumentException {
+        try (ByteArrayInputStream metadataInputStream = new ByteArrayInputStream(xmp)) {
+            return XMPMetaFactory.parse(metadataInputStream, new ParseOptions().setRequireXMPMeta(true));
+        } catch (IOException | XMPException e) {
+            throw new DocumentException("Failed to deserialize Metadata for pdf", e);
         }
     }
 }
