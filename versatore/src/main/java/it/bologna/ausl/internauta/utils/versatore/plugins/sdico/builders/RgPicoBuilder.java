@@ -101,7 +101,7 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         //TODO gli rg pico non hanno anni tenuta, al momento nel tracciato non c'è
-        //TODO parametro non presente nel tracciato e in prova per vedere se funziona SPRITZ
+        //TODO parametro non presente originariamente nel tracciato
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         
         return versamentoBuilder;
