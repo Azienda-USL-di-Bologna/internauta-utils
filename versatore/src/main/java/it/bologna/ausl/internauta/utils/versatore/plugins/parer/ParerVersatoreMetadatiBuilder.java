@@ -463,26 +463,26 @@ public final class ParerVersatoreMetadatiBuilder {
                 if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originale.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     
                 }else  if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO ||doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE )&& allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originale.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("letterafirmata.pdf", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originaleFirmato.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmato.pdf", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
-                    unitaDocumentariaBuilder.addDocumentoPrincipale(doc.getId().toString(), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                    unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originaleFirmato.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getFirmato() == true && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
