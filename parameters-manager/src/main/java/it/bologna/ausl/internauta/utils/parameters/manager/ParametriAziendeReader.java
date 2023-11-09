@@ -43,7 +43,8 @@ public class ParametriAziendeReader {
         attivitaMailSender,
         usaGediInternauta,
         chiusuraArchivio,
-        ricalcoloPermessiArchivi
+        ricalcoloPermessiArchivi, 
+        numeroContattiInadAggiornabili
     }
     
     @Autowired
