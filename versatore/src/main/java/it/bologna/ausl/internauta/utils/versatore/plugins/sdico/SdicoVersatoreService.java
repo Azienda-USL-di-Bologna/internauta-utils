@@ -52,6 +52,7 @@ import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.sender.PaccoFile;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -299,8 +300,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
                 List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
                 String metadati = versamentoBuilder.toString();
-
-                log.warn("XML da versare: \n" + metadati);
                 risultatoEVersamentiAllegati.put("xmlVersato", metadati);
                 risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
 
@@ -311,12 +310,15 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     log.info("Effettuo il login");
                     String token = "";
                     token = getJWT(username, password, sdicoLoginURI);
+                    if (token.equals(null) || token.isEmpty()) {
+                        throw new VersatoreSdicoException("Non è stato ottenuto il token necessario per l'autenticazione");
+                    }
 
                     // inizializzazione http client
                     OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
                     // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
-                    byte[] fileMetadati = IOUtils.toByteArray(metadati);
+                    byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
                     MultipartBody.Builder buildernew = new MultipartBody.Builder()
                             .setType(MultipartBody.FORM)
                             .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
@@ -376,6 +378,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     }
                 } catch (IOException ex) {
                     log.error("Errore nell'invio del versamento", ex);
+                    response.setErrorMessage("Errore nell'invio del versamento");
+                    response.setResponseCode(ERRORE_PLUG_IN);
                 }
             } catch (VersatoreSdicoException e) {
                 response.setErrorMessage(e.getMessage());
@@ -390,6 +394,14 @@ public class SdicoVersatoreService extends VersatoreDocs {
         return risultatoEVersamentiAllegati;
     }
 
+    /**
+     * Metodo che effettua una chiamata a SDICO per aver il token necessario per l'autenticazione
+     * @param username
+     * @param password
+     * @param sdicoLoginURI
+     * @return
+     * @throws IOException 
+     */
     public String getJWT(String username, String password, String sdicoLoginURI) throws IOException {
 
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();

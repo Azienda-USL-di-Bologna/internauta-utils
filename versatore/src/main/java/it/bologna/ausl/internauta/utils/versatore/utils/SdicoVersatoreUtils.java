@@ -17,7 +17,7 @@ import java.util.List;
 public class SdicoVersatoreUtils {
 
     /**
-     * Metodo che compone la stringa da inserire nell'attributo dei tracciati idFascicolo
+     * Metodo che formatta il singolo idFascicolo
      * @param archivio
      * @return 
      */
@@ -32,14 +32,20 @@ public class SdicoVersatoreUtils {
         return (numero + "/" + archivio.getAnno() + " [id_"+ archivio.getId() + "]");
     }
     
-    public static List<String> buildListaIdFascicolo(Doc doc, Archivio archivio) {
-        List<String> listaFascicoli = new ArrayList<>();
+    /**
+     * Metodo che compone la stringa da inserire nell'attributo dei tracciati idFascicolo
+     * @param doc
+     * @param archivio
+     * @return 
+     */
+    public static String buildIdFascicoli(Doc doc, Archivio archivio) {
+        String idFascicolo = "";
         for (ArchivioDoc archivioDoc : doc.getArchiviDocList()) {
             if (archivioDoc.getDataEliminazione() == null && archivioDoc.getIdArchivio().getIdArchivioRadice().getId() == archivio.getIdArchivioRadice().getId() ) {
-                listaFascicoli.add(buildIdFascicolo(archivioDoc.getIdArchivio()));
+                idFascicolo += buildIdFascicolo(archivioDoc.getIdArchivio()) + ", ";
             }
         }
-        return listaFascicoli;
+        return idFascicolo.substring(0, idFascicolo.length() - 2);
     }
     
 }

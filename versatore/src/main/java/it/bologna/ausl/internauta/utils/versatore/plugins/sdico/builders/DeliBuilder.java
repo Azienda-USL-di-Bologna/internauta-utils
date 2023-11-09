@@ -102,10 +102,12 @@ public class DeliBuilder {
         } else {
             throw new VersatoreSdicoException("La Delibera non ha firmatari");
         }
+        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3);
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         }
+        stringaAllegati = stringaAllegati.substring(0, stringaAllegati.length() - 3);
         HashMap<String, Object> additionalData = doc.getAdditionalData();
         String dataEsecutivita;
         if (additionalData != null) {
@@ -130,9 +132,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
-        //versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
-        //TODO per ora così, capire come va inserita
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(repertorio), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         //TODO ora metto un valore segnaposto perché ci deve essere dato
@@ -142,7 +142,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", SdicoVersatoreUtils.buildListaIdFascicolo(doc, archivio), TESTO_MULTIPLO);
+        versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //}
@@ -153,11 +153,11 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3)), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati.substring(0, stringaAllegati.length() - 3)), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
