@@ -167,6 +167,7 @@ public class IdoneitaCheckerJobWorker  extends JobWorker<IdoneitaCheckerJobWorke
 //                )
             )
             .fetch();
+        log.info("Sono stati presi in considerazione per il versamento " + archiviDaControllare.size() + " archivi.");
         return archiviDaControllare;
     }
     
