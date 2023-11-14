@@ -492,13 +492,13 @@ public final class ParerVersatoreMetadatiBuilder {
                     unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(originaleFirmato.getIdRepository()),"GENERICO", "", originaleFirmato.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
-                    Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
-                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_convertito", getUuidMinIObyFileId(convertito.getIdRepository()), convertito.getHashMd5(), "PDF", "application/pdf");
-                    i = i + 1;
-                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(convertito.getIdRepository()),"GENERICO", "", convertito.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
-                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-                    versamentiAllegatiInfo.add(allegatoInformation);
+//                } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
+//                    Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
+//                    IdentityFile identityFilePrincipale = new IdentityFile("allegato_convertito", getUuidMinIObyFileId(convertito.getIdRepository()), convertito.getHashMd5(), "PDF", "application/pdf");
+//                    i = i + 1;
+//                    unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(convertito.getIdRepository()),"GENERICO", "", convertito.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
+//                    versamentiAllegatiInfo.add(allegatoInformation);
                 } else if (allegato.getTipo() == Allegato.TipoAllegato.ALLEGATO) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato" + i.toString(), getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
