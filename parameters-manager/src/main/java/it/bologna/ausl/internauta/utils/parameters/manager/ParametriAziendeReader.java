@@ -44,7 +44,7 @@ public class ParametriAziendeReader {
         usaGediInternauta,
         chiusuraArchivio,
         ricalcoloPermessiArchivi, 
-        numeroContattiInadAggiornabili
+        inadConfiguration;
     }
     
     @Autowired
