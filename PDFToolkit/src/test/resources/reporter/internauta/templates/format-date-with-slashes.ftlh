@@ -5,6 +5,6 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     </head>
     <body>
-        ${formatDateWIthSlashes(aLocalDate)!""}
+        ${formatDateWIthSlashes(aLocalDate)}
     </body>
 </html>

@@ -64,9 +64,8 @@ public class ITextPdfUtils {
 
     public static void setICCProfile(ITextRenderer iTextRenderer, Path fileIcc) throws IOException {
         try {
-            iTextRenderer.getWriter().setOutputIntents("AdobeRGB", "PDFA/A",
-                    "http://www.color.org", "sRGB IEC61966-2.1",
-                    ICC_Profile.getInstance(Files.newInputStream(fileIcc.toFile().toPath())));
+            iTextRenderer.getWriter().setOutputIntents("Adobe RGB (1998)", "PDFA/A",
+                    "http://www.color.org", "IEC 61966-2-5:1999", ICC_Profile.getInstance(Files.newInputStream(fileIcc)));
         } catch (IOException e) {
             throw new IOException("Failed to set ICC profile to pdf", e);
         }

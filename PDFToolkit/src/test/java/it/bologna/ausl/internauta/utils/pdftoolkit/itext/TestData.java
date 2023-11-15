@@ -42,7 +42,7 @@ public class TestData {
         testDataAndFunctions.setaStringList(stringListTest);
         testDataAndFunctions.setaPath(Paths.get("./"));
         testDataAndFunctions.setaUri(URI.create("https://example.com/ftp/test.xml"));
-        testDataAndFunctions.setaDate(new Date(Instant.now().toEpochMilli()));
+        testDataAndFunctions.setaDate(new Date(1736950500000L));
         testDataAndFunctions.setaLocalDate(LocalDate.of(2023, 10, 20));
         testDataAndFunctions.setaLocalDateTime(LocalDateTime.of(2023, 10, 20, 15, 12, 0));
         testDataAndFunctions.setaZonedDateTime(ZonedDateTime.of(2023, 10, 20, 15, 12, 0, 1234567,

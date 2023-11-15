@@ -5,9 +5,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     </head>
     <body>
-        ${formatFloatToCurrency(aFloat1)!""}
-        ${formatFloatToCurrency(aFloat2)!""}
-        ${formatFloatToCurrency(aFloat3)!""}
-        ${formatFloatToCurrency(aFloat4)!""}
+        ${formatFloatToCurrency(aFloat1)}
+        ${formatFloatToCurrency(aFloat2)}
+        ${formatFloatToCurrency(aFloat3)}
+        ${formatFloatToCurrency(aFloat4)}
     </body>
 </html>

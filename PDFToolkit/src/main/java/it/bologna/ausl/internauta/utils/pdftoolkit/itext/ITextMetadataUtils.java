@@ -24,14 +24,12 @@ public class ITextMetadataUtils {
 
     public static void setMetadata(ITextRenderer iTextRenderer, String fileTitle)
             throws XMPException {
-        // bare minimum for standard B
         iTextRenderer.getWriter().createXmpMetadata();
 
         DublinCoreProperties.setTitle(iTextRenderer.getWriter().getXmpWriter().getXmpMeta(),
                 fileTitle, Locale.US.getLanguage(), Locale.ITALY.getLanguage());
         DublinCoreProperties.addAuthor(iTextRenderer.getWriter().getXmpWriter().getXmpMeta(), "Babel");
 
-        // plus bare minimum for standard A
         PdfDictionary markInfo = new PdfDictionary();
         markInfo.put(PdfName.MARKED, PdfBoolean.PDFTRUE);
         iTextRenderer.getWriter().getExtraCatalog().put(PdfName.MARKINFO, markInfo);
@@ -62,8 +60,6 @@ public class ITextMetadataUtils {
             }
             xmp.setProperty(XMPConst.NS_PDFA_ID, "part", part);
             xmp.setProperty(XMPConst.NS_PDFA_ID, "conformance", conformance);
-
-            log.info(XMPUtils.convertFromDate(xmp.getPropertyDate(XMPConst.NS_XMP, "CreateDate")));
 
             return xmp;
         } catch (XMPException e) {

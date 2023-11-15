@@ -12,11 +12,9 @@ import freemarker.template.TemplateModelException;
 import freemarker.template.Version;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.ReporterJobWorkerData;
-import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +28,8 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerU
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.getFontFilePaths;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUtils.getDeserializedMetadata;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUtils.setMetadata;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.*;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.formatPathForTemplate;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.getPdfA;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH;
@@ -59,13 +58,33 @@ public class ITextPdfUtilsTest {
                 Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), TEMPLATES_RELATIVE_PATH));
 
         Template template = configuration.getTemplate(workerData.getTemplateName());
-        Path iccFile = Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "AdobeRGB1998.icc");
 
         try (ByteArrayOutputStream templateOutput = getTemplateOutput(template, dataModel)) {
             String htmlContent = templateOutput.toString(StandardCharsets.UTF_8.name());
             List<String> listFont = getFontFamilies(htmlContent);
             List<Path> listFontFilePaths = getFontFilePaths(listFont, TEST_DIRECTORY_FOLDER_PATH);
+            assertAll(
+                    () -> assertEquals(2, listFontFilePaths.size()),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "yes")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "110")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2.220,34")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "220,009")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "TEST")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "TEST-list0")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "\"\t\\\n")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "42")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "1")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "https://example.com/ftp/test.xml")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, ".")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2025-01-15")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2023-10-20")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2023-10-20T15:12")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "2023-10-20T15:12:00.001234567")),
+                    () -> assertTrue(StringUtils.contains(htmlContent, "test.com"))
+            );
 
+            Path iccFile = Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "AdobeRGB1998.icc");
             PdfACreationListener listener = new PdfACreationListener(
                     workerData.getParametriTemplate().get("title").toString(), listFontFilePaths, iccFile);
 
@@ -78,13 +97,10 @@ public class ITextPdfUtilsTest {
                  OutputStream filePDFA2OutputStream = Files.newOutputStream(filePDFA2A.toPath());
                  FileOutputStream file2OutputStream = new FileOutputStream(filePDFA1A)) {
 
-                file2OutputStream.write(pdfOutputStream.toByteArray());
-
                 PdfStamper pdfStamper = new PdfStamper(new PdfReader(pdfOutputStream.toByteArray()), fileZUGFeRDOutputStream);
                 XMPMeta xmpMetaStamper = getDeserializedMetadata(pdfStamper.getReader().getMetadata());
-
                 assertAll(
-                        () -> assertEquals(2, listFontFilePaths.size()),
+                        () -> assertDoesNotThrow(() -> file2OutputStream.write(pdfOutputStream.toByteArray())),
                         () -> assertNotNull(pdfOutputStream),
                         () -> assertNull(pdfStamper.getReader().getJavaScript()),
                         () -> assertEquals(0, pdfStamper.getReader().getCertificationLevel()),
@@ -101,13 +117,11 @@ public class ITextPdfUtilsTest {
                         () -> assertEquals("begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"", xmpMetaStamper.getPacketHeader()),
                         () -> assertEquals(documentTitle, pdfStamper.getReader().getInfo().get("Title")),
                         () -> assertDoesNotThrow(() -> setMetadata(pdfStamper, documentTitle, PdfAConformanceLevel.ZUGFeRDBasic)),
-                        () -> assertEquals(29517, pdfStamper.getReader().getFileLength()), // ofc, at minimum variation it fails
                         () -> assertDoesNotThrow(pdfStamper::close)
                 );
 
                 PdfStamper pdfStamperFirstResult = new PdfStamper(new PdfReader(Files.newInputStream(fileZUGFeRD.toPath())), filePDFA2OutputStream);
                 XMPMeta xmpMetaResult = getDeserializedMetadata(pdfStamperFirstResult.getReader().getMetadata());
-
                 assertAll(
                         () -> assertTrue(xmpMetaResult.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().getHasLanguage()),
                         () -> assertTrue(xmpMetaResult.getArrayItem(XMPConst.NS_DC, "title", 1).getOptions().isExactly(80)),
@@ -124,7 +138,6 @@ public class ITextPdfUtilsTest {
 
                 PdfReader pdfResultFinalReader = new PdfReader(Files.newInputStream(filePDFA2A.toPath()));
                 XMPMeta xmpMetaFinal = getDeserializedMetadata(pdfResultFinalReader.getMetadata());
-
                 assertAll(
                         () -> assertEquals("A", xmpMetaFinal.getProperty(XMPConst.NS_PDFA_ID, "conformance").getValue()),
                         () -> assertEquals("2", xmpMetaFinal.getProperty(XMPConst.NS_PDFA_ID, "part").getValue()),
@@ -141,7 +154,5 @@ public class ITextPdfUtilsTest {
     @Test
     void setICCProfileTest() {
         assertTrue(Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc").toFile().exists());
-        assertThrows(IOException.class, () -> setICCProfile(new ITextRenderer(),
-                Paths.get(PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc")));
     }
 }

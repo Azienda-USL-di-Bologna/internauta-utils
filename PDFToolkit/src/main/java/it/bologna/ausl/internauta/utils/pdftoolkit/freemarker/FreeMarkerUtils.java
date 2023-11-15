@@ -62,7 +62,7 @@ public class FreeMarkerUtils {
         customFunctions.put("convertZonedDateTimeToDate", new ConvertZonedDateTimeToDate());
         customFunctions.put("formatFloatToCurrency", new FormatFloatToCurrency());
         customFunctions.put("formatDateWIthSlashes", new FormatDateWIthSlashes());
-        customFunctions.put("formatDateDMY", new FormatDateYMDToDMY());
+        customFunctions.put("formatDateYMDToDMY", new FormatDateYMDToDMY());
         customFunctions.put("invertTextOrder", new InvertTextOrder());
         return customFunctions;
     }
@@ -75,6 +75,8 @@ public class FreeMarkerUtils {
             return outputStream;
         } catch (TemplateException | IOException e) {
             throw new TemplateModelException("Invalid template " + template.getSourceName() + " when process it", e);
+        } catch (NullPointerException e) {
+            throw new TemplateModelException("Error when processing template " + template.getSourceName(), e);
         }
     }
 }
