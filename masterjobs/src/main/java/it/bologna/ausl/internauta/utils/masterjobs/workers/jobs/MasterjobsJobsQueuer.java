@@ -15,6 +15,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeE
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.model.entities.masterjobs.Job;
+import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
@@ -26,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
@@ -123,7 +123,6 @@ public class MasterjobsJobsQueuer {
         }
         return queueData;
     }
-    
     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsQueuingException {
         return queue(worker, objectId, objectType, app, waitForObject, priority, false , false);
     }
@@ -140,6 +139,52 @@ public class MasterjobsJobsQueuer {
             return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue);
         }
         return null;
+    }
+    
+    /**
+     * Aggiunge il worker passato nella tabella dei jobs notified senza aprire nessun altra transazione.Così facendo l'aggiunta vera e propria verrà effettuata al 
+     * commit del chiamante. E' utile nel caso si voglia far partire il job dopo il commit e non subito.
+     * @param worker
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @param waitForObject
+     * @param priority
+     * @param skipIfAlreadyPresent 
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException 
+     */
+    public void queueInJobsNotified(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+        queueInJobsNotified(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent);
+    }
+    
+    /**
+     * Aggiunge i workers passati nella tabella dei jobs notified senza aprire nessun altra transazione.Così facendo l'aggiunta vera e propria verrà effettuata al 
+     * commit del chiamante. E' utile nel caso si voglia far partire il job dopo il commit e non subito.
+     * @param workers
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @param waitForObject
+     * @param priority
+     * @param skipIfAlreadyPresent 
+     * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException 
+     */
+    public void queueInJobsNotified(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+        try {
+            for (JobWorker worker : workers) {
+                JobNotified jn = new JobNotified();
+                jn.setJobName(worker.getName());
+                jn.setJobData(worker.getData().toJobData(objectMapper));
+                if (waitForObject != null)
+                    jn.setWaitObject(waitForObject);
+                jn.setApp(app);
+                jn.setPriority(priority);
+                jn.setSkipIfAlreadyPresent(skipIfAlreadyPresent);
+                entityManager.persist(jn);
+            }
+        } catch (Exception ex) {
+            throw new MasterjobsQueuingException("errore nell'inserimento dei workers nei jobs notified", ex);
+        }
     }
     
     /**
