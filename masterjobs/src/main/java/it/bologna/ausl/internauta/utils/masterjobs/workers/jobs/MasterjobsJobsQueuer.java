@@ -173,6 +173,8 @@ public class MasterjobsJobsQueuer {
         try {
             for (JobWorker worker : workers) {
                 JobNotified jn = new JobNotified();
+                jn.setObjectId(objectId);
+                jn.setObjectType(objectType);
                 jn.setJobName(worker.getName());
                 jn.setJobData(worker.getData().toJobData(objectMapper));
                 if (waitForObject != null)
