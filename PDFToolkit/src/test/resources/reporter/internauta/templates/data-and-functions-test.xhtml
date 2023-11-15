@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="it">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>${title!"title"}</title>
+        <style>
+        html *
+        {
+            font-family: "Arial";
+        }
+        body {
+            font-family: "Times New Roman";
+        }
+        </style>
+    </head>
+    <body>
+        <#assign defaultImage = "Qk0SAgAAAAAAADYAAAAoAAAAFgAAAAcAAAABABgAAAAAANwBAAAAAAAAAAAAAAAAAAAAAAAA////////////////////////////////////////////////////////////////////////////////////////AAD///////////////////////////////////////////////////////////////////////////////////////8AAP///////////////////////////////////////////////////////////////////////////////////////wAA////////////////////////////////////////////////////////////////////////////////////////AAD///////////////////////////////////////////////////////////////////////////////////////8AAP///////////////////////////////////////////////////////////////////////////////////////wAA////////////////////////////////////////////////////////////////////////////////////////AAA=">
+        <#assign defaultImage = "Qk0SAgAAAAAAADYAAAAoAAAAFgAAAAcAAAABABgAAAAAANwBAAAAAAAAAAAAAAAAAAAAAAAA////////////////////////////////////////////////////////////////////////////////////////AAD///+Qtv//25CQtv//25A6kNvbkDqQ2///tpCQZrb//9vb//+QZpC2/9tmZmaQkJCQZmaQttu2kGbbtrb//9v///8AAP///5C2///bkJC2/9vbkJBmkJCQkJDb2/+2kGa2/5BmOjpmkNuQZmZmtv//tv///5CQtpC22//bkP///////////wAA////kLb//9uQkLb/kJCQ/7aQkLb/kLaQ/7aQtv//25BmZpDb//+2Zma2//+2trbb27a2Zrb/ZmY6tpBm////////AAD///+Qtv//25CQtv9mOjr//7bb//86ZpD/tpD///9mkLa2Zmb///9mtv/btmb////b29uQtv//25D///////////8AAP///9vb////29vb///btv///////7bb///b2////7bb///btv///////7bb27a2ttvbttvb/7a2ttu2tv//2////wAA////////////////////////////////////////////////////////////////////////////////////////AAA=">
+
+        <p>${(testDataAndFunctions.aBoolean)!"aBoolean-not-found"}</p>
+        <p>${(testDataAndFunctions.aInteger)!"aInteger-not-found"}</p>
+        <p>${(testDataAndFunctions.aFloat)!"aFloat-not-found"}</p>
+        <p>${formatFloatToCurrency((testDataAndFunctions.aFloat))!"aFloat-not-found"}</p>
+        <p>${(testDataAndFunctions.aDouble)!"aDouble-not-found"}</p>
+        <p>${(testDataAndFunctions.aString)!"aString-not-found"}</p>
+        <#if testDataAndFunctions.aStringList?exists && testDataAndFunctions.aStringList?size != 0>
+            <#list testDataAndFunctions.aStringList as stringItem>
+                <p>${stringItem!"string-item-not-found"}</p>
+            </#list>
+        </#if>
+        <p>${(testDataAndFunctions.aByte)!"aByte-not-found"}</p>
+        <#if testDataAndFunctions.aByteArray?exists && testDataAndFunctions.aByteArray?size != 0>
+            <#list testDataAndFunctions.aByteArray as byteItem>
+                <p>${byteItem!"byte-item-not-found"}</p>
+            </#list>
+        </#if>
+        <p>${(testDataAndFunctions.aUri)!"aUri-not-found"}</p>
+        <p>${(testDataAndFunctions.aPath)!"aPath-not-found"}</p>
+        <p><img src="data:image/png;base64,${(testDataAndFunctions.aBlankImageInBase64)}" height="100px"/></p>
+        <p><img src="data:image/png;base64,${(defaultImage)}" height="50"/></p>
+        <p><img src="file:///${(resourcePath)}/loghi/testImage.png" height="300"/></p>
+        <p>${(testDataAndFunctions.aDate?date)!"aDate-not-found"}</p>
+        <p>${(testDataAndFunctions.aLocalDate)!"aLocalDate-not-found"}</p>
+        <p>${(testDataAndFunctions.aLocalDateTime)!"aLocalDateTime-not-found"}</p>
+        <p>${(testDataAndFunctions.aZonedDateTime)!"aZonedDateTime-not-found"}</p>
+        <p>${(testDataAndFunctions.aObjectMap.testString)!"aObjectMap.testString-not-found"}</p>
+    </body>
+</html>
