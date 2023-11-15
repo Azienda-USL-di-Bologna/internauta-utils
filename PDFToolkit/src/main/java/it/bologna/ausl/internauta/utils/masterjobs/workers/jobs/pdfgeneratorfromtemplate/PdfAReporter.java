@@ -64,7 +64,6 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
 
         try {
             Configuration configuration = getDefaultConfiguration();
-
             Template template = configuration.getTemplate(workerData.getTemplateName());
 
             try (ByteArrayOutputStream templateOutput = getTemplateOutput(template, workerData.getParametriTemplate())) {
@@ -77,15 +76,15 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
                         new PdfACreationListener(workerData.getParametriTemplate().get("title").toString(), listFontFilePaths);
 
                 try (ByteArrayOutputStream pdfStream = getPdfA(templateOutput, listener)) {
-
-                    pdfToolkitDownloaderUtils.uploadToUploader(
-                            new ByteArrayInputStream(pdfStream.toByteArray()),
-                            workerData.getFileName(),
-                            MediaType.APPLICATION_PDF_VALUE,
-                            false,
-                            pdfToolkitConfigParams.getDownloaderUrl(),
-                            pdfToolkitConfigParams.getUploaderUrl(),
-                            tokenExpirationInSeconds);
+                    reporterWorkerResult.setUrl(
+                            pdfToolkitDownloaderUtils.uploadToUploader(
+                                    new ByteArrayInputStream(pdfStream.toByteArray()),
+                                    workerData.getFileName(),
+                                    MediaType.APPLICATION_PDF_VALUE,
+                                    false,
+                                    pdfToolkitConfigParams.getDownloaderUrl(),
+                                    pdfToolkitConfigParams.getUploaderUrl(),
+                                    tokenExpirationInSeconds));
 
                     return reporterWorkerResult;
                 }

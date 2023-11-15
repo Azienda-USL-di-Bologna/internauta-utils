@@ -56,19 +56,18 @@ public class XmlReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResul
 
         try {
             Configuration configuration = getDefaultConfiguration();
-
             Template template = configuration.getTemplate(workerData.getTemplateName());
 
             try (ByteArrayOutputStream xmlStream = getTemplateOutput(template, workerData.getParametriTemplate())) {
-
-                pdfToolkitDownloaderUtils.uploadToUploader(
-                        new ByteArrayInputStream(xmlStream.toByteArray()),
-                        workerData.getFileName(),
-                        MediaType.TEXT_XML_VALUE,
-                        false,
-                        pdfToolkitConfigParams.getDownloaderUrl(),
-                        pdfToolkitConfigParams.getUploaderUrl(),
-                        tokenExpirationInSeconds);
+                reporterWorkerResult.setUrl(
+                        pdfToolkitDownloaderUtils.uploadToUploader(
+                                new ByteArrayInputStream(xmlStream.toByteArray()),
+                                workerData.getFileName(),
+                                MediaType.TEXT_XML_VALUE,
+                                false,
+                                pdfToolkitConfigParams.getDownloaderUrl(),
+                                pdfToolkitConfigParams.getUploaderUrl(),
+                                tokenExpirationInSeconds));
 
                 return reporterWorkerResult;
             }
