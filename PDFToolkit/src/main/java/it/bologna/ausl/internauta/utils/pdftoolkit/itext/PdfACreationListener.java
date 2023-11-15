@@ -15,7 +15,7 @@ import java.util.Locale;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUtils.setMetadata;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.setICCProfile;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.*;
 
 /**
  * @author ferri
@@ -26,7 +26,7 @@ public class PdfACreationListener implements PDFCreationListener {
 
     private final List<Path> fontsDirectory;
 
-    private Path fileIcc = Paths.get(DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc");
+    private Path fileIcc = Paths.get(WORKDIR, RESOURCES_RELATIVE_PATH, "/AdobeRGB1998.icc");
 
     private PdfAConformanceLevel pdfAConformanceLevel = PdfAConformanceLevel.PDF_A_1A;
 

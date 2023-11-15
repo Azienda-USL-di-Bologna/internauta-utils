@@ -10,7 +10,6 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfig
  * @author ferri
  */
 public class PdfToolkitConfigParamsTest {
-    public static final String WORKDIR =
-            Paths.get("src/test/").toAbsolutePath().toString(); // same as class loader but static as long this class isn't moved
-    public static final Path TEST_DIRECTORY_FOLDER_PATH = Paths.get(WORKDIR, RESOURCES_RELATIVE_PATH, INTERNAUTA_RELATIVE_PATH);
+    public static final String TEST_WORKDIR = Paths.get("src/test/").toAbsolutePath().toString();
+    public static final Path TEST_DIRECTORY_FOLDER_PATH = Paths.get(TEST_WORKDIR, RESOURCES_RELATIVE_PATH, INTERNAUTA_RELATIVE_PATH);
 }

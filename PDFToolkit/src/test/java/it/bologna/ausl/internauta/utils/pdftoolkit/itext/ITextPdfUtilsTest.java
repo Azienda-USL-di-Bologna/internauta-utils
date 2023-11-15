@@ -31,8 +31,9 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextMetadataUti
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.formatPathForTemplate;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.getPdfA;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.*;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_WORKDIR;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -84,7 +85,7 @@ public class ITextPdfUtilsTest {
                     () -> assertTrue(StringUtils.contains(htmlContent, "test.com"))
             );
 
-            Path iccFile = Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "AdobeRGB1998.icc");
+            Path iccFile = Paths.get(TEST_WORKDIR, RESOURCES_RELATIVE_PATH, "/AdobeRGB1998.icc");
             PdfACreationListener listener = new PdfACreationListener(
                     workerData.getParametriTemplate().get("title").toString(), listFontFilePaths, iccFile);
 
@@ -153,6 +154,6 @@ public class ITextPdfUtilsTest {
 
     @Test
     void setICCProfileTest() {
-        assertTrue(Paths.get(TEST_DIRECTORY_FOLDER_PATH.toString(), "/AdobeRGB1998.icc").toFile().exists());
+        assertTrue(Paths.get(TEST_WORKDIR, RESOURCES_RELATIVE_PATH, "/AdobeRGB1998.icc").toFile().exists());
     }
 }
