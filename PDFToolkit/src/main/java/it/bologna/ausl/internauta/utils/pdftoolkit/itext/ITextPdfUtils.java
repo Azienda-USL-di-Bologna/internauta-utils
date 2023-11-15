@@ -6,7 +6,9 @@ import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -63,11 +65,11 @@ public class ITextPdfUtils {
     }
 
     public static void setICCProfile(ITextRenderer iTextRenderer, Path fileIcc) throws IOException {
-        try {
+        try (InputStream fileIccStream = new FileInputStream(fileIcc.toFile())) {
             iTextRenderer.getWriter().setOutputIntents("Adobe RGB (1998)", "PDFA/A",
-                    "http://www.color.org", "IEC 61966-2-5:1999", ICC_Profile.getInstance(Files.newInputStream(fileIcc)));
+                    "http://www.color.org", "IEC 61966-2-5:1999", ICC_Profile.getInstance(fileIccStream));
         } catch (IOException e) {
-            throw new IOException("Failed to set ICC profile to pdf", e);
+            throw new IOException("Failed to set ICC profile to pdf with path: " + fileIcc, e);
         }
     }
 }
