@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.pdftoolkit.utils;
 
 import org.slf4j.Logger;
 
-import javax.swing.text.html.HTMLEditorKit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * @author ferri
  */
-public class HtmlUtils extends HTMLEditorKit.ParserCallback {
+public class HtmlUtils {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(HtmlUtils.class);
 
     public static List<String> getFontFamilies(String htmlContent) {

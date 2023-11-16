@@ -6,12 +6,13 @@ import it.bologna.ausl.internauta.utils.pdftoolkit.enums.FontFamily;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.FileUtils.getFilePathsWithExtension;
 
 /**
  * @author ferri
@@ -29,31 +30,6 @@ public class ITextFontUtils {
                 }
             });
         }
-    }
-
-    public static List<Path> getFilePathsWithExtension(Path directoryToSearch, String extension) {
-        if (extension.charAt(0) != '.') {
-            extension = '.' + extension;
-        }
-        List<Path> pathList = new ArrayList<>();
-
-        try {
-            File directory = new File(directoryToSearch.toUri());
-            if (directory.exists()) {
-                File[] files = directory.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        if (file.getName().toLowerCase().endsWith(extension)) {
-                            pathList.add(file.toPath());
-                        }
-                    }
-                }
-            }
-        } catch (Throwable throwable) {
-            log.error("Error when detecting files with extension: {} inside the path: {}", extension, directoryToSearch);
-        }
-
-        return pathList;
     }
 
     public static List<Path> getFontFilePaths(List<String> fontsNameToInclude, Path directoryFolderPath) {

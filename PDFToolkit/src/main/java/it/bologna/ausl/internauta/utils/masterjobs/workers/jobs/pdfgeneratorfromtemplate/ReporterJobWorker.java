@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result.ReporterJobWorkerResult;
 import org.apache.commons.io.IOUtils;
 import freemarker.template.Template;
 import freemarker.template.Configuration;
@@ -172,7 +174,9 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
                 // Carica e ottiene l'url per il download, con token valido per un minuto
                 String urlToDownload;
                 try {
-                    urlToDownload = pdfToolkitDownloaderUtils.uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds);
+                    urlToDownload = pdfToolkitDownloaderUtils
+                            .uploadToUploader(bis, tempFileName, "application/pdf", false, downloaderUrl, uploaderUrl, tokenExpireSeconds)
+                            .get("url").toString();
                     reporterWorkerResult.setUrl(urlToDownload);
                 } catch (PdfToolkitHttpException ex) {
                     log.error("Errore nell'upload e generazione dell'url per il download", ex);

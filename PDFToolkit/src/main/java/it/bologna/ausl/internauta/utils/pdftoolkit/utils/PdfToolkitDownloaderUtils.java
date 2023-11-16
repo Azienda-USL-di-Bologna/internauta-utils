@@ -107,7 +107,7 @@ public class PdfToolkitDownloaderUtils {
     }
 
     public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl) throws PdfToolkitHttpException {
-        return uploadToUploader(file, filename, mimeType, forceDownload, downloadUrl, uploadUrl, null);
+        return uploadToUploader(file, filename, mimeType, forceDownload, downloadUrl, uploadUrl, null).get("url").toString();
     }
 
     /**
@@ -123,7 +123,7 @@ public class PdfToolkitDownloaderUtils {
      * @return l'url per poter scaricare il file attraverso la funzione download del Downloader
      * @throws PdfToolkitHttpException
      */
-    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl, Integer downloadTokenExpireSeconds) throws PdfToolkitHttpException {
+    public Map<String, Object> uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl, Integer downloadTokenExpireSeconds) throws PdfToolkitHttpException {
         String res;
         String token;
 
@@ -167,7 +167,7 @@ public class PdfToolkitDownloaderUtils {
             }
             Call call = httpClient.newCall(uploadRequest);
             Response response = call.execute();
-
+            Map<String, Object> downloadParams;
             ResponseBody content = response.body();
             if (!response.isSuccessful()) {
                 if (content != null) {
@@ -178,14 +178,19 @@ public class PdfToolkitDownloaderUtils {
             } else { // tutto ok
                 if (content != null) {
                     // se tutto ok creo l'url per il download e lo torno
-                    Map<String, Object> downloadParams = objectMapper.readValue(content.byteStream(), new TypeReference<Map<String, Object>>() {
+                    downloadParams = objectMapper.readValue(content.byteStream(), new TypeReference<Map<String, Object>>() {
                     });
                     res = buildDownloadUrl(filename, mimeType, downloadParams, forceDownload, downloadUrl, downloadTokenExpireSeconds);
                 } else {
                     throw new PdfToolkitHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
                 }
             }
-            return res;
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("url", res);
+            result.put("uuid", downloadParams.get("fileId"));
+
+            return result;
         } catch (Exception ex) {
             String errorMessage = "errore nella creazione del token per l'upload";
             logger.error(errorMessage, ex);

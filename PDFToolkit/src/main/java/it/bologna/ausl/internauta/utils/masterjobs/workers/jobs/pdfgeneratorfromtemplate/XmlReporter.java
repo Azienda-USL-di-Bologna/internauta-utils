@@ -7,6 +7,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result.UrlAndUuidResult;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
@@ -19,6 +20,7 @@ import org.springframework.http.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getDefaultConfiguration;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getTemplateOutput;
@@ -30,8 +32,8 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfig
  */
 @MasterjobsWorker
 public class XmlReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResult> {
-    private static final Logger log = LoggerFactory.getLogger(PdfAReporter.class);
-    private final String name = PdfAReporter.class.getSimpleName();
+    private static final Logger log = LoggerFactory.getLogger(XmlReporter.class);
+    private final String name = XmlReporter.class.getSimpleName();
     @Autowired
     private PdfToolkitDownloaderUtils pdfToolkitDownloaderUtils;
     @Autowired
@@ -50,7 +52,7 @@ public class XmlReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResul
 
         ReporterJobWorkerData workerData = getWorkerData();
         workerData.getParametriTemplate().put("resourcePath", formatPathForTemplate(DIRECTORY_FOLDER_PATH));
-        ReporterJobWorkerResult reporterWorkerResult = new ReporterJobWorkerResult();
+        UrlAndUuidResult urlAndUuidResult = new UrlAndUuidResult();
 
         workerData.validateInput(".ftlx");
 
@@ -59,17 +61,20 @@ public class XmlReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResul
             Template template = configuration.getTemplate(workerData.getTemplateName());
 
             try (ByteArrayOutputStream xmlStream = getTemplateOutput(template, workerData.getParametriTemplate())) {
-                reporterWorkerResult.setUrl(
-                        pdfToolkitDownloaderUtils.uploadToUploader(
-                                new ByteArrayInputStream(xmlStream.toByteArray()),
-                                workerData.getFileName(),
-                                MediaType.TEXT_XML_VALUE,
-                                false,
-                                pdfToolkitConfigParams.getDownloaderUrl(),
-                                pdfToolkitConfigParams.getUploaderUrl(),
-                                tokenExpirationInSeconds));
 
-                return reporterWorkerResult;
+                Map<String, Object> result = pdfToolkitDownloaderUtils.uploadToUploader(
+                        new ByteArrayInputStream(xmlStream.toByteArray()),
+                        workerData.getFileName(),
+                        MediaType.APPLICATION_PDF_VALUE,
+                        false,
+                        pdfToolkitConfigParams.getDownloaderUrl(),
+                        pdfToolkitConfigParams.getUploaderUrl(),
+                        tokenExpirationInSeconds);
+
+                urlAndUuidResult.setUrl(result.get("url").toString());
+                urlAndUuidResult.setUuid(result.get("uuid").toString());
+
+                return urlAndUuidResult;
             }
 
         } catch (TemplateModelException | IOException eTemplate) {
