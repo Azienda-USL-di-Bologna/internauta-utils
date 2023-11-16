@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
+package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 

@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result.UrlAndUuidResult;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.itext.PdfACreationListener;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getDefaultConfiguration;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getTemplateOutput;
@@ -58,7 +60,7 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
 
         ReporterJobWorkerData workerData = getWorkerData();
         workerData.getParametriTemplate().put("resourcePath", formatPathForTemplate(DIRECTORY_FOLDER_PATH));
-        ReporterJobWorkerResult reporterWorkerResult = new ReporterJobWorkerResult();
+        UrlAndUuidResult urlAndUuidResult = new UrlAndUuidResult();
 
         workerData.validateInputForPdfA(".ftlh", ".xhtml");
 
@@ -76,17 +78,19 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
                         new PdfACreationListener(workerData.getParametriTemplate().get("title").toString(), listFontFilePaths);
 
                 try (ByteArrayOutputStream pdfStream = getPdfA(templateOutput, listener)) {
-                    reporterWorkerResult.setUrl(
-                            pdfToolkitDownloaderUtils.uploadToUploader(
-                                    new ByteArrayInputStream(pdfStream.toByteArray()),
-                                    workerData.getFileName(),
-                                    MediaType.APPLICATION_PDF_VALUE,
-                                    false,
-                                    pdfToolkitConfigParams.getDownloaderUrl(),
-                                    pdfToolkitConfigParams.getUploaderUrl(),
-                                    tokenExpirationInSeconds));
+                    Map<String, Object> result = pdfToolkitDownloaderUtils.uploadToUploader(
+                            new ByteArrayInputStream(pdfStream.toByteArray()),
+                            workerData.getFileName(),
+                            MediaType.APPLICATION_PDF_VALUE,
+                            false,
+                            pdfToolkitConfigParams.getDownloaderUrl(),
+                            pdfToolkitConfigParams.getUploaderUrl(),
+                            tokenExpirationInSeconds);
 
-                    return reporterWorkerResult;
+                    urlAndUuidResult.setUrl(result.get("url").toString());
+                    urlAndUuidResult.setUuid(result.get("uuid").toString());
+
+                    return urlAndUuidResult;
                 }
             }
         } catch (TemplateModelException e) {

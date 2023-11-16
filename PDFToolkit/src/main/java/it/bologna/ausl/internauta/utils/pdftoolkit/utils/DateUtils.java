@@ -9,9 +9,8 @@ import static java.time.temporal.ChronoField.*;
 /**
  * @author ferri
  */
-public class DateUtils {
-    public static final DateTimeFormatter DMY_DATE_FORMATTER =
-            new DateTimeFormatterBuilder()
+public final class DateUtils {
+    public static final DateTimeFormatter DMY_DATE_FORMATTER = new DateTimeFormatterBuilder()
                     .parseCaseInsensitive()
                     .appendValue(ChronoField.DAY_OF_MONTH)
                     .appendLiteral('-')

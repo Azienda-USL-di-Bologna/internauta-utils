@@ -21,8 +21,7 @@ import java.util.TimeZone;
  * @author ferri
  */
 public class FreeMarkerUtils {
-    public static Configuration getDefaultConfiguration()
-            throws TemplateModelException, IOException {
+    public static Configuration getDefaultConfiguration() throws TemplateModelException, IOException {
 
         return getConfiguration(Configuration.VERSION_2_3_20, getCustomFunctions(),
                 Paths.get(PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH.toString(), PdfToolkitConfigParams.TEMPLATES_RELATIVE_PATH));
