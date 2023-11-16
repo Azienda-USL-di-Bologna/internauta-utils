@@ -27,6 +27,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -191,7 +192,10 @@ public class PdfToolkitDownloaderUtils {
 
             Map<String, Object> result = new HashMap<>();
             result.put("url", res);
-            result.put("uuid", patternUuid.matcher(downloadParams.get("fileId").toString()).group(1));
+            Matcher matcher = patternUuid.matcher(downloadParams.get("fileId").toString());
+            if (matcher.find()) {
+                result.put("uuid", matcher.group(1));
+            }
 
             return result;
         } catch (Exception ex) {
