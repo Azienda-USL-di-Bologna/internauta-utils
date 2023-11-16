@@ -2,6 +2,9 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfro
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 
+/**
+ * @author ferri
+ */
 public class UrlAndUuidResult extends JobWorkerResult {
     private String url;
     private String uuid;

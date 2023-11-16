@@ -27,6 +27,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * @author Giuseppe Russo <g.russo@dilaxia.com>
@@ -82,6 +83,8 @@ public class PdfToolkitDownloaderUtils {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private static final Pattern patternUuid = Pattern.compile("\\b([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})\\b");
 
     /**
      * in fase di avvio dell'applicazione setta la chiave e il certificato corretti a seconda che siamo in test o in prod (basandosi sul parametro firmaMode)
@@ -188,7 +191,7 @@ public class PdfToolkitDownloaderUtils {
 
             Map<String, Object> result = new HashMap<>();
             result.put("url", res);
-            result.put("uuid", downloadParams.get("fileId"));
+            result.put("uuid", patternUuid.matcher(downloadParams.get("fileId").toString()).group(1));
 
             return result;
         } catch (Exception ex) {
