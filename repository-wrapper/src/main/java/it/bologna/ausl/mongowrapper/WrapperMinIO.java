@@ -594,9 +594,9 @@ public class WrapperMinIO extends MongoWrapper {
     }
 
     @Override
-    public String getMongoUudByFileUuid(String fileUuid) throws MongoWrapperException {
+    public String getMongoUuidByFileUuid(String fileUuid) throws MongoWrapperException {
         try{
-            return minIOWrapper.getMongoUudByFileUuid(fileUuid);
+            return minIOWrapper.getMongoUuidByFileUuid(fileUuid);
         } catch (Exception ex) {
             throw new MongoWrapperException("errore", ex);
         }

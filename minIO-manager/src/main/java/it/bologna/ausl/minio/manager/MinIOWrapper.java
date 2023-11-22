@@ -1803,11 +1803,11 @@ public class MinIOWrapper {
         }
     }
 
-    public String getMongoUudByFileUuid(String fileId)  throws MinIOWrapperException {
-        return getMongoUudByFileUuid(fileId, false);
+    public String getMongoUuidByFileUuid(String fileId)  throws MinIOWrapperException {
+        return getMongoUuidByFileUuid(fileId, false);
     }
 
-    private String getMongoUudByFileUuid(String fileId, boolean includeDeleted) throws MinIOWrapperException {
+    private String getMongoUuidByFileUuid(String fileId, boolean includeDeleted) throws MinIOWrapperException {
         if (fileId == null || !patternUuid.matcher(fileId).matches()) {
             throw new MinIOWrapperException("Invalid fileId: " + fileId);
         }
