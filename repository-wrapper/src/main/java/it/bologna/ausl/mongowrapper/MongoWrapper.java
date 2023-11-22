@@ -1632,4 +1632,7 @@ public class MongoWrapper {
         return res;
     }
 
+    public String getMongoUudByFileUuid(String fileUuid) throws MongoWrapperException {
+        return null; // it must be overridden (basically abstract, but this class isn't so can't do it)
+    }
 }
