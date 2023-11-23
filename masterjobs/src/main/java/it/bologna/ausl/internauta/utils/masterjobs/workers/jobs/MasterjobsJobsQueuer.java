@@ -38,8 +38,6 @@ import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
@@ -209,7 +207,6 @@ public class MasterjobsJobsQueuer {
      * @return 
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException 
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public MasterjobsQueueData insertInDatabase(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority) throws MasterjobsBadDataException {
         
         Set set = new Set();
@@ -253,6 +250,49 @@ public class MasterjobsJobsQueuer {
         String queue = masterjobsUtils.getQueueBySetPriority(priority);
         MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(jobsId, set.getId(), queue);
         return queueData;
+    }
+    
+    /**
+     * Accoda tutti insieme i jobs passati, in un unica transazione
+     * la transazione viene aperta nel metodo
+     * @param descriptors la lista dei worker con relativi dati, da accodare
+     * @throws MasterjobsQueuingException 
+     */
+    public void queueMultiJobs(List<MultiJobQueueDescriptor> descriptors) throws MasterjobsQueuingException {
+        List<MasterjobsQueueData> toQueue = new ArrayList();
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(action -> {
+            for (MultiJobQueueDescriptor descriptor : descriptors) {
+                try {
+                    List<JobWorker> workers;
+                    if (descriptor.getSkipIfAlreadyPresent()) {
+                        workers = new ArrayList<>();
+                        for (JobWorker worker : workers) {
+                            if (!isAlreadyPresent(worker)) {
+                                workers.add(worker);
+                            }
+                        }
+                    } else {
+                        workers = descriptor.getWorkers();
+                    }
+                    MasterjobsQueueData queueData = insertInDatabase(workers, descriptor.getObjectId(), descriptor.getObjectType(), descriptor.getApp(), descriptor.getWaitForObject(), descriptor.getPriority());
+                    toQueue.add(queueData);
+                } catch (MasterjobsBadDataException ex) {
+                    String errorMessage = String.format("error queuing job with object id %s and object type %s ", descriptor.getObjectId(), descriptor.getObjectType());
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            }
+        });
+        for (MasterjobsQueueData queueData : toQueue) {
+            try {
+                insertInQueue(queueData);
+            } catch (Exception ex) {
+                String errorMessage = String.format("error queuing job %s ", queueData);
+                log.error(errorMessage, ex);
+                throw new MasterjobsQueuingException(errorMessage, ex);
+            }
+        }
     }
     
     /**
@@ -374,9 +414,9 @@ public class MasterjobsJobsQueuer {
         // poi setto anche i job nello stato READY
         JPAUpdateClause querySet = queryFactory
             .update(qJob)
-            .set(qJob.state, Job.JobState.READY.toString());
+            .set(qJob.state, Job.JobState.READY);
         if (onlyInError)
-            querySet = querySet.where(qJob.state.eq(Job.JobState.ERROR.toString()));
+            querySet = querySet.where(qJob.state.eq(Job.JobState.ERROR));
         querySet.execute();
     }
     
@@ -435,19 +475,19 @@ public class MasterjobsJobsQueuer {
     }
 
     private Boolean isAlreadyPresent(JobWorker worker) {
-        UUID calcolaMD5;
+        UUID md5;
         try {
-            calcolaMD5 = worker.calcolaMD5();
+            md5 = worker.calcolaMD5();
             QJob qJob = QJob.job;
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             List<Job> job = queryFactory
                 .query()
                 .select(qJob)
                 .from(qJob)
-                .where(qJob.hash.eq(calcolaMD5)
+                .where(qJob.hash.eq(md5)
                     .and(
-                        qJob.state.eq(Job.JobState.READY.toString())
-                            .or(qJob.state.eq(Job.JobState.ERROR.toString()))
+                        qJob.state.eq(Job.JobState.READY)
+                            .or(qJob.state.eq(Job.JobState.ERROR))
                     )
                 )
                 .fetch();

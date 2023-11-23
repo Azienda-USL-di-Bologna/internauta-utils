@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.DebuggingOptionsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;

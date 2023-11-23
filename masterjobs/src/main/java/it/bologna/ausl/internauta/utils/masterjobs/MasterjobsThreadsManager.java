@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsHigh
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsNormalPriorityJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWaitQueueJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +43,9 @@ public class MasterjobsThreadsManager {
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
     
     @Autowired
+    private MasterjobsJobsQueuer masterjobsJobsQueuer;
+    
+    @Autowired
     @Qualifier(value = "redisMaterjobs")
     protected RedisTemplate redisTemplate;
     
@@ -64,6 +68,11 @@ public class MasterjobsThreadsManager {
         
         // sposta le eventuali code di work rimaste appese nella wait queue, in modo che i job vengano ripresi in considerazione
         moveWorkQueueInWaitQueue();
+        Long errorQueueSize = redisTemplate.opsForList().size(masterjobsApplicationConfig.getErrorQueue());
+        if (errorQueueSize != null && errorQueueSize > 0) {
+            log.info(String.format("found %s jobs in error, relaunch...", errorQueueSize));
+            masterjobsJobsQueuer.relaunchJobsInError();
+        }
         
         // schedula gli ExecutionThreads per tutte le priorità e per la wait queue
         executorService = Executors.newFixedThreadPool(
