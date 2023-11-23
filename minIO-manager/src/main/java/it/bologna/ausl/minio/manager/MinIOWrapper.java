@@ -1803,20 +1803,20 @@ public class MinIOWrapper {
         }
     }
 
-    public String getMongoUuidByFileUuid(String fileId)  throws MinIOWrapperException {
-        return getMongoUuidByFileUuid(fileId, false);
+    public String getMongoUuidByFileUuid(String fileUuid)  throws MinIOWrapperException {
+        return getMongoUuidByFileUuid(fileUuid, false);
     }
 
-    private String getMongoUuidByFileUuid(String fileId, boolean includeDeleted) throws MinIOWrapperException {
-        if (fileId == null || !patternUuid.matcher(fileId).matches()) {
-            throw new MinIOWrapperException("Invalid fileId: " + fileId);
+    private String getMongoUuidByFileUuid(String fileUuid, boolean includeDeleted) throws MinIOWrapperException {
+        if (fileUuid == null || !patternUuid.matcher(fileUuid).matches()) {
+            throw new MinIOWrapperException("Invalid fileUuid: " + fileUuid);
         }
 
-        String queryString = "SELECT mongo_uuid FROM repo.files WHERE file_id = :file_id" +
+        String queryString = "SELECT mongo_uuid FROM repo.files WHERE uuid = :fileUuid" +
                 (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
 
         try (Connection conn = sql2oConnection.open();
-             Query query = conn.createQuery(queryString).addParameter("file_id", fileId)) {
+             Query query = conn.createQuery(queryString).addParameter("fileUuid", fileUuid)) {
             return query.executeScalar(String.class);
         }
     }
