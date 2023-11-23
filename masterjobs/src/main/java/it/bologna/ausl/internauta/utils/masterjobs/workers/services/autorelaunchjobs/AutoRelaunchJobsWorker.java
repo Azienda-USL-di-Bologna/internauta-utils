@@ -19,20 +19,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 @MasterjobsWorker
 public class AutoRelaunchJobsWorker extends ServiceWorker {
     private static Logger log = LoggerFactory.getLogger(AutoRelaunchJobsWorker.class);
-
-    public static final String CHANGE_SERVICE_NOTIFY = "auto_relaunch_jobs";
-    
+   
     @Autowired
     @Qualifier(value = "redisMaterjobs")
     protected RedisTemplate redisTemplate;
     
     @Autowired
     private MasterjobsApplicationConfig masterjobsApplicationConfig;
-    
-
-    @Autowired
-    private ObjectMapper objectMapper;
-    
+        
     @Override
     public String getName() {
         return getClass().getSimpleName();
