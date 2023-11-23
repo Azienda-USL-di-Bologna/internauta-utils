@@ -26,3 +26,4 @@ PDFToolkit/target/
 /flying-saucer-pdf-itext5/target/
 versatore/prova.txt
 .idea/
+**/target/
