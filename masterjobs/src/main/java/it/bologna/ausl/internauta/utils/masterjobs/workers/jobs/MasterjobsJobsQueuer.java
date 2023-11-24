@@ -264,16 +264,14 @@ public class MasterjobsJobsQueuer {
         transactionTemplate.executeWithoutResult(action -> {
             for (MultiJobQueueDescriptor descriptor : descriptors) {
                 try {
-                    List<JobWorker> workers;
+                    List<JobWorker> workers = descriptor.getWorkers();
                     if (descriptor.getSkipIfAlreadyPresent()) {
                         workers = new ArrayList<>();
-                        for (JobWorker worker : workers) {
+                        for (JobWorker worker : descriptor.getWorkers()) {
                             if (!isAlreadyPresent(worker)) {
                                 workers.add(worker);
                             }
                         }
-                    } else {
-                        workers = descriptor.getWorkers();
                     }
                     MasterjobsQueueData queueData = insertInDatabase(workers, descriptor.getObjectId(), descriptor.getObjectType(), descriptor.getApp(), descriptor.getWaitForObject(), descriptor.getPriority());
                     toQueue.add(queueData);
