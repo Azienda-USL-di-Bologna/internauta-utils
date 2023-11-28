@@ -86,7 +86,7 @@ public final class ParerVersatoreMetadatiBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
 
-    public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
+    public Map<String,Object> ParerVersatoreMetadatiBuilder(Doc doc, DocDetail docDetail, String enteVersamento, String userID, String version, String ambiente, String struttura, String tipoConservazione, String codifica, String versioneDatiSpecificiPico,String versioneDatiSpecificiDete,String versioneDatiSpecificiDeli,String versioneDatiSpecificiRg, Boolean includiNote, String tipoDocumentoDefault,String forzaCollegamento, String forzaAccettazione, String forzaConservazione)throws DatatypeConfigurationException, JAXBException, ParseException{
        
 //        List<ArchivioDoc> archiviazioni = entityManager.createQuery("SELECT * FROM scripta.archivi_docs ad where ad.id_doc = :value1 order by ad.data_archiviziazione ASC")
 //                .setParameter("value1", doc.getId()).getResultList();
@@ -115,7 +115,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
                         datiSpecifici = buildDatiSpecifici(doc, docDetail, dataPerDatiSpecifici, versioneDatiSpecificiPico, versioneDatiSpecificiDete, versioneDatiSpecificiDeli);
                     } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE) {
-                        datiSpecifici = buildDatiSpecificiRegistroGiornaliero(doc, docDetail);
+                        datiSpecifici = buildDatiSpecificiRegistroGiornaliero(doc, docDetail, versioneDatiSpecificiRg);
                     }
                     
                     UnitaDocumentariaBuilder unitaDocumentariaBuilder;
@@ -677,7 +677,7 @@ public final class ParerVersatoreMetadatiBuilder {
         return mappaPerAllegati;
     }
 
-    public DatiSpecifici buildDatiSpecificiRegistroGiornaliero(Doc doc, DocDetail docDetail) throws ParserConfigurationException, ParseException {
+    public DatiSpecifici buildDatiSpecificiRegistroGiornaliero(Doc doc, DocDetail docDetail, String versioneDatiSpecificiRg) throws ParserConfigurationException, ParseException {
         DatiSpecifici datiSpecifici;
         DatiSpecificiBuilder datiSpecificiBuilder = new DatiSpecificiBuilder();
         Pattern pattern = Pattern.compile("(.*)n\\.\\s(.*)\\sal\\sn\\.\\s(.*)\\sdel\\s(.*)", Pattern.MULTILINE);
@@ -756,7 +756,7 @@ public final class ParerVersatoreMetadatiBuilder {
                 
 //                entityManager.createQuery("SELECT * FROM scripta.attori_docs ad where ad.id_doc = :value1 ")
 //                .setParameter("value1", doc.getId()).getResultList();
-        datiSpecificiBuilder.insertNewTag("VersioneDatiSpecifici", "1.0");
+        datiSpecificiBuilder.insertNewTag("VersioneDatiSpecifici", versioneDatiSpecificiRg);
         datiSpecificiBuilder.insertNewTag("NumeroIniziale", numeroIniziale);
         datiSpecificiBuilder.insertNewTag("NumeroFinale", numeroFinale);
         datiSpecificiBuilder.insertNewTag("DataInizioRegistrazioni", giorno);
