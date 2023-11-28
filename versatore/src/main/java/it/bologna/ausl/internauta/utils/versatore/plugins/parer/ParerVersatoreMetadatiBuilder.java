@@ -100,7 +100,8 @@ public final class ParerVersatoreMetadatiBuilder {
         Map<String,Object> mappaUnitaDocumentaria = new HashMap<>();
         
         
-
+ 
+        
         if (archiviazioni != null && archiviazioni.size() != 0) { 
             
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
