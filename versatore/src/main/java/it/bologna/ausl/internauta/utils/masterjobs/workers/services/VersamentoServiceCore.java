@@ -79,7 +79,7 @@ public class VersamentoServiceCore {
              * NB: il job, dopo che versa un doc, non dovrebbe riversalo nuovamente, quindi anche se riprende da capo, non riversa 
              * i documenti già versati
             */
-            masterjobsJobsQueuer.queue(jobWorker, "versatore_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL);
+            masterjobsJobsQueuer.queue(jobWorker, "versatore_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL, null);
         } catch (Exception ex) {
             String errorMessage = "errore nell'accodamento del job Versatore";
             log.error(errorMessage, ex);
