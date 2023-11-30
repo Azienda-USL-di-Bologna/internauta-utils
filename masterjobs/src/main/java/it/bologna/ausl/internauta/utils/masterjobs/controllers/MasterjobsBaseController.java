@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author gusgus
  */
 @RestController
-@RequestMapping(value = "${masterjobs.mapping.url.root}")
+@RequestMapping(value = "${masterjobs.manager.api.url}")
 public class MasterjobsBaseController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MasterjobsBaseController.class);
     

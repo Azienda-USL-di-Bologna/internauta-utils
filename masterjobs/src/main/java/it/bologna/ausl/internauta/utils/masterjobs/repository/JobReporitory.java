@@ -14,7 +14,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
  *
  * @author gusgus
  */
-@NextSdrRepository(repositoryPath = "${masterjobs.mapping.url.root}/job", defaultProjection = JobWithPlainFields.class)
+@NextSdrRepository(repositoryPath = "${masterjobs.manager.api.url}/job", defaultProjection = JobWithPlainFields.class)
 @RepositoryRestResource(collectionResourceRel = "job", path = "job", exported = false, excerptProjection = JobWithPlainFields.class)
 public interface JobReporitory extends
         NextSdrQueryDslRepository<Job, Long, QJob>,
