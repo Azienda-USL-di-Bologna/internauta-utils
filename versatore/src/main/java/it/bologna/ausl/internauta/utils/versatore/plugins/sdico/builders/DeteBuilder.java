@@ -88,12 +88,12 @@ public class DeteBuilder {
         String stringaDiFirmatari = "";
         if (firmatari != null) {
             for (Persona firmatario : firmatari) {
-                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + ", ";
             }
         } else {
             throw new VersatoreSdicoException("La Determina non ha firmatari");
         }
-        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3);
+        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
