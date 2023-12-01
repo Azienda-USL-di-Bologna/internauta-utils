@@ -44,6 +44,7 @@ public class ParametriAziendeReader {
         usaGediInternauta,
         chiusuraArchivio,
         ricalcoloPermessiArchivi, 
+        usaRitentaVersamentiAutomatico,
         inadConfiguration;
     }
     

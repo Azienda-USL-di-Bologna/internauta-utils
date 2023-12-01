@@ -1,17 +1,21 @@
 package it.bologna.ausl.model.entities.masterjobs;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
-import java.util.Map;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -24,6 +28,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
@@ -61,8 +66,7 @@ public class Job implements Serializable {
     @Basic(optional = true)
     @Type(type = "jsonb")
     @Column(name = "data", columnDefinition = "jsonb")
-    private Map<String, Object> data;
-//    private WorkerData data;
+    private HashMap<String, Object> data;
     
     @Basic(optional = false)
     @NotNull
@@ -73,7 +77,8 @@ public class Job implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "state")
-    private String state;
+    @Enumerated(EnumType.STRING)
+    private JobState state;
         
     @Basic(optional = false)
     @NotNull
@@ -98,6 +103,24 @@ public class Job implements Serializable {
     @NotNull
     private Integer executableCheckEveryMillis = 100;
     
+    @Basic(optional = true)
+    @Type(type = "jsonb")
+    @Column(name = "work_data", columnDefinition = "jsonb")
+    private HashMap<String, Object> workData;
+        
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @Column(name = "insert_ts")
+    @Basic(optional = false)
+    @NotNull
+    private ZonedDateTime insertTs = ZonedDateTime.now();
+    
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @Column(name = "last_execution_ts")
+    @Basic(optional = true)
+    private ZonedDateTime lastExecutionTs;
+  
     public Job() {
     }
 
@@ -117,11 +140,11 @@ public class Job implements Serializable {
         this.name = name;
     }
 
-    public Map<String, Object> getData() {
+    public HashMap<String, Object> getData() {
         return data;
     }
 
-    public void setData(Map<String, Object> data) {
+    public void setData(HashMap<String, Object> data) {
         this.data = data;
     }
 
@@ -134,19 +157,11 @@ public class Job implements Serializable {
     }
 
     public JobState getState() {
-        if (state != null) {
-            return JobState.valueOf(state);
-        } else {
-            return null;
-        }
+        return state;
     }
 
     public void setState(JobState state) {
-        if (state != null) {
-            this.state = state.toString();
-        } else {
-            this.state = null;
-        }
+        this.state = state;
     }
 
     public String getError() {
@@ -187,4 +202,30 @@ public class Job implements Serializable {
     public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
         this.executableCheckEveryMillis = executableCheckEveryMillis;
     }
+
+    public HashMap<String, Object> getWorkData() {
+        return workData;
+    }
+
+    public void setWorkData(HashMap<String, Object> workData) {
+        this.workData = workData;
+    }
+
+    public ZonedDateTime getLastExecutionTs() {
+        return lastExecutionTs;
+    }
+
+    public void setLastExecutionTs(ZonedDateTime lastExecutionTs) {
+        this.lastExecutionTs = lastExecutionTs;
+    }
+
+    public ZonedDateTime getInsertTs() {
+        return insertTs;
+    }
+
+    public void setInsertTs(ZonedDateTime insertTs) {
+        this.insertTs = insertTs;
+    }
+    
+    
 }

@@ -627,7 +627,14 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                         // istanzio il worker in grado eseguire il job passandogli i suoi dati
                         JobWorker worker = masterjobsObjectsFactory.getJobWorker(job.getName(), workerData, job.getDeferred());
                         
-                        if (debuggingCanExecuteJob(job.getName()) && worker.isExecutable()) {
+                        entityManager.refresh(job);
+                        worker.setJobId(job.getId());
+                        worker.setJobInsertTs(job.getInsertTs());
+                        worker.setJobLastExecutionTs(job.getLastExecutionTs());
+                        worker.setJobWorkData(job.getWorkData());
+                        
+                        if (debuggingCanExecuteJob(job.getName()) && worker._isExecutable()) {
+                            
                             // eseguo il job tramite il worker
                             JobWorkerResult res = worker.doWork();
                             /* 
@@ -644,6 +651,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                             */
                             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                             transactionTemplate.executeWithoutResult(a -> {
+                                log.info("now: " + ZonedDateTime.now().toString());
+                                log.info("plus: " + (ZonedDateTime.now().plus(job.getExecutableCheckEveryMillis(), ChronoUnit.MILLIS)).toString());
                                 updateSet(set.getId(), ZonedDateTime.now().plus(job.getExecutableCheckEveryMillis(), ChronoUnit.MILLIS));
                             });
                             // se non posso eseguire il job, ne interrompo l'esecuzione e setto che l'ho stoppata
@@ -727,7 +736,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     }
     
     /**
-     * Aggiorna un job.Si possono settare lo stato e la stringa di errore.
+     * Aggiorna un job. Si possono settare lo stato e la stringa di errore.
      * @param jobId
      * @param state lo stato. Se non si vuole aggiornare, passare null
      * @param error la stringa di errore. Se non si vuole aggiornare, passare null
@@ -738,7 +747,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
         JPAUpdateClause updateClause = queryFactory.update(qJob);
         if (state != null || error != null) {
             if (state != null) {
-                updateClause.set(qJob.state, state.toString());
+                updateClause.set(qJob.state, state);
+                if (state == Job.JobState.RUNNING) {
+                    updateClause.set(qJob.lastExecutionTs, ZonedDateTime.now());
+                    updateClause.setNull(qJob.error);
+                }
             }
             if (error != null) {
                 updateClause.set(qJob.error, error);
@@ -790,15 +803,16 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             // eliminazione set
             queryFactory.delete(qSet).where(qSet.id.eq(job.getSet().getId())).execute();
             
-            /* se il set è attaccato a un oggetto lo elimino
-            * se il set non è attaccato a un oggetto allora objectId sarà null
+            /* 
+            se il set è attaccato a un oggetto lo elimino
+            se il set non è attaccato a un oggetto allora objectId sarà null
             */
             if (job.getSet().getObjectId() != null) {
                 // eliminazione object_status
                 BooleanExpression filter = getObjectFilter(
                         qObjectStatus.objectId, job.getSet().getObjectId(), 
                         qObjectStatus.objectType, job.getSet().getObjectType(), 
-                        qObjectStatus.objectId, job.getSet().getApp());
+                        qObjectStatus.app, job.getSet().getApp());
                 queryFactory.delete(qObjectStatus).where(filter).execute();
             }
         }
@@ -882,11 +896,15 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             StringPath objectTypePath, String objectTypeValue, 
             StringPath appPath, String appValue) {
         BooleanExpression filter = objectIdPath.eq(objectIdValue);
-        if (objectTypeValue != null) {  // objectType potrebbe non esserci
+        if (objectTypeValue == null) {  // objectType potrebbe non esserci
+            filter = filter.and(objectTypePath.isNull()); 
+        } else {
             filter = filter.and(objectTypePath.eq(objectTypeValue)); 
         }
-        if (appValue != null) {  // app potrebbe non esserci
-            filter = filter.and(appPath.eq(appValue)); 
+        if (appValue == null) {  // app potrebbe non esserci
+            filter = filter.and(appPath.isNull());
+        } else {
+             filter = filter.and(appPath.eq(appValue));
         }
         return filter;
     }
@@ -944,7 +962,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             objectStatus = transactionTemplate.execute(action -> {
                 entityManager.createNativeQuery(query).getSingleResult();
-                log.info("filter: " + filter.toString() + "hash: " + filter.toString().hashCode());
+                // log.info("filter: " + filter.toString() + "hash: " + filter.toString().hashCode());
                 Optional<ObjectStatus> res;
                 try {
                     res = getObjectStatusAndSetIdleIfFound(filter);

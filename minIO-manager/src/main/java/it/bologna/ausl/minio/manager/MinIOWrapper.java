@@ -39,6 +39,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.postgresql.jdbc.PgArray;
@@ -71,6 +73,8 @@ public class MinIOWrapper {
 
     // nome del bucket cestino
     private String trashBucket = "trash";
+
+    private static final Pattern patternUuid = Pattern.compile("\\b([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})\\b");
 
     // ci possono essere più minIO server, per cui creo una mappa contenente il serverId(campo della tabella servers) e il client associato
     private static final Map<Integer, MinioClient> minIOServerClientMap = new HashMap<>();
@@ -769,7 +773,6 @@ public class MinIOWrapper {
      * @param fileId
      * @param includeDeleted se true il file verrà cercato anche all'interno del
      * cestino
-     * @param lessThan se passato prende solo i file con data di caricamento
      * inferiore alla data passata (la data passata è compresa)
      * @return le informazioni relative al file identificato dal fileId passato
      * @throws MinIOWrapperException
@@ -1797,6 +1800,24 @@ public class MinIOWrapper {
             return minIOClient.statObject(io.minio.StatObjectArgs.builder().bucket(bucket).object(fileId).build()).size();
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento della dimesione del file", ex);
+        }
+    }
+
+    public String getMongoUuidByFileUuid(String fileUuid)  throws MinIOWrapperException {
+        return getMongoUuidByFileUuid(fileUuid, false);
+    }
+
+    private String getMongoUuidByFileUuid(String fileUuid, boolean includeDeleted) throws MinIOWrapperException {
+        if (fileUuid == null || !patternUuid.matcher(fileUuid).matches()) {
+            throw new MinIOWrapperException("Invalid fileUuid: " + fileUuid);
+        }
+
+        String queryString = "SELECT mongo_uuid FROM repo.files WHERE uuid = :fileUuid" +
+                (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+
+        try (Connection conn = sql2oConnection.open();
+             Query query = conn.createQuery(queryString).addParameter("fileUuid", fileUuid)) {
+            return query.executeScalar(String.class);
         }
     }
 }

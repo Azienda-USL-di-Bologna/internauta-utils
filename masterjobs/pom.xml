@@ -22,9 +22,19 @@
         </dependency>-->
         <dependency>
             <groupId>it.nextsw.common</groupId>
+            <artifactId>next-spring-data-rest-framework-core</artifactId>
+            <version>1.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-data</artifactId>
             <version>1.9.1</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
