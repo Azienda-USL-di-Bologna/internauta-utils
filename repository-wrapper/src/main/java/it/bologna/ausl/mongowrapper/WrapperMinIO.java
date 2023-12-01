@@ -592,4 +592,13 @@ public class WrapperMinIO extends MongoWrapper {
                 .map(Collection::stream)
                 .orElseGet(Stream::empty);
     }
+
+    @Override
+    public String getMongoUuidByFileUuid(String fileUuid) throws MongoWrapperException {
+        try{
+            return minIOWrapper.getMongoUuidByFileUuid(fileUuid);
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
+    }
 }

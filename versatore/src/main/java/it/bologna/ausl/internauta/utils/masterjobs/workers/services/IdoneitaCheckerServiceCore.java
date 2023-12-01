@@ -75,7 +75,7 @@ public class IdoneitaCheckerServiceCore {
              * NB: il job, dopo dopo che controlla l'idoneità setto lo stato versamento sull'oggetto e non riprende in considerazione
              * quelli con lo stato settatto, per cui anche se riprende da capo, l'idoneità non viene ricontrollata su quelli già controllati
             */
-            masterjobsJobsQueuer.queue(jobWorker, "idoneita_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL);
+            masterjobsJobsQueuer.queue(jobWorker, "idoneita_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL, null);
         } catch (Exception ex) {
             String errorMessage = "errore nell'accodamento del job IdoneitaChecker";
             log.error(errorMessage, ex);
