@@ -7,8 +7,6 @@ package it.bologna.ausl.internauta.utils.versatore.utils;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *

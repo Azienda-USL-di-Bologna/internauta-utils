@@ -78,8 +78,6 @@ public class DeliBuilder {
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
-        //TODO da chiedere ad AZERO
-        //String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
         List<AttoreDoc> listaAttoriDelDocumento = doc.getAttoriList();
         String ufficioProduttore = null;
         for (AttoreDoc attore : listaAttoriDelDocumento) {
@@ -97,12 +95,12 @@ public class DeliBuilder {
         String stringaDiFirmatari = "";
         if (firmatari != null) {
             for (Persona firmatario : firmatari) {
-                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
             }
         } else {
             throw new VersatoreSdicoException("La Delibera non ha firmatari");
         }
-        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3);
+        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
@@ -135,7 +133,6 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
-        //TODO ora metto un valore segnaposto perché ci deve essere dato
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
