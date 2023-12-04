@@ -229,7 +229,10 @@ public class MasterjobsJobsQueuer {
             set.setWaitObject(waitForObject);
         if (priority != null)
             set.setPriority(priority);
+        
+        log.info("persisting set...");
         entityManager.persist(set);
+        log.info(String.format("created set %s", set.getId()));
              
         List<Job> jobs = new ArrayList<>(); 
         for (JobWorker worker : workers) {
@@ -249,7 +252,9 @@ public class MasterjobsJobsQueuer {
             job.setName(worker.getName());
             job.setState(Job.JobState.READY);
             job.setSet(set);
+            log.info(String.format("persisting job %s", job.getName()));
             entityManager.persist(job);
+            log.info(String.format("created job %s with id %s",job.getName(), job.getId()));
             jobs.add(job);
         }
         
@@ -267,6 +272,7 @@ public class MasterjobsJobsQueuer {
      * Accoda tutti insieme i jobs passati, in un unica transazione
      * la transazione viene aperta nel metodo
      * @param descriptors la lista dei worker con relativi dati, da accodare
+     * @param ip
      * @throws MasterjobsQueuingException 
      */
     public void queueMultiJobs(List<MultiJobQueueDescriptor> descriptors, String ip) throws MasterjobsQueuingException {
@@ -278,14 +284,19 @@ public class MasterjobsJobsQueuer {
                     List<JobWorker> workers = descriptor.getWorkers();
                     if (descriptor.getSkipIfAlreadyPresent()) {
                         workers = new ArrayList<>();
+                        log.info("checking isAlreadyPresent...");
                         for (JobWorker worker : descriptor.getWorkers()) {
                             if (!isAlreadyPresent(worker)) {
                                 workers.add(worker);
                             }
                         }
+                        log.info("done checking isAlreadyPresent");
                     }
+                    log.info(String.format("inserting %s workers with objectId: %s objectType: %s app: %s waitForObject: %s priority: %s ip: %s...", workers.size(), descriptor.getObjectId(), descriptor.getObjectType(), descriptor.getApp(), descriptor.getWaitForObject(), descriptor.getPriority(), ip));
                     MasterjobsQueueData queueData = insertInDatabase(workers, descriptor.getObjectId(), descriptor.getObjectType(), descriptor.getApp(), descriptor.getWaitForObject(), descriptor.getPriority(), ip);
+                    log.info("done insering workers, queueing...");
                     toQueue.add(queueData);
+                    log.info("done queueing");
                 } catch (MasterjobsBadDataException ex) {
                     String errorMessage = String.format("error queuing job with object id %s and object type %s ", descriptor.getObjectId(), descriptor.getObjectType());
                     log.error(errorMessage, ex);
