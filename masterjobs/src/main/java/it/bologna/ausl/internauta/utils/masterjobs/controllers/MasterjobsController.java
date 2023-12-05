@@ -33,9 +33,9 @@ public class MasterjobsController {
 //    @Autowired
 //    private MasterjobsServicesExecutionScheduler masterjobsServicesExecutionScheduler;
 //    
-    @RequestMapping(value = "relauchJobsInError", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "relaunchJobsInError", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(rollbackFor = {Error.class})
-    public void relauchJobsInError() {
+    public void relaunchJobsInError() {
         masterjobsJobsQueuer.relaunchJobsInError();
     }
     

@@ -195,7 +195,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             jobNotified.getWaitObject(), 
             jobNotified.getPriority(),
             jobNotified.getSkipIfAlreadyPresent(),
-            true);
+            true,
+            jobNotified.getInsertedFrom());
     }
     
     private void deleteJobNotified(Long jobNotifiedId) {

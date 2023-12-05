@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers;
 
 import it.bologna.ausl.internauta.utils.masterjobs.DebuggingOptionsManager;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
@@ -22,6 +23,9 @@ public abstract class Worker {
     
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    
+    @Autowired
+    protected MasterjobsApplicationConfig masterjobsApplicationConfig;
     
 //    @Autowired
 //    protected ObjectMapper objectMapper;

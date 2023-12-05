@@ -736,7 +736,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     }
     
     /**
-     * Aggiorna un job.Si possono settare lo stato e la stringa di errore.
+     * Aggiorna un job. Si possono settare lo stato e la stringa di errore.
      * @param jobId
      * @param state lo stato. Se non si vuole aggiornare, passare null
      * @param error la stringa di errore. Se non si vuole aggiornare, passare null
@@ -750,6 +750,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                 updateClause.set(qJob.state, state);
                 if (state == Job.JobState.RUNNING) {
                     updateClause.set(qJob.lastExecutionTs, ZonedDateTime.now());
+                    updateClause.setNull(qJob.error);
                 }
             }
             if (error != null) {

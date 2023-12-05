@@ -46,8 +46,8 @@ public class AllegatiBuilder {
         try {
             mappaAllegati = buildAllegati(doc, docDetail, allegati, versamentoBuilder);
         } catch (MinIOWrapperException ex) {
-            log.error("Errore di comunicazione con MinIO per recuperare i dati degli allegati");
-            throw new VersatoreSdicoException("Errore di comunicazione con MinIO per recuperare i dati degli allegati");
+            log.error("Errore di comunicazione nel recuperare i dati degli allegati");
+            throw new VersatoreSdicoException("Errore di comunicazione nel recuperare i dati degli allegati");
         }
 
         return mappaAllegati;
@@ -65,6 +65,7 @@ public class AllegatiBuilder {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
+            log.warn("Raccologo i dati dell'allegato ID " + allegato.getId());
             //prendo l'allegato originale (se è firmato scelgo quello firmato)
             if (allegato.getFirmato()) {
                 Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
@@ -147,7 +148,7 @@ public class AllegatiBuilder {
         //if (identityFile.getUuidMongo() == null) {
         identityFile.setFileBase64(dettaglio.getIdRepository());
         //}
-        //TODO la funzione la richiamo qui, controllando se hash256 è nullo, da togliere una volta che lo sha256 sarà sempre presente
+        //TODO la funzione per calcolare lo SHA256 la richiamo qui, controllando se hash256 è nullo, da togliere una volta che lo sha256 sarà sempre presente
         if (identityFile.getHash() == null) {
             identityFile = calcolaSHA256(identityFile);
         }

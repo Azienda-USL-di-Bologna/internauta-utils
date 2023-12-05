@@ -42,8 +42,9 @@ public class RgPicoBuilder {
     private String numeroFinale;
     private ZonedDateTime dataIniziale;
     private ZonedDateTime dataFinale;
+    private Persona responsabileGestioneDocumentale;
 
-    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale) {
+    public RgPicoBuilder(Doc doc, DocDetail docDetail, Archivio archivio, Registro registro, List<Persona> firmatari, Map<String, Object> parametriVersamento, String numeroIniziale, String numeroFinale, ZonedDateTime dataIniziale, ZonedDateTime dataFinale, Persona responsabileGestioneDocumentale) {
         this.versamentoBuilder = new VersamentoBuilder();
         this.doc = doc;
         this.docDetail = docDetail;
@@ -55,6 +56,7 @@ public class RgPicoBuilder {
         this.numeroFinale = numeroFinale;
         this.dataIniziale = dataIniziale;
         this.dataFinale = dataFinale;
+        this.responsabileGestioneDocumentale = responsabileGestioneDocumentale;
     }
     
     /**
@@ -75,7 +77,9 @@ public class RgPicoBuilder {
         String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         //String codiceRegistro = registro.getCodice().toString();
         String numeroProgressivo = docDetail.getNumeroRegistrazione().toString();
-        String annoRegistrazione = docDetail.getAnnoRegistrazione().toString();
+        String annoRegistrazione = docDetail.getAnnoRegistrazione().toString(); 
+        String denominazioneDellAmministrazione = (String) mappaParametri.get("denominazioneAmministrazione");
+        String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -85,13 +89,13 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
-        //TODO da azero sapere se aggiungere: Cognome_responsabile_gestione_documentale
-        //TODO da azero sapere se aggiungere: Nome_responsabile_gestione_documentale
-        //TODO da azero sapere se aggiungere: Codice_fiscale_responsabile_gestione_documentale
-        //TODO da azero sapere se aggiungere: Denominazione_dellamministrazione
+        versamentoBuilder.addSinglemetadataByParams(false, "Cognome_responsabile_gestione_documentale", Arrays.asList(responsabileGestioneDocumentale.getCognome()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Nome_responsabile_gestione_documentale", Arrays.asList(responsabileGestioneDocumentale.getNome()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Codice_fiscale_responsabile_gestione_documentale", Arrays.asList(responsabileGestioneDocumentale.getCodiceFiscale()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "Denominazione_dellamministrazione", Arrays.asList(denominazioneDellAmministrazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
-        //TODO da azero sapere se aggiungere: ufficioProduttore
+        versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(numeroProgressivo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(annoRegistrazione), TESTO);
@@ -101,7 +105,7 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         //TODO gli rg pico non hanno anni tenuta, al momento nel tracciato non c'è
-        //TODO parametro non presente originariamente nel tracciato
+        //parametro non presente originariamente nel tracciato
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         
         return versamentoBuilder;
