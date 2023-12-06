@@ -123,20 +123,20 @@ public class ParerVersatoreService extends VersatoreDocs {
 //                    Element esitoDocPrincipale  = rootUnitaDoc.getChildElements("DocumentoPrincipale").get(0);
                     Document unitaDocumentaria = parser.build(resd.query("/EsitoVersamento/UnitaDocumentaria").get(0).toXML(),null);
 //                    String esitoDocPrincipale = esitoUnitaDocumentariaDocument.query("//DocumentoPrincipale/text()").get(0).;
-                    if(unitaDocumentaria.query("/DocumentoPrincipale").size() != 0){
-                        String esitoDocPrincipale = unitaDocumentaria.query("/DocumentoPrincipale").get(0).toXML();
+                    if(unitaDocumentaria.query("//DocumentoPrincipale").size() != 0){
+                        String esitoDocPrincipale = unitaDocumentaria.query("//DocumentoPrincipale").get(0).toXML();
                         Document esitoDocPrincipaleDoc = parser.build(esitoDocPrincipale, null);
-                        String idDocPrincipale = unitaDocumentaria.query("/DocumentoPrincipale/IDDocumento").get(0).toXML();
-                        if(esitoUnitaDocumentariaDocument.query("/Allegati").size() != 0) {
-                            String allegatiContainer = esitoUnitaDocumentariaDocument.query("/Allegati").get(0).toXML();
+                        String idDocPrincipale = unitaDocumentaria.query("//DocumentoPrincipale/IDDocumento").get(0).getValue();
+                        if(esitoUnitaDocumentariaDocument.query("//Allegati").size() != 0) {
+                            String allegatiContainer = esitoUnitaDocumentariaDocument.query("//Allegati").get(0).toXML();
                             Document AllegatiContainerDocument = parser.build(allegatiContainer, null);
                             Element root = AllegatiContainerDocument.getRootElement();
-                            Elements allegatiEsiti = root.getChildElements("Allegati");
+                            Elements allegatiEsiti = root.getChildElements("Allegato");
     //                        Elements allegatiEsiti = AllegatiContainerDocument.query("//Allegato/text()");
                             Map<String, Element> mappaEsitiAllegati = new HashMap<>();
                             mappaEsitiAllegati.put(idDocPrincipale, esitoDocPrincipaleDoc.getRootElement());
                             for (int i = 0 ; i < allegatiEsiti.size() ; i ++) {
-                                String idAllegato = allegatiEsiti.get(i).getAttributeValue("IDDocumento");
+                                String idAllegato = allegatiEsiti.get(i).getFirstChildElement("IDDocumento").getValue();
                                 mappaEsitiAllegati.put(idAllegato, allegatiEsiti.get(i));
                             }
 
@@ -186,13 +186,15 @@ public class ParerVersatoreService extends VersatoreDocs {
                 }
                 versamentoInformation.setVersamentiAllegatiInformations(listaAllegati);
 
-            } catch (ParsingException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ParsingException | ParseException ex) {
+                log.error("Errore di parsing", ex);
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
             } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (ParseException ex) {
-                java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                log.error("Errore di input/output", ex);
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            } //catch (ParseException ex) {
+                //java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+            //}
         } else {
             versamentoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
             versamentoInformation.setCodiceErrore("SERVIZIO");
@@ -425,31 +427,76 @@ public class ParerVersatoreService extends VersatoreDocs {
  * e nel caso abbia la verifica delle firme, pure quella, in modo userfriendly e non 
  */
     private List<VersamentoAllegatoInformation> parseAllegatiResult(Map<String, Element> mappaEsitiAllegati, List<VersamentoAllegatoInformation> listaAllegati ) throws ParseException {
+        List<VersamentoAllegatoInformation> allegatiDaTornare = new ArrayList<>();
         for(VersamentoAllegatoInformation allegato: listaAllegati) {
             IdentityFile idFile;
             JSONParser jsonParser = new JSONParser();
             JSONObject json = (JSONObject) jsonParser.parse(allegato.getMetadatiVersati());
             idFile = IdentityFile.parse(json);
-            Element esitoAllegato = (Element) mappaEsitiAllegati.get(idFile.getId());
+            Element esitoAllegato = null;
+            if(mappaEsitiAllegati.get(idFile.getUuidMongo()) != null) {
+                esitoAllegato = (Element) mappaEsitiAllegati.get(idFile.getUuidMongo());
+            } else {
+                esitoAllegato = (Element) mappaEsitiAllegati.get(idFile.getId());
+            }
             try{
-                String codiceEsitoGenerale = esitoAllegato.getFirstChildElement("EsitoDocumento").getAttributeValue("CodiceEsito");
-                String verificaFirmeComponente = esitoAllegato.getFirstChildElement("EsitoDocumento").getAttributeValue("VerificaFirmeComponente");
+                String descrizioneErrore = ""; 
+                Element componenteElement = (Element) esitoAllegato.query("Componenti").get(0).query("Componente").get(0);
+//                Document componenteElement = esitoAllegato.getFirstChildElement("Componenti").getFirstChildElement("Componente").getDocument();
+//                String codiceEsitoGenerale = esitoAllegato.getFirstChildElement("Componenti").getFirstChildElement("Componente").getFirstChildElement("EsitoComponente").getAttributeValue("CodiceEsito");
+                String codiceEsitoGenerale = componenteElement.getFirstChildElement("EsitoComponente").getFirstChildElement("CodiceEsito").getValue();
+//                String verificaFirmeComponente = esitoAllegato.getFirstChildElement("Componenti").getFirstChildElement("Componente").getFirstChildElement("EsitoComponente").getAttributeValue("VerificaFirmeComponente");
+                
+                Element verificaFirmeComponente = componenteElement.getFirstChildElement("EsitoComponente").getFirstChildElement("VerificaFirmeComponente");
+                
+                
                 String riassuntoAllegato = "Esito Generale: " + codiceEsitoGenerale;
-                if(verificaFirmeComponente != null && !verificaFirmeComponente.equals(""))
-                    riassuntoAllegato = riassuntoAllegato + " , Esito Firme " + verificaFirmeComponente;
+                if(verificaFirmeComponente != null ) {
+                    riassuntoAllegato = riassuntoAllegato + " , Esito Firme " + verificaFirmeComponente.getValue();
+                    codiceEsitoGenerale = "NEGATIVO";
+                }
 
                 allegato.setRapporto(riassuntoAllegato);
                 if(codiceEsitoGenerale.equals("POSITIVO")){
                     allegato.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                 } else {
                     allegato.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    Element firmatariElement = componenteElement.getFirstChildElement("Firmatari");
+                    Elements firmatarioElements = firmatariElement.getChildElements("Firmatario");
+                    for (int i = 0; i < firmatarioElements.size(); i++) {
+                        Element firmatarioElement = firmatarioElements.get(i);
+                        String cognomeNome = firmatarioElement.getFirstChildElement("CognomeNome").getValue();
+                        String formatoFirma = firmatarioElement.getFirstChildElement("FormatoFirma").getValue();
+                        Element verificaFirma =firmatarioElement.getFirstChildElement("EsitoFirma").getFirstChildElement("VerificaFirma");
+                        String esitoFirma = verificaFirma.getFirstChildElement("CodiceEsito").getValue();
+                        
+                        if(esitoFirma.equals("NEGATIVO") ) {
+                            String ControlloCrittografico = verificaFirma.getFirstChildElement("ControlloCrittografico").getValue();
+                            String DettaglioControlloCrittografico = verificaFirma.getFirstChildElement("DettaglioControlloCrittografico").getValue();
+                            String ControlloCatenaTrusted = verificaFirma.getFirstChildElement("ControlloCatenaTrusted").getValue();
+                            String DettaglioControlloCatenaTrusted = verificaFirma.getFirstChildElement("DettaglioControlloCatenaTrusted").getValue();
+                            String ControlloCertificato = verificaFirma.getFirstChildElement("ControlloCertificato").getValue();
+                            String DettaglioControlloCertificato = verificaFirma.getFirstChildElement("DettaglioControlloCertificato").getValue();
+                            String ControlloCRL = verificaFirma.getFirstChildElement("ControlloCRL").getValue();
+                            String DettaglioControlloCRL = verificaFirma.getFirstChildElement("DettaglioControlloCRL").getValue();
+                            descrizioneErrore = descrizioneErrore + " \n La firma di " + cognomeNome + " ha il seguente errore \n"+
+                                    "controllo crittografico : " + ControlloCrittografico + " " + DettaglioControlloCrittografico + "\n" +
+                                    "controllo catena Trusted : " + ControlloCatenaTrusted + " " + DettaglioControlloCatenaTrusted + "\n" +
+                                    "controllo certificato : " + ControlloCertificato + " " + DettaglioControlloCertificato + "\n" +
+                                    "controllo CRL : " + ControlloCRL + " " + DettaglioControlloCRL + "\n" ; 
+
+                        }
+
+                    }
+                    allegato.setDescrizioneErrore(descrizioneErrore);
                 }
+                allegatiDaTornare.add(allegato);
 
             } catch(Exception ex) {
                 log.info("l'allegato non ha dettagli esito");
             }
         }
-        return listaAllegati;
+        return allegatiDaTornare;
     }
     
    

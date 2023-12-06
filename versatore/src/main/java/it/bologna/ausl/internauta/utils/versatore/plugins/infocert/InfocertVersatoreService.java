@@ -61,6 +61,7 @@ import java.util.Optional;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
+import javax.xml.ws.WebServiceException;
 import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -473,12 +474,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
             } else {
                 log.error("file stream is null");
             }
-        } catch (ConnectException ex) {
-            log.error(ex.getMessage());
+        } catch (ConnectException | WebServiceException ex) {
+            log.error("error", ex);
             allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
             allegatoInformation.setDescrizioneErrore(ex.getMessage());
-        } catch (ServerSOAPFaultException | MinIOWrapperException | IOException ex) {
-            log.error(ex.getMessage());
+        } catch (Throwable ex) {
+            log.error("error", ex);
             allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             allegatoInformation.setDescrizioneErrore(ex.getMessage());
         }
