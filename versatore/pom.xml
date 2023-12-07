@@ -240,7 +240,7 @@
                             <vmArgs>
                                 <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
                             </vmArgs>
-                            <wsdlLocation>https://lcare-ts.linkverse.com:443/protocolli/GenericDocumentService?wsdl</wsdlLocation>
+                            <wsdlLocation>http://10.145.3.149:8180/protocolli/GenericDocumentService?wsdl</wsdlLocation>
                             <staleFile>${project.build.directory}/jaxws/stale/GenericDocumentService.stale</staleFile>
                         </configuration>
                         <id>wsimport-generate-GenericDocumentService</id>
