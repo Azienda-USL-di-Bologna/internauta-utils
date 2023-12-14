@@ -21,12 +21,14 @@ import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
@@ -251,6 +253,13 @@ public class MasterjobsJobsQueuer {
                 job.setData(workerData.toJobData(objectMapper));
             job.setName(worker.getName());
             job.setState(Job.JobState.READY);
+            try {
+                job.setHash(worker.calcolaMD5());
+            } catch (Exception ex) {
+                String error = "errore nel calcolo dell'hash md5 del job";
+                log.error(error, ex);
+                throw new MasterjobsBadDataException(error, ex);
+            }
             job.setSet(set);
             log.info(String.format("persisting job %s", job.getName()));
             entityManager.persist(job);
@@ -497,22 +506,23 @@ public class MasterjobsJobsQueuer {
     private Boolean isAlreadyPresent(JobWorker worker) {
         UUID md5;
         try {
+            log.info("inizio funzione calcolaMD5");
             md5 = worker.calcolaMD5();
+            log.info("fine funzione calcolaMD5");
             QJob qJob = QJob.job;
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-            List<Job> job = queryFactory
-                .query()
-                .select(qJob)
+            Integer one = queryFactory
+                .selectOne()
                 .from(qJob)
                 .where(qJob.hash.eq(md5)
                     .and(
                         qJob.state.eq(Job.JobState.READY)
-                            .or(qJob.state.eq(Job.JobState.ERROR))
+                        .or(qJob.state.eq(Job.JobState.ERROR))
                     )
                 )
-                .fetch();
-            return !CollectionUtils.isEmpty(job);
-        } catch (JsonProcessingException ex) {
+                .fetchOne();
+            return one != null;
+        } catch (JsonProcessingException | NoSuchAlgorithmException ex) {
             log.error("",ex);
             return false;
         }

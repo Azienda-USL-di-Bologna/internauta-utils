@@ -7,6 +7,9 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerEx
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -226,11 +229,38 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     protected abstract R doRealWork() throws MasterjobsWorkerException;
     
-    public UUID calcolaMD5() throws JsonProcessingException{
-        String calcolaMD5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
-     
-        return UUID.fromString(calcolaMD5.replaceFirst( 
+    public UUID calcolaMD5() throws JsonProcessingException, NoSuchAlgorithmException{
+        //String md5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
+        log.info("inizio calcolo applicativo md5");
+        String md5 = getMD5(this);
+        log.info("fine calcolo applicativo md5");
+        return UUID.fromString(md5.replaceFirst( 
             "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5" 
         ));
+    }
+    
+    /**
+     * Calcola l'hash md5 del job che sarà inserito in tabella con questo worker
+     * @param worker
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws JsonProcessingException 
+     */
+    private String getMD5(JobWorker worker) throws NoSuchAlgorithmException, JsonProcessingException {
+        String strData = 
+                worker.getName() + 
+                (worker.getData() != null? worker.getData().toJsonString(objectMapper): "") +
+                worker.isDeferred();
+        MessageDigest m = MessageDigest.getInstance("MD5");
+        m.reset();
+        m.update(strData.getBytes());
+        byte[] digest = m.digest();
+        BigInteger bigInt = new BigInteger(1,digest);
+        String hashtext = bigInt.toString(16);
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while(hashtext.length() < 32 ){
+          hashtext = "0"+hashtext;
+        }
+        return hashtext;
     }
 }
