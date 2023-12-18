@@ -78,6 +78,7 @@ public class DocumentoGEDIBuilder {
         String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
         String produttore = (String) parametriVersamento.get("produttore");
+        String tipoRegistro = (String) mappaParametri.get("tipoRegistro");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -108,8 +109,7 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
-        //TODO guardare se va bene oppure: "Gestore Documentale"
-        versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(tipoRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);

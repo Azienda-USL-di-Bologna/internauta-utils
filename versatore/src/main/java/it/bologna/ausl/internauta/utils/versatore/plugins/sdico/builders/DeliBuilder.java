@@ -14,6 +14,7 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -112,7 +113,7 @@ public class DeliBuilder {
             if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
                 HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
-                    dataEsecutivita = datiPubblicazione.get("data_esecutivita").toString();
+                    dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
                 } else {
                     throw new VersatoreSdicoException("La Delibera non ha data esecutivita");
                 }
@@ -120,8 +121,9 @@ public class DeliBuilder {
                 throw new VersatoreSdicoException("La Delibera non ha i dati di pubblicazione");
             }
         } else {
-            throw new VersatoreSdicoException("La Delibera non gli additionalData");
+            throw new VersatoreSdicoException("La Delibera non ha gli additionalData");
         }
+        String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
@@ -158,7 +160,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
-        versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(naturaDocumento), TESTO);
         if (docDetail.getDataPubblicazione() != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
         } else {
