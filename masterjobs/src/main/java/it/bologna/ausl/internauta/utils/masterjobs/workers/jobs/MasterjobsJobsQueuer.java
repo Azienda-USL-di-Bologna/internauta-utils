@@ -40,6 +40,8 @@ import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -82,10 +84,44 @@ public class MasterjobsJobsQueuer {
     @Autowired
     private MasterjobsApplicationConfig masterjobsApplicationConfig;
     
-//    @PostConstruct
-//    public void init() {
-//        this.self = beanFactory.getBean(MasterjobsQueuer.class);
-//    }
+    /**
+     * Accoda i jobs solo dopo che la transazione in corso committa,
+     * Se non sono presenti transazioni, i jobs vengono accodati subito
+     * @param workers
+     * @param objectId
+     * @param objectType
+     * @param app
+     * @param waitForObject
+     * @param priority
+     * @param ip
+     * @return i jobs che che sono stati creati
+     */
+    public MasterjobsQueueData queueOnCommit(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, String ip) {
+        MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
+            try {
+                MasterjobsQueueData _queueData = this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip);
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){
+                    @Override
+                    public void afterCommit() {
+                        TransactionSynchronization.super.afterCommit();
+                        try {
+                            insertInQueue(_queueData);
+                        } catch (Exception ex) {
+                            String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
+                            log.error(errorMessage, ex);
+                            throw new MasterjobsRuntimeExceptionWrapper(new MasterjobsQueuingException(errorMessage, ex));
+                        }
+                    }
+                });
+                return _queueData;
+            } catch (MasterjobsBadDataException ex) {
+                String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
+                log.error(errorMessage, ex);
+                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+            }
+        });
+        return queueData;
+    }
     
     /**
      * accoda dei jobs
