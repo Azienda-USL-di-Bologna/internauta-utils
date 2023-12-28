@@ -11,6 +11,7 @@ import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -88,12 +89,29 @@ public class DeteBuilder {
         String stringaDiFirmatari = "";
         if (firmatari != null) {
             for (Persona firmatario : firmatari) {
-                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - ";
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + ", ";
             }
         } else {
             throw new VersatoreSdicoException("La Determina non ha firmatari");
         }
-        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 3);
+        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
+        String numeroProposta = docDetail.getAnnoProposta().toString() + "-" + df.format(docDetail.getNumeroProposta());
+        HashMap<String, Object> additionalData = doc.getAdditionalData();
+        String dataEsecutivita;
+        if (additionalData != null) {
+            if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
+                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+                if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
+                    dataEsecutivita = datiPubblicazione.get("data_esecutivita").toString();
+                } else {
+                    throw new VersatoreSdicoException("La Delibera non ha data esecutivita");
+                }
+            } else {
+                throw new VersatoreSdicoException("La Delibera non ha i dati di pubblicazione");
+            }
+        } else {
+            throw new VersatoreSdicoException("La Delibera non gli additionalData");
+        }
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -123,6 +141,15 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(codiceRegistro), TESTO);
+        if (docDetail.getDataPubblicazione() != null) {
+            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
+        } else {
+            throw new VersatoreSdicoException("La Delibera non ha data pubblicazione");
+        }
 
         return versamentoBuilder;
     }

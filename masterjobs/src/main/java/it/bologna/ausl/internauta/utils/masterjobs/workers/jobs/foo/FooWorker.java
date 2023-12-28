@@ -6,6 +6,8 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerEx
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
+import java.time.ZonedDateTime;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +47,20 @@ public class FooWorker extends JobWorker {
     @Override
     public boolean isExecutable() {
         try {
+            //log.info("isExecutable: " + ZonedDateTime.now());
+            Map jobWorkData = getJobWorkData();
+            //log.info(jobWorkData == null? null: jobWorkData.toString());
             String debuggingParam = debuggingOptionsManager.getDebuggingParam(DebuggingOption.Key.test, String.class);
+            if (debuggingParam.equalsIgnoreCase("write") && jobWorkData != null) {
+                jobWorkData.put("key3", "tre");
+                jobWorkData.put("key4", 4);
+                jobWorkData.put("key5", false);
+                setJobWorkData(jobWorkData);
+            } else if (debuggingParam.equalsIgnoreCase("null") && jobWorkData != null) {
+                setJobWorkData(null);
+            }
             return debuggingParam.equalsIgnoreCase("gdm");
-        } catch (MasterjobsObjectNotFoundException ex) {
+        } catch (Exception ex) {
             log.error("errore", ex);
             return false;
         }

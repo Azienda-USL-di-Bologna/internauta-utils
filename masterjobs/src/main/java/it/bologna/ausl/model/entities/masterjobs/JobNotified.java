@@ -88,6 +88,10 @@ public class JobNotified implements Serializable {
     @Column(name = "skip_if_already_present")
     private Boolean skipIfAlreadyPresent = false;
     
+    @Basic(optional = true)
+    @Column(name = "inserted_from")
+    private String insertedFrom;
+    
     public JobNotified() {
     }
 
@@ -169,6 +173,14 @@ public class JobNotified implements Serializable {
 
     public void setSkipIfAlreadyPresent(Boolean skipIfAlreadyPresent) {
         this.skipIfAlreadyPresent = skipIfAlreadyPresent;
+    }
+
+    public String getInsertedFrom() {
+        return insertedFrom;
+    }
+
+    public void setInsertedFrom(String insertedFrom) {
+        this.insertedFrom = insertedFrom;
     }
 
     @Override

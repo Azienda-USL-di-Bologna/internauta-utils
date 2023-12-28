@@ -49,7 +49,7 @@ public class DocumentoGEDIBuilder {
     }
     
      /**
-     * Metodo che costruisce i metadati per i documenti GEDI (tipologia generica id tipo doc 999)
+     * Metodo che costruisce i metadati per i documenti GEDI (tipologia documento generico id tipo doc 85)
      * @return 
      */
     public VersamentoBuilder build() {
@@ -70,6 +70,14 @@ public class DocumentoGEDIBuilder {
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
+        String descrizioneClassificazione = archivio.getIdTitolo().getNome();
+        String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
+        String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
+        String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
+        String riservato = (String) mappaParametri.get("riservato");
+        String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
+        String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
+        String produttore = (String) parametriVersamento.get("produttore");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -77,9 +85,8 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
-        //TODO vedere se è bene per AZERO inserire qui i dati del numero e data documento
-        versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList(numeroDocumento), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        //versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList(numeroDocumento), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
@@ -90,9 +97,27 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
         //TODO vedere anche qui come settare il registro
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(archivioDetail.getIdStruttura().getNome()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        
+        //metadati aggiunti nel passaggio alla tipologia 85
+        
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
+        //TODO guardare se va bene oppure: "Gestore Documentale"
+        versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(nomeSistemaVersante), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_versione_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
         
         return versamentoBuilder;
     }

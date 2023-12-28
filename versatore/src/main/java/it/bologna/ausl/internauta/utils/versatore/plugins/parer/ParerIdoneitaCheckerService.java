@@ -47,7 +47,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
             Integer giorniPrimaDiVersareDete = Integer.parseInt((String) params.get("giorniPrimaDiVersareDete"));
             
             JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-         
+            if(doc.getPregresso()) {
+                idoneo = false;
+            }
+            
             switch (doc.getTipologia()) {
                 case DELIBERA:
 //                    oggi meno i giorni del parametro non sono prima della data regitrazione, significa che sono passati 7 giorni almeno
@@ -56,9 +59,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                     }
                     if(doc.getAdditionalData().get("dati_pubblicazione") == null) {
                         log.info("Delibera non idonea perche senza pubblicazione: ", id.toString());
-
+                        
                         idoneo = false;
                     }
+                    
                     break;
                 case DETERMINA:
                     if(ZonedDateTime.now().minusDays(giorniPrimaDiVersareDete).isBefore(docDetail.getDataRegistrazione())){ 

@@ -2,16 +2,25 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import it.bologna.ausl.model.entities.masterjobs.QJob;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.UUID;
+import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -43,6 +52,13 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     protected boolean deferred;
     protected Integer executableCheckEveryMillis;
     protected ZonedDateTime jobExecutableCheckStart = null;
+   
+    private Map<String, Object> jobWorkData;
+    private boolean jobWorkerDataChanged = false;
+    
+    private Long jobId;
+    private ZonedDateTime jobInsertTs;
+    private ZonedDateTime jobLastExecutionTs;
     
     @Autowired
     private JobReporitory jobRepository;
@@ -67,6 +83,14 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
         this._workerDeferredData = workerDeferredData;
         this.deferred = true;
     }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+    
+    public TransactionTemplate getTransactionTemplate() {
+        return transactionTemplate;
+    }
     
     /**
      * da richiamare per far eseguire il job.
@@ -78,10 +102,13 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
     public R doWork() throws MasterjobsWorkerException {
+        log.info(String.format("executing job %s with jobId: %s ", getName(), getJobId()));
         if (deferred) {
             this._workerData = this._workerDeferredData.toWorkerData();
         }
-        return doRealWork();
+        R res = doRealWork();
+        log.info(String.format("job %s with jobId: %s ended", getName(), getJobId()));
+        return res;
     }
 
     /**
@@ -118,8 +145,39 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
         return true;
     }
     
+    public final boolean _isExecutable() {
+        boolean isExecutable = isExecutable();
+        if (getJobId() != null && isJobWorkerDataChanged()) {
+            writeJobWorkerData();
+            setJobWorkerDataChanged(false);
+        }
+        return isExecutable;
+    }
+    
+    private void writeJobWorkerData() {
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
+        QJob qJob = QJob.job;
+        getTransactionTemplate().setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        getTransactionTemplate().executeWithoutResult(a -> {
+           Object value = getJobWorkData();
+           if (getJobWorkData() != null) {
+               jPAQueryFactory.update(qJob).set(qJob.workData, this.getJobWorkData()).where(qJob.id.eq(getJobId())).execute();
+           } else {
+               jPAQueryFactory.update(qJob).setNull(qJob.workData).where(qJob.id.eq(getJobId())).execute();
+           }
+        });
+    }
+    
     public boolean isExecutable() {
         return true;
+    }
+
+    public Long getJobId() {
+        return this.jobId;
+    }
+    
+    public void setJobId(Long jobId) {
+        this.jobId = jobId;
     }
 
     public Integer getExecutableCheckEveryMillis() {
@@ -128,6 +186,39 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     
     public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
         this.executableCheckEveryMillis = executableCheckEveryMillis;
+    }
+
+    public Map<String, Object> getJobWorkData() {
+        return jobWorkData;
+    }
+
+    public boolean isJobWorkerDataChanged() {
+        return jobWorkerDataChanged;
+    }
+
+    public void setJobWorkerDataChanged(boolean jobWorkerDataChanged) {
+        this.jobWorkerDataChanged = jobWorkerDataChanged;
+    }
+    
+    public void setJobWorkData(Map<String, Object> jobWorkData) {
+        setJobWorkerDataChanged(true);
+        this.jobWorkData = jobWorkData;
+    }
+
+    public ZonedDateTime getJobInsertTs() {
+        return jobInsertTs;
+    }
+
+    public void setJobInsertTs(ZonedDateTime jobInsertTs) {
+        this.jobInsertTs = jobInsertTs;
+    }
+
+    public ZonedDateTime getJobLastExecutionTs() {
+        return jobLastExecutionTs;
+    }
+
+    public void setJobLastExecutionTs(ZonedDateTime jobLastExecutionTs) {
+        this.jobLastExecutionTs = jobLastExecutionTs;
     }
     
     /**
@@ -138,11 +229,38 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     protected abstract R doRealWork() throws MasterjobsWorkerException;
     
-    public UUID calcolaMD5() throws JsonProcessingException{
-     String calcolaMD5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
-     
-     return UUID.fromString(calcolaMD5.replaceFirst( 
-        "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5" 
+    public UUID calcolaMD5() throws JsonProcessingException, NoSuchAlgorithmException{
+        //String md5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
+        log.info("inizio calcolo applicativo md5");
+        String md5 = getMD5(this);
+        log.info("fine calcolo applicativo md5");
+        return UUID.fromString(md5.replaceFirst( 
+            "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5" 
         ));
+    }
+    
+    /**
+     * Calcola l'hash md5 del job che sarà inserito in tabella con questo worker
+     * @param worker
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws JsonProcessingException 
+     */
+    private String getMD5(JobWorker worker) throws NoSuchAlgorithmException, JsonProcessingException {
+        String strData = 
+                worker.getName() + 
+                (worker.getData() != null? worker.getData().toJsonString(objectMapper): "") +
+                worker.isDeferred();
+        MessageDigest m = MessageDigest.getInstance("MD5");
+        m.reset();
+        m.update(strData.getBytes());
+        byte[] digest = m.digest();
+        BigInteger bigInt = new BigInteger(1,digest);
+        String hashtext = bigInt.toString(16);
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while(hashtext.length() < 32 ){
+          hashtext = "0"+hashtext;
+        }
+        return hashtext;
     }
 }

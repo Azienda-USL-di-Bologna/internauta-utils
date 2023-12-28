@@ -72,6 +72,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                     // se la data è giunta, allora controllo l'eseguibilità sequenziale del set
                     (!set.getWaitObject() || super.isSetSequentiallyExecutable(set))
                     ) {
+                    // log.info("SONO DENTRO, sono le: " + now.toString() + " dovevo eseguirlo a: " + (set.getNextExecutableCheck() != null? set.getNextExecutableCheck().toString(): null));
                     // se può essere eseguito, lo sposto nella sua coda originaria, davanti agli altri job
                     String destinationQueue = queueData.getQueue();
                     redisTemplate.opsForList().move(
@@ -79,9 +80,9 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
                     destinationQueue, RedisListCommands.Direction.LEFT);
                 } else {
                     
-                    if (set.getNextExecutableCheck() != null) {
-//                        log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
-                    }
+                    //if (set.getNextExecutableCheck() != null) {
+                        //log.info(String.format("set %s not yet executable, now is %s, it will be executable at %s", set.getId(), now.toString(), set.getNextExecutableCheck().toString()));
+                    //}
                     
                     // se non può essere eseguito, lo riaccodo in fondo alla wait queue, in modo da ricontrollarlo dopo
                     redisTemplate.opsForList().move(
