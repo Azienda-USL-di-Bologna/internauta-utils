@@ -46,7 +46,8 @@ public class ParametriAziendeReader {
         ricalcoloPermessiArchivi, 
         usaRitentaVersamentiAutomatico,
         inadConfiguration,
-        escludiArchiviChiusiFromAbilitazioniMassiveGedi
+        escludiArchiviChiusiFromAbilitazioniMassiveGedi,
+        loginConfig
     }
     
     @Autowired
