@@ -73,6 +73,10 @@ public class Service implements Serializable {
     @Column(name = "schedule_on_start")
     private Boolean scheduleOnStart;
     
+    @Basic(optional = true)
+    @Column(name = "wait_notify_millis")
+    private Integer waitNotifyMillis;
+    
     @Basic(optional = false)
     @NotNull
     @Column(name = "active")
@@ -140,6 +144,14 @@ public class Service implements Serializable {
 
     public void setScheduleOnStart(Boolean scheduleOnStart) {
         this.scheduleOnStart = scheduleOnStart;
+    }
+
+    public Integer getWaitNotifyMillis() {
+        return waitNotifyMillis;
+    }
+
+    public void setWaitNotifyMillis(Integer waitNotifyMillis) {
+        this.waitNotifyMillis = waitNotifyMillis;
     }
 
     public Boolean getActive() {
