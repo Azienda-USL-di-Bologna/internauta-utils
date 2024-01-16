@@ -115,7 +115,7 @@ public abstract class ServiceWorker extends Worker implements Runnable {
                 } catch (Throwable ex) {
                     String errorMessage = String.format("error on executing preWork of service %s", getName());
                     log.error(errorMessage, ex);
-                    throw new RuntimeException(errorMessage, ex);
+                    //throw new RuntimeException(errorMessage, ex);
                 }
             });
 
