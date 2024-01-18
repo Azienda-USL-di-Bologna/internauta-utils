@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
@@ -11,6 +12,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.EntityManager;
@@ -60,6 +62,8 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     private ZonedDateTime jobInsertTs;
     private ZonedDateTime jobLastExecutionTs;
     
+    private List<MasterjobsWorkingObject> masterjobsWorkingObjects;
+
     @Autowired
     private JobReporitory jobRepository;
     
@@ -220,7 +224,15 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     public void setJobLastExecutionTs(ZonedDateTime jobLastExecutionTs) {
         this.jobLastExecutionTs = jobLastExecutionTs;
     }
-    
+
+    public List<MasterjobsWorkingObject> getMasterjobsWorkingObjects() {
+        return masterjobsWorkingObjects;
+    }
+
+    public void setMasterjobsWorkingObjects(List<MasterjobsWorkingObject> masterjobsWorkingObjects) {
+        this.masterjobsWorkingObjects = masterjobsWorkingObjects;
+    }
+   
     /**
      * da implementare nei worker specifici, è l'effettiva esecuzione del lavoro
      * @return L'oggetto WorkerResult o una sua sottoclasse, rappresentante il risultato del job. Si può tornare anche null

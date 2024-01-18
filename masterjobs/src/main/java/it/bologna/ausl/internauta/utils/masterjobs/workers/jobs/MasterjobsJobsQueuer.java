@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAUpdateClause;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
@@ -20,7 +21,9 @@ import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QSet;
+import it.bologna.ausl.model.entities.masterjobs.QWorkingObject;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
@@ -43,7 +45,6 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -299,6 +300,14 @@ public class MasterjobsJobsQueuer {
             job.setSet(set);
             log.info(String.format("persisting job %s", job.getName()));
             entityManager.persist(job);
+            List<MasterjobsWorkingObject> masterjobsWorkingObjects = worker.getMasterjobsWorkingObjects();
+            if (masterjobsWorkingObjects != null && !masterjobsWorkingObjects.isEmpty()) {
+                for (MasterjobsWorkingObject masterjobsWorkingObject : masterjobsWorkingObjects) {
+                    WorkingObject workingObject = new WorkingObject(
+                            masterjobsWorkingObject.getId(), masterjobsWorkingObject.getType(), job);
+                    entityManager.persist(workingObject);
+                }
+            }
             log.info(String.format("created job %s with id %s",job.getName(), job.getId()));
             jobs.add(job);
         }
@@ -314,8 +323,9 @@ public class MasterjobsJobsQueuer {
     }
     
     /**
-     * Accoda tutti insieme i jobs passati, in un unica transazione
-     * la transazione viene aperta nel metodo
+     * Accoda tutti insieme i jobs passati, in un unica transazione.
+     * A differenza degli altri metodi di accodamento, con questo metodo possono venire creati più set e non per forza uno con tutti i workers dentro.
+     * La transazione viene aperta nel metodo
      * @param descriptors la lista dei worker con relativi dati, da accodare
      * @param ip
      * @throws MasterjobsQueuingException 
@@ -377,6 +387,24 @@ public class MasterjobsJobsQueuer {
         redisTemplate.delete(masterjobsApplicationConfig.getInQueueHigh());
         redisTemplate.delete(masterjobsApplicationConfig.getInQueueHighest());
         
+    }
+    
+    /**
+     * Torna il numero di oggetti associati ai jobs in corso
+     * (Es. il numero di persone per cui è in corso un job)
+     * @param masterjobsWorkingObject
+     * @return il numero di oggetti associati ai jobs in corso
+     */
+    public Long getWorkingObjectNumber(MasterjobsWorkingObject masterjobsWorkingObject) {
+        QWorkingObject qWorkingObject = QWorkingObject.workingObject;
+        
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        Long count = queryFactory
+            .select(qWorkingObject.count())
+            .from(qWorkingObject)
+            .where(qWorkingObject.objectId.eq(masterjobsWorkingObject.getId()).and(qWorkingObject.objectType.eq(masterjobsWorkingObject.getType())))
+            .fetchOne();
+        return count;
     }
     
     public void regenerateQueue() throws MasterjobsRuntimeExceptionWrapper {
