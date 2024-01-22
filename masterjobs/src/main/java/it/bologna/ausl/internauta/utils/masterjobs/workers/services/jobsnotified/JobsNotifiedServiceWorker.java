@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services.jobsnotifie
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
@@ -202,7 +203,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
-        JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred());
+        List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
+        JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
         return masterjobsJobsQueuer.queue(
             jobWorker, 
             jobNotified.getObjectId(), 
