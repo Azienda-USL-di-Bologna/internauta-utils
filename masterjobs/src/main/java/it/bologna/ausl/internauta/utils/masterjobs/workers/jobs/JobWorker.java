@@ -7,7 +7,10 @@ import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
+import static it.bologna.ausl.model.entities.masterjobs.QJob.job;
+import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -274,5 +277,26 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
           hashtext = "0"+hashtext;
         }
         return hashtext;
+    }
+    
+    /**
+     * Aggiunge uno o più Working Object al job in corso
+     * @param masterjobWorkingObjects 
+     */
+    public void addWorkingObjects(List<MasterjobsWorkingObject> masterjobWorkingObjects) {
+        
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QJob qJob = QJob.job; 
+        getTransactionTemplate().setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        getTransactionTemplate().executeWithoutResult(a -> {
+            for (MasterjobsWorkingObject masterjobWorkingObject : masterjobWorkingObjects) {
+                Job job = queryFactory
+                    .select(qJob)
+                    .from(qJob)
+                    .where(qJob.id.eq(getJobId()))
+                    .fetchOne();
+                entityManager.persist(new WorkingObject(masterjobWorkingObject.getId(), masterjobWorkingObject.getType(), job));
+            }
+        });
     }
 }
