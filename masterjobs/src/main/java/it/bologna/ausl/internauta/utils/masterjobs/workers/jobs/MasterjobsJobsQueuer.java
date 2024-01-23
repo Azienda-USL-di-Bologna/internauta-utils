@@ -1,7 +1,10 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mysema.commons.lang.CloseableIterator;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
@@ -14,6 +17,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingE
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
+import it.bologna.ausl.internauta.utils.masterjobs.repository.SetReporitory;
 import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
@@ -21,14 +25,16 @@ import it.bologna.ausl.model.entities.masterjobs.QJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import it.bologna.ausl.model.entities.masterjobs.views.QSetWithJobIdsArray;
+import it.bologna.ausl.model.entities.masterjobs.views.SetWithJobIdsArray;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
@@ -43,7 +49,6 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -56,8 +61,11 @@ import org.springframework.util.StringUtils;
 public class MasterjobsJobsQueuer {
     private static final Logger log = LoggerFactory.getLogger(MasterjobsJobsQueuer.class);
     
+//    @Autowired
+//    private JobReporitory jobReporitory;
+    
     @Autowired
-    private JobReporitory jobReporitory;
+    private SetReporitory setReporitory;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -379,7 +387,7 @@ public class MasterjobsJobsQueuer {
         
     }
     
-    public void regenerateQueue() throws MasterjobsRuntimeExceptionWrapper {
+    public void regenerateQueueOld() throws MasterjobsRuntimeExceptionWrapper {
         log.info("inizio riginerazione code...");
         
         log.info("metto in pausa tutti i threads");
@@ -451,6 +459,172 @@ public class MasterjobsJobsQueuer {
         log.info("riattivo tutti i threads");
         resumeThreads();
     }
+    public void regenerateQueue(boolean stopThreads) throws MasterjobsRuntimeExceptionWrapper {
+        log.info("inizio riginerazione code...");
+        
+        if (stopThreads) {
+            log.info("metto in pausa tutti i threads...");
+            pauseThreads();
+            log.info("threads messi in pausa");
+        } else {
+            log.info("non metto in pausa tutti i threads");
+        }
+        
+        // cancello tutte le code relative ai jobs, in quanto rigenererò tutto da capo a partire dai jobs nel database
+        log.info("rimuovo tutte le code relative ai jobs...");
+        deleteAllJobsQueue();
+        
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(a -> {
+            QSetWithJobIdsArray qSetWithJobIdsArray = QSetWithJobIdsArray.setWithJobIdsArray;
+            
+            // setto tutto nello stato iniziale
+            log.info("resetto tutti i jobs e gli object_status su DB...");
+            resetJobsState(false);
+            
+            // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
+            log.info("estraggo tutti i set dal DB...");
+            
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            JPAQuery<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
+                .select(qSetWithJobIdsArray)
+                .from(qSetWithJobIdsArray)
+                .orderBy(qSetWithJobIdsArray.id.asc())
+                .fetchAll();
+            
+            for (Iterator<SetWithJobIdsArray> iterator = setWithJobIdsArrays.iterate(); iterator.hasNext();) {
+                SetWithJobIdsArray setWithJobIdsArray = iterator.next();
+                log.info(String.format("processo il set %s, ne estraggo i job...", setWithJobIdsArray.getId()));
+                
+                // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
+                String queue;
+                try {
+                    log.info("calcolo la coda in base alla priorità");
+                    queue = masterjobsUtils.getQueueBySetPriority(setWithJobIdsArray.getPriority());
+                    log.info(String.format("coda estratta %s", queue));
+                } catch (MasterjobsBadDataException ex) {
+                    String errorMessage = String.format("errore nella rigenerazione del set %s", setWithJobIdsArray.getId());
+                    log.error(errorMessage, ex);
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+                
+                // constuisco il json dei jobs del set
+                log.info("constuisco il json dei jobs del set...");
+                MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(setWithJobIdsArray.getJobsIds(), setWithJobIdsArray.getId(), queue);
+                try {
+                    // inserisco il json nella coda di esecuzione
+                    log.info("inserisco il json nella coda di esecuzione...");
+                    insertInQueue(queueData);
+                } catch (JsonProcessingException ex) {
+                    String errorMessage = String.format("errore nell'inserimo del json del set %s", setWithJobIdsArray.getId());
+                    log.error(errorMessage, ex);
+                    try {
+                        if (queueData != null)
+                            log.error(String.format("il josn è il seguente: %s", queueData.dump()));
+                        else
+                            log.error("queueData è null");
+                    } catch (JsonProcessingException subEx) {
+                        log.error("non sono riuscito a stampare il json", ex);
+                    }
+                    throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            }
+        });
+        if (stopThreads) {
+            log.info("riattivo tutti i threads...");
+            resumeThreads();
+            log.info("threads riattivati");
+        } else {
+            log.info("non è necessario riattivare i threads perché non sono stati mai fermati");
+        }
+        log.info("fine rigenerazione code");
+    }
+    
+    /*
+    public void regenerateQueue2() throws MasterjobsRuntimeExceptionWrapper {
+        log.info("inizio riginerazione code...");
+        
+        log.info("metto in pausa tutti i threads");
+        pauseThreads();
+        
+        // cancello tutte le code relative ai jobs, in quanto rigenererò tutto da capo a partire dai jobs nel database
+        log.info("rimuovo tutte le code relative ai jobs...");
+        deleteAllJobsQueue();
+        
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.executeWithoutResult(a -> {
+            QSet qSet = QSet.set;
+            QJob qJob = QJob.job;
+            
+            // setto tutto nello stato iniziale
+            log.info("resetto tutti i jobs e gli object_status su DB...");
+            resetJobsState(false);
+            
+            // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
+            log.info("estraggo tutti i set dal DB...");
+ 
+            try {
+                String setWithJobsArrayString = setReporitory.getSetWithJobsArray();
+                if (StringUtils.hasText(setWithJobsArrayString)) {
+                    List<Map<String, Object>> setWithJobsArray = objectMapper.readValue(setWithJobsArrayString, new TypeReference<List<Map<String, Object>>>(){});
+
+                    for (Iterator<Tuple> iterator = jobs.iterate(); iterator.hasNext();) {
+                        Tuple jobTuple = iterator.next();
+                        Long setId = jobTuple.get(qSet.id);
+                        Set.SetPriority setPriority = jobTuple.get(qSet.priority);
+                        Long jobId = jobTuple.get(qJob.id);
+
+                        log.info(String.format("processo il set %s, ne estraggo i job...", setId));
+        //                List<Long> jobsofSet = queryFactory.select(qJob.id)
+        //                    .from(qJob)
+        //                    .where(qJob.set.id.eq(set.getId()))
+        //                    .fetch();
+
+                        // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
+                        String queue;
+                        try {
+                            log.info("calcolo la coda in base alla priorità");
+                            queue = masterjobsUtils.getQueueBySetPriority(setPriority);
+                            log.info(String.format("coda estratta %s", queue));
+                        } catch (MasterjobsBadDataException ex) {
+                            String errorMessage = String.format("errore nella rigenerazione del set %s", setId);
+                            log.error(errorMessage, ex);
+                            throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                        }
+
+                        // constuisco il json dei jobs del set
+                        log.info("constuisco il json dei jobs del set...");
+                        MasterjobsQueueData queueData = masterjobsObjectsFactory.buildMasterjobsQueueData(jobsofSet, set.getId(), queue);
+                        try {
+
+                            // inserisco il json nella coda di esecuzione
+                            log.info("inserisco il json nella coda di esecuzione...");
+                            insertInQueue(queueData);
+                        } catch (JsonProcessingException ex) {
+                            String errorMessage = String.format("errore nell'inserimo del json del set %s", set.getId());
+                            log.error(errorMessage, ex);
+                            try {
+                                if (queueData != null)
+                                    log.error(String.format("il josn è il seguente: %s", queueData.dump()));
+                                else
+                                    log.error("queueData è null");
+                            } catch (JsonProcessingException subEx) {
+                                log.error("non sono riuscito a stampare il json", ex);
+                            }
+                            throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                String errorMessage = "errore nel rigenerare le code";
+                log.error(errorMessage, ex);
+                throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+            }
+        });
+        
+        log.info("riattivo tutti i threads");
+        resumeThreads();
+    }*/
     
     /**
      * Setta nello stato iniziale gli objectStatus e i jobs

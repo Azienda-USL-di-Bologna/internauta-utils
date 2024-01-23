@@ -1,10 +1,15 @@
-package it.bologna.ausl.model.entities.masterjobs;
+package it.bologna.ausl.model.entities.masterjobs.views;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vladmihalcea.hibernate.type.array.IntArrayType;
+import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import com.vladmihalcea.hibernate.type.array.StringArrayType;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import it.bologna.ausl.model.entities.masterjobs.Job;
+import it.bologna.ausl.model.entities.masterjobs.Set.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -24,6 +29,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,21 +39,15 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author gdm
  */
 @TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
 })
 @Entity
-@Table(name = "sets", catalog = "internauta", schema = "masterjobs")
+@Table(name = "set_with_jobs_array", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class Set implements Serializable {
-
-    public static enum SetPriority {
-        NORMAL,
-        HIGH,
-        HIGHEST
-    }
+public class SetWithJobIdsArray implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -88,11 +88,11 @@ public class Set implements Serializable {
     @Basic(optional = true)
     private ZonedDateTime nextExecutableCheck;
     
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
-    @JsonBackReference(value = "jobList")
-    private List<Job> jobList;
+    @Column(name = "jobs_ids", columnDefinition = "int8[]")
+    @Type(type = "list-array")
+    private List<Long> jobsIds;
     
-    public Set() {
+    public SetWithJobIdsArray() {
     }
 
     public Long getId() {
@@ -151,19 +151,24 @@ public class Set implements Serializable {
         this.insertedFrom = insertedFrom;
     }
 
-    public List<Job> getJobList() {
-        return jobList;
-    }
-
-    public void setJobList(List<Job> jobList) {
-        this.jobList = jobList;
-    }
-
     public ZonedDateTime getNextExecutableCheck() {
         return nextExecutableCheck;
     }
 
     public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
         this.nextExecutableCheck = nextExecutableCheck;
+    }
+
+    public List<Long> getJobsIds() {
+        return jobsIds;
+    }
+
+    public void setJobsIds(List<Long> jobsIds) {
+        this.jobsIds = jobsIds;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + "[ id=" + id + " ]";
     }
 }
