@@ -41,8 +41,11 @@ public class MasterjobsServiceController {
     
     @RequestMapping(value = "regenerateQueue", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(rollbackFor = {Error.class})
-    public void regenerateQueue() {
-        masterjobsJobsQueuer.regenerateQueue();
+    public void regenerateQueue(@RequestParam(required = false, name = "stopThread", defaultValue = "false") Boolean stopThread) {
+        if (stopThread == null) {
+            stopThread = false;
+        }
+        masterjobsJobsQueuer.regenerateQueue(stopThread);
     }
     
     @RequestMapping(value = "getService/{name}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
