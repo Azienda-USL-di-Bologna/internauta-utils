@@ -486,8 +486,13 @@ public class MasterjobsJobsQueuer {
         resumeThreads();
     }
     
+    /**
+     * elimina e poi rigenera le code redis a partire dal db dei set/jobs
+     * @param stopThreads se true, prima di rigenerare ferma tutti i threads, poi dopo la rignerazione li fa partire
+     * @throws MasterjobsRuntimeExceptionWrapper 
+     */
     public void regenerateQueue(boolean stopThreads) throws MasterjobsRuntimeExceptionWrapper {
-        log.info("inizio riginerazione code...");
+        log.info("inizio rigenerazione code...");
         
         if (stopThreads) {
             log.info("metto in pausa tutti i threads...");
@@ -512,6 +517,7 @@ public class MasterjobsJobsQueuer {
             // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
             log.info("estraggo tutti i set dal DB...");
             
+            // tramite la vista SetWithJobIdsArray tira su tutti i set e per ogni set la lista dei suoi job id
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             JPAQuery<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
                 .select(qSetWithJobIdsArray)
@@ -519,6 +525,7 @@ public class MasterjobsJobsQueuer {
                 .orderBy(qSetWithJobIdsArray.id.asc())
                 .fetchAll();
             
+            // usando la fetchAll ciclo tramite iteratore per evitare di caricare in memoria tutta la lista dei set
             for (Iterator<SetWithJobIdsArray> iterator = setWithJobIdsArrays.iterate(); iterator.hasNext();) {
                 SetWithJobIdsArray setWithJobIdsArray = iterator.next();
                 log.info(String.format("processo il set %s, ne estraggo i job...", setWithJobIdsArray.getId()));
