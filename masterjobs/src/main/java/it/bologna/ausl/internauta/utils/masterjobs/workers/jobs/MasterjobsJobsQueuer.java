@@ -413,6 +413,10 @@ public class MasterjobsJobsQueuer {
         return count;
     }
     
+    /**
+     * è stata sostituita da regenerateQueue(boolean stopThreads)
+     */
+    @Deprecated
     public void regenerateQueueOld() throws MasterjobsRuntimeExceptionWrapper {
         log.info("inizio riginerazione code...");
         
@@ -508,12 +512,15 @@ public class MasterjobsJobsQueuer {
         
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(a -> {
-            QSetWithJobIdsArray qSetWithJobIdsArray = QSetWithJobIdsArray.setWithJobIdsArray;
-            
             // setto tutto nello stato iniziale
             log.info("resetto tutti i jobs e gli object_status su DB...");
             resetJobsState(false);
-            
+        });
+        
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        transactionTemplate.executeWithoutResult(a -> {
+            QSetWithJobIdsArray qSetWithJobIdsArray = QSetWithJobIdsArray.setWithJobIdsArray;
+
             // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
             log.info("estraggo tutti i set dal DB...");
             

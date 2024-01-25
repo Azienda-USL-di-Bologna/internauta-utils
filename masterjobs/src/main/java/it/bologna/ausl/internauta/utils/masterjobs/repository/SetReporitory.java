@@ -5,11 +5,8 @@ import it.bologna.ausl.model.entities.masterjobs.Set;
 import it.bologna.ausl.model.entities.masterjobs.projections.generated.SetWithPlainFields;
 import it.nextsw.common.data.annotations.NextSdrRepository;
 import it.nextsw.common.repositories.NextSdrQueryDslRepository;
-import java.util.List;
-import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 /**
@@ -23,6 +20,7 @@ public interface SetReporitory extends
         JpaRepository<Set, Long>  {
     
     /**
+     * Non serve più perché è stata creata la vista it.bologna.ausl.model.entities.masterjobs.views.SetWithJobIdsArray
      * torna una stringa che rappresenta un json che contiene una lista di set in cui per ognuno c'è l'id del set, la sua priprotà e la lista degli id dei suoi jobs
      * es. 
      *  [
@@ -48,5 +46,6 @@ public interface SetReporitory extends
                     ") r",
             nativeQuery = true
     )
+    @Deprecated
     public String getSetWithJobsArray(); 
 }
