@@ -4,8 +4,10 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
+import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.Doc;
@@ -14,6 +16,7 @@ import it.bologna.ausl.model.entities.scripta.Registro;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +55,7 @@ public class DocumentoGEDIBuilder {
      * Metodo che costruisce i metadati per i documenti GEDI (tipologia documento generico id tipo doc 85)
      * @return 
      */
-    public VersamentoBuilder build() {
+    public VersamentoBuilder build() throws VersatoreSdicoException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
@@ -66,7 +69,7 @@ public class DocumentoGEDIBuilder {
         String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
         //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
-        String anniTenuta = "tenuta illimitata";
+        String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
@@ -79,6 +82,16 @@ public class DocumentoGEDIBuilder {
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
         String produttore = (String) parametriVersamento.get("produttore");
         String tipoRegistro = (String) mappaParametri.get("tipoRegistro");
+        String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
+        String nomeDelDocumento = "";
+        List<Allegato> listaAllegati = doc.getAllegati();
+        if (listaAllegati.size() > 0 && !listaAllegati.isEmpty()) {
+            nomeDelDocumento = listaAllegati.get(0).getDettagli().getOriginale().getNome() 
+                    + "." 
+                    + listaAllegati.get(0).getDettagli().getOriginale().getEstensione();
+        } else {
+            throw new VersatoreSdicoException("Il documento GEDI non contiene allegati");
+        }
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -115,9 +128,11 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(nomeSistemaVersante), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_versione_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_versione_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO);
         
         return versamentoBuilder;
     }

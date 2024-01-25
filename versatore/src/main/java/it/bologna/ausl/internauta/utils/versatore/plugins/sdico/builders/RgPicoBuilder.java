@@ -80,10 +80,7 @@ public class RgPicoBuilder {
         String annoRegistrazione = docDetail.getAnnoRegistrazione().toString(); 
         String denominazioneDellAmministrazione = (String) mappaParametri.get("denominazioneAmministrazione");
         String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
-        String anniTenuta = "illimitato";
-        if (archivio.getAnniTenuta() != 999) {
-            anniTenuta = Integer.toString(archivio.getAnniTenuta());
-        }
+        String anniTenuta = mappaParametri.get("anniTenuta");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);

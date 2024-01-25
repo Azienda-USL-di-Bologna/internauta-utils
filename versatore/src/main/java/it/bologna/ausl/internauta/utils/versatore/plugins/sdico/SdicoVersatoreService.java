@@ -186,6 +186,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
             try {
                 Archivio archivio = new Archivio();
                 List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
+                if (listaArchivioDocs.size() == 0 || listaArchivioDocs.isEmpty()) {
+                    throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
+                }
                 Persona responsabileGestioneDocumentale = new Persona();
                 if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
                     //controllo che il documento non sia già stato versato per questo archivio radice
@@ -278,8 +281,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             matcher.groupCount();
                             String numeroIniziale = matcher.group(2);
                             String numeroFinale = matcher.group(3);
-                            ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroIniziale, doc.getIdAzienda().getId());
-                            ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(numeroFinale, doc.getIdAzienda().getId());
+                            ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
+                                    numeroIniziale, 
+                                    doc.getIdAzienda().getId());
+                            ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
+                                    numeroFinale, 
+                                    doc.getIdAzienda().getId());
                             RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale, responsabileGestioneDocumentale);
                             versamentoBuilder = rb.build();
                             break;
