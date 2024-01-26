@@ -79,29 +79,37 @@ public class DeliBuilder {
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
+        String stringaDiFirmatari = "";
+        if (firmatari != null) {
+            for (Persona firmatario : firmatari) {
+                stringaDiFirmatari += "Proponente: " + firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
+            }
+        } else {
+            throw new VersatoreSdicoException("La Delibera non ha firmatari");
+        }
         List<AttoreDoc> listaAttoriDelDocumento = doc.getAttoriList();
+        //oltre che a cercare i firmatari cerco anche l'ufficio produttore
         String ufficioProduttore = null;
         for (AttoreDoc attore : listaAttoriDelDocumento) {
             if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE)) {
                 ufficioProduttore = attore.getIdStruttura().getNome();
+                stringaDiFirmatari += "DG: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
+            }
+            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_AMMINISTRATIVO)) {
+                stringaDiFirmatari += "DA: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
+            }
+            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_SANITARIO)) {
+                stringaDiFirmatari += "DS: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
             }
         }
         if (ufficioProduttore.isEmpty() || ufficioProduttore == null) {
             throw new VersatoreSdicoException("Per la delibera non è indicato un Direttore Generale oppure non ne è stata specificata la struttura");
         } 
+        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
         String riservato = (String) mappaParametri.get("riservato");
         String numeroProposta = docDetail.getAnnoProposta().toString() + "-" + df.format(docDetail.getNumeroProposta());
-        String stringaDiFirmatari = "";
-        if (firmatari != null) {
-            for (Persona firmatario : firmatari) {
-                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
-            }
-        } else {
-            throw new VersatoreSdicoException("La Delibera non ha firmatari");
-        }
-        stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
@@ -124,7 +132,9 @@ public class DeliBuilder {
             throw new VersatoreSdicoException("La Delibera non ha gli additionalData");
         }
         String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
-
+        String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
+        String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
+        
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
@@ -153,7 +163,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
@@ -166,6 +176,7 @@ public class DeliBuilder {
         } else {
             throw new VersatoreSdicoException("La Delibera non ha data pubblicazione");
         }
+        versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
 
         return versamentoBuilder;
 

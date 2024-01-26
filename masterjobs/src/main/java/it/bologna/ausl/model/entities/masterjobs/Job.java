@@ -1,6 +1,7 @@
 package it.bologna.ausl.model.entities.masterjobs;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -8,6 +9,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
@@ -22,6 +24,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
@@ -120,7 +123,11 @@ public class Job implements Serializable {
     @Column(name = "last_execution_ts")
     @Basic(optional = true)
     private ZonedDateTime lastExecutionTs;
-  
+    
+//    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "job", fetch = FetchType.LAZY)
+//    @JsonBackReference(value = "workingObjects")
+//    private List<WorkingObject> workingObjects;
+    
     public Job() {
     }
 
@@ -226,6 +233,5 @@ public class Job implements Serializable {
     public void setInsertTs(ZonedDateTime insertTs) {
         this.insertTs = insertTs;
     }
-    
-    
+
 }

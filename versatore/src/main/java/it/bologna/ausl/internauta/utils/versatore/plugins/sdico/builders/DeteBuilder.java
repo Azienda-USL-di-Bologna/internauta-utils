@@ -91,7 +91,7 @@ public class DeteBuilder {
         String stringaDiFirmatari = "";
         if (firmatari != null) {
             for (Persona firmatario : firmatari) {
-                stringaDiFirmatari += firmatario.getCodiceFiscale() + ", ";
+                stringaDiFirmatari += firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
             }
         } else {
             throw new VersatoreSdicoException("La Determina non ha firmatari");
@@ -120,6 +120,8 @@ public class DeteBuilder {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         }
         stringaAllegati = stringaAllegati.substring(0, stringaAllegati.length() - 3);
+        String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
+        String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -147,7 +149,7 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(nomeSistemaVersante), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
@@ -163,6 +165,7 @@ public class DeteBuilder {
         } else {
             throw new VersatoreSdicoException("La Determina non ha data pubblicazione");
         }
+        versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
 
         return versamentoBuilder;
     }

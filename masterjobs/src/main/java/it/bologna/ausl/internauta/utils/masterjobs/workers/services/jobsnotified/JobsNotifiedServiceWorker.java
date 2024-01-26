@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services.jobsnotifie
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
@@ -52,16 +53,19 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     public void preWork() throws MasterjobsWorkerException {
         queryFactory = new JPAQueryFactory(entityManager);
 
-        // all'avvio schedulo il job per recuperare il pregresso
-        transactionTemplate.executeWithoutResult(a -> {
-            try {
-                extractCreateAndQueueJobs();
-            } catch (MasterjobsWorkerException ex) {
-                throw new MasterjobsRuntimeExceptionWrapper(ex);
-            }
-        });
-        
-        if (!usePolling) {
+        /*
+        se sono in modalità notify prima di mettermi in listen per le notify, accodo i comandi presenti in tabella.
+        questo mi permette di accodare i comandi che sono stati inseriti mentre non ero in listen
+        */
+        if (serviceEntity.getWaitNotifyMillis() != null) {            
+            transactionTemplate.executeWithoutResult(a -> {
+                try {
+                    extractCreateAndQueueJobs();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
+                }
+            });
+
             Session session = entityManager.unwrap(Session.class);
             session.doWork((Connection connection) -> {
                 try {
@@ -86,35 +90,39 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     @Override
     public WorkerResult doWork() throws MasterjobsWorkerException {
-        log.info(String.format("starting %s with %spolling...", getName(), !usePolling? "no ": ""));
-        if (usePolling) {
-            transactionTemplate.executeWithoutResult(a -> {
-                try {
-                    extractCreateAndQueueJobs();
-                } catch (MasterjobsWorkerException ex) {
-                    throw new MasterjobsRuntimeExceptionWrapper(ex);
-                }
-            });
-        } else {
+        Integer waitNotifyMillis = serviceEntity.getWaitNotifyMillis();
+        if (waitNotifyMillis != null) {
+            /*
+            Se sono in modalità notify mi metto in attesa di notify per wait_notify_millis millisecondi.
+            se wait_notify_millis è 0, allora vuol dire che voglio che questo servizio non termini mai restando sempre in listen
+            in ogni caso faccio una getNotifications ogni 10 secondi per far si che se è stato fermato il masterjobs (isStopped == true) 
+            il servizio riesca a terminare.
+            */
+            log.info(String.format("starting %s with notify...", getName()));
             Session session = entityManager.unwrap(Session.class);
             session.doWork((Connection connection) -> {
                 try {
-                    PGConnection pgc;
-                    while (!isStopped()) {
+                    boolean stopLoop = false;
+                    int notifyMillis;
+                    while (!stopLoop && !isStopped()) {
+                        if (waitNotifyMillis == 0) {
+                            notifyMillis = 10000;
+                            stopLoop = false;
+                        } else {
+                            notifyMillis = waitNotifyMillis;
+                            stopLoop = true;
+                        }
                         if (connection.isWrapperFor(PGConnection.class)) {
-                            pgc = (PGConnection) connection.unwrap(PGConnection.class);
+                            PGConnection pgc = (PGConnection) connection.unwrap(PGConnection.class);
 
-                            // attendo una notifica per 10 secondi poi mi rimetto in attesa. In modo da fermarmi nel caso isStopped sia "true"
-                            PGNotification notifications[] = pgc.getNotifications(10000);
+                            // attendo una notifica per waitNotifyMillis poi termino e sarò rilanciato dal pool secondo le specifiche del servizio
+                            PGNotification notifications[] = pgc.getNotifications(notifyMillis);
 
-                            if (usePolling || (notifications != null && notifications.length > 0)) {
-                                if (notifications != null && notifications.length > 0)
-                                    log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
-                                else
-                                    log.info("no notification received, polling on jobs_notified table...");
-                                log.info("Launching extractCreateAndQueueJobs()...");
+                            if (notifications != null && notifications.length > 0) {
+                                log.info(String.format("received notification: %s with paylod: %s", notifications[0].getName(), notifications[0].getParameter()));
                                 transactionTemplate.executeWithoutResult(a -> {
                                     try {
+                                        log.info("Launching extractCreateAndQueueJobs()...");
                                         extractCreateAndQueueJobs();
                                     } catch (MasterjobsWorkerException ex) {
                                         throw new MasterjobsRuntimeExceptionWrapper(ex);
@@ -127,6 +135,15 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                     String errorMessage = String.format("error on managing %s notification", NEW_JOB_NOTIFIED_NOTIFY);
                     log.error(errorMessage, ex);
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            });
+        } else {
+            log.info(String.format("starting %s with polling...", getName()));
+            transactionTemplate.executeWithoutResult(a -> {
+                try {
+                    extractCreateAndQueueJobs();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
                 }
             });
         }
@@ -186,7 +203,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
-        JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred());
+        List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
+        JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
         return masterjobsJobsQueuer.queue(
             jobWorker, 
             jobNotified.getObjectId(), 
