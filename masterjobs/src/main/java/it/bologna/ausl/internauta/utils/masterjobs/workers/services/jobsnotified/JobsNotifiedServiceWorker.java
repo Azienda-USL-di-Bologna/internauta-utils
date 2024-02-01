@@ -58,13 +58,6 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         questo mi permette di accodare i comandi che sono stati inseriti mentre non ero in listen
         */
         if (serviceEntity.getWaitNotifyMillis() != null) {            
-            transactionTemplate.executeWithoutResult(a -> {
-                try {
-                    extractCreateAndQueueJobs();
-                } catch (MasterjobsWorkerException ex) {
-                    throw new MasterjobsRuntimeExceptionWrapper(ex);
-                }
-            });
 
             Session session = entityManager.unwrap(Session.class);
             session.doWork((Connection connection) -> {
@@ -78,6 +71,13 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                     String errorMessage = String.format("error executing LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY);
                     log.error(errorMessage, ex);
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            });
+            transactionTemplate.executeWithoutResult(a -> {
+                try {
+                    extractCreateAndQueueJobs();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
                 }
             });
         }
