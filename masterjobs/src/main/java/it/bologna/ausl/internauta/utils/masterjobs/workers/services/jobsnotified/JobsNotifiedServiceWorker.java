@@ -57,15 +57,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         se sono in modalità notify prima di mettermi in listen per le notify, accodo i comandi presenti in tabella.
         questo mi permette di accodare i comandi che sono stati inseriti mentre non ero in listen
         */
-        if (serviceEntity.getWaitNotifyMillis() != null) {            
-            transactionTemplate.executeWithoutResult(a -> {
-                try {
-                    extractCreateAndQueueJobs();
-                } catch (MasterjobsWorkerException ex) {
-                    throw new MasterjobsRuntimeExceptionWrapper(ex);
-                }
-            });
-
+        if (serviceEntity.getWaitNotifyMillis() != null) {
+            
             Session session = entityManager.unwrap(Session.class);
             session.doWork((Connection connection) -> {
                 try {
@@ -78,6 +71,13 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                     String errorMessage = String.format("error executing LISTEN %s", NEW_JOB_NOTIFIED_NOTIFY);
                     log.error(errorMessage, ex);
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
+                }
+            });
+            transactionTemplate.executeWithoutResult(a -> {
+                try {
+                    extractCreateAndQueueJobs();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
                 }
             });
         }
