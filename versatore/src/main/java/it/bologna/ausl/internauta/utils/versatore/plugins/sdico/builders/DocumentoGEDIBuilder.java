@@ -60,7 +60,7 @@ public class DocumentoGEDIBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String repertorio = mappaParametri.get("repertorio");
         DecimalFormat df = new DecimalFormat("0000000");
@@ -92,6 +92,7 @@ public class DocumentoGEDIBuilder {
         } else {
             throw new VersatoreSdicoException("Il documento GEDI non contiene allegati");
         }
+        String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -133,6 +134,8 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "pianoDiClassificazione", Arrays.asList(pianoDiClassificazione), TESTO);
         
         return versamentoBuilder;
     }
