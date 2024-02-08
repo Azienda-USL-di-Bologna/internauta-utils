@@ -179,7 +179,7 @@ public class DeliBuilder {
         }
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "pianoDiClassificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
 
         return versamentoBuilder;
 
