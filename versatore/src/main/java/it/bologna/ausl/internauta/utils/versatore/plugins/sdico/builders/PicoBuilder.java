@@ -84,7 +84,7 @@ public class PicoBuilder {
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
         String produttore = (String) parametriVersamento.get("produttore");
-        String identificativoDocumentoPrimario = "";
+        //String identificativoDocumentoPrimario = ""; dato ridondante
         List<Allegato> listaAllegati = doc.getAllegati();
         String riservato = docDetail.getRiservato() ? "Vero" : "Falso";
         String stringaAllegati = "";
@@ -152,12 +152,13 @@ public class PicoBuilder {
                 throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
             }
             firmatoDigitalmente = (String) parametriSoloPU.get("firmatoDigitalmente");
-            for (Allegato allegato : listaAllegati) {
-                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
-                    identificativoDocumentoPrimario = allegato.getId().toString();
-                    break;
-                }
-            }
+            //blocco rimosso perché il metadato è ridondadante
+//            for (Allegato allegato : listaAllegati) {
+//                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
+//                    identificativoDocumentoPrimario = allegato.getId().toString();
+//                    break;
+//                }
+//            }
             //tipologiaDiFlusso = parametriSoloPU.get("tipologiaDiFlusso");
             Map<String, Object> tipiDiFlusso = (Map<String, Object>) parametriSoloPU.get("tipologiaDiFlusso");
             List<AttoreDoc> listaAttori = doc.getAttoriList();
@@ -177,7 +178,7 @@ public class PicoBuilder {
             for (Allegato allegato : listaAllegati) {
                 if (allegato.getPrincipale()) {
                     firmatoDigitalmente = allegato.getFirmato() ? "Vero" : "Falso";
-                    identificativoDocumentoPrimario = allegato.getId().toString();
+                    //identificativoDocumentoPrimario = allegato.getId().toString(); metadato ridondante
                     break;
                 }
             }
@@ -186,7 +187,7 @@ public class PicoBuilder {
         
         //attributi differenti tra pe e pu
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO); metadato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
 
         return versamentoBuilder;
