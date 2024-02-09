@@ -57,8 +57,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         se sono in modalità notify prima di mettermi in listen per le notify, accodo i comandi presenti in tabella.
         questo mi permette di accodare i comandi che sono stati inseriti mentre non ero in listen
         */
-        if (serviceEntity.getWaitNotifyMillis() != null) {            
-
+        if (serviceEntity.getWaitNotifyMillis() != null) {
+            
             Session session = entityManager.unwrap(Session.class);
             session.doWork((Connection connection) -> {
                 try {

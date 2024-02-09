@@ -63,9 +63,9 @@ public class PicoBuilder {
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
-        Map<String, String> parametriSoloPU = (Map<String, String>) mappaParametri.get("PROTOCOLLO_IN_USCITA");
+        Map<String, Object> parametriSoloPU = (Map<String, Object>) mappaParametri.get("PROTOCOLLO_IN_USCITA");
         Map<String, String> parametriSoloPE = (Map<String, String>) mappaParametri.get("PROTOCOLLO_IN_ENTRATA");
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String numeroProtocollo = df.format(docDetail.getNumeroRegistrazione());
@@ -84,7 +84,7 @@ public class PicoBuilder {
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
         String produttore = (String) parametriVersamento.get("produttore");
-        String identificativoDocumentoPrimario = "";
+        //String identificativoDocumentoPrimario = ""; dato ridondante
         List<Allegato> listaAllegati = doc.getAllegati();
         String riservato = docDetail.getRiservato() ? "Vero" : "Falso";
         String stringaAllegati = "";
@@ -95,6 +95,7 @@ public class PicoBuilder {
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
         String tipologiaDiFlusso = "";
         String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
+        String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -130,6 +131,8 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
 
         //attributi presenti solo nei pu
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
@@ -149,20 +152,22 @@ public class PicoBuilder {
                 throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
             }
             firmatoDigitalmente = (String) parametriSoloPU.get("firmatoDigitalmente");
-            for (Allegato allegato : listaAllegati) {
-                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
-                    identificativoDocumentoPrimario = allegato.getId().toString();
-                    break;
-                }
-            }
+            //blocco rimosso perché il metadato è ridondadante
+//            for (Allegato allegato : listaAllegati) {
+//                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
+//                    identificativoDocumentoPrimario = allegato.getId().toString();
+//                    break;
+//                }
+//            }
             //tipologiaDiFlusso = parametriSoloPU.get("tipologiaDiFlusso");
+            Map<String, Object> tipiDiFlusso = (Map<String, Object>) parametriSoloPU.get("tipologiaDiFlusso");
             List<AttoreDoc> listaAttori = doc.getAttoriList();
-            tipologiaDiFlusso = "U";
+            tipologiaDiFlusso = (String) tipiDiFlusso.get("esterno");
             for (AttoreDoc attore : listaAttori) {
                 if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO) 
                         || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
                         || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
-                    tipologiaDiFlusso = "I";
+                    tipologiaDiFlusso = (String) tipiDiFlusso.get("interno");
                     break;
                 }
             }
@@ -173,7 +178,7 @@ public class PicoBuilder {
             for (Allegato allegato : listaAllegati) {
                 if (allegato.getPrincipale()) {
                     firmatoDigitalmente = allegato.getFirmato() ? "Vero" : "Falso";
-                    identificativoDocumentoPrimario = allegato.getId().toString();
+                    //identificativoDocumentoPrimario = allegato.getId().toString(); metadato ridondante
                     break;
                 }
             }
@@ -182,7 +187,7 @@ public class PicoBuilder {
         
         //attributi differenti tra pe e pu
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO); metadato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
 
         return versamentoBuilder;

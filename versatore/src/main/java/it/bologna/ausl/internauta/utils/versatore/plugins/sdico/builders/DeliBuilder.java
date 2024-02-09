@@ -64,7 +64,7 @@ public class DeliBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEnteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
         String repertorio = mappaParametri.get("repertorio");
@@ -134,6 +134,7 @@ public class DeliBuilder {
         String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
+        String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
@@ -177,6 +178,8 @@ public class DeliBuilder {
             throw new VersatoreSdicoException("La Delibera non ha data pubblicazione");
         }
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
 
         return versamentoBuilder;
 

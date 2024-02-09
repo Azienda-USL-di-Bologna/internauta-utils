@@ -70,7 +70,7 @@ public class RgPicoBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         //TODO in futuro prendere da db scripta.registro
