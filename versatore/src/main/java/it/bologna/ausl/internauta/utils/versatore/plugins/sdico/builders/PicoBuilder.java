@@ -189,6 +189,10 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO); metadato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
+        
+        //Questa coppia di metadati serve per non fare andare in errore la struttura di Scryba
+        versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroProtocollo), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
 
         return versamentoBuilder;
     }
