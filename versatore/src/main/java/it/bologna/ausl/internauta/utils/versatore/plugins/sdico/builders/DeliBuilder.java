@@ -143,7 +143,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(pianoDiClassificazione + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
@@ -179,7 +179,7 @@ public class DeliBuilder {
         }
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO); non compreso nell'integrazione con MEDAS
 
         return versamentoBuilder;
 

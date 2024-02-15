@@ -118,7 +118,7 @@ public class DocumentoGEDIBuilder {
         
         //metadati aggiunti nel passaggio alla tipologia 85
         
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(pianoDiClassificazione + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
@@ -135,7 +135,7 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO); non compreso nell'integrazione con MEDAS
         
         return versamentoBuilder;
     }

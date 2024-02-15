@@ -79,7 +79,7 @@ public class PicoBuilder {
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
-        String nomeDelDocumento = "PG" + numeroProtocollo + "/" + docDetail.getAnnoRegistrazione();
+        //String nomeDelDocumento = "PG" + numeroProtocollo + "/" + docDetail.getAnnoRegistrazione(); ridondante secondo SDICO
         String firmatoDigitalmente = "";
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
@@ -120,10 +120,10 @@ public class PicoBuilder {
         //versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList("Tipologia di flusso: " + doc.getTipologia().toString()), TESTO);
 
         //campi aggiunti con il passaggio alla tipologia 800NEW
-        versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO); dato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(pianoDiClassificazione + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
@@ -132,7 +132,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO); non compreso nell'integrazione con MEDAS
 
         //attributi presenti solo nei pu
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
