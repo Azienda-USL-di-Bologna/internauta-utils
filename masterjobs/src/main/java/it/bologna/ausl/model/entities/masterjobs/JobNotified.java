@@ -3,9 +3,11 @@ package it.bologna.ausl.model.entities.masterjobs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.model.entities.masterjobs.Set.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.persistence.Basic;
@@ -91,6 +93,11 @@ public class JobNotified implements Serializable {
     @Basic(optional = true)
     @Column(name = "inserted_from")
     private String insertedFrom;
+    
+    @Basic(optional = true)
+    @Type(type = "jsonb")
+    @Column(name = "working_objects", columnDefinition = "jsonb")
+    private List<MasterjobsWorkingObject> workingObjects;
     
     public JobNotified() {
     }
@@ -181,6 +188,14 @@ public class JobNotified implements Serializable {
 
     public void setInsertedFrom(String insertedFrom) {
         this.insertedFrom = insertedFrom;
+    }
+
+    public List<MasterjobsWorkingObject> getWorkingObjects() {
+        return workingObjects;
+    }
+
+    public void setWorkingObjects(List<MasterjobsWorkingObject> workingObjects) {
+        this.workingObjects = workingObjects;
     }
 
     @Override

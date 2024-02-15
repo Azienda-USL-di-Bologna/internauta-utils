@@ -70,7 +70,7 @@ public class RgPicoBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getId().toString();
+        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         //TODO in futuro prendere da db scripta.registro
@@ -80,10 +80,7 @@ public class RgPicoBuilder {
         String annoRegistrazione = docDetail.getAnnoRegistrazione().toString(); 
         String denominazioneDellAmministrazione = (String) mappaParametri.get("denominazioneAmministrazione");
         String ufficioProduttore = (String) mappaParametri.get("ufficioProduttore");
-        String anniTenuta = "illimitato";
-        if (archivio.getAnniTenuta() != 999) {
-            anniTenuta = Integer.toString(archivio.getAnniTenuta());
-        }
+        String anniTenuta = mappaParametri.get("anniTenuta");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);

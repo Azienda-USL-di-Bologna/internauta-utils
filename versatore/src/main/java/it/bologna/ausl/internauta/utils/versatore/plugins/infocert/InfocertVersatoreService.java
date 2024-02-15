@@ -315,7 +315,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         
         // Dati generici del documento
         addNewAttribute(docAttributes, InfocertAttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_DOCUMENTO, ZonedDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yy")))
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_DOCUMENTO, ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.MODALITA_DI_FORMAZIONE, "b")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_REGISTRO, getCodiceRegistro(docDetail))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_REGISTRO, getTipoRegistro(docDetail))

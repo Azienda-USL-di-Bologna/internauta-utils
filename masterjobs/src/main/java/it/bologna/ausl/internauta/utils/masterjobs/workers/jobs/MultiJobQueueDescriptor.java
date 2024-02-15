@@ -96,6 +96,7 @@ public class MultiJobQueueDescriptor {
         private Boolean waitForObject = false;
         private Boolean skipIfAlreadyPresent = false;
         private Set.SetPriority priority = Set.SetPriority.NORMAL;
+        private String idPersona;
 
         public Builder() {
         }
@@ -201,6 +202,19 @@ public class MultiJobQueueDescriptor {
         public Builder priority(Set.SetPriority priority) {
             this.priority = priority;
             return this;
+        }
+        
+        public Builder idPersona(String idPersona) {
+            this.idPersona = idPersona;
+            return this;
+        }
+
+        public String getIdPersona() {
+            return idPersona;
+        }
+
+        public void setIdPersona(String idPersona) {
+            this.idPersona = idPersona;
         }
     }
 }

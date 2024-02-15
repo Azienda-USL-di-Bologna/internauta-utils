@@ -3,14 +3,19 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
+import static it.bologna.ausl.model.entities.masterjobs.QJob.job;
+import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.EntityManager;
@@ -60,6 +65,8 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     private ZonedDateTime jobInsertTs;
     private ZonedDateTime jobLastExecutionTs;
     
+    private List<MasterjobsWorkingObject> masterjobsWorkingObjects;
+
     @Autowired
     private JobReporitory jobRepository;
     
@@ -220,7 +227,15 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     public void setJobLastExecutionTs(ZonedDateTime jobLastExecutionTs) {
         this.jobLastExecutionTs = jobLastExecutionTs;
     }
-    
+
+    public List<MasterjobsWorkingObject> getMasterjobsWorkingObjects() {
+        return masterjobsWorkingObjects;
+    }
+
+    public void setMasterjobsWorkingObjects(List<MasterjobsWorkingObject> masterjobsWorkingObjects) {
+        this.masterjobsWorkingObjects = masterjobsWorkingObjects;
+    }
+   
     /**
      * da implementare nei worker specifici, è l'effettiva esecuzione del lavoro
      * @return L'oggetto WorkerResult o una sua sottoclasse, rappresentante il risultato del job. Si può tornare anche null
@@ -262,5 +277,26 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
           hashtext = "0"+hashtext;
         }
         return hashtext;
+    }
+    
+    /**
+     * Aggiunge uno o più Working Object al job in corso
+     * @param masterjobWorkingObjects 
+     */
+    public void addWorkingObjects(List<MasterjobsWorkingObject> masterjobWorkingObjects) {
+        
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QJob qJob = QJob.job; 
+        getTransactionTemplate().setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        getTransactionTemplate().executeWithoutResult(a -> {
+            for (MasterjobsWorkingObject masterjobWorkingObject : masterjobWorkingObjects) {
+                Job job = queryFactory
+                    .select(qJob)
+                    .from(qJob)
+                    .where(qJob.id.eq(getJobId()))
+                    .fetchOne();
+                entityManager.persist(new WorkingObject(masterjobWorkingObject.getId(), masterjobWorkingObject.getType(), job));
+            }
+        });
     }
 }

@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping(value = "${masterjobs.manager.api.url}")
-public class MasterjobsController {
+public class MasterjobsServiceController {
     
     @PersistenceContext
     private EntityManager entityManager;

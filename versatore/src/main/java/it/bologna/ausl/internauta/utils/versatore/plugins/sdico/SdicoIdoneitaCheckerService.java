@@ -22,7 +22,7 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
     @Override
     public Boolean checkDocImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
         Boolean idoneo = false;
-        log.warn("Sto calcolando l'idoneita del doc " + id.toString());
+        log.debug("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
         //voglio versare solo gli RGPICO
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.RGPICO))
