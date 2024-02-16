@@ -392,6 +392,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         
         addNewAttribute(docAttributes, InfocertAttributesEnum.RISERVATO, docDetail.getRiservato().toString())
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_FIRMA_DIGITALE, "false")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_MARCA_TEMPORALE, "false")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_SIGILLO, "false")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_CONFORMITA_COPIE, "false")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, getVersioneDocumento(versamentoDocInformation))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.ID_AGGREGAZIONE, archivio.getNumerazioneGerarchica())
                 .addNewAttribute(docAttributes, 
