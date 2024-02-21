@@ -105,11 +105,10 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(numeroIniziale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
-        //TODO gli rg pico non hanno anni tenuta, al momento nel tracciato non c'è, per ora usa note1
+        //uso note1 per passare il valore degli anni tenuta
         versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList(anniTenuta), TESTO);
         //parametro non presente originariamente nel tracciato
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(doc.getDataCreazione().format(formatter)), DATA);
         
         return versamentoBuilder;
         
