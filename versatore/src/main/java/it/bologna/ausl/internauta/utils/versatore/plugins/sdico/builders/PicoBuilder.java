@@ -79,7 +79,7 @@ public class PicoBuilder {
         if (archivio.getAnniTenuta() != 999) {
             anniTenuta = Integer.toString(archivio.getAnniTenuta());
         }
-        String nomeDelDocumento = "PG" + numeroProtocollo + "/" + docDetail.getAnnoRegistrazione();
+        //String nomeDelDocumento = "PG" + numeroProtocollo + "/" + docDetail.getAnnoRegistrazione(); ridondante secondo SDICO
         String firmatoDigitalmente = "";
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
@@ -120,7 +120,7 @@ public class PicoBuilder {
         //versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList("Tipologia di flusso: " + doc.getTipologia().toString()), TESTO);
 
         //campi aggiunti con il passaggio alla tipologia 800NEW
-        versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO);
+        //versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO); dato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
