@@ -23,17 +23,34 @@ import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PUBBL
 import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.VARIO;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.scripta.Allegato;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO_P7M;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO_P7M;
+import static it.bologna.ausl.model.entities.scripta.Allegato.DettagliAllegato.TipoDettaglioAllegato.SEGNAPOSTO;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface.StatoDoc;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DELIBERA;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DETERMINA;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DOCUMENT;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DOCUMENT_UTENTE;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA;
+import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGPICO;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
+import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.AGGIORNARE;
+import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE;
+import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE_RITENTABILE;
+import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO;
+import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.VERSARE;
 import it.bologna.ausl.model.entities.versatore.VersamentoAllegato;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import it.bologna.ausl.utils.versatore.infocert.wsclient.DocumentAttribute;
@@ -58,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.ws.BindingProvider;
@@ -119,6 +137,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
                 Versamento versamentoDoc = entityManager.find(Versamento.class, versamentoDocInformation.getIdVersamentoPrecedente());
                 List<VersamentoAllegato> versamentiAllegati = versamentoDoc.getVersamentoAllegatoList();
+                List<String> idAllegatiWithTipoDettaglio = versamentiAllegati
+                    .stream()
+                    .map(v -> v.getId().toString() + "_" + getKeyByTipo(v.getDettaglioAllegato())).collect(Collectors.toList());
                 versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
                 String metadatiVersati = versamentoDoc.getMetadatiVersati();
                 for (VersamentoAllegato versamentoAllegato : versamentiAllegati) {
@@ -130,7 +151,13 @@ public class InfocertVersatoreService extends VersatoreDocs {
                             }
                             Allegato allegato = versamentoAllegato.getIdAllegato();
                             VersamentoAllegatoInformation allegatoInfo = 
-                                    versaAllegato(allegato, versamentoAllegato.getDettaglioAllegato(), docAttributes, versamentiAllegati.size(), infocertService);
+                                    versaAllegato(
+                                        allegato, 
+                                        versamentoAllegato.getDettaglioAllegato(), 
+                                        docAttributes, 
+                                        versamentiAllegati.size(),
+                                        idAllegatiWithTipoDettaglio,
+                                        infocertService);
                             versamentiAllegatiInfo.add(allegatoInfo);
                             break;
                         case CONTROLLO:
@@ -186,17 +213,21 @@ public class InfocertVersatoreService extends VersatoreDocs {
             List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
             List<Pair<Allegato, Allegato.DettagliAllegato.TipoDettaglioAllegato>> pairsAllegati = new ArrayList<>();
             
+            // In questa lista ci saranno gli id di tutti gli allegati che saranno versati con i rispettivi dettagli
+            List<String> idAllegatiWithTipoDettaglio = new ArrayList<>();
             for (Allegato allegato: allegati) {
                 for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
                     Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
                     // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
-                    if (dettaglioAllegato != null)
+                    if (dettaglioAllegato != null) {
                         pairsAllegati.add(Pair.of(allegato, tipoDettaglioAllegato));
+                        idAllegatiWithTipoDettaglio.add(allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                    }
                 }
             }
             for (Pair<Allegato, Allegato.DettagliAllegato.TipoDettaglioAllegato> pair : pairsAllegati) {
                 VersamentoAllegatoInformation allegatoInformation = 
-                              versaAllegato(pair.getFirst(), pair.getSecond(), docAttributes, pairsAllegati.size(), infocertService);
+                    versaAllegato(pair.getFirst(), pair.getSecond(), docAttributes, pairsAllegati.size(), idAllegatiWithTipoDettaglio, infocertService);
                 if (allegatoInformation != null) {
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
@@ -392,6 +423,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         
         addNewAttribute(docAttributes, InfocertAttributesEnum.RISERVATO, docDetail.getRiservato().toString())
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_MARCA_TEMPORALE, "false")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_SIGILLO, "false")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_CONFORMITA_COPIE, "false")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, getVersioneDocumento(versamentoDocInformation))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.ID_AGGREGAZIONE, archivio.getNumerazioneGerarchica())
                 .addNewAttribute(docAttributes, 
@@ -416,6 +450,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato,
             List<DocumentAttribute> docAttributes,
             Integer numeroAllegati,
+            List<String> allegatiList,
             GenericDocument infocertService) {
         
         List<DocumentAttribute> fileAttributes;
@@ -439,22 +474,46 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         log.warn("errore nel calcolo del mimetype, lasciamo il default octet-stream", ex);
                     } 
                 }
+                
+                // Tutta sta parte è una merda, non che il resto sia meglio ma per versare bisogna specificare questa cosa
+                // I versamenti infocert hanno un allegato principale che veicola tutti gli altri allegati.
+                // Identifichiamo il doc principale, ovvero il testo firmato oppure l'allegato principale nel caso di PE
+                // Questo allegato identifica il versamento principale al quale puntano tutti gli altri allegati
+                boolean isAllegatoPrincipale = allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)
+                        && tipoDettaglioAllegato.toString().contains("FIRMATO")
+                        || allegato.getPrincipale() && Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato);
+                // Identifichiamo eventuali altri formati dell'allegato principale che vengono inviati come allegati annessi al principale
+                String descrizioneAllegato;                
+                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO) && !tipoDettaglioAllegato.toString().contains("FIRMATO")) {
+                    descrizioneAllegato = getTipoDocFromAllegato(allegato) + " ORIG";
+                } else if (allegato.getPrincipale() && !Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato)) {
+                    descrizioneAllegato = getTipoDocFromAllegato(allegato) + " CONV";
+                } else {
+                    descrizioneAllegato = allegato.getTipo().toString();
+                }
+                
                 // Metadati degli allegati
                 addNewAttribute(fileAttributes, InfocertAttributesEnum.IDENTIFICATIVO_DEL_FORMATO, mimeType)
                         .addNewAttribute(fileAttributes, InfocertAttributesEnum.NOME_FILE, dettaglioAllegato.getNome())
                         .addNewAttribute(fileAttributes, InfocertAttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5")
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(numeroAllegati))
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, allegato.getId().toString())
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, allegato.getTipo().toString());
-                
-                if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
-                    String segnatura = convertInputStreamToString(fileStream);
-                    addNewAttribute(fileAttributes, InfocertAttributesEnum.SEGNATURA, segnatura);
+                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5");
+
+                if (isAllegatoPrincipale) {
+                    addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(numeroAllegati - 1))
+                            .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, String.join(",", allegatiList));
+                } else {
+                    addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, "0")
+                            .addNewAttribute(
+                                    fileAttributes,
+                                    InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI,
+                                    allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
                 }
+                addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, descrizioneAllegato);
                 
                 if (tipoDettaglioAllegato.toString().contains("FIRMATO")) {
                     addNewAttribute(fileAttributes, InfocertAttributesEnum.VERIFICA_FIRMA_DIGITALE, "true");
+                } else {
+                    addNewAttribute(fileAttributes, InfocertAttributesEnum.VERIFICA_FIRMA_DIGITALE, "false");
                 }
 
                 ByteArrayDataSource byteArrayDataSource = new ByteArrayDataSource(fileStream, mimeType);
@@ -616,6 +675,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         switch (versamentoAllegato.getStato()) {
             case AGGIORNARE:
             case VERSARE:
+            case ERRORE:
             case ERRORE_RITENTABILE:
                 azione = AzioneVersamento.VERSA;
                 break;
@@ -782,5 +842,45 @@ public class InfocertVersatoreService extends VersatoreDocs {
             log.error("Attori {} not found", ruolo);
         }
         return attoriDoc;
+    }
+    
+    private String getKeyByTipo(Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato) {
+        switch (tipoDettaglioAllegato) {
+            case ORIGINALE:
+                return "originale";
+            case SEGNAPOSTO:
+                return "segnaposto";
+            case CONVERTITO_FIRMATO:
+                return "convertitoFirmato";
+            case CONVERTITO:
+                return "convertito";
+            case CONVERTITO_FIRMATO_P7M:
+                return "convertitoFirmatoP7m";
+            case ORIGINALE_FIRMATO:
+                return "originaleFirmato";
+            case ORIGINALE_FIRMATO_P7M:
+                return "originaleFirmatoP7m";
+            default:
+                return "originale";
+        }
+    }
+    
+    /**
+     * Metodo per definire il tipo di doc dal nome allegato.
+     * 
+     * @param allegato l'allegato.
+     * @return Il tipo di doc.
+     */
+    private String getTipoDocFromAllegato(Allegato allegato) {
+        String substringNomeAllegato = allegato.getNome().substring(0, 4);
+                String tipoDoc;
+                if (substringNomeAllegato.contains("DETE")) {
+                    tipoDoc = "DETERMINA";
+                } else if (substringNomeAllegato.contains("DELI")) {
+                    tipoDoc = "DELIBERA";
+                } else {
+                    tipoDoc = "PROTOCOLLO";
+                }
+        return tipoDoc;
     }
 }
