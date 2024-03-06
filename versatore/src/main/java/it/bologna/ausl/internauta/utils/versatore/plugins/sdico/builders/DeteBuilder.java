@@ -121,8 +121,10 @@ public class DeteBuilder {
         }
         stringaAllegati = stringaAllegati.substring(0, stringaAllegati.length() - 3);
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
+        String produttore = (String) parametriVersamento.get("produttore");
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
         String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
+        String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
 
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
@@ -143,19 +145,22 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware + " - " + produttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
         
         //metadati aggiunti dopo le modifiche al tracciato
         

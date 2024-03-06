@@ -109,7 +109,7 @@ public class DocumentoGEDIBuilder {
         //per ora "Registrazioni in fascicolo"
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
         //TODO vedere anche qui come settare il registro
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
