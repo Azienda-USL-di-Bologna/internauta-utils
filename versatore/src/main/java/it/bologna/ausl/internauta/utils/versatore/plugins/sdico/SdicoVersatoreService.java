@@ -389,6 +389,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
                         response.setErrorMessage(resp.toString());
+                        response.setResponseCode(ERRORE_PLUG_IN);
                     }
                     resp.close(); // chiudo la response
                 } catch (Throwable ex) {
