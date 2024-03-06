@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.sdico;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
-import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerIdoneitaCheckerService;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import java.util.Map;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
     
-    private static final Logger log = LoggerFactory.getLogger(ParerIdoneitaCheckerService.class);
+    private static final Logger log = LoggerFactory.getLogger(SdicoIdoneitaCheckerService.class);
 
     @Override
     public Boolean checkDocImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
