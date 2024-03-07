@@ -3,14 +3,12 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.infocert;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sun.xml.ws.fault.ServerSOAPFaultException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.enums.InfocertAttributesEnum;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.mimetypeutilities.Detector;
-import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Pec;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
@@ -484,9 +482,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         || allegato.getPrincipale() && Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato);
                 // Identifichiamo eventuali altri formati dell'allegato principale che vengono inviati come allegati annessi al principale
                 String descrizioneAllegato;                
-                if (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO) && !tipoDettaglioAllegato.toString().contains("FIRMATO")) {
-                    descrizioneAllegato = getTipoDocFromAllegato(allegato) + " ORIG";
-                } else if (allegato.getPrincipale() && !Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato)) {
+                if (allegato.getPrincipale() && !Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato)) {
                     descrizioneAllegato = getTipoDocFromAllegato(allegato) + " CONV";
                 } else {
                     descrizioneAllegato = allegato.getTipo().toString();
