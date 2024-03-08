@@ -10,10 +10,9 @@ import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.util.StringUtils;
 import redis.clients.jedis.JedisPoolConfig;
 
 /**
@@ -29,6 +28,8 @@ public class MasterjobsRedisConfig {
     private Integer masterjobsRedisPort;
     @Value("${masterjobs.redis.db:3}")
     private Integer masterjobsRedisDb;
+    @Value("${masterjobs.redis.password}")
+    private String masterjobsRedisPassword;
     @Value("${masterjobs.redis.timeout-millis}")
     private Integer masterjobsRedisTimeoutMillis;
 
@@ -40,6 +41,9 @@ public class MasterjobsRedisConfig {
 
         RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(masterjobsRedisHost, masterjobsRedisPort);
         redisStandaloneConfiguration.setDatabase(masterjobsRedisDb);
+        if (StringUtils.hasText(masterjobsRedisPassword)) {
+            redisStandaloneConfiguration.setPassword(masterjobsRedisPassword);
+        }
         JedisClientConfiguration jedisClientConfiguration = JedisClientConfiguration
             .builder()
             .connectTimeout(Duration.ofMillis(masterjobsRedisTimeoutMillis))

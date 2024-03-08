@@ -7,7 +7,6 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
-import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreMetadatiBuilder;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -39,7 +38,7 @@ public class AllegatiBuilder {
     }
 //    @Autowired
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(ParerVersatoreMetadatiBuilder.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilder.class);
 
     public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatoreSdicoException {
         Map<String, Object> mappaAllegati = new HashMap<>();
