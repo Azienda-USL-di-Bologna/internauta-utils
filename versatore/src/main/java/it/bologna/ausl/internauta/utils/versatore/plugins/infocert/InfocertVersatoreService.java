@@ -146,6 +146,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
                 Versamento versamentoDoc = entityManager.find(Versamento.class, versamentoDocInformation.getIdVersamentoPrecedente());
                 List<VersamentoAllegato> versamentiAllegati = versamentoDoc.getVersamentoAllegatoList();
+                versamentiAllegati = versamentiAllegati
+                        .stream()
+                        .filter(v -> !Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.VERSATO).contains(v.getStato()))
+                        .collect(Collectors.toList());
                 List<String> idAllegatiWithTipoDettaglio = versamentiAllegati
                     .stream()
                     .map(v -> v.getIdAllegato().getId().toString() + "_" + getKeyByTipo(v.getDettaglioAllegato())).collect(Collectors.toList());
@@ -710,7 +714,6 @@ public class InfocertVersatoreService extends VersatoreDocs {
         switch (versamentoAllegato.getStato()) {
             case AGGIORNARE:
             case VERSARE:
-            case ERRORE:
             case ERRORE_RITENTABILE:
                 azione = AzioneVersamento.VERSA;
                 break;
