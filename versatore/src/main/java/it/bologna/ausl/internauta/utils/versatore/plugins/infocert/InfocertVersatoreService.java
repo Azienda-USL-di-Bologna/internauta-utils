@@ -189,7 +189,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 log.error("Versamenti di allegati in errore");
                 versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             } else {
-                versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
+                boolean allVersati = versamentoDocInformation.getVersamentiAllegatiInformations().stream().allMatch(all -> 
+                        Versamento.StatoVersamento.VERSATO.equals(all.getStatoVersamento()));
+                versamentoDocInformation.setStatoVersamento(allVersati ? Versamento.StatoVersamento.VERSATO : Versamento.StatoVersamento.IN_CARICO);
             }
         } catch (MalformedURLException | JsonProcessingException ex) {
             log.error("Errore URL", ex);
@@ -368,11 +370,11 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto());
         
         // Metadati degli Agenti (Soggetti)
-        addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO, "produttore")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO, "SW")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdAzienda().getDescrizione());
-        
-        int index = 2;  // Indice per i metadati ricorsivi del ruolo, il numero 1 è default ed è il produttore
+        int index = 1;  // Indice per i metadati ricorsivi del ruolo, il numero 1 è default ed è il produttore
+        addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "produttore")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "SW")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, docDetail.getIdAzienda().getDescrizione());
+        index++;
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "redattore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
