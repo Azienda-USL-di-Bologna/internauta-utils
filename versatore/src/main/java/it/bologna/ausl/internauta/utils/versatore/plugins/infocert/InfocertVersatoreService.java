@@ -189,7 +189,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 log.error("Versamenti di allegati in errore");
                 versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             } else {
-                versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
+                boolean allVersati = versamentoDocInformation.getVersamentiAllegatiInformations().stream().allMatch(all -> 
+                        Versamento.StatoVersamento.VERSATO.equals(all.getStatoVersamento()));
+                versamentoDocInformation.setStatoVersamento(allVersati ? Versamento.StatoVersamento.VERSATO : Versamento.StatoVersamento.IN_CARICO);
             }
         } catch (MalformedURLException | JsonProcessingException ex) {
             log.error("Errore URL", ex);
