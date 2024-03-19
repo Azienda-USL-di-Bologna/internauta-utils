@@ -367,10 +367,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
         
         // Metadati degli Agenti (Soggetti)
         int index = 1;  // Indice per i metadati ricorsivi del ruolo, il numero 1 è default ed è il produttore
-        addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, "produttore")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, "SW")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, docDetail.getIdAzienda().getDescrizione());
-        
+        addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "produttore")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "SW")
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, docDetail.getIdAzienda().getDescrizione());
+        index++;
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "redattore")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
