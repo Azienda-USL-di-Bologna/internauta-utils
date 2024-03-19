@@ -81,7 +81,14 @@ public enum InfocertAttributesEnum {
      * Numero di protocollo, ID SDI, numero documento fornitore, numero concatenato mese/anno.<br>
      * <b>Required</b>
      */
-    NUMERO_DOCUMENTO("datregnum_s"),
+    NUMERO_DOCUMENTO_PROTOCOLLI("datregnum_s"),
+    
+    /**
+     * Numero di registrazione del documento mappato per le Determine, Delibere e Registri.<br>
+     * Numero di protocollo, ID SDI, numero documento fornitore, numero concatenato mese/anno.<br>
+     * <b>Required</b>
+     */
+    NUMERO_DOCUMENTO_DETE_DELI_REG("num_doc_s"),
     
     /**
      * Codice identificativo del registro in cui il documento viene registrato.<br>
