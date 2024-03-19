@@ -365,6 +365,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_REGISTRO, getCodiceRegistro(docDetail))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_REGISTRO, getTipoRegistro(docDetail))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_REGISTRAZIONE, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO,
+                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto());
         
         // Metadati degli Agenti (Soggetti)
@@ -383,9 +385,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         // Tipologia e Mittente    
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_PROTOCOLLI,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
                 if (docDetail.getStato() == StatoDoc.SMISTAMENTO) {
                     addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
@@ -394,45 +394,33 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 }
                 break;
             case PROTOCOLLO_IN_ENTRATA:
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_PROTOCOLLI,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
                     .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "E");
                 addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
                 break;
             case DETERMINA:
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_DETE_DELI_REG,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Determine")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Determine")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
                 addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case DELIBERA:
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_DETE_DELI_REG,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Delibere")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Delibere")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
                 addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case RGPICO:
                 modalitaFormazione = "a";
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_DETE_DELI_REG,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))    
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di protocollo")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di protocollo")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
                 break;
             case RGDETE:
                 modalitaFormazione = "a";
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_DETE_DELI_REG,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di determine")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di determine")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
                 break;
             case RGDELI:
                 modalitaFormazione = "a";
-                addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO_DETE_DELI_REG,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di delibere")
+                addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di delibere")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
                 break;
             case DOCUMENT:
