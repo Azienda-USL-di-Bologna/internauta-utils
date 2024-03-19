@@ -134,8 +134,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
         Integer idDoc = versamentoDocInformation.getIdDoc();
         Doc doc = entityManager.find(Doc.class, idDoc);
         try {
-            GenericDocument infocertService = initInfocertService(doc);
             log.info("Processing doc: {}", idDoc.toString());
+            GenericDocument infocertService = initInfocertService(doc);
             // Se è il primo versamento del Doc chiamiamo direttamente il metodo versaDoc
             // altrimenti bisogna recuperare tutti i versamenti allegati e controllare per ognuno lo stato del versamento
             // per capire se è un'operazione di controllo oppure ritenta
@@ -733,6 +733,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      */
     private GenericDocument initInfocertService(Doc doc) throws MalformedURLException {
         String endPointUri = getWebserviceEndpointFromTipologia(doc);
+        log.info("Tipologia Doc: {} Endpoint: {}", doc.getTipologia().toString(), endPointUri);
         GenericDocumentService iss = new GenericDocumentService(new URL(endPointUri));
         GenericDocument is = iss.getGenericDocumentPort();
         BindingProvider bp = (BindingProvider) is;
@@ -942,7 +943,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
     * @param docDetail Dettaglio del documento contenente la tipologia.
     * @return L'URI dell'endpoint del webservice corrispondente.
     */
-    private String getWebserviceEndpointFromTipologia(Doc doc) {
+    private String getWebserviceEndpointFromTipologia(final Doc doc) {
         switch (doc.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
             case PROTOCOLLO_IN_ENTRATA:
@@ -950,11 +951,11 @@ public class InfocertVersatoreService extends VersatoreDocs {
             case DETERMINA:
                 return uriWebserviceDetermine;
             case DELIBERA:
-                return uriWebserviceDetermine;
+                return uriWebserviceDelibere;
             case RGPICO:
                 return uriWebserviceRegistroProtocollo;
             default:
-                return uriWebserviceProtocolli;
+                return null;
         }
     }
 }
