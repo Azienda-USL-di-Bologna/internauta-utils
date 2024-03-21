@@ -80,17 +80,20 @@ public class DeliBuilder {
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
         String tipologiaDiFlusso = (String) mappaParametri.get("tipologiaDiFlusso");
         String stringaDiFirmatari = "";
-        if (firmatari != null) {
+        /*if (firmatari != null) {
             for (Persona firmatario : firmatari) {
                 stringaDiFirmatari += "Proponente: " + firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
             }
         } else {
             throw new VersatoreSdicoException("La Delibera non ha firmatari");
-        }
+        }*/
         List<AttoreDoc> listaAttoriDelDocumento = doc.getAttoriList();
         //oltre che a cercare i firmatari cerco anche l'ufficio produttore
         String ufficioProduttore = null;
         for (AttoreDoc attore : listaAttoriDelDocumento) {
+            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.FIRMA)) {
+                stringaDiFirmatari += "Proponente: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
+            }        
             if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE)) {
                 ufficioProduttore = attore.getIdStruttura().getNome();
                 stringaDiFirmatari += "DG: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
@@ -134,7 +137,9 @@ public class DeliBuilder {
         String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
         String descrizioneSoftware = (String) parametriVersamento.get("descrizioneSoftware");
+        String produttore = (String) parametriVersamento.get("produttore");
         String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
+        String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
         
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
@@ -157,14 +162,16 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //}
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_allegati", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "riservato", Arrays.asList(riservato), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_nome_prodotto", Arrays.asList(descrizioneSoftware), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software_produttore", Arrays.asList(produttore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "prodotto_software", Arrays.asList(descrizioneSoftware + " - " + produttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
@@ -180,6 +187,7 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
 
         return versamentoBuilder;
 

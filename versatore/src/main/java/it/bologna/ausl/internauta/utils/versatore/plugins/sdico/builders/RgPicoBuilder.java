@@ -95,7 +95,7 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_fiscale_responsabile_gestione_documentale", Arrays.asList(responsabileGestioneDocumentale.getCodiceFiscale()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Denominazione_dellamministrazione", Arrays.asList(denominazioneDellAmministrazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) parametriVersamento.get("applicativoProduzione")), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Codice_identificativo_del_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(numeroProgressivo), TESTO);
