@@ -47,7 +47,8 @@ public class ParametriAziendeReader {
         usaRitentaVersamentiAutomatico,
         inadConfiguration,
         escludiArchiviChiusiFromAbilitazioniMassiveGedi,
-        loginConfig
+        loginConfig,
+        oliammConfiguration
     }
     
     @Autowired
