@@ -7,8 +7,10 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.versatore.Versat
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import it.bologna.ausl.model.entities.versatore.SessioneVersamento;
 import java.util.Map;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Classe core del servizio di versamento, che contiene la logica di accodamento dei job di versamento per le varie aziende
@@ -20,6 +22,8 @@ public class VersamentoServiceCore {
     
     private final MasterjobsJobsQueuer masterjobsJobsQueuer;
     private final MasterjobsObjectsFactory masterjobsObjectsFactory;
+    
+    
 
     public VersamentoServiceCore(MasterjobsJobsQueuer masterjobsJobsQueuer, MasterjobsObjectsFactory masterjobsObjectsFactory) {
         this.masterjobsJobsQueuer = masterjobsJobsQueuer;
@@ -73,13 +77,19 @@ public class VersamentoServiceCore {
         }
         try {
             /* accoda il worker mettendo nell'id_oggetto l'id dell'azienda, in modo che se dovessero esserci 2 job sulla stessa azienda
-             * non vengano eseguiti in parallelo.
+             * non vengano eseguiti in parallelo. Ma faccio un trucchetto per dividere le aziende in due, e così posso avere due thread occupati dal versatore. 
              * Il caso di 2 job sulla stessa azienda potrebbe capitare se si riavvia internauta mentre sta eseguendo il job:
              * ci sarebbe il job che era in esecuzione, che riprenderebbe da capo e l'eventuale nuovo job aggiunto dal servizio.
              * NB: il job, dopo che versa un doc, non dovrebbe riversalo nuovamente, quindi anche se riprende da capo, non riversa 
              * i documenti già versati
             */
-            masterjobsJobsQueuer.queue(jobWorker, "versatore" , "Versatore", app, true, Set.SetPriority.NORMAL, null);
+            String idSet = "";
+            if (idAzienda.toString().length() == 1) {
+                idSet = "100";
+            } else {
+                idSet = "900";
+            }
+            masterjobsJobsQueuer.queue(jobWorker, "versatore_" + idSet , "Versatore", app, true, Set.SetPriority.NORMAL, null);
         } catch (Exception ex) {
             String errorMessage = "errore nell'accodamento del job Versatore";
             log.error(errorMessage, ex);

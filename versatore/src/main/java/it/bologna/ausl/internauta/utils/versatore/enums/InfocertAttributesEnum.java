@@ -358,6 +358,10 @@ public enum InfocertAttributesEnum {
      */
     TEMPO_DI_CONSERVAZIONE("tempcons_s"),
     
+    PROT_INIZIO("prot_inizio_i"),
+    
+    PROT_FINE("prot_fine_i"),
+    
     NOTE("note_s"),
     
     /**
