@@ -47,7 +47,8 @@ public class ParametriAziendeReader {
         usaRitentaVersamentiAutomatico,
         inadConfiguration,
         escludiArchiviChiusiFromAbilitazioniMassiveGedi,
-        loginConfig
+        loginConfig,
+        babelshareConfig
     }
     
     @Autowired
@@ -93,12 +94,12 @@ public class ParametriAziendeReader {
         if (idAziende != null) {
             BooleanTemplate filterAzienda = Expressions.booleanTemplate("tools.array_overlap({0}, tools.string_to_integer_array({1}, ','))=true", 
                     QParametroAziende.parametroAziende.idAziende, org.apache.commons.lang3.StringUtils.join(idAziende, ","));
-            filter = filter.and(filterAzienda);
+            filter = filter.and(filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull()));
         }
         if (idApplicazioni != null) {
             BooleanTemplate filterApplicazioni = Expressions.booleanTemplate("tools.array_overlap({0}, string_to_array({1}, ','))=true", 
                     QParametroAziende.parametroAziende.idApplicazioni, org.apache.commons.lang3.StringUtils.join(idApplicazioni, ","));
-            filter = filter.and(filterApplicazioni);
+            filter = filter.and(filterApplicazioni.or(QParametroAziende.parametroAziende.idApplicazioni.isNull()));
         }
 
         Iterable<ParametroAziende> parametriFound = parametroAziendeRepository.findAll(filter);
