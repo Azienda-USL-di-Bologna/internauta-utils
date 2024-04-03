@@ -75,6 +75,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.activation.DataHandler;
 import javax.mail.util.ByteArrayDataSource;
@@ -411,17 +413,20 @@ public class InfocertVersatoreService extends VersatoreDocs {
             case RGPICO:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di protocollo")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
+                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
+                addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case RGDETE:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di determine")
                         .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
+                addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case RGDELI:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di delibere")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
+                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
+                addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case DOCUMENT:
             case DOCUMENT_UTENTE:
@@ -940,11 +945,11 @@ public class InfocertVersatoreService extends VersatoreDocs {
     }
     
     /**
-    * Restituisce l'endpoint del webservice in base alla tipologia di documento fornita.
-    *
-    * @param docDetail Dettaglio del documento contenente la tipologia.
-    * @return L'URI dell'endpoint del webservice corrispondente.
-    */
+     * Restituisce l'endpoint del webservice in base alla tipologia di documento fornita.
+     *
+     * @param docDetail Dettaglio del documento contenente la tipologia.
+     * @return L'URI dell'endpoint del webservice corrispondente.
+     */
     private String getWebserviceEndpointFromTipologia(final Doc doc) {
         switch (doc.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
@@ -958,6 +963,34 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 return uriWebserviceRegistroProtocollo;
             default:
                 return null;
+        }
+    }
+    
+    /**
+     * Analizza il testo dell'oggetto per trovare i numeri di protocollo 
+     * all'inizio e alla fine.
+     * Aggiunge i numeri di protocollo di inizio e fine come attributi 
+     * alla lista docAttributes data.
+     * Usa una regex per cercare pattern "n. <numero>/<anno>". 
+     * La prima corrispondenza è il numero di inizio, la seconda 
+     * corrispondenza è il numero di fine.
+     * 
+     * @param docAttributes la lista di attributi del documento dove aggiungere i numeri di protocollo
+     * @param oggetto il testo dell'oggetto da analizzare
+     */
+    private void addNumeriProtInizioFine(List<DocumentAttribute> docAttributes, String oggetto) {
+        String regex = "n\\. (\\d+)/\\d+"; // Pattern per cercare "n. <numero>/<anno>"
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(oggetto);
+        int count = 1;
+        while (matcher.find()) {
+            String match = matcher.group(1); // Il primo gruppo catturato contiene il numero
+            if (count == 1) {
+                addNewAttribute(docAttributes, InfocertAttributesEnum.PROT_INIZIO, Integer.valueOf(match).toString());
+            } else {
+                addNewAttribute(docAttributes, InfocertAttributesEnum.PROT_FINE, Integer.valueOf(match).toString());
+            }
+            count++;
         }
     }
 }
