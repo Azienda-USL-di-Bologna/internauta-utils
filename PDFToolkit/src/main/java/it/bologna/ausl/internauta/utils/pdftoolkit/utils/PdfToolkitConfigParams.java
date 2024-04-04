@@ -52,9 +52,9 @@ public class PdfToolkitConfigParams {
     @Qualifier("pdfToolkitParameterRepository")
     private ParameterRepository parameterRepository;
     
-    @Value("${minio.datasource.override.url}")
+    @Value("${minio.datasource.override.url:#{null}}")
     private String minioOverrideUrl;
-    @Value("${minio.datasource.override.port}")
+    @Value("${minio.datasource.override.port:#{null}}")
     private Integer minioOverridePort;
     
     private MinIOWrapper minIOWrapper;
