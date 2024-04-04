@@ -28,6 +28,8 @@ import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 
 /**
  * Classe per la configurazione iniziale del modulo.
@@ -49,6 +51,12 @@ public class PdfToolkitConfigParams {
     @Autowired
     @Qualifier("pdfToolkitParameterRepository")
     private ParameterRepository parameterRepository;
+    
+    @Value("${minio.datasource.override.url}")
+    private String minioOverrideUrl;
+    @Value("${minio.datasource.override.port}")
+    private Integer minioOverridePort;
+    
     private MinIOWrapper minIOWrapper;
     private Map<String, Object> downloaderParams;
 
@@ -204,6 +212,10 @@ public class PdfToolkitConfigParams {
     private void initMinIO(Map<String, Object> minIOConfig) {
         String minIODBDriver = (String) minIOConfig.get("DBDriver");
         String minIODBUrl = (String) minIOConfig.get("DBUrl");
+        if (StringUtils.hasText(minioOverrideUrl) && minioOverridePort != null) {
+            minIODBUrl = minIODBUrl.replaceAll("(jdbc:postgresql:\\/\\/)(.+:\\d+)\\/(.+)", 
+                    String.format("$1%s:%s/$3", minioOverrideUrl, minioOverridePort));
+        }
         String minIODBUsername = (String) minIOConfig.get("DBUsername");
         String minIODBPassword = (String) minIOConfig.get("DBPassword");
         Integer maxPoolSize = (Integer) minIOConfig.get("maxPoolSize");
