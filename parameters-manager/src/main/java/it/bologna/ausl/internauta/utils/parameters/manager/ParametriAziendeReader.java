@@ -48,7 +48,8 @@ public class ParametriAziendeReader {
         inadConfiguration,
         escludiArchiviChiusiFromAbilitazioniMassiveGedi,
         loginConfig,
-        babelshareConfig
+        babelshareConfig,
+        oliammConfiguration
     }
     
     @Autowired
