@@ -307,6 +307,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             throw new VersatoreSdicoException("Tipologia documentale non presente");
                     }
                 } catch (NullPointerException e) {
+                    log.error("Errore, Trovato un valore nullo nella costruzione dei metadati:", e);
                     throw new VersatoreSdicoException("Trovato un valore nullo nella costruzione dei metadati");
                 }
 
@@ -328,6 +329,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 try {
                     token = getJWT(username, password, sdicoLoginURI);
                 } catch (IOException e) {
+                    log.error("Errore nell'effettuare il login per la ricezione del token:", e);
                     throw new VersatoreSdicoException("Errore nell'effettuare il login per la ricezione del token");
                 }
                 if (token.equals(null) || token.isEmpty()) {
@@ -381,7 +383,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             response = objectMapper.readValue(resBodyString, SdicoResponse.class);
 
                         } catch (JsonProcessingException ex) {
-                            log.error("Errore nel parsing della response arrivata da SDICO");
+                            log.error("Errore nel parsing della response arrivata da SDICO", ex);
                         }
                     } else {
                         log.error("ERROR: message = " + resp.message());
@@ -398,14 +400,14 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     response.setResponseCode(ERRORE_PLUG_IN);
                 }
             } catch (VersatoreSdicoException e) {
-                log.error(e.getMessage());
+                log.error("Errore:", e);
                 response.setErrorMessage(e.getMessage());
                 response.setResponseCode(ERRORE_PLUG_IN);
             }
         } catch (Exception e) {
             response.setErrorMessage("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
             response.setResponseCode(ERRORE_PLUG_IN);
-            log.error("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
+            log.error("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage(), e);
         }
         risultatoEVersamentiAllegati.put("response", response);
         return risultatoEVersamentiAllegati;
