@@ -45,7 +45,7 @@ public class AllegatiBuilder {
         try {
             mappaAllegati = buildAllegati(doc, docDetail, allegati, versamentoBuilder);
         } catch (MinIOWrapperException ex) {
-            log.error("Errore di comunicazione nel recuperare i dati degli allegati");
+            log.error("Errore di comunicazione nel recuperare i dati degli allegati", ex);
             throw new VersatoreSdicoException("Errore di comunicazione nel recuperare i dati degli allegati");
         }
 
@@ -208,6 +208,7 @@ public class AllegatiBuilder {
         try {
             identityFile.setHash(org.apache.commons.codec.digest.DigestUtils.sha256Hex(is));
         } catch (IOException ex) {
+            log.error("Errore nel calcoalre l'hashSHA256", ex);
             throw new VersatoreSdicoException("Errore nel calcoalre l'hashSHA256");
         }
         return identityFile;
