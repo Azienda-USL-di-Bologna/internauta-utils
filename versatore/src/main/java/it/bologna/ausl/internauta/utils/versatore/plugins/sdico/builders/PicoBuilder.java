@@ -152,7 +152,8 @@ public class PicoBuilder {
                 responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
                 versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
             } else {
-                throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+                //throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+                versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non indicato"), TESTO);
             }
             firmatoDigitalmente = (String) parametriSoloPU.get("firmatoDigitalmente");
             //blocco rimosso perché il metadato è ridondadante

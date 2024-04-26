@@ -43,6 +43,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoExceptionRitentabile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -70,6 +71,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
     private static final String WS_OK = "WS_OK";
     private static final String CANCELLATO = "CANCELLATO";
     private static final String ERRORE_PLUG_IN = "ERRORE_PLUG_IN";
+    private static final String ERRORE_PLUG_IN_RITENTABILE = "ERRORE_PLUG_IN_RITENTABILE";
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private String sdicoLoginURI, sdicoServizioVersamentoURI;
@@ -119,15 +121,19 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     }
                     break;
                 }
+                case ERRORE_PLUG_IN_RITENTABILE:
                 case ERRORE_PLUG_IN: {
+                    Versamento.StatoVersamento statoVersamento = response.getResponseCode() == ERRORE_PLUG_IN
+                            ? Versamento.StatoVersamento.ERRORE
+                            : Versamento.StatoVersamento.ERRORE_RITENTABILE;
                     versamentoDocInformation.setRapporto(responseJson);
                     versamentoDocInformation.setCodiceErrore(response.getResponseCode());
                     versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
                     versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
-                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    versamentoDocInformation.setStatoVersamento(statoVersamento);
                     if (versamentiAllegatiInformationList != null) {
                         for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
-                            versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                            versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
                         }
                     }
                     log.error("SDICO ha risposto con il seguente errore: " + response.getErrorMessage());
@@ -282,10 +288,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             String numeroIniziale = matcher.group(2);
                             String numeroFinale = matcher.group(3);
                             ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
-                                    numeroIniziale, 
+                                    numeroIniziale,
                                     doc.getIdAzienda().getId());
                             ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
-                                    numeroFinale, 
+                                    numeroFinale,
                                     doc.getIdAzienda().getId());
                             RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale, responsabileGestioneDocumentale);
                             versamentoBuilder = rb.build();
@@ -330,10 +336,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     token = getJWT(username, password, sdicoLoginURI);
                 } catch (IOException e) {
                     log.error("Errore nell'effettuare il login per la ricezione del token:", e);
-                    throw new VersatoreSdicoException("Errore nell'effettuare il login per la ricezione del token");
+                    throw new VersatoreSdicoExceptionRitentabile("Errore nell'effettuare il login per la ricezione del token");
                 }
                 if (token.equals(null) || token.isEmpty()) {
-                    throw new VersatoreSdicoException("Non è stato ottenuto il token necessario per l'autenticazione");
+                    throw new VersatoreSdicoExceptionRitentabile("Non è stato ottenuto il token necessario per l'autenticazione");
                 }
 
                 // inizializzazione http client
@@ -391,18 +397,26 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
                         response.setErrorMessage(resp.toString());
-                        response.setResponseCode(ERRORE_PLUG_IN);
+                        if (resp.code() == 500) {
+                            response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
+                        } else {
+                            response.setResponseCode(ERRORE_PLUG_IN);
+                        }
                     }
                     resp.close(); // chiudo la response
                 } catch (Throwable ex) {
                     log.error("Errore nella chiamata di riversamento", ex);
                     response.setErrorMessage("Errore nella chiamata di riversamento");
-                    response.setResponseCode(ERRORE_PLUG_IN);
+                    response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                 }
             } catch (VersatoreSdicoException e) {
                 log.error("Errore:", e);
                 response.setErrorMessage(e.getMessage());
                 response.setResponseCode(ERRORE_PLUG_IN);
+            } catch (VersatoreSdicoExceptionRitentabile e) {
+                log.error("Errore:", e);
+                response.setErrorMessage(e.getMessage());
+                response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
             }
         } catch (Exception e) {
             response.setErrorMessage("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
