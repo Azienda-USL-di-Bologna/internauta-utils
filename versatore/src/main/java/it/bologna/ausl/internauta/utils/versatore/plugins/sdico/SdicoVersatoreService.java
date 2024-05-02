@@ -58,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -104,7 +105,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
         //Imposto i dati del DocInformation con i risultati
         versamentoDocInformation.setMetadatiVersati(xmlVersato);
         versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
-        if (response != null && !response.equals("")) {
+        if (response != null) {
             switch (response.getResponseCode()) {
                 case CANCELLATO: {
                     versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ANNULLATO);
@@ -123,7 +124,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 }
                 case ERRORE_PLUG_IN_RITENTABILE:
                 case ERRORE_PLUG_IN: {
-                    Versamento.StatoVersamento statoVersamento = response.getResponseCode() == ERRORE_PLUG_IN
+                    Versamento.StatoVersamento statoVersamento = response.getResponseCode().equals(ERRORE_PLUG_IN)
                             ? Versamento.StatoVersamento.ERRORE
                             : Versamento.StatoVersamento.ERRORE_RITENTABILE;
                     versamentoDocInformation.setRapporto(responseJson);
@@ -141,12 +142,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 }
                 default: {
                     versamentoDocInformation.setRapporto(responseJson);
-                    if (response.getResponseCode() != null && response.getResponseCode() != "") {
+                    if (StringUtils.hasText(response.getResponseCode())) {
                         versamentoDocInformation.setCodiceErrore(response.getResponseCode());
                     } else {
                         versamentoDocInformation.setCodiceErrore(ERRORE_PLUG_IN);
                     }
-                    if (response.getErrorMessage() != null && response.getErrorMessage() != "") {
+                    if (StringUtils.hasText(response.getErrorMessage())) {
                         versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
                     } else {
                         versamentoDocInformation.setDescrizioneErrore("Errore non definito");
@@ -192,7 +193,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
             try {
                 Archivio archivio = new Archivio();
                 List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
-                if (listaArchivioDocs.size() == 0 || listaArchivioDocs.isEmpty()) {
+                if (listaArchivioDocs.isEmpty()) {
                     throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                 }
                 Persona responsabileGestioneDocumentale = new Persona();
@@ -338,7 +339,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     log.error("Errore nell'effettuare il login per la ricezione del token:", e);
                     throw new VersatoreSdicoExceptionRitentabile("Errore nell'effettuare il login per la ricezione del token");
                 }
-                if (token.equals(null) || token.isEmpty()) {
+                if (token.equals("") || token.isEmpty()) {
                     throw new VersatoreSdicoExceptionRitentabile("Non è stato ottenuto il token necessario per l'autenticazione");
                 }
 
