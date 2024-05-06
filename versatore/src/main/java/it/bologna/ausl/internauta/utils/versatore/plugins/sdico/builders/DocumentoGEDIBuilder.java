@@ -60,7 +60,7 @@ public class DocumentoGEDIBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
+        String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String repertorio = mappaParametri.get("repertorio");
         DecimalFormat df = new DecimalFormat("0000000");

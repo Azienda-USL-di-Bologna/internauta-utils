@@ -7,6 +7,7 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoExceptionRitentabile;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -40,13 +41,13 @@ public class AllegatiBuilder {
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilder.class);
 
-    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatoreSdicoException {
+    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatoreSdicoException, VersatoreSdicoExceptionRitentabile {
         Map<String, Object> mappaAllegati = new HashMap<>();
         try {
             mappaAllegati = buildAllegati(doc, docDetail, allegati, versamentoBuilder);
         } catch (MinIOWrapperException ex) {
-            log.error("Errore di comunicazione nel recuperare i dati degli allegati");
-            throw new VersatoreSdicoException("Errore di comunicazione nel recuperare i dati degli allegati");
+            log.error("Errore di comunicazione nel recuperare i dati degli allegati", ex);
+            throw new VersatoreSdicoExceptionRitentabile("Errore di comunicazione nel recuperare i dati degli allegati");
         }
 
         return mappaAllegati;
@@ -64,7 +65,7 @@ public class AllegatiBuilder {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
-            log.warn("Raccologo i dati dell'allegato ID " + allegato.getId());
+            log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
             //prendo l'allegato originale (se è firmato scelgo quello firmato)
             if (allegato.getFirmato()) {
                 Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
@@ -208,6 +209,7 @@ public class AllegatiBuilder {
         try {
             identityFile.setHash(org.apache.commons.codec.digest.DigestUtils.sha256Hex(is));
         } catch (IOException ex) {
+            log.error("Errore nel calcoalre l'hashSHA256", ex);
             throw new VersatoreSdicoException("Errore nel calcoalre l'hashSHA256");
         }
         return identityFile;

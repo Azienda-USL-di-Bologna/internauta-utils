@@ -64,7 +64,7 @@ public class DeliBuilder {
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEnteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
+        String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
         String repertorio = mappaParametri.get("repertorio");
@@ -156,7 +156,11 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
+        if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
+                versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
+            } else {
+                versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non impostato"), TESTO);
+            }
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);

@@ -418,7 +418,7 @@ public class MinIOWrapper {
      * @param name il nome da accorciare
      */
     private String getMinioTruncatedName(String name) {
-        if (name.length() >= 255) {
+        if (name.getBytes().length >= 255) {
 
             // ricavo l'estensione
             String extension = Files.getFileExtension(name);
@@ -482,11 +482,13 @@ public class MinIOWrapper {
 
             // in base al serveId letto prendo l'istanza del repository
             MinioClient minIOClient = minIOServerClientMap.get(serverId);
+            // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
+            fileName = fileName.replaceAll("[\\[\\]\\/:àèéòòù*?\"<>|\\-\\'(),&%{}\\s]", "_").replaceAll("\\u201D", "_").replaceAll("\\u201C", "").replaceAll("\\u2019", "");
 
             // Se il nome è più lungo di 255 caratteri minIO da errore:
             // quindi bisogna accorciarlo cercando di mantenere l'estensione
             // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
-            if (fileName.length() >= 255) {
+            if (fileName.getBytes().length >= 255) {
                 fileName = getMinioTruncatedName(fileName);
             }
 
