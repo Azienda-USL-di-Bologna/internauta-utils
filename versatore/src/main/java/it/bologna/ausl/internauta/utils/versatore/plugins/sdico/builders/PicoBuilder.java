@@ -63,7 +63,7 @@ public class PicoBuilder {
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
+        String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         Map<String, Object> parametriSoloPU = (Map<String, Object>) mappaParametri.get("PROTOCOLLO_IN_USCITA");
         Map<String, String> parametriSoloPE = (Map<String, String>) mappaParametri.get("PROTOCOLLO_IN_ENTRATA");

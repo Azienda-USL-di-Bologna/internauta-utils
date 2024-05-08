@@ -49,7 +49,8 @@ public class ParametriAziendeReader {
         escludiArchiviChiusiFromAbilitazioniMassiveGedi,
         loginConfig,
         babelshareConfig,
-        oliammConfiguration
+        oliammConfiguration,
+        tabRegistrazioniScriptaActive
     }
     
     @Autowired
