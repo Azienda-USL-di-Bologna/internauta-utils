@@ -43,12 +43,10 @@ import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.Tipologi
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDETE;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDELI;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
-import it.bologna.ausl.model.entities.scripta.TitoloOLD;
 import it.bologna.ausl.model.entities.titolario.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.AGGIORNARE;
-import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE_RITENTABILE;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.VERSARE;
