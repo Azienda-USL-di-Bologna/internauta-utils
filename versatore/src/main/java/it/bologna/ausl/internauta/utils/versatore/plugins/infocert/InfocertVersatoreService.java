@@ -43,8 +43,7 @@ import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.Tipologi
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDETE;
 import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDELI;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
-import it.bologna.ausl.model.entities.scripta.Titolo;
-import it.bologna.ausl.model.entities.titolario.TitoloN;
+import it.bologna.ausl.model.entities.titolario.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.AGGIORNARE;
@@ -463,7 +462,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         
         // Metadati di archiviazione
-        TitoloN titolo = archivio.getIdTitolo();
+        Titolo titolo = archivio.getIdTitolo();
         if (titolo != null) {
             addNewAttribute(docAttributes, InfocertAttributesEnum.INDICE_DI_CLASSIFICAZIONE, titolo.getClassificazione())
                    .addNewAttribute(docAttributes, InfocertAttributesEnum.DESCRIZIONE_CLASSIFICAZIONE, titolo.getNome());
