@@ -63,7 +63,7 @@ public class PicoBuilder {
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
-        String idClassifica = archivio.getIdTitolo().getIdClassificaDaEsterno().toString();
+        String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         Map<String, Object> parametriSoloPU = (Map<String, Object>) mappaParametri.get("PROTOCOLLO_IN_USCITA");
         Map<String, String> parametriSoloPE = (Map<String, String>) mappaParametri.get("PROTOCOLLO_IN_ENTRATA");
@@ -152,7 +152,8 @@ public class PicoBuilder {
                 responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
                 versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
             } else {
-                throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+                //throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+                versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non indicato"), TESTO);
             }
             firmatoDigitalmente = (String) parametriSoloPU.get("firmatoDigitalmente");
             //blocco rimosso perché il metadato è ridondadante
