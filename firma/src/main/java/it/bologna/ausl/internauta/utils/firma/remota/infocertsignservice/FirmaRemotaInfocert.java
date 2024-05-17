@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfoCertContextEnum;
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfoCertPathEnum;
@@ -293,6 +294,11 @@ public class FirmaRemotaInfocert extends FirmaRemota {
         } catch (ParserConfigurationException | SAXException | IOException ex) {
             logger.error("error", ex);
         }
+    }
+
+    @Override
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) {
+        return null;
     }
 
 }

@@ -21,6 +21,8 @@ public class FirmaRemotaInformation {
     // informazioni relative all'utenza di firma
     private UserInformation userInformation;
     
+    private FirmaRemotaUserSign userSign;
+    
     // l'informazione del provider di firma deve essere rimosso da questa classe, perché non più necessario, 
     // per motivi legacy però, bisogna tenerli fino a quando si usano le app inde
     private FirmaRemotaProviders provider; 
@@ -56,6 +58,14 @@ public class FirmaRemotaInformation {
 
     public void setUserInformation(UserInformation userInformation) {
         this.userInformation = userInformation;
+    }
+
+    public FirmaRemotaUserSign getUserSign() {
+        return userSign;
+    }
+
+    public void setUserSign(FirmaRemotaUserSign userSign) {
+        this.userSign = userSign;
     }
 
     public FirmaRemotaProviders getProvider() {

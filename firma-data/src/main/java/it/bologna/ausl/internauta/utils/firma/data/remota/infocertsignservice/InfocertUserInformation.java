@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice;
 
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaModalitaFirma;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 
 /**
@@ -8,14 +9,19 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
  */
 public class InfocertUserInformation extends UserInformation {
 
-    public static enum ModalitaFirma {
-        OTP, AUTOMATICA
+    public static enum ModalitaFirma  implements FirmaRemotaModalitaFirma {
+        OTP, AUTOMATICA;
+
+        @Override
+        public FirmaRemotaModalitaFirma getAutodetectValue() {
+            return null;
+        }
     };
 
     private String alias;
     private String pin;
     private String token;
-    private ModalitaFirma modalitaFirma;
+    private FirmaRemotaModalitaFirma modalitaFirma;
     private Boolean useSavedCredential;
 
     public InfocertUserInformation() {
@@ -60,11 +66,12 @@ public class InfocertUserInformation extends UserInformation {
         this.token = token;
     }
 
-    public ModalitaFirma getModalitaFirma() {
+    @Override
+    public FirmaRemotaModalitaFirma getModalitaFirma() {
         return modalitaFirma;
     }
 
-    public void setModalitaFirma(final ModalitaFirma modalitaFirma) {
+    public void setModalitaFirma(final FirmaRemotaModalitaFirma modalitaFirma) {
         this.modalitaFirma = modalitaFirma;
     }
 

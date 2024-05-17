@@ -4,6 +4,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
@@ -183,6 +184,22 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         return firmaRemotaInstance.removeCredential(userInformation, hostId);
+    }
+    
+    /**
+     * Torna i poteri di firma dell'utente passato. Per poteri di firma si intende le possibili firma che l'utente possiede sull'hostId passato
+     * @param userInformation contiene le informazioni per identificare l'utenza
+     * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @return i poteri di firma dell'utente
+     * @throws FirmaRemotaHttpException
+     * @throws FirmaRemotaConfigurationException 
+     */
+    @RequestMapping(value = "/getUserSigns", method = RequestMethod.POST)
+    public List<FirmaRemotaUserSign> getUserSigns(
+                @RequestBody UserInformation userInformation, 
+                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
+        return firmaRemotaInstance.getUserSigns(userInformation);
     }
     
     /**
