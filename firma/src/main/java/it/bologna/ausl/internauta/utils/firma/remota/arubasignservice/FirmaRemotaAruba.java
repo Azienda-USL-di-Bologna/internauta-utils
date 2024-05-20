@@ -387,7 +387,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * @throws IOException 
      */
     private PdfSignApparence getPdfSignApparence(File file, SignAppearance signAppearance) throws IOException {
-        PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(file), signAppearance);
+        PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(file), signAppearance, null, null);
 
         PdfSignApparence pdfApparence = new PdfSignApparence();
         pdfApparence.setPage(pdfSignFieldDescriptor.getPage());

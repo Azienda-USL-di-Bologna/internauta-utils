@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsExceptio
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
+import it.bologna.ausl.internauta.utils.firma.data.remota.SignAppearance;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserSign;
@@ -18,10 +19,17 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileN
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
+import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
+import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.model.entities.firma.Configuration;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.ws.BindingProvider;
 import org.slf4j.Logger;
@@ -141,20 +149,52 @@ public class FirmaRemotaMedas extends FirmaRemota {
         return typeOpenSignSessionReq;
     }
     
-    private void getTypeSignDocReq(FirmaRemotaFile file, String sessionId) {
+    private void getTypeSignDocReq(MedasUserInformation userInformation, FirmaRemotaFile file, String sessionId) {
         TypeSignDocReq typeSignDocReq = new TypeSignDocReq();
         typeSignDocReq.setSessionId(sessionId);
-        typeSignDocReq.setSignProperties(value);
+        
+        TypeDocument typeDocument = new TypeDocument();
+        // typeDocument.setDocType(); // TODO: è obbligatorio? non so cosa metterci
+        
+        typeSignDocReq.setSignProperties(getTypeSignProperties(userInformation, file.getFormatoFirma(), file.getSignAppearance(), ));
+        typeSignDocReq.setDocument(value);
     }
     
-    private void getSignProperties(FirmaRemotaFile file) throws SignParamsException {
+    private TypeSignProperties getTypeSignProperties(MedasUserInformation userInformation, FirmaRemotaFile.FormatiFirma formatoFirma, SignAppearance signAppearance, File file) throws SignParamsException, FileNotFoundException, IOException {
         TypeSignProperties typeSignProperties = new TypeSignProperties();
-        typeSignProperties.setSignMode(getSignMode(file.getFormatoFirma()));
+        typeSignProperties.setSignMode(getSignMode(formatoFirma));
         typeSignProperties.setParallel(true);
         //typeSignProperties.setProcessId(value); TODO: non so cosa metterci
-        TypePadesProperties typePadesProperties = new TypePadesProperties();
-        typePadesProperties.
-        typeSignProperties.setPadesProperties();
+        
+        if (formatoFirma == FirmaRemotaFile.FormatiFirma.PDF) {
+            TypeArssPadesProperties typeArssPadesProperties = new TypeArssPadesProperties();
+            typeArssPadesProperties.setPdfProfile("PADESBES");
+            TypePadesProperties typePadesProperties = new TypePadesProperties();
+
+            // se la firma è visibile
+            if (signAppearance != null) {
+                PdfSignFieldDescriptor pdfSignFieldDescriptor;
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(
+                        fis,
+                        signAppearance,
+                        String.format("%s %s", userInformation.getCognome(), userInformation.getNome()),
+                        null);
+                }
+                TypeArssPadesPropertiesApparence typeArssPadesPropertiesApparence = new TypeArssPadesPropertiesApparence();
+                typeArssPadesPropertiesApparence.setText(pdfSignFieldDescriptor.getText());
+                typeArssPadesProperties.setArssPadesPropertiesApparence(typeArssPadesPropertiesApparence);
+
+                typePadesProperties.setPage(String.valueOf(pdfSignFieldDescriptor.getPage()));
+                typePadesProperties.setLeftx(String.valueOf(pdfSignFieldDescriptor.getLowerLeftX()));
+                typePadesProperties.setLefty(String.valueOf(pdfSignFieldDescriptor.getLowerLeftY()));
+                typePadesProperties.setRightx(String.valueOf(pdfSignFieldDescriptor.getUpperRightX()));
+                typePadesProperties.setRighty(String.valueOf(pdfSignFieldDescriptor.getUpperRightY()));
+            }
+            typePadesProperties.setArssPadesProperties(typeArssPadesProperties);
+            typeSignProperties.setPadesProperties(typePadesProperties);
+        }
+        return typeSignProperties;
     }
     
     @Override
