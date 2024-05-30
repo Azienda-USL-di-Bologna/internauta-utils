@@ -47,7 +47,6 @@ import it.bologna.ausl.model.entities.titolario.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.AGGIORNARE;
-import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.ERRORE_RITENTABILE;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.VERSARE;

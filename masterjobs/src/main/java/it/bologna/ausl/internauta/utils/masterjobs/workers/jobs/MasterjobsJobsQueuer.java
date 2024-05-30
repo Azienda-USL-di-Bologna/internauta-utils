@@ -270,8 +270,10 @@ public class MasterjobsJobsQueuer {
         if (app != null) {
             set.setApp(app);
         }
-        if (waitForObject != null)
+        if (waitForObject != null && waitForObject && (objectId != null || objectType != null || app != null))
             set.setWaitObject(waitForObject);
+        else
+            set.setWaitObject(false);
         if (priority != null)
             set.setPriority(priority);
         
