@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaFactory;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserSign;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
@@ -13,6 +14,7 @@ import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationReposito
 import it.bologna.ausl.model.entities.firma.Configuration;
 import it.bologna.ausl.model.entities.firma.QConfiguration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,8 +200,48 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     public List<FirmaRemotaUserSign> getUserSigns(
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
-        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        return firmaRemotaInstance.getUserSigns(userInformation);
+        
+        List<FirmaRemotaUserSign> res = new ArrayList<>();
+        MedasUserSign uno = new MedasUserSign();
+        uno.setActive(true);
+        uno.setCertificateId("cert 1");
+        uno.setDescription("prima firma");
+        uno.setProcessId("proc 1");
+        uno.setSignPowerCode("power 1");
+        uno.setSignType(MedasUserSign.SignType.FD);
+        uno.setOtpType(Arrays.asList(MedasUserSign.OTPType.ARUBACALL));
+        res.add(uno);
+        MedasUserSign due = new MedasUserSign();
+        due.setActive(true);
+        due.setCertificateId("cert 2");
+        due.setDescription("seconda firma");
+        due.setProcessId("proc 2");
+        due.setSignPowerCode("power 2");
+        due.setSignType(MedasUserSign.SignType.FD);
+        due.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
+        res.add(due);
+        MedasUserSign tre = new MedasUserSign();
+        tre.setActive(true);
+        tre.setCertificateId("cert 3");
+        tre.setDescription("terza firma");
+        tre.setProcessId("proc 3");
+        tre.setSignPowerCode("power 3");
+        tre.setSignType(MedasUserSign.SignType.FDA);
+        tre.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
+        res.add(tre);
+        MedasUserSign quattro = new MedasUserSign();
+        quattro.setActive(true);
+        quattro.setCertificateId("cert 4");
+        quattro.setDescription("quarta firma");
+        quattro.setProcessId("proc 4");
+        quattro.setSignPowerCode("power 4");
+        quattro.setSignType(MedasUserSign.SignType.FD);
+        quattro.setOtpType(Arrays.asList(MedasUserSign.OTPType.SMS));
+        res.add(quattro);
+        return res;
+        
+//        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
+//        return firmaRemotaInstance.getUserSigns(userInformation);
     }
     
     /**

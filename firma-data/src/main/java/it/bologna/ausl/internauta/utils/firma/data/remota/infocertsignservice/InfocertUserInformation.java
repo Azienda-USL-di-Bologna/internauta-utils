@@ -11,7 +11,7 @@ public class InfocertUserInformation extends UserInformation {
 
     public static enum ModalitaFirma  implements FirmaRemotaModalitaFirma {
         OTP, AUTOMATICA;
-
+        
         @Override
         public FirmaRemotaModalitaFirma getAutodetectValue() {
             return null;
@@ -21,7 +21,7 @@ public class InfocertUserInformation extends UserInformation {
     private String alias;
     private String pin;
     private String token;
-    private FirmaRemotaModalitaFirma modalitaFirma;
+    private ModalitaFirma modalitaFirma;
     private Boolean useSavedCredential;
 
     public InfocertUserInformation() {
@@ -71,7 +71,7 @@ public class InfocertUserInformation extends UserInformation {
         return modalitaFirma;
     }
 
-    public void setModalitaFirma(final FirmaRemotaModalitaFirma modalitaFirma) {
+    public void setModalitaFirma(final ModalitaFirma modalitaFirma) {
         this.modalitaFirma = modalitaFirma;
     }
 

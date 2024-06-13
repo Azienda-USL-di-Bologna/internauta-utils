@@ -556,7 +556,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     }
 
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return null;
     }
 }

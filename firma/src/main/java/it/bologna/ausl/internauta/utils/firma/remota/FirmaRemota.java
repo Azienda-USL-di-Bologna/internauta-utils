@@ -251,5 +251,5 @@ public abstract class FirmaRemota {
      */
     protected abstract boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException;
 
-    public abstract List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation);
+    public abstract List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException;
 }

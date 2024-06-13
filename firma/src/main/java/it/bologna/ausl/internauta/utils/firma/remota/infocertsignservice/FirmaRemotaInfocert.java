@@ -155,7 +155,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         logger.info("signAppearence: " + file.getSignAppearance());
                         if (file.getSignAppearance() != null) {
                             logger.info(String.format("creating signApparence for file %s...", file.getFileId()));
-                            PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(tmpFileToSign), file.getSignAppearance());
+                            PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(tmpFileToSign), file.getSignAppearance(), null, null);
 
                             formData.addFormDataPart("box_signature_page", Integer.toString(pdfSignFieldDescriptor.getPage()));
                             formData.addFormDataPart("box_signature_llx", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
@@ -297,7 +297,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     }
 
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return null;
     }
 

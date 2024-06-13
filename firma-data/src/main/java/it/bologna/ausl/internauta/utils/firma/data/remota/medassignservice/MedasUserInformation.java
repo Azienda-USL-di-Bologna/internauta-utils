@@ -10,7 +10,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 public class MedasUserInformation extends UserInformation {
     
     public static enum ModalitaFirma implements FirmaRemotaModalitaFirma {
-        OTP, AUTOMATICA, AUTO_DETECT;
+        AUTO_DETECT;
 
         @Override
         public FirmaRemotaModalitaFirma getAutodetectValue() {
@@ -29,15 +29,15 @@ public class MedasUserInformation extends UserInformation {
     
     public MedasUserInformation() {
     }
-    
-    public MedasUserInformation(String username, String nome, String cognome, String codiceFiscale, String password, String otp, ModalitaFirma modalitaFirma, Boolean useSavedCredential) {
+
+    public MedasUserInformation(ModalitaFirma modalitaFirma, String username, String password, String nome, String cognome, String codiceFiscale, String otp, Boolean useSavedCredential) {
+        this.modalitaFirma = modalitaFirma;
         this.username = username;
+        this.password = password;
         this.nome = nome;
         this.cognome = cognome;
         this.codiceFiscale = codiceFiscale;
-        this.password = password;
         this.otp = otp;
-        this.modalitaFirma = modalitaFirma;
         this.useSavedCredential = useSavedCredential;
     }
     

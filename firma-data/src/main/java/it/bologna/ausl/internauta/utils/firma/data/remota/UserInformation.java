@@ -30,6 +30,16 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.namirialsignservice.Na
 })
 public abstract class UserInformation {
     
+    private FirmaRemotaUserSign userSign;
+
+    public FirmaRemotaUserSign getUserSign() {
+        return userSign;
+    }
+
+    public void setUserSign(FirmaRemotaUserSign userSign) {
+        this.userSign = userSign;
+    }
+    
     public abstract String getUsername();
     public abstract String getPassword();
 

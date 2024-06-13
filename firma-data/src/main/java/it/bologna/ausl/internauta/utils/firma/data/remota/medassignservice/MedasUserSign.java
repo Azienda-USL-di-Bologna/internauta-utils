@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class MedasUserSign extends FirmaRemotaUserSign {
     private String signPowerCode;
     private String certificateId;
     private String description;
+    private String processId;
+    private String docType;
     private boolean active;
     private SignType signType;
     private List<OTPType> otpType;
@@ -27,10 +30,12 @@ public class MedasUserSign extends FirmaRemotaUserSign {
     public MedasUserSign() {
     }
 
-    public MedasUserSign(String signPowerCode, String certificateId, String description, boolean active, SignType signType, List<OTPType> otpType, boolean defaultSelection) {
+    public MedasUserSign(String signPowerCode, String certificateId, String description, String processId, String docType, boolean active, SignType signType, List<OTPType> otpType, boolean defaultSelection) {
         this.signPowerCode = signPowerCode;
         this.certificateId = certificateId;
         this.description = description;
+        this.processId = processId;
+        this.docType = docType;
         this.active = active;
         this.signType = signType;
         this.otpType = otpType;
@@ -53,12 +58,29 @@ public class MedasUserSign extends FirmaRemotaUserSign {
         this.certificateId = certificateId;
     }
 
+    @Override
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getProcessId() {
+        return processId;
+    }
+
+    public void setProcessId(String processId) {
+        this.processId = processId;
+    }
+
+    public String getDocType() {
+        return docType;
+    }
+
+    public void setDocType(String docType) {
+        this.docType = docType;
     }
 
     public boolean isActive() {
@@ -92,5 +114,10 @@ public class MedasUserSign extends FirmaRemotaUserSign {
     public void setDefaultSelection(boolean defaultSelection) {
         this.defaultSelection = defaultSelection;
     }
-    
+
+    @Override
+    @JsonIgnore
+    public String getId() {
+        return String.format("%s - %s", getCertificateId(), getSignPowerCode());
+    }
 }
