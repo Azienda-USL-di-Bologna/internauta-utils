@@ -86,7 +86,7 @@ public class PicoBuilder {
         String produttore = (String) parametriVersamento.get("produttore");
         //String identificativoDocumentoPrimario = ""; dato ridondante
         List<Allegato> listaAllegati = doc.getAllegati();
-        String riservato = docDetail.getRiservato() ? "Vero" : "Falso";
+        String riservato = docDetail.getRiservato() ? "SI" : "NO";
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
@@ -181,7 +181,7 @@ public class PicoBuilder {
         if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
             for (Allegato allegato : listaAllegati) {
                 if (allegato.getPrincipale()) {
-                    firmatoDigitalmente = allegato.getFirmato() ? "Vero" : "Falso";
+                    firmatoDigitalmente = allegato.getFirmato() ? "SI" : "NO";
                     //identificativoDocumentoPrimario = allegato.getId().toString(); metadato ridondante
                     break;
                 }

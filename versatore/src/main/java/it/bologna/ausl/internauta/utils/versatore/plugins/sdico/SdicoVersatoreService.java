@@ -137,7 +137,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
                         }
                     }
-                    log.error("SDICO ha risposto con il seguente errore: " + response.getErrorMessage());
+                    log.error("Il plug-in SDICO ha risposto con il seguente errore: " + response.getErrorMessage());
                     break;
                 }
                 default: {
