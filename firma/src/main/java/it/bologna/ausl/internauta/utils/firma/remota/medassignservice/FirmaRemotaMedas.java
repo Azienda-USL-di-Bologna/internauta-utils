@@ -42,9 +42,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.ws.BindingProvider;
 import org.apache.commons.lang3.tuple.Triple;
@@ -551,6 +553,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         //TODO: va fatta chiamata multipla per gestare procId e DocType multipli
         TypeGetUserInfo4Resp typeGetUserInfo4Resp;
+        List<FirmaRemotaUserSign> res = new ArrayList<>();
         MedasUserInformation medasUserInformation = (MedasUserInformation) userInformation;
         try {
             GetUserInfo4Req getUserInfo4Req = new GetUserInfo4Req();
@@ -571,14 +574,38 @@ public class FirmaRemotaMedas extends FirmaRemota {
                 throw new RemoteServiceException(errorMessage);
             } else {
                 TypeSigningUser4 signerUser = typeGetUserInfo4Resp.getSignerUser();
+                List<TypeSignaturePower3> signaturePowerList = signerUser.getSignaturePowerList().getSignaturePower();
+                for (TypeSignaturePower3 signaturePower : signaturePowerList) {
+                    List<TypeCert4> certificateList = signaturePower.getCertificateList().getCertificate();
+                    for (TypeCert4 certificate : certificateList) {
+                        MedasUserSign userSign = new MedasUserSign();
+                        userSign.setActive(signaturePower.isActive());
+                        userSign.setCertificateId(certificate.getId());
+                        userSign.setDescription(certificate.getDescription());
+                        userSign.setDocType(); // boh
+                        userSign.setOtpType(toOTPTypeList(certificate.getOTPtypeList()));
+                        userSign.setSignPowerCode(signaturePower.getCode());
+                        userSign.setSignType(MedasUserSign.SignType.valueOf(signaturePower.getSignType()));
+                        res.add(userSign);
+                    }
+                }
                 
-                //TODO: tutto ok, andare avanti 
+                // signerUser.getSignaturePowerList().getSignaturePower().get(0).getProfile().getProcessList().getProcess().get(0);
             }
         } else {
             String errorMessage = "il resultMessage è null, questo non dovrebbe succedere";
             throw new RemoteServiceException(errorMessage);
         }
-        return null;
+        return res;
+    }
+    
+    private List<MedasUserSign.OTPType> toOTPTypeList(TypeOTPtypeList typeOTPtypeList) {
+        if (typeOTPtypeList != null && typeOTPtypeList.getOTPtype() != null && !typeOTPtypeList.getOTPtype().isEmpty()) {
+            List<MedasUserSign.OTPType> res = typeOTPtypeList.getOTPtype().stream().map(s -> MedasUserSign.OTPType.valueOf(s)).collect(Collectors.toList());
+            return res;
+        } else {
+            return null;
+        }
     }
     
     /**
