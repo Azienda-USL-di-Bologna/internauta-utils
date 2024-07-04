@@ -68,6 +68,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     private final Map<String, String> SFTPConnectionParams;
     private final ScrybaSignServerSync syncSignService;
     private final ScrybaSignServerUtils utilsService;
+    private final List<Map<String, Object>> profiles;
     
     private final ThreadLocal<String> largeFileHash = new ThreadLocal<>();
     private final ThreadLocal<Triple<Session, Channel, ChannelSftp>> sftpConnection = new ThreadLocal<>();
@@ -79,16 +80,17 @@ public class FirmaRemotaMedas extends FirmaRemota {
 //        this.largeFilesToDelete.set(new ArrayList<>()); // inizializzazione della lista di file grossi da eliminare al termine della firma
 
         Map<String,Object> firmaRemotaConfiguration = configuration.getParams();
-        Map<String, Object> medasServiceConfiguration=  (Map<String, Object>) firmaRemotaConfiguration.get("MedasSignService");
+        Map<String, Object> medasServiceConfiguration = (Map<String, Object>) firmaRemotaConfiguration.get("MedasSignService");
         List<String> syncSignServiceEndPointUriList = (List<String>) medasServiceConfiguration.get("SyncSignServiceEndPointUriList");
         List<String> utilsServiceEndPointUriList = (List<String>) medasServiceConfiguration.get("UtilsServiceEndPointUriList");
         this.syncSignServiceAuth = (Map<String, String>) medasServiceConfiguration.get("SyncSignServiceAuth");
         this.utilsServiceAuth = (Map<String, String>) medasServiceConfiguration.get("UtilsServiceAuth");
         this.SFTPConnectionParams = (Map<String, String>) medasServiceConfiguration.get("SFTPConnectionParams");
-        
+        this.profiles = (List<Map<String, Object>>) medasServiceConfiguration.get("Profiles");
         this.syncSignService = new SyncSignService().getSyncSignServicePort();
         this.utilsService = new UtilsService().getUtilsServicePort();
-
+        
+        
         // i server potrebbero essere più di uno, il parametro infatti è una lista.
         // TODO: temporaneamente prendiamo il primo url della lista (poi dovremmo fare un qualche meccanismo di fail-over)
         
@@ -266,9 +268,14 @@ public class FirmaRemotaMedas extends FirmaRemota {
         } else if (StringUtils.hasText(userInformation.getCodiceFiscale())) {
             typeGetUserInfo4Req.setSsn(userInformation.getCodiceFiscale());
         }
-        typeGetUserInfo4Req.setProcessId(processId); //obbligatorio?
-        
-        //typeGetUserInfo4Req.setDocTypeList(docTypes); //obbligatorio?
+        if (StringUtils.hasText(processId)) {
+            typeGetUserInfo4Req.setProcessId(processId);
+        }
+        if (docTypes != null && docTypes.isEmpty()) {
+            TypeDocTypeList typeDocTypeList = new TypeDocTypeList();
+            typeDocTypeList.getDocType().addAll(docTypes);
+            typeGetUserInfo4Req.setDocTypeList(typeDocTypeList);
+        }
         return typeGetUserInfo4Req;
     }
     
@@ -320,7 +327,10 @@ public class FirmaRemotaMedas extends FirmaRemota {
     private TypeSignDocReq getTypeSignDocReq(MedasUserInformation userInformation, FirmaRemotaFile file, String sessionId) throws SignParamsException, IOException, RemoteFileNotFoundException, RemoteServiceException {
         TypeSignDocReq typeSignDocReq = new TypeSignDocReq();
         
-        MedasUserSign userSign = (MedasUserSign) userInformation.getUserSign();
+        String processId = (String) profiles.get(0).get("processId");
+        List<String> docTypes = (List<String>) profiles.get(0).get("docTypes");
+        
+//        MedasUserSign userSign = (MedasUserSign) userInformation.getUserSign();
         
         typeSignDocReq.setSessionId(sessionId);
         
@@ -329,7 +339,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
         typeSignDocReq.setSignProperties(getTypeSignProperties(userInformation, file.getFormatoFirma(), file.getSignAppearance(), tmpFileToSign));
         
         TypeDocument typeDocument = new TypeDocument();
-        typeDocument.setDocType(userSign.getDocType());
+        typeDocument.setDocType(docTypes.get(0));
         
         String fileBase64;
         long fileSize = tmpFileToSign.length();
@@ -555,9 +565,17 @@ public class FirmaRemotaMedas extends FirmaRemota {
         TypeGetUserInfo4Resp typeGetUserInfo4Resp;
         List<FirmaRemotaUserSign> res = new ArrayList<>();
         MedasUserInformation medasUserInformation = (MedasUserInformation) userInformation;
+        String processId = (String) profiles.get(0).get("processId");
+        List<String> docTypes = (List<String>) profiles.get(0).get("docTypes");
         try {
             GetUserInfo4Req getUserInfo4Req = new GetUserInfo4Req();
-            getUserInfo4Req.setGetUserInfo4Req(getTypeGetUserInfo4Req(medasUserInformation, null, null));
+            getUserInfo4Req.setGetUserInfo4Req(
+                getTypeGetUserInfo4Req(
+                    medasUserInformation, 
+                    (String) profiles.get(0).get("processId"), 
+                    (List<String>) profiles.get(0).get("docTypes")
+                )
+            );
             GetUserInfo4Resp getUserInfoResp = this.utilsService.getUserInfo4(getUserInfo4Req);
             typeGetUserInfo4Resp = getUserInfoResp.getGetUserInfo4Resp();
         } catch (Exception ex) {
@@ -582,7 +600,8 @@ public class FirmaRemotaMedas extends FirmaRemota {
                         userSign.setActive(signaturePower.isActive());
                         userSign.setCertificateId(certificate.getId());
                         userSign.setDescription(certificate.getDescription());
-                        userSign.setDocType(); // boh
+                        userSign.setProcessId(processId); // boh
+                        userSign.setDocTypes(docTypes); // boh
                         userSign.setOtpType(toOTPTypeList(certificate.getOTPtypeList()));
                         userSign.setSignPowerCode(signaturePower.getCode());
                         userSign.setSignType(MedasUserSign.SignType.valueOf(signaturePower.getSignType()));
