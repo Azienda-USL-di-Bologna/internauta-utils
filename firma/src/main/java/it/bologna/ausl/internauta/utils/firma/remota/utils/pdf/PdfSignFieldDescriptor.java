@@ -12,11 +12,12 @@ public class PdfSignFieldDescriptor {
     private int upperRightY;
     private String signName;
     private String location;
+    private String text;
 
     public PdfSignFieldDescriptor() {
     }
 
-    public PdfSignFieldDescriptor(int page, int lowerLeftX, int lowerLeftY, int upperRightX, int upperRightY, String signName, String location) {
+    public PdfSignFieldDescriptor(int page, int lowerLeftX, int lowerLeftY, int upperRightX, int upperRightY, String signName, String text, String location) {
         this.page = page;
         this.lowerLeftX = lowerLeftX;
         this.lowerLeftY = lowerLeftY;
@@ -24,6 +25,7 @@ public class PdfSignFieldDescriptor {
         this.upperRightY = upperRightY;
         this.signName = signName;
         this.location = location;
+        this.text = text;
     }
 
     public int getPage() {
@@ -80,5 +82,13 @@ public class PdfSignFieldDescriptor {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+    
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
     }
 }

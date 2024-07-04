@@ -1,0 +1,656 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions name="UtilsService" targetNamespace="http://www.medas-solutions.it/ScrybaSignServer/v2" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://www.medas-solutions.it/ScrybaSignServer/v2" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+<xs:schema targetNamespace="http://www.medas-solutions.it/ScrybaSignServer/v2" version="2.0" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://www.medas-solutions.it/ScrybaSignServer/v2" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+			<xs:element name="CertListReq">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="CertListReq" type="tns:typeCertListReq"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="CertListResp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="CertListResp" type="tns:typeCertListResp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="DespatchOtpReq">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="DespatchOtpReq" type="tns:typeDespatchOtpReq"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="DespatchOtpResp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="DespatchOtpResp" type="tns:typeDespatchOtpResp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfoReq">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfoReq" type="tns:typeGetUserInfoReq"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfoResp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfoResp" type="tns:typeGetUserInfoResp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfoReq2">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfoReq2" type="tns:typeGetUserInfoReq2"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfoResp2">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfoResp2" type="tns:typeGetUserInfoResp2"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfo3Req">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfo3Req" type="tns:typeGetUserInfo3Req"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfo3Resp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfo3Resp" type="tns:typeGetUserInfo3Resp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfo4Req">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfo4Req" type="tns:typeGetUserInfo4Req"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserInfo4Resp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserInfo4Resp" type="tns:typeGetUserInfo4Resp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:complexType name="typeCertListReq">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element name="credentials" type="tns:typeCredentials"/>
+					<xs:element minOccurs="0" name="certificateId" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeUser">
+				<xs:sequence>
+					<xs:element minOccurs="0" name="username" type="xs:string"/>
+					<xs:element minOccurs="0" name="firstName" type="xs:string"/>
+					<xs:element minOccurs="0" name="lastName" type="xs:string"/>
+					<xs:element minOccurs="0" name="ssn" type="xs:string"/>
+					<xs:element minOccurs="0" name="birthDate" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCredentials">
+				<xs:sequence>
+					<xs:element name="password" type="xs:string"/>
+					<xs:element minOccurs="0" name="otp" type="xs:string"/>
+					<xs:element minOccurs="0" name="type" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCertListResp">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="rawCertificates" type="tns:typeRawCertificate"/>
+					<xs:element name="message" type="tns:typeMessage"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeRawCertificate">
+				<xs:sequence>
+					<xs:element name="serialNumber" type="xs:string"/>
+					<xs:element name="certificate" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeMessage">
+				<xs:sequence>
+					<xs:element name="code" type="xs:integer"/>
+					<xs:element minOccurs="0" name="message" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>		
+			<xs:complexType name="typeMessageDesc">
+				<xs:sequence>
+					<xs:element name="code" type="xs:integer"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>				
+			<xs:complexType name="typeGetUserInfoReq">
+				<xs:sequence>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element name="ssn" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeGetUserInfoResp">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeSigningUser"/>
+					<xs:element name="message" type="tns:typeMessage"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSigningUser">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="certificates" type="tns:typeCertificate"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCertificate">
+				<xs:sequence>
+					<xs:element name="automatic" type="xs:boolean"/>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="hsmCerts" type="tns:typeHsmCert"/>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="processes" type="tns:typeProcess"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeHsmCert">
+				<xs:sequence>
+					<xs:element name="serialNumber" type="xs:string"/>
+					<xs:element minOccurs="0" name="certificationAuthority" type="xs:string"/>
+					<xs:element minOccurs="0" name="validFrom" type="xs:string"/>
+					<xs:element minOccurs="0" name="validTo" type="xs:string"/>
+					<xs:element minOccurs="0" name="facilityId" type="xs:string"/>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element minOccurs="0" name="hsm" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeProcess">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="docTypes" type="tns:typeDocumentType"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeDocumentType">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element name="description" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>						
+			<xs:complexType name="typeGetUserInfoReq2">
+				<xs:sequence>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element name="ssn" type="xs:string"/>
+					<xs:element minOccurs="0" name="processId" type="xs:string"/>
+					<xs:element minOccurs="0" name="docTypes" type="tns:typeDocTypeList"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeDocTypeList">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" name="docType" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeGetUserInfoResp2">
+				<xs:sequence>
+					<xs:element name="signerUser" type="tns:typeSigningUser2"/>
+					<xs:element name="message" type="tns:typeMessage"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSigningUser2">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element minOccurs="0" name="signaturePowerList" type="tns:typeSignaturePowerList"/>
+				</xs:sequence>
+			</xs:complexType>				
+			<xs:complexType name="typeSignaturePowerList">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="signaturePower" type="tns:typeSignaturePower"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSignaturePower">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="automatic" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="certificateList" type="tns:typeCertificateList"/>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="processes" type="tns:typeProcess"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCertificateList">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="certificate" type="tns:typeCert2"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCert2">
+				<xs:sequence>
+					<xs:element name="id" type="xs:string"/>
+					<xs:element minOccurs="0" name="serialNumber" type="xs:string"/>
+					<xs:element minOccurs="0" name="certificationAuthority" type="xs:string"/>
+					<xs:element minOccurs="0" name="validFrom" type="xs:string"/>
+					<xs:element minOccurs="0" name="validTo" type="xs:string"/>
+					<xs:element minOccurs="0" name="signLine" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element minOccurs="0" name="hsm" type="xs:string"/>
+					<xs:element minOccurs="0" name="OTPtypeList" type="tns:typeOTPtypeList"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeOTPtypeList">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="OTPtype" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>				
+			<xs:complexType name="typeDespatchOtpReq">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element name="credentials" type="tns:typeCredentials"/>
+					<xs:element minOccurs="0" name="certificateId" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeDespatchOtpResp">
+				<xs:sequence>
+					<xs:element name="message" type="tns:typeMessage"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeGetUserInfo3Req">
+				<xs:sequence>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element name="ssn" type="xs:string"/>
+					<xs:element minOccurs="0" name="processId" type="xs:string"/>
+					<xs:element minOccurs="0" name="docTypeList" type="tns:typeDocTypeList"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeGetUserInfo3Resp">
+				<xs:sequence>
+					<xs:element name="signerUser" type="tns:typeSigningUser3"/>
+					<xs:element name="message" type="tns:typeMessage"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeGetUserInfo4Req">
+				<xs:sequence>
+					<xs:element name="username" type="xs:string"/>
+					<xs:element name="ssn" type="xs:string"/>
+					<xs:element minOccurs="0" name="queryType" type="xs:string"/>
+					<xs:element minOccurs="0" name="processId" type="xs:string"/>
+					<xs:element minOccurs="0" name="docTypeList" type="tns:typeDocTypeList"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeGetUserInfo4Resp">
+				<xs:sequence>
+					<xs:element minOccurs="0" name="signerUser" type="tns:typeSigningUser4"/>
+					<xs:element name="message" type="tns:typeMessageDesc"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSigningUser3">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element minOccurs="0" name="signaturePowerList" type="tns:typeSignaturePowerList2"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeSignaturePowerList2">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="signaturePower" type="tns:typeSignaturePower2"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSignaturePower2">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="active" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="default" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="signType" type="xs:string"/>					
+					<xs:element minOccurs="0" name="profile" type="tns:typeProfile"/>
+					<xs:element minOccurs="0" name="certificateList" type="tns:typeCertificateList2"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeSigningUser4">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element minOccurs="0" name="queryType" type="xs:string"/>
+					<xs:element minOccurs="0" name="signaturePowerList" type="tns:typeSignaturePowerList4"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeSignaturePowerList4">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="signaturePower" type="tns:typeSignaturePower3"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeSignaturePower3">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="active" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="default" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="signType" type="xs:string"/>					
+					<xs:element minOccurs="0" name="profile" type="tns:typeProfile"/>
+					<xs:element minOccurs="0" name="certificateList" type="tns:typeCertificateList3"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeProfile">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="processList" type="tns:typeProcessList"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeProcessList">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="process" type="tns:typeProcess2"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeProcess2">
+				<xs:sequence>
+					<xs:element name="code" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="docTypeList" type="tns:typeDocTypeList2"/>
+				</xs:sequence>
+			</xs:complexType>		
+			<xs:complexType name="typeDocTypeList2">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="docType" type="tns:typeDocumentType"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeCertificateList2">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="certificate" type="tns:typeCert3"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCert3">
+				<xs:sequence>
+					<xs:element name="id" type="xs:string"/>
+					<xs:element minOccurs="0" name="serialNumber" type="xs:string"/>
+					<xs:element minOccurs="0" name="automatic" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="certificationAuthority" type="xs:string"/>
+					<xs:element minOccurs="0" name="validFrom" type="xs:string"/>
+					<xs:element minOccurs="0" name="validTo" type="xs:string"/>
+					<xs:element minOccurs="0" name="signLine" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="OTPtypeList" type="tns:typeOTPtypeList"/>
+				</xs:sequence>
+			</xs:complexType>		
+			<xs:complexType name="typeCertificateList3">
+				<xs:sequence>
+					<xs:element maxOccurs="unbounded" minOccurs="0" name="certificate" type="tns:typeCert4"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCert4">
+				<xs:sequence>
+					<xs:element name="id" type="xs:string"/>
+					<xs:element minOccurs="0" name="serialNumber" type="xs:string"/>
+					<xs:element minOccurs="0" name="automatic" type="xs:boolean"/>
+					<xs:element minOccurs="0" name="status" type="xs:string"/>
+					<xs:element minOccurs="0" name="certificationAuthority" type="xs:string"/>
+					<xs:element minOccurs="0" name="validFrom" type="xs:string"/>
+					<xs:element minOccurs="0" name="validTo" type="xs:string"/>
+					<xs:element minOccurs="0" name="signLine" type="xs:string"/>
+					<xs:element minOccurs="0" name="description" type="xs:string"/>
+					<xs:element minOccurs="0" name="OTPtypeList" type="tns:typeOTPtypeList"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeVerifyOtpResp">
+				<xs:sequence>
+					<xs:element name="message" type="tns:typeMessageDesc"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeCredentialsAuth">
+				<xs:sequence>
+					<xs:element name="password" type="xs:string"/>
+					<xs:element name="otp" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeVerifyOtpReq">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element name="credentials" type="tns:typeCredentialsAuth"/>
+					<xs:element minOccurs="0" name="certificateId" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+			<xs:complexType name="typeUserAuth">
+				<xs:sequence>
+					<xs:element name="user" type="tns:typeUser"/>
+					<xs:element minOccurs="0" name="queryType" type="xs:string"/>
+					<xs:element minOccurs="0" name="certificateList" type="tns:typeCertificateList3"/>
+				</xs:sequence>
+			</xs:complexType>		
+			<xs:complexType name="typeGetUserAuthReq">
+				<xs:sequence>
+					<xs:element minOccurs="0" name="username" type="xs:string"/>
+					<xs:element minOccurs="0" name="ssn" type="xs:string"/>
+					<xs:element minOccurs="0" name="queryType" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:complexType name="typeGetUserAuthResp">
+				<xs:sequence>
+					<xs:element minOccurs="0" name="UserAuth" type="tns:typeUserAuth"/>
+					<xs:element name="message" type="tns:typeMessageDesc"/>
+				</xs:sequence>
+			</xs:complexType>	
+			<xs:element name="VerifyOtpReq">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="VerifyOtp" type="tns:typeVerifyOtpReq"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="VerifyOtpResp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="VerifyOtp" type="tns:typeVerifyOtpResp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserAuthReq">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserAuth" type="tns:typeGetUserAuthReq"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="GetUserAuthResp">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="GetUserAuth" type="tns:typeGetUserAuthResp"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="GetUserInfoResponse">
+    <wsdl:part element="tns:GetUserInfoResp" name="GetUserInfoResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DespatchOtpResponse">
+    <wsdl:part element="tns:DespatchOtpResp" name="DespatchOtpResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CertListResponse">
+    <wsdl:part element="tns:CertListResp" name="CertListResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="VerifyOtpResponse">
+    <wsdl:part element="tns:VerifyOtpResp" name="VerifyOtpResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo">
+    <wsdl:part element="tns:GetUserInfoReq" name="GetUserInfoRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo2Response">
+    <wsdl:part element="tns:GetUserInfoResp2" name="GetUserInfoResponse2">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DespatchOtp">
+    <wsdl:part element="tns:DespatchOtpReq" name="DespatchOtpRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo4">
+    <wsdl:part element="tns:GetUserInfo4Req" name="GetUserInfo4Request">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo3">
+    <wsdl:part element="tns:GetUserInfo3Req" name="GetUserInfo3Request">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo2">
+    <wsdl:part element="tns:GetUserInfoReq2" name="GetUserInfoRequest2">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo3Response">
+    <wsdl:part element="tns:GetUserInfo3Resp" name="GetUserInfo3Response">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserInfo4Response">
+    <wsdl:part element="tns:GetUserInfo4Resp" name="GetUserInfo4Response">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CertList">
+    <wsdl:part element="tns:CertListReq" name="CertListRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="VerifyOtpRequest">
+    <wsdl:part element="tns:VerifyOtpReq" name="VerifyOtpRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserAuthResponse">
+    <wsdl:part element="tns:GetUserAuthResp" name="GetUserAuthResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetUserAuthRequest">
+    <wsdl:part element="tns:GetUserAuthReq" name="GetUserAuthRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="ScrybaSignServerUtils">
+    <wsdl:operation name="CertList">
+      <wsdl:input message="tns:CertList" name="CertList">
+    </wsdl:input>
+      <wsdl:output message="tns:CertListResponse" name="CertListResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DespatchOtp">
+      <wsdl:input message="tns:DespatchOtp" name="DespatchOtp">
+    </wsdl:input>
+      <wsdl:output message="tns:DespatchOtpResponse" name="DespatchOtpResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo">
+      <wsdl:input message="tns:GetUserInfo" name="GetUserInfo">
+    </wsdl:input>
+      <wsdl:output message="tns:GetUserInfoResponse" name="GetUserInfoResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo2">
+      <wsdl:input message="tns:GetUserInfo2" name="GetUserInfo2">
+    </wsdl:input>
+      <wsdl:output message="tns:GetUserInfo2Response" name="GetUserInfo2Response">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo3">
+      <wsdl:input message="tns:GetUserInfo3" name="GetUserInfo3">
+    </wsdl:input>
+      <wsdl:output message="tns:GetUserInfo3Response" name="GetUserInfo3Response">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo4">
+      <wsdl:input message="tns:GetUserInfo4" name="GetUserInfo4">
+    </wsdl:input>
+      <wsdl:output message="tns:GetUserInfo4Response" name="GetUserInfo4Response">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="VerifyOtp">
+      <wsdl:input message="tns:VerifyOtpRequest" name="VerifyOtpRequest">
+    </wsdl:input>
+      <wsdl:output message="tns:VerifyOtpResponse" name="VerifyOtpResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserAuth">
+      <wsdl:input message="tns:GetUserAuthRequest" name="GetUserAuthRequest">
+    </wsdl:input>
+      <wsdl:output message="tns:GetUserAuthResponse" name="GetUserAuthResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="UtilsServiceSoapBinding" type="tns:ScrybaSignServerUtils">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="CertList">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/CertList" style="document"/>
+      <wsdl:input name="CertList">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="CertListResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DespatchOtp">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/DespatchOtp" style="document"/>
+      <wsdl:input name="DespatchOtp">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="DespatchOtpResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/GetUserInfo" style="document"/>
+      <wsdl:input name="GetUserInfo">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserInfoResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo2">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/GetUserInfo2" style="document"/>
+      <wsdl:input name="GetUserInfo2">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserInfo2Response">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo3">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/GetUserInfo3" style="document"/>
+      <wsdl:input name="GetUserInfo3">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserInfo3Response">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserInfo4">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/GetUserInfo4" style="document"/>
+      <wsdl:input name="GetUserInfo4">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserInfo4Response">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="VerifyOtp">
+      <soap:operation soapAction="http://www.medas-solutions.it/ScrybaSignServer/Utils/v2/VerifyOtp" style="document"/>
+      <wsdl:input name="VerifyOtpRequest">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="VerifyOtpResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetUserAuth">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/Utils/v2/GetUserAuth" style="document"/>
+      <wsdl:input name="GetUserAuthRequest">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserAuthResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="UtilsService">
+    <wsdl:port binding="tns:UtilsServiceSoapBinding" name="UtilsServicePort">
+      <soap:address location="https://localhost/ScrybaSignServer/services/utils/v2"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
