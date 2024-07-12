@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import java.util.List;
 
@@ -9,12 +10,14 @@ import java.util.List;
  * @author gdm
  */
 public class MedasUserSign extends FirmaRemotaUserSign {
+    public static final String CREDENTIAL_ADDITIONAL_DATA_KEY = "userSignId";
+    
     public static enum SignType {
         FEA, FD, FDA
     }
 
     public static enum OTPType {
-        SMS, ARUBACALL, C100, YUBICO8, APP
+        SMS, ARUBACALL, C100, YUBICO8, APP, AUTOMATIC
     }
 
     private String signPowerCode;
@@ -116,7 +119,7 @@ public class MedasUserSign extends FirmaRemotaUserSign {
     }
 
     @Override
-    @JsonIgnore
+//    @JsonIgnore
     public String getId() {
         return String.format("%s - %s", getCertificateId(), getSignPowerCode());
     }

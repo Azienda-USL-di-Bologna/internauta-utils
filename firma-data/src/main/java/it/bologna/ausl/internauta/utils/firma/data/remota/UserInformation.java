@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -48,7 +49,13 @@ public abstract class UserInformation {
     @JsonProperty
     public abstract Boolean useSavedCredential();
     
+//    @JsonIgnore
+//    public boolean isAutodetectMode() {
+//        return false;
+//        
+//    }
+    @JsonIgnore
     public boolean isAutodetectMode() {
-        return false;
+        return getModalitaFirma() == getModalitaFirma().getAutodetectValue();
     }
 }
