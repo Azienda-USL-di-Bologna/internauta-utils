@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemot
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.FirmaRemotaInfocert;
+import it.bologna.ausl.internauta.utils.firma.remota.medassignservice.FirmaRemotaMedas;
 import it.bologna.ausl.internauta.utils.firma.remota.namirialsignservice.FirmaRemotaNamirial;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
@@ -64,6 +65,9 @@ public class FirmaRemotaFactory {
                     break;
                 case NAMIRIAL:
                     firmaRemotaInstance = new FirmaRemotaNamirial(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+                    break;
+                case MEDAS:
+                    firmaRemotaInstance = new FirmaRemotaMedas(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
                     break;
                 default:
                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not found");

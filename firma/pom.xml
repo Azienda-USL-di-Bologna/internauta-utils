@@ -75,6 +75,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.2.17</version>
+        </dependency>
+        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>authorization-utils</artifactId>
             <version>1.0</version>
@@ -161,6 +166,42 @@
                         <id>wsimport-generate-CredentialProxyService</id>
                         <phase>generate-sources</phase>
                     </execution>
+                    <execution>
+                        <id>wsimport-generate-syncsignV3</id>
+                        <goals>
+                            <goal>wsimport</goal>
+                        </goals>
+                        <configuration>
+                            <wsdlFiles>
+                                <wsdlFile>medas/syncsignV3.wsdl</wsdlFile>
+                            </wsdlFiles>
+                            <packageName>it.bologna.ausl.internauta.utils.firma.remota.medassignservice</packageName>
+                            <vmArgs>
+                                <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                            </vmArgs>
+                            <wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/syncsign/v3?wsdl</wsdlLocation>
+                            <staleFile>${project.build.directory}/jaxws/stale/syncsignV3.stale</staleFile>
+                        </configuration>
+                        <phase>generate-sources</phase>
+                    </execution>
+                    <execution>
+                        <id>wsimport-generate-utilsV2.0_rev1</id>
+                        <goals>
+                            <goal>wsimport</goal>
+                        </goals>
+                        <configuration>
+                            <wsdlFiles>
+                                <wsdlFile>medas/utilsV2.0_rev1.wsdl</wsdlFile>
+                            </wsdlFiles>
+                            <wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/utils/v2?wsdl</wsdlLocation>
+                            <packageName>it.bologna.ausl.internauta.utils.firma.remota.medassignservice</packageName>
+                            <vmArgs>
+                                <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                            </vmArgs>
+                            <staleFile>${project.build.directory}/jaxws/stale/utilsV2.0_rev1.stale</staleFile>
+                        </configuration>
+                        <phase>generate-sources</phase>
+                    </execution>
                 </executions>
                 <dependencies>
                     <dependency>
@@ -194,6 +235,28 @@
                     </execution>
                 </executions>
             </plugin>
+<!--            <plugin>
+                <groupId>org.jvnet.jax-ws-commons</groupId>
+                <artifactId>jaxws-maven-plugin</artifactId>
+                <version>2.3</version>
+                <executions>
+                    
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>javax.xml</groupId>
+                        <artifactId>webservices-api</artifactId>
+                        <version>2.0</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <sourceDestDir>${project.build.directory}/generated-sources/jaxws-wsimport</sourceDestDir>
+                    <xnocompile>true</xnocompile>
+                    <verbose>true</verbose>
+                    <extension>true</extension>
+                    <catalog>${basedir}/src/jax-ws-catalog.xml</catalog>
+                </configuration>
+            </plugin>-->
         </plugins>
     </build>
 </project>

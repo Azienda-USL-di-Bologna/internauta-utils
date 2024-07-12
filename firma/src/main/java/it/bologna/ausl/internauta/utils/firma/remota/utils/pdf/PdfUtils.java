@@ -15,10 +15,12 @@ public class PdfUtils {
  * Torna un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
  * @param pdfFile
  * @param signAppearance campo della classe FirmaRemotaFile
+ * @param text testo da inserire sul campo firma visibile
+ * @param location luogo della firma
  * @return un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
  * @throws IOException 
  */
-public static PdfSignFieldDescriptor toPdfSignFieldDescriptor(InputStream pdfFile, SignAppearance signAppearance) throws IOException {
+public static PdfSignFieldDescriptor toPdfSignFieldDescriptor(InputStream pdfFile, SignAppearance signAppearance, String text, String location) throws IOException {
 
     PdfReader pdf = new PdfReader(pdfFile);
 
@@ -50,7 +52,7 @@ public static PdfSignFieldDescriptor toPdfSignFieldDescriptor(InputStream pdfFil
     float upperRigthY = lowerLeftY + heigth;
 
     PdfSignFieldDescriptor pdfSignFieldDescriptor = 
-            new PdfSignFieldDescriptor(page, (int)lowerLeftX, (int)lowerLeftY, (int)upperRigthX, (int)upperRigthY, signAppearance.getSignName(), null);
+            new PdfSignFieldDescriptor(page, (int)lowerLeftX, (int)lowerLeftY, (int)upperRigthX, (int)upperRigthY, signAppearance.getSignName(), text, location);
 
     return pdfSignFieldDescriptor;
 }
