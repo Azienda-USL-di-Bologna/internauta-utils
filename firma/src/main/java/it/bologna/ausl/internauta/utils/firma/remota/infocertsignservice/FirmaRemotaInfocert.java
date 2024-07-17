@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfoCertContextEnum;
 import it.bologna.ausl.internauta.utils.firma.data.remota.infocertsignservice.InfoCertPathEnum;
@@ -154,7 +155,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         logger.info("signAppearence: " + file.getSignAppearance());
                         if (file.getSignAppearance() != null) {
                             logger.info(String.format("creating signApparence for file %s...", file.getFileId()));
-                            PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(tmpFileToSign), file.getSignAppearance());
+                            PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(tmpFileToSign), file.getSignAppearance(), null, null);
 
                             formData.addFormDataPart("box_signature_page", Integer.toString(pdfSignFieldDescriptor.getPage()));
                             formData.addFormDataPart("box_signature_llx", Integer.toString(pdfSignFieldDescriptor.getLowerLeftX()));
@@ -293,6 +294,11 @@ public class FirmaRemotaInfocert extends FirmaRemota {
         } catch (ParserConfigurationException | SAXException | IOException ex) {
             logger.error("error", ex);
         }
+    }
+
+    @Override
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+        return null;
     }
 
 }

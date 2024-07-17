@@ -5,4 +5,5 @@
     <system systemId="http://www.w3.org/2005/05/xmlmime" uri="wsdl/www.w3.org/2005/05/xmlmime.xsd"/>
     <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/CredentialProxyService?wsdl" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/CredentialProxyService.wsdl"/>
     <system systemId="https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/CredentialProxyService?xsd=1" uri="wsdl/arss-firma-auslbo.avec.emr.it_8443/ArubaSignService/CredentialProxyService.xsd_1.xsd"/>
+    <system systemId="https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/syncsign/v3?wsdl" uri="wsdl/medas/syncsignV3.wsdl"/>
 </catalog>
