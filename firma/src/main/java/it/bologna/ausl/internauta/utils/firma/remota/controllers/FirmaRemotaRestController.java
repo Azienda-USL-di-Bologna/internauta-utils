@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +43,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping(value = "${firma.remota.mapping.url}")
 public class FirmaRemotaRestController implements ControllerHandledExceptions {
 
+    private static Logger logger = LoggerFactory.getLogger(FirmaRemotaRestController.class);
+    
     @Autowired
     private FirmaRemotaFactory firmaRemotaFactory;
     
@@ -124,8 +128,13 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestParam(required = true) String codiceAzienda,
                 HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
-        return res;
+        try {
+            FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
+            return res;
+        } catch (Exception ex) {
+            logger.error("errore nella firma", ex);
+            throw ex;
+        }
     }
     
     @RequestMapping(value = "/firmaRemotaMultpart", consumes = "multipart/form-data", method = RequestMethod.POST)
@@ -144,6 +153,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * controlla se esistono le credenziali dell'utente passato sul sistema di memorizzazione credenziali
      * @param userInformation contiene le informazioni per identificare l'utenza
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return
      * @throws FirmaRemotaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
@@ -151,15 +161,17 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/existingCredential", method = RequestMethod.POST)
     public Boolean existingCredential(
                 @RequestBody UserInformation userInformation, 
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId,
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        return firmaRemotaInstance.existingCredential(userInformation, hostId);
+        return firmaRemotaInstance.existingCredential(userInformation, hostId, additionalData);
     }
 
     /**
      * setta le credenziali per l'utente passato sul sistema di memorizzazione credenziali
      * @param userInformation contiene le informazioni per identificare l'utenza
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return true se le credenziali sono state settate, false altrimenti
      * @throws FirmaRemotaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
@@ -167,15 +179,17 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/setCredential", method = RequestMethod.POST)
     public Boolean setCredential(
                 @RequestBody UserInformation userInformation, 
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId,
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        return firmaRemotaInstance.setCredential(userInformation, hostId);
+        return firmaRemotaInstance.setCredential(userInformation, hostId, additionalData);
     }
 
     /**
      * rimuove le credenziali per l'utente passato sul sistema di memorizzazione credenziali
      * @param userInformation contiene le informazioni per identificare l'utenza
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return true se le credenziali sono state rimosse, false altrimenti
      * @throws FirmaRemotaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
@@ -183,9 +197,10 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/removeCredential", method = RequestMethod.POST)
     public Boolean removeCredential(
                 @RequestBody UserInformation userInformation, 
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId,
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        return firmaRemotaInstance.removeCredential(userInformation, hostId);
+        return firmaRemotaInstance.removeCredential(userInformation, hostId, additionalData);
     }
     
     /**
@@ -201,47 +216,47 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
         
-        List<FirmaRemotaUserSign> res = new ArrayList<>();
-        MedasUserSign uno = new MedasUserSign();
-        uno.setActive(true);
-        uno.setCertificateId("cert 1");
-        uno.setDescription("prima firma");
-        uno.setProcessId("proc 1");
-        uno.setSignPowerCode("power 1");
-        uno.setSignType(MedasUserSign.SignType.FD);
-        uno.setOtpType(Arrays.asList(MedasUserSign.OTPType.ARUBACALL));
-        res.add(uno);
-        MedasUserSign due = new MedasUserSign();
-        due.setActive(true);
-        due.setCertificateId("cert 2");
-        due.setDescription("seconda firma");
-        due.setProcessId("proc 2");
-        due.setSignPowerCode("power 2");
-        due.setSignType(MedasUserSign.SignType.FD);
-        due.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
-        res.add(due);
-        MedasUserSign tre = new MedasUserSign();
-        tre.setActive(true);
-        tre.setCertificateId("cert 3");
-        tre.setDescription("terza firma");
-        tre.setProcessId("proc 3");
-        tre.setSignPowerCode("power 3");
-        tre.setSignType(MedasUserSign.SignType.FDA);
-        tre.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
-        res.add(tre);
-        MedasUserSign quattro = new MedasUserSign();
-        quattro.setActive(true);
-        quattro.setCertificateId("cert 4");
-        quattro.setDescription("quarta firma");
-        quattro.setProcessId("proc 4");
-        quattro.setSignPowerCode("power 4");
-        quattro.setSignType(MedasUserSign.SignType.FD);
-        quattro.setOtpType(Arrays.asList(MedasUserSign.OTPType.SMS));
-        res.add(quattro);
-        return res;
+//        List<FirmaRemotaUserSign> res = new ArrayList<>();
+//        MedasUserSign uno = new MedasUserSign();
+//        uno.setActive(true);
+//        uno.setCertificateId("cert 1");
+//        uno.setDescription("prima firma");
+//        uno.setProcessId("proc 1");
+//        uno.setSignPowerCode("power 1");
+//        uno.setSignType(MedasUserSign.SignType.FD);
+//        uno.setOtpType(Arrays.asList(MedasUserSign.OTPType.ARUBACALL));
+//        res.add(uno);
+//        MedasUserSign due = new MedasUserSign();
+//        due.setActive(true);
+//        due.setCertificateId("cert 2");
+//        due.setDescription("seconda firma");
+//        due.setProcessId("proc 2");
+//        due.setSignPowerCode("power 2");
+//        due.setSignType(MedasUserSign.SignType.FD);
+//        due.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
+//        res.add(due);
+//        MedasUserSign tre = new MedasUserSign();
+//        tre.setActive(true);
+//        tre.setCertificateId("cert 3");
+//        tre.setDescription("terza firma");
+//        tre.setProcessId("proc 3");
+//        tre.setSignPowerCode("power 3");
+//        tre.setSignType(MedasUserSign.SignType.FDA);
+//        tre.setOtpType(Arrays.asList(MedasUserSign.OTPType.C100, MedasUserSign.OTPType.APP));
+//        res.add(tre);
+//        MedasUserSign quattro = new MedasUserSign();
+//        quattro.setActive(true);
+//        quattro.setCertificateId("cert 4");
+//        quattro.setDescription("quarta firma");
+//        quattro.setProcessId("proc 4");
+//        quattro.setSignPowerCode("power 4");
+//        quattro.setSignType(MedasUserSign.SignType.FD);
+//        quattro.setOtpType(Arrays.asList(MedasUserSign.OTPType.SMS));
+//        res.add(quattro);
+//        return res;
         
-//        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-//        return firmaRemotaInstance.getUserSigns(userInformation);
+        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
+        return firmaRemotaInstance.getUserSigns(userInformation);
     }
     
     /**

@@ -18,6 +18,13 @@ public class MedasUserInformation extends UserInformation {
         }
     };
     
+    
+
+//    @Override
+//    public boolean isAutodetectMode() {
+//        return modalitaFirma == modalitaFirma.getAutodetectValue();
+//    }
+    
     private ModalitaFirma modalitaFirma;
     private String username;
     private String password;
@@ -108,5 +115,5 @@ public class MedasUserInformation extends UserInformation {
     public void setModalitaFirma(final ModalitaFirma modalitaFirma) {
         this.modalitaFirma = modalitaFirma;
     }
-
+    
 }

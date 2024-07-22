@@ -3,7 +3,6 @@ package it.bologna.ausl.internauta.utils.firma.remota.medassignservice;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.BaseEncoding;
-import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -30,6 +29,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloader
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
+import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -43,15 +43,17 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.ws.BindingProvider;
-import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Pair;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
 
@@ -65,13 +67,15 @@ public class FirmaRemotaMedas extends FirmaRemota {
     
     private final Map<String, String> syncSignServiceAuth;
     private final Map<String, String> utilsServiceAuth;
-    private final Map<String, String> SFTPConnectionParams;
+    private final Map<String, Object> SFTPConnectionParams;
     private final ScrybaSignServerSync syncSignService;
     private final ScrybaSignServerUtils utilsService;
     private final List<Map<String, Object>> profiles;
     
+    private File sftpKeyFile = null;
+    private final ThreadLocal<File> tmpFileToSign = new ThreadLocal<>();
     private final ThreadLocal<String> largeFileHash = new ThreadLocal<>();
-    private final ThreadLocal<Triple<Session, Channel, ChannelSftp>> sftpConnection = new ThreadLocal<>();
+    private final ThreadLocal<Pair<Session, ChannelSftp>> sftpConnection = new ThreadLocal<>();
     
     public FirmaRemotaMedas(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
         super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
@@ -85,7 +89,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
         List<String> utilsServiceEndPointUriList = (List<String>) medasServiceConfiguration.get("UtilsServiceEndPointUriList");
         this.syncSignServiceAuth = (Map<String, String>) medasServiceConfiguration.get("SyncSignServiceAuth");
         this.utilsServiceAuth = (Map<String, String>) medasServiceConfiguration.get("UtilsServiceAuth");
-        this.SFTPConnectionParams = (Map<String, String>) medasServiceConfiguration.get("SFTPConnectionParams");
+        this.SFTPConnectionParams = (Map<String, Object>) medasServiceConfiguration.get("SFTPConnectionParams");
         this.profiles = (List<Map<String, Object>>) medasServiceConfiguration.get("Profiles");
         this.syncSignService = new SyncSignService().getSyncSignServicePort();
         this.utilsService = new UtilsService().getUtilsServicePort();
@@ -113,59 +117,95 @@ public class FirmaRemotaMedas extends FirmaRemota {
 //        bpUtilsService.getRequestContext().put(JAXWSProperties.HTTP_CLIENT_STREAMING_CHUNK_SIZE, 8192);
         if (this.utilsServiceAuth != null && !this.utilsServiceAuth.isEmpty()) {
             if (StringUtils.hasText(this.utilsServiceAuth.get("username")) && StringUtils.hasText(this.utilsServiceAuth.get("password"))) {
-                bpSyncSignService.getRequestContext().put(BindingProvider.USERNAME_PROPERTY, this.utilsServiceAuth.get("username"));
-                bpSyncSignService.getRequestContext().put(BindingProvider.PASSWORD_PROPERTY, this.utilsServiceAuth.get("password"));
+                bpUtilsService.getRequestContext().put(BindingProvider.USERNAME_PROPERTY, this.utilsServiceAuth.get("username"));
+                bpUtilsService.getRequestContext().put(BindingProvider.PASSWORD_PROPERTY, this.utilsServiceAuth.get("password"));
+            }
+        }
+        
+        // se l'invio al server SFTP per file di grandi dimensioni è attivo e ha bisogno di una chiave, controllo che il file della chiave esista
+        if (isSftpForLargeFileEnabled() && this.SFTPConnectionParams.containsKey("keyPath")) {
+            String sftpKeyFilePath = (String) this.SFTPConnectionParams.get("keyPath");
+            this.sftpKeyFile = new File(sftpKeyFilePath);
+            if (!sftpKeyFile.exists()) {
+                String errorMessage = String.format("la chieve per la connessione al server SFTP non è stata trovata al path: %s", sftpKeyFile.getAbsolutePath());
+                logger.error(errorMessage);
+                throw new FirmaRemotaConfigurationException(errorMessage);
             }
         }
     }
     
+    /**
+     * torna se nei parametri è abilitato il server sftp da utilizzare per la firma dei file di grandi dimensioni
+     * @return 
+     */
+    private boolean isSftpForLargeFileEnabled() {
+        return 
+            this.SFTPConnectionParams != null &&
+            !this.SFTPConnectionParams.isEmpty() &&
+            this.SFTPConnectionParams.containsKey("enabled") &&
+            (Boolean) this.SFTPConnectionParams.get("enabled");
+    }
+    
     private ChannelSftp connectOnSFTP() throws JSchException {
-        JSch jSch = new JSch();
-        Session session = null;
-        Channel channel = null;
-        ChannelSftp channelSftp = null;
-//        jSch.addIdentity(PRIVATE_KEY_FILE);
-        System.out.println("Private Key Added.");
-//        session = jSch.getSession(SFTP_USER, SFTP_HOST, SFTP_PORT);
-        System.out.println("Session created.");
+        logger.info("connecting to sftp...");
+        JSch jSch = new JSch();        
+        
+        String host = (String) this.SFTPConnectionParams.get("host");
+        Integer port = (Integer) this.SFTPConnectionParams.get("port");
+        String user = (String) this.SFTPConnectionParams.get("user");
+        String keyPassword = (String) this.SFTPConnectionParams.get("keyPassword");
+        
+        if (this.sftpKeyFile != null) {
+            if (StringUtils.hasText(keyPassword)) {
+                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath(), keyPassword);
+            } else {
+                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath());
+            }
+            logger.info("Private Key Added.");
+        }
+        Session session = jSch.getSession(user, host, port);
+        logger.info("SFTP Session created.");
 
         java.util.Properties config = new java.util.Properties();
         config.put("StrictHostKeyChecking", "no");
         session.setConfig(config);
         session.connect();
-        channel = session.openChannel("sftp");
+        ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
         channelSftp.connect();
-        sftpConnection.set(Triple.of(session, channel, channelSftp));
+        logger.info("connected to SFTP channel.");
+        sftpConnection.set(Pair.of(session, channelSftp));
         return channelSftp;
     }
     
     private void disconnectFromSFTP() {
-        Triple<Session, Channel, ChannelSftp> sftpConnectionTriple = sftpConnection.get();
+        Pair<Session, ChannelSftp> sftpConnectionTriple = sftpConnection.get();
         if (sftpConnectionTriple != null) {
-            if (sftpConnectionTriple.getLeft() != null) {
+            if (sftpConnectionTriple.getFirst()!= null) {
                 try {
-                    sftpConnectionTriple.getLeft().disconnect();
+                    sftpConnectionTriple.getFirst().disconnect();
+                    logger.info("disconnected from SFTP session.");
                 } catch (Exception ex) {
                     logger.error("erron on disconneting from SFTP session", ex);
                 }
             }
-            if (sftpConnectionTriple.getMiddle()!= null) {
+            if (sftpConnectionTriple.getSecond()!= null) {
                 try {
-                    sftpConnectionTriple.getMiddle().disconnect();
+                    sftpConnectionTriple.getSecond().disconnect();
+                    logger.info("disconnected from SFTP channel.");
                 } catch (Exception ex) {
                     logger.error("erron on disconneting from SFTP Channel", ex);
-                }
-            }
-            if (sftpConnectionTriple.getRight()!= null) {
-                try {
-                    sftpConnectionTriple.getRight().disconnect();
-                } catch (Exception ex) {
-                    logger.error("erron on disconneting from SFTP ChannelSFTP", ex);
                 }
             }
         }
     }
     
+    /**
+     * trasferisce il file sul server sftp secondo le regole di medas
+     * @param file il file
+     * @param cf il codice fiscale del firmatario
+     * @return l'hash sha256 in hex del file
+     * @throws RemoteServiceException 
+     */
     private String manageFileOnSFTP(File file, String cf) throws RemoteServiceException  {
         ChannelSftp sftpChannel;
         try {
@@ -175,6 +215,8 @@ public class FirmaRemotaMedas extends FirmaRemota {
             logger.error(errorMessage, ex);
             throw new RemoteServiceException(errorMessage, ex);
         }
+        
+        // calcolo l'hash sha256 in hex del file
         String sha256hex;
         try (FileInputStream fis = new FileInputStream(file)) {
             try(HashingInputStream his = new HashingInputStream(Hashing.sha256(), fis)) {
@@ -188,7 +230,9 @@ public class FirmaRemotaMedas extends FirmaRemota {
             logger.error(errorMessage, ex);
             throw new RemoteServiceException(errorMessage, ex);
         }
-        String toSignFolder = this.SFTPConnectionParams.get("toSingFolder");
+        
+        // carico il file sul server sftp con un nome random nella cartella transfer
+        String toSignFolder = (String) this.SFTPConnectionParams.get("toSingFolder");
         String randomFileName = UUID.randomUUID().toString();
         String sftpFilePathRandomName = String.format("%s/%s", toSignFolder, randomFileName);
         try {
@@ -200,6 +244,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
             throw new RemoteServiceException(errorMessage, ex);
         }
         
+        // se tutto ok, rinomino il file secondo il formato voluto da medas: cf_sha256hex"
         String sftpFileName =String.format("%s_%s", cf, sha256hex);
         String sftpFilePath = String.format("%s/%s", toSignFolder, sftpFileName);
         try {
@@ -213,15 +258,22 @@ public class FirmaRemotaMedas extends FirmaRemota {
             throw new RemoteServiceException(errorMessage, ex);
         }
         
-        // aggiungere il file alla lista largeFilesToDelete
+        // aggiungo il file appena creato alla lista di quelli da cancellare alla fine della firma o in caso di errore
         this.largeFileHash.set(sftpFileName);
         return sha256hex;
     }
     
+    /**
+     * dopo la chiamata alla firma, recupera il file dalla cartella dei file firmati transfer/signed"
+     * viene inserito in questa cartella in automatico dal server dopo la firma
+     * @param sftpPath il file con il nome cf_sha256hex 
+     * @return lo stream del file firmato
+     * @throws RemoteServiceException 
+     */
     private InputStream retreiveSignedFileFromSFTP(String sftpPath) throws RemoteServiceException {
         try {
-            ChannelSftp sftpChannel = sftpConnection.get().getRight();
-            String sftpSignedFolder = SFTPConnectionParams.get("signedFolder");
+            ChannelSftp sftpChannel = sftpConnection.get().getSecond();
+            String sftpSignedFolder = (String) SFTPConnectionParams.get("signedFolder");
             return sftpChannel.get(String.format("%s/%s", sftpSignedFolder, sftpPath));
         } catch (Exception ex) {
             String errorMessage = String.format("error on retrieving file %s on sftp", sftpPath);
@@ -230,10 +282,14 @@ public class FirmaRemotaMedas extends FirmaRemota {
         }
     }
     
+    /**
+     * rimuove il filepath passato, dal server sftp
+     * @param sftpPath 
+     */
     private void removeFilePathFromSFTP(String sftpPath) {
         try {
             logger.info(String.format("removing file %s from sftp...", sftpPath));
-            ChannelSftp sftpChannel = sftpConnection.get().getRight();
+            ChannelSftp sftpChannel = sftpConnection.get().getSecond();
             sftpChannel.rm(sftpPath);
         } catch (Exception ex) {
             String errorMessage = "error on deleting file to sftp";
@@ -241,8 +297,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
         }
     }
     
+    /**
+     * rimvuome il file firmato passato, dal server sftp
+     * @param filename 
+     */
     private void removeSignedFileFromSFTP(String filename) {
-        String signedFolder = SFTPConnectionParams.get("signedFolder");
+        String signedFolder = (String) SFTPConnectionParams.get("signedFolder");
         removeFilePathFromSFTP(String.format("%s/%s", signedFolder, filename));
     }
     
@@ -264,14 +324,14 @@ public class FirmaRemotaMedas extends FirmaRemota {
     private TypeGetUserInfo4Req getTypeGetUserInfo4Req(MedasUserInformation userInformation, String processId, List<String> docTypes) {
         TypeGetUserInfo4Req typeGetUserInfo4Req = new TypeGetUserInfo4Req();
         if (StringUtils.hasText(userInformation.getUsername())) {
-            typeGetUserInfo4Req.setUsername(userInformation.getUsername());
+            typeGetUserInfo4Req.setSsn(userInformation.getUsername());
         } else if (StringUtils.hasText(userInformation.getCodiceFiscale())) {
             typeGetUserInfo4Req.setSsn(userInformation.getCodiceFiscale());
         }
         if (StringUtils.hasText(processId)) {
             typeGetUserInfo4Req.setProcessId(processId);
         }
-        if (docTypes != null && docTypes.isEmpty()) {
+         if (docTypes != null && !docTypes.isEmpty()) {
             TypeDocTypeList typeDocTypeList = new TypeDocTypeList();
             typeDocTypeList.getDocType().addAll(docTypes);
             typeGetUserInfo4Req.setDocTypeList(typeDocTypeList);
@@ -279,40 +339,69 @@ public class FirmaRemotaMedas extends FirmaRemota {
         return typeGetUserInfo4Req;
     }
     
-    private TypeCredentials getTypeCredentials(MedasUserInformation userInformation) {
+    /**
+     * crea l'oggetto contenente le credenziali da passare alla chiamata
+     * La password, se non è settata, ma è stato passato userInformation.useSavedCredential() a true, prova a recuparla dal credential manager
+     * @param userInformation le informazione dell'utenza di firma
+     * @param medasUserSign l'oggetto che indica il certificato e potere di firma selezionati per firmare
+     * @return
+     * @throws EncryptionException 
+     */
+    private TypeCredentials getTypeCredentials(MedasUserInformation userInformation, MedasUserSign medasUserSign) throws EncryptionException {
         TypeCredentials typeCredentials = new TypeCredentials();
         if (StringUtils.hasText(userInformation.getOtp())) {
             typeCredentials.setOtp(userInformation.getOtp());
         }
+        
         if (StringUtils.hasText(userInformation.getPassword())) {
             typeCredentials.setPassword(userInformation.getPassword());
+        } else  if (
+            medasUserSign != null &&
+            userInformation.useSavedCredential() != null &&  userInformation.useSavedCredential() && 
+            configuration.getInternalCredentialsManager() != null  && configuration.getInternalCredentialsManager()) {
+                /* 
+                    devo recupare la password deal credential manager. Dato che lo stesso username può avere più firme, devo costruire l'oggetto additionalData
+                    per indicare quale recuperare
+                */
+                HashMap<String, Object> additionalData = new HashMap<>();
+                additionalData.put(MedasUserSign.CREDENTIAL_ADDITIONAL_DATA_KEY, medasUserSign.getId());
+                String plainPassword = internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId(), additionalData);
+                if (StringUtils.hasText(plainPassword)) {
+                    typeCredentials.setPassword(plainPassword);
+                }
         }
-        
         return typeCredentials;
     }
     
+    /**
+     * costruisce l'oggetto TypeUser da passare alle chiamate.
+     * Usa sempre ssn per indentificare l'utente, ma viene letto dal campo username per far funzionare iol caso di cf diverso dall'effettivo cf dell'utente. Più
+     * che altro server per i di test
+     * @param userInformation
+     * @return 
+     */
     private TypeUser getTypeUser(MedasUserInformation userInformation) {
         TypeUser typeUser = new TypeUser();
-        typeUser.setUsername(userInformation.getUsername());
+        //typeUser.setUsername(userInformation.getUsername());
         typeUser.setFirstName(userInformation.getNome());
         typeUser.setLastName(userInformation.getCognome());
-        typeUser.setSsn(userInformation.getCodiceFiscale());
-//        typeUser.setBirthDate(); // TODO: da chiedere, spero non sia obbligatoria
+//        typeUser.setSsn(userInformation.getCodiceFiscale());
+        typeUser.setSsn(userInformation.getUsername());
         return typeUser;
     }
     
-    private TypeDespatchOtpReq getTypeDespatchOtpReq(MedasUserInformation userInformation, MedasUserSign medasUserSign) {
+    private TypeDespatchOtpReq getTypeDespatchOtpReq(MedasUserInformation userInformation, MedasUserSign medasUserSign) throws EncryptionException {
         TypeDespatchOtpReq typeDespatchOtpReq = new TypeDespatchOtpReq();
         typeDespatchOtpReq.setCertificateId(medasUserSign.getCertificateId());
         typeDespatchOtpReq.setUser(getTypeUser(userInformation));
-        typeDespatchOtpReq.setCredentials(getTypeCredentials(userInformation));
+        typeDespatchOtpReq.setCredentials(getTypeCredentials(userInformation, medasUserSign));
         return typeDespatchOtpReq;
     }
     
-    private TypeOpenSignSessionReq getTypeOpenSignSessionReq(MedasUserInformation userInformation, MedasUserSign medasUserSign) {
+    private TypeOpenSignSessionReq getTypeOpenSignSessionReq(MedasUserInformation userInformation, MedasUserSign medasUserSign) throws EncryptionException {
         TypeOpenSignSessionReq typeOpenSignSessionReq = new TypeOpenSignSessionReq();
         typeOpenSignSessionReq.setUser(getTypeUser(userInformation));
-        typeOpenSignSessionReq.setCredentials(getTypeCredentials(userInformation));
+        typeOpenSignSessionReq.setCredentials(getTypeCredentials(userInformation, medasUserSign));
         typeOpenSignSessionReq.setCertificateId(medasUserSign.getCertificateId());
         typeOpenSignSessionReq.setSignaturePowerId(medasUserSign.getSignPowerCode());
         return typeOpenSignSessionReq;
@@ -324,6 +413,18 @@ public class FirmaRemotaMedas extends FirmaRemota {
         return typeCloseSignSessionReq;
     }
     
+    /**
+     * crea l'oggetto TypeSignDocReq da passare per eseguire la firma. Presupopne che sia stata aperta già una sessione.
+     * gestisce anche il caso del file di grandi dimensioni
+     * @param userInformation le info dell'utenza
+     * @param file il fire da firmare
+     * @param session l'id della sessione aperta
+     * @return
+     * @throws SignParamsException
+     * @throws IOException
+     * @throws RemoteFileNotFoundException
+     * @throws RemoteServiceException 
+     */
     private TypeSignDocReq getTypeSignDocReq(MedasUserInformation userInformation, FirmaRemotaFile file, String sessionId) throws SignParamsException, IOException, RemoteFileNotFoundException, RemoteServiceException {
         TypeSignDocReq typeSignDocReq = new TypeSignDocReq();
         
@@ -340,19 +441,22 @@ public class FirmaRemotaMedas extends FirmaRemota {
         
         TypeDocument typeDocument = new TypeDocument();
         typeDocument.setDocType(docTypes.get(0));
+        typeDocument.setSignStringCode("");
         
         String fileBase64;
         long fileSize = tmpFileToSign.length();
         boolean largeFile = fileSize > 10 * 1000000;
+        // largeFile = true;
         logger.info(String.format("file size: %s bytes, largeFile: %s", fileSize, largeFile));
-        if (!largeFile) {
+        if (largeFile && isSftpForLargeFileEnabled()) {
+            logger.info(String.format("large file"));
+            String hashFile = manageFileOnSFTP(tmpFileToSign, userInformation.getUsername());
+            typeDocument.setDocHash(hashFile);
+            fileBase64 = "RklMRQ==";
+        } else {
             logger.info(String.format("file not large"));
             byte[] fileBytes = FileCopyUtils.copyToByteArray(tmpFileToSign);
             fileBase64 = BaseEncoding.base64().encode(fileBytes);
-        } else {
-            String hashFile = manageFileOnSFTP(tmpFileToSign, userInformation.getCodiceFiscale());
-            typeDocument.setDocHash(hashFile);
-            fileBase64 = "RklMRQ==";
         }
         typeDocument.setDocBin(fileBase64);
         
@@ -361,12 +465,23 @@ public class FirmaRemotaMedas extends FirmaRemota {
         return typeSignDocReq;
     }
     
+    /**
+     * crea l'oggetto TypeSignProperties.
+     * gestisce anche il caso di firma visibile
+     * @param userInformation
+     * @param formatoFirma
+     * @param signAppearance
+     * @param file
+     * @return
+     * @throws SignParamsException
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
     private TypeSignProperties getTypeSignProperties(MedasUserInformation userInformation, FirmaRemotaFile.FormatiFirma formatoFirma, SignAppearance signAppearance, File file) throws SignParamsException, FileNotFoundException, IOException {
         TypeSignProperties typeSignProperties = new TypeSignProperties();
         MedasUserSign userSign = (MedasUserSign) userInformation.getUserSign();
         
         typeSignProperties.setSignMode(getSignMode(formatoFirma));
-        typeSignProperties.setParallel(true);
         typeSignProperties.setProcessId(userSign.getProcessId());
         
         if (formatoFirma == FirmaRemotaFile.FormatiFirma.PDF) {
@@ -390,15 +505,35 @@ public class FirmaRemotaMedas extends FirmaRemota {
                 typeArssPadesProperties.setArssPadesPropertiesApparence(typeArssPadesPropertiesApparence);
 
                 typePadesProperties.setPage(String.valueOf(pdfSignFieldDescriptor.getPage()));
-                typePadesProperties.setLeftx(String.valueOf(pdfSignFieldDescriptor.getLowerLeftX()));
-                typePadesProperties.setLefty(String.valueOf(pdfSignFieldDescriptor.getLowerLeftY()));
-                typePadesProperties.setRightx(String.valueOf(pdfSignFieldDescriptor.getUpperRightX()));
-                typePadesProperties.setRighty(String.valueOf(pdfSignFieldDescriptor.getUpperRightY()));
+                typePadesProperties.setLeftx(String.valueOf(pixelToMillimiter(pdfSignFieldDescriptor.getLowerLeftX())));
+                typePadesProperties.setLefty(String.valueOf(pixelToMillimiter(pdfSignFieldDescriptor.getLowerLeftY())));
+                typePadesProperties.setRightx(String.valueOf(pixelToMillimiter(pdfSignFieldDescriptor.getUpperRightX())));
+                typePadesProperties.setRighty(String.valueOf(pixelToMillimiter(pdfSignFieldDescriptor.getUpperRightY())));
+            } else {
+                // per inserire una firma invisibile sevo settare a 1 tutte le proprietà di typePadesProperties
+                typePadesProperties.setPage("1");
+                typePadesProperties.setLeftx("1");
+                typePadesProperties.setLefty("1");
+                typePadesProperties.setRightx("1");
+                typePadesProperties.setRighty("1");
             }
+            
             typePadesProperties.setArssPadesProperties(typeArssPadesProperties);
             typeSignProperties.setPadesProperties(typePadesProperties);
+        } else if (formatoFirma == FirmaRemotaFile.FormatiFirma.P7M) {
+            typeSignProperties.setParallel(true);
         }
         return typeSignProperties;
+    }
+    
+    /**
+     * trasforma i pixel in millimetri presupponendo una risoluzione di 72 dpi (la risoluzione del firmispizio)
+     * @param pixel
+     * @return 
+     */
+    private int pixelToMillimiter(int pixel) {
+        float mm = pixel * 0.35f;
+        return Math.round(mm);
     }
     
     private File createTempFile(FirmaRemotaFile file) throws IOException, RemoteFileNotFoundException {
@@ -406,19 +541,19 @@ public class FirmaRemotaMedas extends FirmaRemota {
         if (!tempDir.exists()) {
             tempDir.mkdir();
         }
-        File tmpFileToSign = File.createTempFile("firma_remota_medas_to_sing_tmp", null, tempDir);
-
+        File tmpFile = File.createTempFile("firma_remota_medas_to_sing_tmp", null, tempDir);
         // per prima cosa scarica il file da firmare nella cartella temporanea scaricandolo dall'url
-        try {
-            InputStream in = new URL(file.getUrl()).openStream();
-            logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFileToSign.getAbsolutePath()));
-            Files.copy(in, Paths.get(tmpFileToSign.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        try (InputStream in = new URL(file.getUrl()).openStream()) {
+            logger.info(String.format("saving file %s on temp file %s...", file.getFileId(), tmpFile.getAbsolutePath()));
+            Files.copy(in, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            this.tmpFileToSign.set(tmpFile);
+            tmpFile.deleteOnExit();
             logger.info("temfile saved");
         } catch (IOException e) {
             throw new RemoteFileNotFoundException("errore nel download del file da firmare probabilmente è scaduto il timeout", e);
         }
         
-        return tmpFileToSign;
+        return tmpFile;
     }
     
     @Override
@@ -445,47 +580,68 @@ public class FirmaRemotaMedas extends FirmaRemota {
             
             for (FirmaRemotaFile file : files) {
                 TypeSignDocResp typeSignDocResp;
-                try {
-                    SignDocReq signDocReq = new SignDocReq();
-                    signDocReq.setSignDocReq(getTypeSignDocReq(userInformation, file, sessionId));
-                    SignDocResp signDocResp = this.syncSignService.signDoc(signDocReq);
-                    typeSignDocResp = signDocResp.getSignDocResp();
-                } catch (Exception ex) {
-                    String errorMessage = String.format("remote server error. Error sign fileId %s", file.getFileId());
-                    logger.error(errorMessage, ex);
-                    throw new RemoteServiceException(errorMessage, ex);
-                }
-                throwCorrectException(typeSignDocResp.getMessage());
-                InputStream signedFileIs;
-                if (StringUtils.hasText(largeFileHash.get())) { // TODO: controllare anche nella response se si capisce se si è firmato un file grosso o meno
+                try { // questo try mi server per potermi disconnettere da sftp nel caso mi ci sono connesso
                     try {
-                        signedFileIs = retreiveSignedFileFromSFTP(largeFileHash.get());
-                    } catch (RemoteServiceException ex) {
-                        removeSignedFileFromSFTP(largeFileHash.get());
-                        largeFileHash.remove();
-                        throw ex;
+                        SignDocReq signDocReq = new SignDocReq();
+                        signDocReq.setSignDocReq(getTypeSignDocReq(userInformation, file, sessionId));
+                        SignDocResp signDocResp = this.syncSignService.signDoc(signDocReq);
+                        typeSignDocResp = signDocResp.getSignDocResp();
+                    } catch (Exception ex) {
+                        String errorMessage = String.format("remote server error. Error sign fileId %s", file.getFileId());
+                        logger.error(errorMessage, ex);
+                        throw new RemoteServiceException(errorMessage, ex);
                     }
-                } else {
-                    signedFileIs = BaseEncoding.base64().decodingStream(new StringReader(typeSignDocResp.getSignedDocBin()));
-                }
-                try {
-                    super.upload(file, signedFileIs, codiceAzienda, request);
-                } catch (MinIOWrapperException ex) {
-                    String errorMessage = String.format("remote server error. Error uploading fileId %s on repository", file.getFileId());
-                    logger.error(errorMessage, ex);
-                    throw new RemoteServiceException(errorMessage, ex);
+                    // se c'è un errore lancia l'eccezione corretta, altrimenti non fa nulla
+                    throwCorrectException(typeSignDocResp.getMessage());
+                    
+                    InputStream signedFileIs = null;
+                    try {
+                        /*
+                            se ho fimato un file grosso recupero lo stream dal server sftp
+                            TODO: forse si potrebbe controllare anche nella guardando nella response, per vedere se si capisce se si è firmato un file grosso o meno
+                        */
+                        if (StringUtils.hasText(largeFileHash.get())) {
+                            try {
+                                signedFileIs = retreiveSignedFileFromSFTP(largeFileHash.get());
+                            } catch (RemoteServiceException ex) {
+                                // se c'è errore rimuovo il file dal server SFTP
+                                removeSignedFileFromSFTP(largeFileHash.get());
+                                largeFileHash.remove();
+                                throw ex;
+                            }
+                        } else {
+                            // altrimenti creo lo stream decodificando il base64 tornato dal server
+                            signedFileIs = BaseEncoding.base64().decodingStream(new StringReader(typeSignDocResp.getSignedDocBin()));
+                        }
+                        try {
+                            // carico il file sul repository
+                            super.upload(file, signedFileIs, codiceAzienda, request);
+                        } catch (MinIOWrapperException ex) {
+                            String errorMessage = String.format("remote server error. Error uploading fileId %s on repository", file.getFileId());
+                            logger.error(errorMessage, ex);
+                            throw new RemoteServiceException(errorMessage, ex);
+                        } finally {
+                            // rimuovo il file dal server SFTP
+                            if (StringUtils.hasText(largeFileHash.get())) {
+                                removeSignedFileFromSFTP(largeFileHash.get());
+                                largeFileHash.remove();
+                            }
+                        }
+                    } finally {
+                        IOUtils.closeQuietly(signedFileIs);
+                    }
                 } finally {
-                    if (StringUtils.hasText(largeFileHash.get())) {
-                        removeSignedFileFromSFTP(largeFileHash.get());
-                        largeFileHash.remove();
+                    if (tmpFileToSign.get() != null && tmpFileToSign.get().exists()) {
+                        tmpFileToSign.get().delete();
                     }
+                    disconnectFromSFTP();
                 }
             }
             CloseSignSessionReq closeSignSessionReq = new CloseSignSessionReq();
             closeSignSessionReq.setCloseSignSessionReq(getTypeCloseSignSessionReq(sessionId));
             this.syncSignService.closeSignSession(closeSignSessionReq);
             
-            // probabilmente non serve
+            // probabilmente non serve, ma per sicurezza rimuovo il file dal server SFTP
             if (StringUtils.hasText(largeFileHash.get())) {
                 removeSignedFileFromSFTP(largeFileHash.get());
                 largeFileHash.remove();
@@ -511,7 +667,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
         throwCorrectException(typeDespatchOtpResp.getMessage());
     }
 
-       /**
+    /**
      * il salvataggio delle credenziali non è supportato da Medas, per cui torniamo sempre false
      * @param userInformation
      * @param hostId
@@ -524,6 +680,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
+    
     /**
      * il salvataggio delle credenziali non è supportato da Medas, per cui torniamo sempre false
      * @param userInformation
@@ -537,6 +694,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
+    
     /**
      * il salvataggio delle credenziali non è supportato da Medas, per cui torniamo sempre false
      * @param userInformation
@@ -581,7 +739,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
         } catch (Exception ex) {
             String errorMessage = String.format("remote server error. Error despatching otp for user %s", medasUserInformation.getCodiceFiscale());
             logger.error(errorMessage, ex);
-            throw new RemoteServiceException(errorMessage, ex);
+             throw new RemoteServiceException(errorMessage, ex);
         }
         
         TypeMessageDesc resMessage = typeGetUserInfo4Resp.getMessage();
@@ -638,8 +796,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
      */
     public void throwCorrectException(TypeMessage resultMessage) throws InvalidCredentialException, WrongTokenException, RemoteServiceException {
         if (resultMessage != null ) {
-            String description = String.format("remote server error. code: %s - message: %s", resultMessage.getCode().intValue(), resultMessage.getMessage());
             if (resultMessage.getCode().intValue() > 0) {
+                String message = resultMessage.getMessage();
+                if (message == null) {
+                    message = "Errore generico";
+                }
+                String description = String.format("remote server error. code: %s - message: %s", resultMessage.getCode().intValue(), message);
                 logger.error(description);
                 switch (resultMessage.getCode().intValue()) {
                     case   65:
@@ -653,6 +815,8 @@ public class FirmaRemotaMedas extends FirmaRemota {
                         throw new RemoteServiceException(description);
                 }
             } else {
+                
+                String description = String.format("remote server response OK. code: %s - message: %s", resultMessage.getCode().intValue(), resultMessage.getMessage());
                 logger.info(description);
             }
         } else {

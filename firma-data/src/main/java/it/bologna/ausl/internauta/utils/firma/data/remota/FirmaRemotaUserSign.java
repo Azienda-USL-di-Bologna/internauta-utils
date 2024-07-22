@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserSign;
@@ -17,6 +18,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.Medas
 @JsonSubTypes({
     @JsonSubTypes.Type(value = MedasUserSign.class, name = "MedasUserSign")
 })
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class FirmaRemotaUserSign {
         public abstract String getId();
         public abstract String getDescription();
