@@ -28,6 +28,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenE
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
+import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -38,18 +39,24 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.ws.BindingProvider;
+import org.apache.tika.mime.MimeTypeException;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -328,6 +335,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
         } else if (StringUtils.hasText(userInformation.getCodiceFiscale())) {
             typeGetUserInfo4Req.setSsn(userInformation.getCodiceFiscale());
         }
+        typeGetUserInfo4Req.setUsername("");  // bisogna settare vuoto perché così ci hanno chiesto di fare
         if (StringUtils.hasText(processId)) {
             typeGetUserInfo4Req.setProcessId(processId);
         }
@@ -383,8 +391,8 @@ public class FirmaRemotaMedas extends FirmaRemota {
     private TypeUser getTypeUser(MedasUserInformation userInformation) {
         TypeUser typeUser = new TypeUser();
         //typeUser.setUsername(userInformation.getUsername());
-        typeUser.setFirstName(userInformation.getNome());
-        typeUser.setLastName(userInformation.getCognome());
+//        typeUser.setFirstName(userInformation.getNome());
+//        typeUser.setLastName(userInformation.getCognome());
 //        typeUser.setSsn(userInformation.getCodiceFiscale());
         typeUser.setSsn(userInformation.getUsername());
         return typeUser;
@@ -409,6 +417,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     
     private TypeCloseSignSessionReq getTypeCloseSignSessionReq(String sessionId) {
         TypeCloseSignSessionReq typeCloseSignSessionReq = new TypeCloseSignSessionReq();
+        typeCloseSignSessionReq.setAction("");  // bisogna settare vuoto perché così ci hanno chiesto da Medas
         typeCloseSignSessionReq.setSessionId(sessionId);
         return typeCloseSignSessionReq;
     }
@@ -425,7 +434,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * @throws RemoteFileNotFoundException
      * @throws RemoteServiceException 
      */
-    private TypeSignDocReq getTypeSignDocReq(MedasUserInformation userInformation, FirmaRemotaFile file, String sessionId) throws SignParamsException, IOException, RemoteFileNotFoundException, RemoteServiceException {
+    private TypeSignDocReq getTypeSignDocReq(MedasUserInformation userInformation, FirmaRemotaFile file, String sessionId) throws SignParamsException, IOException, RemoteFileNotFoundException, RemoteServiceException, FileNotFoundException, UnsupportedEncodingException, MimeTypeException {
         TypeSignDocReq typeSignDocReq = new TypeSignDocReq();
         
         String processId = (String) profiles.get(0).get("processId");
@@ -477,7 +486,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * @throws FileNotFoundException
      * @throws IOException 
      */
-    private TypeSignProperties getTypeSignProperties(MedasUserInformation userInformation, FirmaRemotaFile.FormatiFirma formatoFirma, SignAppearance signAppearance, File file) throws SignParamsException, FileNotFoundException, IOException {
+    private TypeSignProperties getTypeSignProperties(MedasUserInformation userInformation, FirmaRemotaFile.FormatiFirma formatoFirma, SignAppearance signAppearance, File file) throws SignParamsException, FileNotFoundException, IOException, UnsupportedEncodingException, MimeTypeException {
         TypeSignProperties typeSignProperties = new TypeSignProperties();
         MedasUserSign userSign = (MedasUserSign) userInformation.getUserSign();
         
@@ -496,7 +505,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
                     pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(
                         fis,
                         signAppearance,
-                        String.format("%s %s", userInformation.getCognome(), userInformation.getNome()),
+                        String.format("%s %s", "#SIGNERSURNAME#", "#signerName#"),
                         null);
                 }
                 TypeArssPadesPropertiesApparence typeArssPadesPropertiesApparence = new TypeArssPadesPropertiesApparence();
@@ -521,7 +530,11 @@ public class FirmaRemotaMedas extends FirmaRemota {
             typePadesProperties.setArssPadesProperties(typeArssPadesProperties);
             typeSignProperties.setPadesProperties(typePadesProperties);
         } else if (formatoFirma == FirmaRemotaFile.FormatiFirma.P7M) {
-            typeSignProperties.setParallel(true);
+            if (CommonUtils.isP7m(file)) {
+                typeSignProperties.setParallel(true);
+            } else {
+                typeSignProperties.setParallel(false);
+            }
         }
         return typeSignProperties;
     }
@@ -574,7 +587,14 @@ public class FirmaRemotaMedas extends FirmaRemota {
                 logger.error(errorMessage, ex);
                 throw new RemoteServiceException(errorMessage, ex);
             }
-            OpenSignSessionResp openSignSessionResp = this.syncSignService.openSignSession(openSignSessionReq);
+            OpenSignSessionResp openSignSessionResp = null;
+            try {
+                openSignSessionResp = this.syncSignService.openSignSession(openSignSessionReq);
+            } catch (Exception ex) {
+                String errorMessage = "errore generico di connessione al server della firma";
+                logger.error(errorMessage, ex);
+                throw new RemoteServiceException(errorMessage, ex);
+            }
             throwCorrectException(openSignSessionResp.getOpenSignSessionResp().getMessage());
             String sessionId = openSignSessionResp.getOpenSignSessionResp().getSessionId();
             
@@ -737,9 +757,9 @@ public class FirmaRemotaMedas extends FirmaRemota {
             GetUserInfo4Resp getUserInfoResp = this.utilsService.getUserInfo4(getUserInfo4Req);
             typeGetUserInfo4Resp = getUserInfoResp.getGetUserInfo4Resp();
         } catch (Exception ex) {
-            String errorMessage = String.format("remote server error. Error despatching otp for user %s", medasUserInformation.getCodiceFiscale());
+            String errorMessage = "errore generico di connessione al server per la firma";
             logger.error(errorMessage, ex);
-             throw new RemoteServiceException(errorMessage, ex);
+            throw new RemoteServiceException(errorMessage, ex);
         }
         
         TypeMessageDesc resMessage = typeGetUserInfo4Resp.getMessage();
@@ -757,7 +777,8 @@ public class FirmaRemotaMedas extends FirmaRemota {
                         MedasUserSign userSign = new MedasUserSign();
                         userSign.setActive(signaturePower.isActive());
                         userSign.setCertificateId(certificate.getId());
-                        userSign.setDescription(certificate.getDescription());
+                        String otpTypesDescription = String.join(",", certificate.getOTPtypeList().getOTPtype());
+                        userSign.setDescription(String.format("%s - %s", certificate.getDescription(), otpTypesDescription));
                         userSign.setProcessId(processId); // boh
                         userSign.setDocTypes(docTypes); // boh
                         userSign.setOtpType(toOTPTypeList(certificate.getOTPtypeList()));
@@ -773,6 +794,14 @@ public class FirmaRemotaMedas extends FirmaRemota {
             String errorMessage = "il resultMessage è null, questo non dovrebbe succedere";
             throw new RemoteServiceException(errorMessage);
         }
+        Collections.sort(res, (FirmaRemotaUserSign lhs, FirmaRemotaUserSign rhs) -> {
+            if (lhs == null) {
+                return -1;
+            } else if (rhs == null) {
+                return 1;
+            }
+            return lhs.getDescription().compareTo(rhs.getDescription());
+        });
         return res;
     }
     
