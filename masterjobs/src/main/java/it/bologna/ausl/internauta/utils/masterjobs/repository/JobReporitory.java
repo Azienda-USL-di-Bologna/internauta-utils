@@ -20,10 +20,10 @@ public interface JobReporitory extends
         NextSdrQueryDslRepository<Job, Long, QJob>,
         JpaRepository<Job, Long>  {
     
-    @Query(value = "select masterjobs.calcola_md5(?1,cast(?2 as jsonb),?3)", nativeQuery = true)
-    public String calcolaMD5(
-            @Param("nome") String nome,
-            @Param("dati") String data,
-            @Param("differito") Boolean oggetti
-    );
+//    @Query(value = "select masterjobs.calcola_md5(?1,cast(?2 as jsonb),?3)", nativeQuery = true)
+//    public String calcolaMD5(
+//            @Param("nome") String nome,
+//            @Param("dati") String data,
+//            @Param("differito") Boolean oggetti
+//    );
 }

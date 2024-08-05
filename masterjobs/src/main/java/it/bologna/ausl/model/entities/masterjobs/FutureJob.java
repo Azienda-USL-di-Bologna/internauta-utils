@@ -14,8 +14,6 @@ import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -32,7 +30,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
- * @author gdm
+ * @author gusgus
  */
 @TypeDefs({
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
@@ -43,8 +41,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class Job implements Serializable, JobInterface {
-
+public class FutureJob implements Serializable, JobInterface {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
@@ -63,24 +60,14 @@ public class Job implements Serializable, JobInterface {
     
     @Basic(optional = false)
     @NotNull
-    @JoinColumn(name = "set", referencedColumnName = "id")
+    @JoinColumn(name = "future_set", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private SetInterface set;
+    private SetInterface futureSet;
     
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "state")
-    @Enumerated(EnumType.STRING)
-    private JobState state;
-        
     @Basic(optional = false)
     @NotNull
     @Column(name = "deferred")
     private Boolean deferred = false;
-    
-    @Basic(optional = true)
-    @Column(name = "error")
-    private String error;
     
     @Basic(optional = true)
     @Column(name = "inserted_from")
@@ -96,11 +83,6 @@ public class Job implements Serializable, JobInterface {
     @NotNull
     private Integer executableCheckEveryMillis = 100;
     
-    @Basic(optional = true)
-    @Type(type = "jsonb")
-    @Column(name = "work_data", columnDefinition = "jsonb")
-    private HashMap<String, Object> workData;
-        
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @Column(name = "insert_ts")
@@ -108,17 +90,7 @@ public class Job implements Serializable, JobInterface {
     @NotNull
     private ZonedDateTime insertTs = ZonedDateTime.now();
     
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @Column(name = "last_execution_ts")
-    @Basic(optional = true)
-    private ZonedDateTime lastExecutionTs;
-    
-//    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "job", fetch = FetchType.LAZY)
-//    @JsonBackReference(value = "workingObjects")
-//    private List<WorkingObject> workingObjects;
-    
-    public Job() {
+    public FutureJob() {
     }
 
     public Long getId() {
@@ -146,28 +118,27 @@ public class Job implements Serializable, JobInterface {
     }
 
     public SetInterface getSet() {
-        return set;
+        return futureSet;
     }
 
     public void setSet(SetInterface set) {
-        this.set = set;
+        this.futureSet = set;
     }
 
     public JobState getState() {
-        return state;
+        return null;
     }
 
     public void setState(JobState state) {
-        this.state = state;
     }
 
     public String getError() {
-        return error;
+        return null;
     }
 
     public void setError(String error) {
-        this.error = error;
     }
+    
     public String getInsertedFrom() {
         return insertedFrom;
     }
@@ -201,19 +172,17 @@ public class Job implements Serializable, JobInterface {
     }
 
     public HashMap<String, Object> getWorkData() {
-        return workData;
+        return null;
     }
 
     public void setWorkData(HashMap<String, Object> workData) {
-        this.workData = workData;
     }
 
     public ZonedDateTime getLastExecutionTs() {
-        return lastExecutionTs;
+        return null;
     }
 
     public void setLastExecutionTs(ZonedDateTime lastExecutionTs) {
-        this.lastExecutionTs = lastExecutionTs;
     }
 
     public ZonedDateTime getInsertTs() {
@@ -223,5 +192,5 @@ public class Job implements Serializable, JobInterface {
     public void setInsertTs(ZonedDateTime insertTs) {
         this.insertTs = insertTs;
     }
-    
+
 }

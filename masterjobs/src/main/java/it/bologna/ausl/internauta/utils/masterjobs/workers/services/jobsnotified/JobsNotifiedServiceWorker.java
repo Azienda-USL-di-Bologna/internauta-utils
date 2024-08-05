@@ -17,6 +17,7 @@ import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.QJobNotified;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.hibernate.Session;
 import org.postgresql.PGConnection;
@@ -168,9 +169,19 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         MasterjobsQueueData masterjobsQueueData = transactionTemplate.execute( a -> {
                             MasterjobsQueueData res;
+                            
                             try {
-                                res = createMasterjobsQueueData(jobNotified);
-                                log.info(String.format("job %s, with jobs_notifies id: %s queued", jobNotified.getJobName(), jobNotified.getId()));
+                                Boolean future = jobNotified.getExecutionTs().isAfter(ZonedDateTime.now());
+                                res = createMasterjobsQueueData(jobNotified, jobNotified.getExecutionTs());
+                                // Devo distiguere tra future jobs e jobs da accodare subito, nel primo caso è sufficiente una semplice insert sul db
+                                if (future) {
+                                    // caso del future job
+                                    res = null; // Resetto il risultato perché non voglio accodare nulla nella coda redis.
+                                    log.info(String.format("future_job %s, with jobs_notifies id: %s added to future table", jobNotified.getJobName(), jobNotified.getId()));
+                                } else {
+                                    // Caso del normale job da inserire su db e su coda redis
+                                    log.info(String.format("job %s, with jobs_notifies id: %s queued", jobNotified.getJobName(), jobNotified.getId()));
+                                }
                             } catch (Exception ex) {
                                 String errorMessage = String.format("error on create job %s, jobs_notifies id: %s", jobNotified.getJobName(), jobNotified.getId());
                                 log.error(errorMessage, ex);
@@ -201,7 +212,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, Boolean future) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
         List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
         JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
@@ -214,7 +225,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             jobNotified.getPriority(),
             jobNotified.getSkipIfAlreadyPresent(),
             true,
-            jobNotified.getInsertedFrom());
+            jobNotified.getInsertedFrom(),
+            future);
     }
     
     private void deleteJobNotified(Long jobNotifiedId) {
