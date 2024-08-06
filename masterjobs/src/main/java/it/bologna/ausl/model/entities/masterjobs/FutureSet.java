@@ -78,7 +78,7 @@ public class FutureSet implements Serializable, SetInterface {
     
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
     @JsonBackReference(value = "jobList")
-    private List<JobInterface> jobList;
+    private List<FutureJob> jobList;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -144,12 +144,12 @@ public class FutureSet implements Serializable, SetInterface {
         this.insertedFrom = insertedFrom;
     }
 
-    public List<JobInterface> getJobList() {
+    public List<FutureJob> getJobList() {
         return jobList;
     }
 
-    public void setJobList(List<JobInterface> jobList) {
-        this.jobList = jobList;
+    public void setJobList(List<? extends JobInterface> jobList) {
+        this.jobList = (List<FutureJob>) jobList;
     }
 
     public ZonedDateTime getNextExecutableCheck() {

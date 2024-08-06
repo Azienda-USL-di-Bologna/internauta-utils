@@ -75,7 +75,7 @@ public class FutureJobsServiceWorker extends ServiceWorker {
                         List<FutureJob> futureJobs = queryFactory
                             .select(qFutureJob)
                             .from(qFutureJob)
-                            .where(qFutureJob.futureSet.id.eq(futureSet.getId()))
+                            .where(qFutureJob.set.id.eq(futureSet.getId()))
                             .orderBy(qFutureJob.id.asc())
                             .fetch();
                         
@@ -136,7 +136,7 @@ public class FutureJobsServiceWorker extends ServiceWorker {
     }
     
     private void deleteFutureSet(Long futureSetId) {
-        queryFactory.delete(qFutureJob).where(qFutureJob.futureSet.id.eq(futureSetId)).execute();
+        queryFactory.delete(qFutureJob).where(qFutureJob.set.id.eq(futureSetId)).execute();
         queryFactory.delete(qFutureSet).where(qFutureSet.id.eq(futureSetId)).execute();
     }
 }

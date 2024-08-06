@@ -171,7 +171,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                             MasterjobsQueueData res;
                             
                             try {
-                                Boolean future = jobNotified.getExecutionTs().isAfter(ZonedDateTime.now());
+                                Boolean future = jobNotified.getExecutionTs() != null ? jobNotified.getExecutionTs().isAfter(ZonedDateTime.now()) : false;
                                 res = createMasterjobsQueueData(jobNotified, jobNotified.getExecutionTs());
                                 // Devo distiguere tra future jobs e jobs da accodare subito, nel primo caso è sufficiente una semplice insert sul db
                                 if (future) {

@@ -43,9 +43,9 @@ public interface SetInterface {
 
     public void setInsertedFrom(String insertedFrom);
 
-    public List<JobInterface> getJobList();
+    public List<? extends JobInterface> getJobList();
 
-    public void setJobList(List<JobInterface> jobList);
+    public void setJobList(List<? extends JobInterface> jobList);
 
     public ZonedDateTime getNextExecutableCheck();
 

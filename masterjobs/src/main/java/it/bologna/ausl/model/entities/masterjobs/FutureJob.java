@@ -62,7 +62,7 @@ public class FutureJob implements Serializable, JobInterface {
     @NotNull
     @JoinColumn(name = "future_set", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private FutureSet futureSet;
+    private FutureSet set;
     
     @Basic(optional = false)
     @NotNull
@@ -118,11 +118,11 @@ public class FutureJob implements Serializable, JobInterface {
     }
 
     public SetInterface getSet() {
-        return futureSet;
+        return set;
     }
 
     public void setSet(SetInterface set) {
-        this.futureSet = (FutureSet) set;
+        this.set = (FutureSet) set;
     }
 
     public JobState getState() {

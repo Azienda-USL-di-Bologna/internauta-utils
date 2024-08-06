@@ -215,6 +215,10 @@ public class MasterjobsJobsQueuer {
         }
         return null;
     }
+     
+     public void queueInJobsNotified(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+        queueInJobsNotified(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, null);
+    }
     
     /**
      * Aggiunge il worker passato nella tabella dei jobs notified senza aprire nessun altra transazione.Così facendo l'aggiunta vera e propria verrà effettuata al 
@@ -228,8 +232,12 @@ public class MasterjobsJobsQueuer {
      * @param skipIfAlreadyPresent
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException 
      */
-    public void queueInJobsNotified(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
-        queueInJobsNotified(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent);
+    public void queueInJobsNotified(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, ZonedDateTime executionTs) throws MasterjobsQueuingException {
+        queueInJobsNotified(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, executionTs);
+    }
+    
+    public void queueInJobsNotified(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+        queueInJobsNotified(workers, objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, null);
     }
     
     /**
@@ -242,9 +250,10 @@ public class MasterjobsJobsQueuer {
      * @param waitForObject
      * @param priority
      * @param skipIfAlreadyPresent
+     * @param executionTs
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException 
      */
-    public void queueInJobsNotified(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent) throws MasterjobsQueuingException {
+    public void queueInJobsNotified(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, ZonedDateTime executionTs) throws MasterjobsQueuingException {
         try {
             for (JobWorker worker : workers) {
                 JobNotified jn = new JobNotified();
@@ -258,6 +267,7 @@ public class MasterjobsJobsQueuer {
                 jn.setPriority(priority);
                 jn.setSkipIfAlreadyPresent(skipIfAlreadyPresent);
                 jn.setInsertedFrom(masterjobsApplicationConfig.getMachineIp());
+                jn.setExecutionTs(executionTs);
                 entityManager.persist(jn);
             }
         } catch (Exception ex) {
