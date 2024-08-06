@@ -65,7 +65,7 @@ public class Job implements Serializable, JobInterface {
     @NotNull
     @JoinColumn(name = "set", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private SetInterface set;
+    private Set set;
     
     @Basic(optional = false)
     @NotNull
@@ -150,7 +150,7 @@ public class Job implements Serializable, JobInterface {
     }
 
     public void setSet(SetInterface set) {
-        this.set = set;
+        this.set = (Set) set;
     }
 
     public JobState getState() {

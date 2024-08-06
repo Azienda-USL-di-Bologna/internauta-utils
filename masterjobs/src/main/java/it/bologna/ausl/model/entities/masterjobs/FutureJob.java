@@ -36,7 +36,7 @@ import org.springframework.format.annotation.DateTimeFormat;
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 })
 @Entity
-@Table(name = "jobs", catalog = "internauta", schema = "masterjobs")
+@Table(name = "future_jobs", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
@@ -62,7 +62,7 @@ public class FutureJob implements Serializable, JobInterface {
     @NotNull
     @JoinColumn(name = "future_set", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private SetInterface futureSet;
+    private FutureSet futureSet;
     
     @Basic(optional = false)
     @NotNull
@@ -122,7 +122,7 @@ public class FutureJob implements Serializable, JobInterface {
     }
 
     public void setSet(SetInterface set) {
-        this.futureSet = set;
+        this.futureSet = (FutureSet) set;
     }
 
     public JobState getState() {

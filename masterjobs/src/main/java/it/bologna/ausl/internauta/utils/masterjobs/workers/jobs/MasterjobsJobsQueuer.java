@@ -22,6 +22,7 @@ import it.bologna.ausl.model.entities.masterjobs.JobInterface;
 import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.ObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
+import it.bologna.ausl.model.entities.masterjobs.QFutureJob;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.QWorkingObject;
@@ -31,6 +32,7 @@ import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
 import it.bologna.ausl.model.entities.masterjobs.views.QSetWithJobIdsArray;
 import it.bologna.ausl.model.entities.masterjobs.views.SetWithJobIdsArray;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -150,7 +152,7 @@ public class MasterjobsJobsQueuer {
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
     public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip) throws MasterjobsQueuingException {
-        return queue(workers, objectId, objectType, app, waitForObject, priority, notQueue, ip, false);
+        return queue(workers, objectId, objectType, app, waitForObject, priority, notQueue, ip, null);
     }
     
     /**
@@ -165,16 +167,16 @@ public class MasterjobsJobsQueuer {
      * @param priority la priortà con il quale il job deve essere eseguito
      * @param notQueue indica di non accodare in redis i jobs e non committare dopo l'inserimento nel DB, serve per poter e far si che li possa inserire il chiamante dopo il commit
      * @param ip
-     * @param future indica se il set è da accodare come FutureSet e FutureJob
+     * @param executionTs indica se il set è da accodare come FutureSet e FutureJob
      * @return i jobs che che sono stati creati, possono servire nel caso si passi notQueue = true, per poterli inserire in redis tramite la funzione insertInQueue
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
-    public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip, Boolean future) throws MasterjobsQueuingException {
+    public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip, ZonedDateTime executionTs) throws MasterjobsQueuingException {
         if (!notQueue)
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             try {
-                return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, future);
+                return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, executionTs);
             } catch (MasterjobsBadDataException ex) {
                 String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
                 log.error(errorMessage, ex);
@@ -204,12 +206,12 @@ public class MasterjobsJobsQueuer {
     }
     
     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip) throws MasterjobsQueuingException {
-        return queue(worker, objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, notQueue, ip, false);
+        return queue(worker, objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, notQueue, ip, null);
     }
     
-     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip, Boolean future) throws MasterjobsQueuingException {
-        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker, future)) {
-            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue, ip, future);
+     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip, ZonedDateTime executionTs) throws MasterjobsQueuingException {
+        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker, executionTs)) {
+            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue, ip, executionTs);
         }
         return null;
     }
@@ -293,7 +295,7 @@ public class MasterjobsJobsQueuer {
             Set.SetPriority priority, 
             String ip
     ) throws MasterjobsBadDataException {
-        return insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, false);
+        return insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, null);
     }
     
     /**
@@ -305,7 +307,7 @@ public class MasterjobsJobsQueuer {
      * @param waitForObject
      * @param priority
      * @param ip
-     * @param future
+     * @param executionTs
      * @return 
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException 
      */
@@ -317,9 +319,10 @@ public class MasterjobsJobsQueuer {
             Boolean waitForObject, 
             Set.SetPriority priority, 
             String ip,
-            Boolean future
+            ZonedDateTime executionTs
     ) throws MasterjobsBadDataException {
         SetInterface set;
+        Boolean future = executionTs != null && executionTs.isAfter(ZonedDateTime.now());
         if (future)
             set = new FutureSet();
         else 
@@ -342,7 +345,7 @@ public class MasterjobsJobsQueuer {
             set.setWaitObject(false);
         if (priority != null)
             set.setPriority(priority);
-        
+        set.setExecutionTs(executionTs);
         log.info("persisting set...");
         entityManager.persist(set);
         log.info(String.format("created set %s", set.getId()));
@@ -369,7 +372,7 @@ public class MasterjobsJobsQueuer {
             job.setName(worker.getName());
             job.setState(Job.JobState.READY);
             try {
-                job.setHash(worker.calcolaMD5(future));
+                job.setHash(worker.calcolaMD5(executionTs));
             } catch (Exception ex) {
                 String error = "errore nel calcolo dell'hash md5 del job";
                 log.error(error, ex);
@@ -743,27 +746,39 @@ public class MasterjobsJobsQueuer {
     }
     
     private Boolean isAlreadyPresent(JobWorker worker) {
-        return isAlreadyPresent(worker, false);
+        return isAlreadyPresent(worker, null);
     }
 
-    private Boolean isAlreadyPresent(JobWorker worker, Boolean future) {
+    private Boolean isAlreadyPresent(JobWorker worker, ZonedDateTime executionTs) {
         UUID md5;
+        Boolean future = executionTs != null && executionTs.isAfter(ZonedDateTime.now());
         try {
             log.info("inizio funzione calcolaMD5");
-            md5 = worker.calcolaMD5(future);
+            md5 = worker.calcolaMD5(executionTs);
             log.info("fine funzione calcolaMD5");
-            QJob qJob = QJob.job;
-            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-            Integer one = queryFactory
-                .selectOne()
-                .from(qJob)
-                .where(qJob.hash.eq(md5)
-                    .and(
-                        qJob.state.eq(Job.JobState.READY)
-                        .or(qJob.state.eq(Job.JobState.ERROR))
+            Integer one;
+            if (future) {
+                QFutureJob qJob = QFutureJob.futureJob;
+                JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+                one = queryFactory
+                    .selectOne()
+                    .from(qJob)
+                    .where(qJob.hash.eq(md5))
+                    .fetchOne();
+            } else {
+                QJob qJob = QJob.job;
+                JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+                one = queryFactory
+                    .selectOne()
+                    .from(qJob)
+                    .where(qJob.hash.eq(md5)
+                        .and(
+                            qJob.state.eq(Job.JobState.READY)
+                            .or(qJob.state.eq(Job.JobState.ERROR))
+                        )
                     )
-                )
-                .fetchOne();
+                    .fetchOne();
+            }
             return one != null;
         } catch (JsonProcessingException | NoSuchAlgorithmException ex) {
             log.error("",ex);

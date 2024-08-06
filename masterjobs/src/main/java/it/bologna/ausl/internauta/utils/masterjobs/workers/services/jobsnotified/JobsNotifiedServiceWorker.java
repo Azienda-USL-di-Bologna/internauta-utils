@@ -212,7 +212,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, Boolean future) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, ZonedDateTime executionTs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
         List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
         JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
@@ -226,7 +226,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             jobNotified.getSkipIfAlreadyPresent(),
             true,
             jobNotified.getInsertedFrom(),
-            future);
+            executionTs);
     }
     
     private void deleteJobNotified(Long jobNotifiedId) {

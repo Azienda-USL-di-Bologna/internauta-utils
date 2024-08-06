@@ -36,7 +36,7 @@ import org.springframework.format.annotation.DateTimeFormat;
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 })
 @Entity
-@Table(name = "sets", catalog = "internauta", schema = "masterjobs")
+@Table(name = "future_sets", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
