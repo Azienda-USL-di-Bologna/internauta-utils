@@ -172,7 +172,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                             
                             try {
                                 Boolean future = jobNotified.getExecutionTs() != null ? jobNotified.getExecutionTs().isAfter(ZonedDateTime.now()) : false;
-                                res = createMasterjobsQueueData(jobNotified, jobNotified.getExecutionTs());
+                                res = createMasterjobsQueueData(jobNotified, future, jobNotified.getExecutionTs());
                                 // Devo distiguere tra future jobs e jobs da accodare subito, nel primo caso è sufficiente una semplice insert sul db
                                 if (future) {
                                     // caso del future job
@@ -212,7 +212,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, ZonedDateTime executionTs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, boolean future, ZonedDateTime executionTs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
         List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
         JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
@@ -226,6 +226,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             jobNotified.getSkipIfAlreadyPresent(),
             true,
             jobNotified.getInsertedFrom(),
+            future,
             executionTs);
     }
     

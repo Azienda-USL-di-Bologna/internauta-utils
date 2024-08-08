@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services.futurejobs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsQueuingException;
@@ -15,7 +14,6 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInt
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.FutureJob;
 import it.bologna.ausl.model.entities.masterjobs.FutureSet;
-import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.QFutureJob;
 import it.bologna.ausl.model.entities.masterjobs.QFutureSet;
 import java.time.ZonedDateTime;

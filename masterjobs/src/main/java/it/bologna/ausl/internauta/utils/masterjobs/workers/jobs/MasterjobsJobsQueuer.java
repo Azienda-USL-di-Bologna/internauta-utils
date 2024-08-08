@@ -152,7 +152,7 @@ public class MasterjobsJobsQueuer {
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
     public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip) throws MasterjobsQueuingException {
-        return queue(workers, objectId, objectType, app, waitForObject, priority, notQueue, ip, null);
+        return queue(workers, objectId, objectType, app, waitForObject, priority, notQueue, ip, false, null);
     }
     
     /**
@@ -171,12 +171,12 @@ public class MasterjobsJobsQueuer {
      * @return i jobs che che sono stati creati, possono servire nel caso si passi notQueue = true, per poterli inserire in redis tramite la funzione insertInQueue
      * @throws MasterjobsQueuingException nel caso ci sia un errore nell'inserimento in coda
      */
-    public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip, ZonedDateTime executionTs) throws MasterjobsQueuingException {
+    public MasterjobsQueueData queue(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean notQueue, String ip, boolean future, ZonedDateTime executionTs) throws MasterjobsQueuingException {
         if (!notQueue)
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             try {
-                return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, executionTs);
+                return this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, future, executionTs);
             } catch (MasterjobsBadDataException ex) {
                 String errorMessage = String.format("error queuing job with object id %s and object type %s ", objectId, objectType);
                 log.error(errorMessage, ex);
@@ -206,12 +206,12 @@ public class MasterjobsJobsQueuer {
     }
     
     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip) throws MasterjobsQueuingException {
-        return queue(worker, objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, notQueue, ip, null);
+        return queue(worker, objectId, objectType, app, waitForObject, priority, skipIfAlreadyPresent, notQueue, ip, false, null);
     }
     
-     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip, ZonedDateTime executionTs) throws MasterjobsQueuingException {
-        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker, executionTs)) {
-            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue, ip, executionTs);
+     public MasterjobsQueueData queue(JobWorker worker, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, Boolean skipIfAlreadyPresent, Boolean notQueue, String ip, boolean future, ZonedDateTime executionTs) throws MasterjobsQueuingException {
+        if (!skipIfAlreadyPresent || !isAlreadyPresent(worker, future, executionTs)) {
+            return queue(Arrays.asList(worker), objectId, objectType, app, waitForObject, priority, notQueue, ip, future, executionTs);
         }
         return null;
     }
@@ -305,7 +305,7 @@ public class MasterjobsJobsQueuer {
             Set.SetPriority priority, 
             String ip
     ) throws MasterjobsBadDataException {
-        return insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, null);
+        return insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip, false, null);
     }
     
     /**
@@ -317,6 +317,7 @@ public class MasterjobsJobsQueuer {
      * @param waitForObject
      * @param priority
      * @param ip
+     * @param future
      * @param executionTs
      * @return 
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException 
@@ -329,10 +330,10 @@ public class MasterjobsJobsQueuer {
             Boolean waitForObject, 
             Set.SetPriority priority, 
             String ip,
+            boolean future,
             ZonedDateTime executionTs
     ) throws MasterjobsBadDataException {
         SetInterface set;
-        Boolean future = executionTs != null && executionTs.isAfter(ZonedDateTime.now());
         if (future)
             set = new FutureSet();
         else 
@@ -382,7 +383,7 @@ public class MasterjobsJobsQueuer {
             job.setName(worker.getName());
             job.setState(Job.JobState.READY);
             try {
-                job.setHash(worker.calcolaMD5(executionTs));
+                job.setHash(worker.calcolaMD5(future, executionTs));
             } catch (Exception ex) {
                 String error = "errore nel calcolo dell'hash md5 del job";
                 log.error(error, ex);
@@ -756,15 +757,14 @@ public class MasterjobsJobsQueuer {
     }
     
     private Boolean isAlreadyPresent(JobWorker worker) {
-        return isAlreadyPresent(worker, null);
+        return isAlreadyPresent(worker, false, null);
     }
 
-    private Boolean isAlreadyPresent(JobWorker worker, ZonedDateTime executionTs) {
+    private Boolean isAlreadyPresent(JobWorker worker, boolean future, ZonedDateTime executionTs) {
         UUID md5;
-        Boolean future = executionTs != null && executionTs.isAfter(ZonedDateTime.now());
         try {
             log.info("inizio funzione calcolaMD5");
-            md5 = worker.calcolaMD5(executionTs);
+            md5 = worker.calcolaMD5(future, executionTs);
             log.info("fine funzione calcolaMD5");
             Integer one;
             if (future) {
