@@ -11,7 +11,6 @@ import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJException;
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterExpiredException;
 import it.bologna.ausl.internauta.utils.firma.jnj.exceptions.FirmaJnJRequestParameterNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepository;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.model.entities.firma.RequestParameter;
@@ -47,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaControllerHandledExceptions;
 
 /**
  * Controller che implementa le API per la firma remota
@@ -58,7 +58,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping(value = "${firma.jnj.mapping.url}")
-public class FirmaJnJRestController implements ControllerHandledExceptions {
+public class FirmaJnJRestController implements FirmaRemotaControllerHandledExceptions {
 
     private static final Logger log = LoggerFactory.getLogger(FirmaJnJRestController.class);
     

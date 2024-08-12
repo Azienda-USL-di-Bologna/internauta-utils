@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.firma.utils.exceptions;
+package it.bologna.ausl.internauta.utils.firma.exceptions;
 
 /**
  *
