@@ -32,8 +32,15 @@ import it.bologna.ausl.internauta.utils.firma.validator.exceptions.DssResponseEx
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.logging.Level;
 import org.apache.commons.io.IOUtils;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * Controller che implementa le API per la validazione dei file firmati
@@ -71,7 +78,8 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
     public ResponseEntity<String> validateSignedFileFromRepo( 
             @RequestParam(value = "fileRepoFileId", required = false) String fileRepoFileId, 
             @RequestParam(value = "fileRepoMongoUuid", required = false) String fileRepoMongoUuid, 
-            @RequestParam(value = "validationDate", required = false) String validationDate,
+            //@RequestParam(value = "validationDate", required = false) String validationDate,
+            @RequestParam(value = "validationDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime validationDate,
             HttpServletRequest request) {
         log.info("charset: " + System.getProperty("file.encoding"));
         String res;
@@ -114,7 +122,8 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
     @RequestMapping(value = "/validateSignedFile", consumes = "multipart/form-data", method = RequestMethod.POST, produces = "text/plain")
     public ResponseEntity<String> validateSignedFile( 
             @RequestParam("file") MultipartFile file, 
-            @RequestParam(value = "validationDate", required = false) String validationDate,
+            //@RequestParam(value = "validationDate", required = false) String validationDate,
+            @RequestParam(value = "validationDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime validationDate,
             HttpServletRequest request) {
         log.info("charset: " + System.getProperty("file.encoding"));
         String res;
@@ -133,18 +142,18 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         return ResponseEntity.ok(res);
     }
 
-    private String callDssValidator(HttpServletRequest request, String validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+    private String callDssValidator(HttpServletRequest request, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
         String scheme = request.getScheme();
         String hostname = CommonUtils.getHostname(request);
         Integer port = request.getServerPort();
-        //port = 10008;
+//        port = 10008;
         String externalCheckCertificateUrl = configParams.getExternalCheckCertificateUrl(scheme, hostname, port);
         OkHttpClient client = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder()
             .addFormDataPart("file", "file.tmp", okhttp3.RequestBody.create(MediaType.parse("application/octet-stream"), file));
-        if (StringUtils.hasText(validationDate)) {
-            requestBodyBuilder.addFormDataPart("validationDate", validationDate);
+        if (validationDate != null) {
+            requestBodyBuilder.addFormDataPart("validationDate", validationDate.atZone(ZoneId.of("Europe/Rome")).format(DateTimeFormatter.ISO_DATE_TIME));
         }
         okhttp3.RequestBody requestBody = requestBodyBuilder.build();
         Response resp = client.newCall(
