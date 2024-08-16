@@ -1,7 +1,7 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
-import it.bologna.ausl.mimetypeutilitymaven.Detector;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
+import it.bologna.ausl.mimetypeutilities.Detector;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -66,7 +66,7 @@ public class ZipExtractor extends Extractor {
         }
         ZipFile zip = null;
         try {
-            zip = new ZipFile(file);
+            zip = new ZipFile(file, "utf-8");
             Enumeration<ZipArchiveEntry> entries = zip.getEntries();
 
             String fileName = null;
@@ -78,13 +78,18 @@ public class ZipExtractor extends Extractor {
                 zipEntry = entries.nextElement();
                 fileName = zipEntry.getName().replace("\ufffd", "");
 
+                // a volte capita che nel path, le directory abbiano "\" al posto di "/", le uniformo
+                if (fileName.contains("\\")) {
+                    fileName = fileName.replace("\\", "/");
+                }
+                
                 // caso degli zip strani che non hanno le directory come entries, se trovo una barra nel nome dell'entry creo la struttura di cartelle
                 if (fileName.contains("/")) {
                     File dirs = new File(outputDir, fileName.substring(0, fileName.lastIndexOf("/")));
                     dirs.mkdirs();
 //                    fileName = new File(outputDir, fileName).getName();
                 }
-
+                
                 InputStream zipEntryInputStream = null;
                 try {
                     zipEntryInputStream = zip.getInputStream(zipEntry);

@@ -1,0 +1,59 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="value" type="xs:string"/>
+	<xs:element name="mandatory" type="xs:string"/>
+	<xs:element name="name" type="xs:string"/>
+	<xs:element name="type" type="xs:string"/>
+	<xs:element name="values">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="value" maxOccurs="unbounded" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="singlemetadata">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="mandatory"/>
+				<xs:element ref="name"/>
+				<xs:element ref="values"/>
+				<xs:element ref="type"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="filename" type="xs:string"/>
+	<xs:element name="mimetype" type="xs:string"/>
+	<xs:element name="hash" type="xs:string"/>
+	<xs:element name="file">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="filename"/>
+				<xs:element ref="mimetype"/>
+				<xs:element ref="hash"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="docType" type="xs:string"/>
+	<xs:element name="metadata">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="singlemetadata" maxOccurs="unbounded" minOccurs="1"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="files">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="file" maxOccurs="unbounded" minOccurs="1"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="versamento">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="docType"/>
+				<xs:element ref="metadata"/>
+				<xs:element ref="files"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

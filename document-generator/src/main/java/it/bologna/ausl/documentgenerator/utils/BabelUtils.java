@@ -318,7 +318,7 @@ public class BabelUtils {
                     .addColumnMapping("estensione", "estensione")
                     .executeAndFetchTable().rows();
 
-            if (rows.size() > 1) {
+            if (rows.size() >= 1) {
                 result = true;
             }
         }

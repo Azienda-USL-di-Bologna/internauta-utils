@@ -14,7 +14,7 @@ import it.bologna.ausl.documentgenerator.utils.GeneratorUtils;
 import it.bologna.ausl.documentgenerator.utils.GeneratorUtils.SupportedArchiveTypes;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.mongowrapper.MongoWrapper;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
@@ -137,7 +137,7 @@ public class GeneratePE {
         this.documentoPrincipale = documentoPrincipale;
 
         //il principale allegato non può essere di tipo estraibile
-        if (!generatorUtils.isAcceptedMimeType(documentoPrincipale)) {
+        if (!babelUtils.isSupportedMimeType(codiceAzienda, documentoPrincipale.getContentType())) {
 
             throw new Http400ResponseException("400", "Attenzione: l'allegato '" + documentoPrincipale.getName()
                     + "' ha un mime-type non supportato dal sistema" + documentoPrincipale.getContentType());
@@ -233,7 +233,7 @@ public class GeneratePE {
                 recursiveExtractAndUpload(allegato, mapAllegati, folderToSave);
 
                 // è un tipo di allegato accettabile?
-            } else if (!generatorUtils.isAcceptedMimeType(allegato)) {
+            } else if (!babelUtils.isSupportedMimeType(codiceAzienda, allegato.getContentType())) {
                 log.error("allegato con formato non supportato: " + allegato.getName());
                 throw new Http400ResponseException("400", "Attenzione: l'allegato '" + allegato.getName()
                         + "' ha un mime-type non supportato dal sistema" + allegato.getContentType());
@@ -300,6 +300,7 @@ public class GeneratePE {
             params.put("allegati", mapAllegati);
 
             params.put("ID_CHIAMATA", ID_CHIAMATA);
+            params.put("insert_doc_check", false);
             // chiamo la web-api su Pico
             String urlChiamata = "";
 
@@ -346,7 +347,7 @@ public class GeneratePE {
             if (myResponse.get("status").equals("OK")) {
                 result = (String) myResponse.get("result");
                 resultJson = (String) myResponse.get("resultJson");
-
+                
             } else if (myResponse.get("status").equals("ERROR")) {
                 if (myResponse.get("error_code").equals(500L)) {
                     throw new Http500ResponseException("500", (String) myResponse.get("error_message"));

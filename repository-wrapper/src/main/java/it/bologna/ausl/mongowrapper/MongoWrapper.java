@@ -16,8 +16,6 @@ import com.mongodb.gridfs.GridFSInputFile;
 import it.bologna.ausl.mongowrapper.exceptions.FileDeletedExceptions;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
@@ -35,7 +33,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.bson.types.ObjectId;
 
 /**
@@ -543,7 +540,11 @@ public class MongoWrapper {
         }
         List<GridFSDBFile> files = gfs.find(query);
         if (files == null) {
-            log.warn("file not found");
+            log.warn("--file not found--");
+//            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+//            String stackToString = Arrays.toString(stackTrace);
+//            log.warn(stackToString);
+//            log.warn("--    --    --");
         }
 //        if (includeDeleted) {
 //            if (files == null) {
@@ -599,7 +600,11 @@ public class MongoWrapper {
             f = gfs.findOne(id);
         }
         if (f == null) {
-            log.warn("file not found");
+            log.warn("--file not found--");
+//            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+//            String stackToString = Arrays.toString(stackTrace);
+//            log.warn(stackToString);
+//            log.warn("--    --    --");
         } else if (!includeDeleted && f.getMetaData() != null && f.getMetaData().containsField("deleteDate")) {
             throw new FileDeletedExceptions("file logically deleted");
         }
@@ -1624,4 +1629,7 @@ public class MongoWrapper {
         return res;
     }
 
+    public String getMongoUuidByFileUuid(String fileUuid) throws MongoWrapperException {
+        return null; // it must be overridden (basically abstract, but this class isn't so can't do it)
+    }
 }

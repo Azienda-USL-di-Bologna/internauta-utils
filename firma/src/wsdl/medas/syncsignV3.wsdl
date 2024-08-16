@@ -1,0 +1,327 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions name="SyncSignService" targetNamespace="http://www.medas-solutions.it/ScrybaSignServer/v3" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://www.medas-solutions.it/ScrybaSignServer/v3" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+<xs:schema targetNamespace="http://www.medas-solutions.it/ScrybaSignServer/v3" version="3.0" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://www.medas-solutions.it/ScrybaSignServer/v3" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:element name="CloseSignSessionReq">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="CloseSignSessionReq" type="tns:typeCloseSignSessionReq"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="CloseSignSessionResp">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="CloseSignSessionResp" type="tns:typeCloseSignSessionResp"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="OpenSignSessionReq">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="OpenSignSessionReq" type="tns:typeOpenSignSessionReq"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="OpenSignSessionResp">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="OpenSignSessionResp" type="tns:typeOpenSignSessionResp"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="SignDocReq">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="SignDocReq" type="tns:typeSignDocReq"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="SignDocResp">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="SignDocResp" type="tns:typeSignDocResp"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="SignOneDocReq">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="SignOneDocReq" type="tns:typeSignOneDocReq"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="SignOneDocResp">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="SignOneDocResp" type="tns:typeSignOneDocResp"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:complexType name="typeUser">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="username" type="xs:string"/>
+                    <xs:element minOccurs="0" name="firstName" type="xs:string"/>
+                    <xs:element minOccurs="0" name="lastName" type="xs:string"/>
+                    <xs:element minOccurs="0" name="ssn" type="xs:string"/>
+                    <xs:element minOccurs="0" name="birthDate" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeCredentials">
+                <xs:sequence>
+                    <xs:element name="password" type="xs:string"/>
+                    <xs:element minOccurs="0" name="otp" type="xs:string"/>
+                    <xs:element minOccurs="0" name="type" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeMessage">
+                <xs:sequence>
+                    <xs:element name="code" type="xs:integer"/>
+                    <xs:element minOccurs="0" name="description" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeOpenSignSessionReq">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="automatic" type="xs:boolean"/>
+                    <xs:element name="user" type="tns:typeUser"/>
+                    <xs:element name="credentials" type="tns:typeCredentials"/>
+                    <xs:element minOccurs="0" name="certificateId" type="xs:string"/>
+                    <xs:element minOccurs="0" name="signaturePowerId" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeOpenSignSessionResp">
+                <xs:sequence>
+                    <xs:element name="sessionId" type="xs:string"/>
+                    <xs:element name="message" type="tns:typeMessage"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeProcess">
+                <xs:sequence>
+                    <xs:element name="code" type="xs:string"/>
+                    <xs:element minOccurs="0" name="description" type="xs:string"/>
+                    <xs:element maxOccurs="unbounded" minOccurs="0" name="docTypes" nillable="true" type="tns:typeDocumentType"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeDocumentType">
+                <xs:sequence>
+                    <xs:element name="code" type="xs:string"/>
+                    <xs:element name="description" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeSignDocReq">
+                <xs:sequence>
+                    <xs:element name="sessionId" type="xs:string"/>
+                    <xs:element minOccurs="0" name="automatic" type="xs:boolean"/>
+                    <xs:element name="document" type="tns:typeDocument"/>
+                    <xs:element name="signProperties" type="tns:typeSignProperties"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeDocument">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="docBin" type="xs:string"/>
+                    <xs:element minOccurs="0" name="docHash" type="xs:string"/>
+                    <xs:element name="docType" type="xs:string"/>
+                    <xs:element name="signStringCode" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeSignProperties">
+                <xs:sequence>
+                    <xs:element name="signMode" type="xs:string"/>
+                    <xs:element name="processId" type="xs:string"/>
+                    <xs:element minOccurs="0" name="parallel" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="padesProperties" type="tns:typePadesProperties"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typePadesProperties">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="page" type="xs:string"/>
+                    <xs:element minOccurs="0" name="leftx" type="xs:string"/>
+                    <xs:element minOccurs="0" name="lefty" type="xs:string"/>
+                    <xs:element minOccurs="0" name="rightx" type="xs:string"/>
+                    <xs:element minOccurs="0" name="righty" type="xs:string"/>
+                    <xs:element minOccurs="0" name="arssPadesProperties" type="tns:typeArssPadesProperties"/>
+                    <xs:element minOccurs="0" name="dsPadesProperties" type="tns:typeDsPadesProperties"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeArssPadesProperties">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="pdfProfile" type="xs:string"/>
+                    <xs:element minOccurs="0" name="location" type="xs:string"/>
+                    <xs:element minOccurs="0" name="reason" type="xs:string"/>
+                    <xs:element minOccurs="0" name="arssPadesPropertiesApparence" type="tns:typeArssPadesPropertiesApparence"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeArssPadesPropertiesApparence">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="image" type="xs:string"/>
+                    <xs:element minOccurs="0" name="text" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeDsPadesProperties">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="dsPadesPropertiesApparence" type="tns:typeDsPadesPropertiesApparence"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeDsPadesPropertiesApparence">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="image" type="xs:string"/>
+                    <xs:element minOccurs="0" name="certIssuer" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="commonName" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="email" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="fiscalCode" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="role" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="validity" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="reason" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="reasonText" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeSignDocResp">
+                <xs:sequence>
+                    <xs:element name="sessionId" type="xs:string"/>
+                    <xs:element minOccurs="0" name="signedDocBin" type="xs:string"/>
+                    <xs:element minOccurs="0" name="signedDocHash" type="xs:string"/>
+                    <xs:element minOccurs="0" name="certificateSerialNumber" type="xs:string"/>
+                    <xs:element minOccurs="0" name="certificate" type="xs:string"/>
+                    <xs:element name="message" type="tns:typeMessage"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeDocTypeList">
+                <xs:sequence>
+                    <xs:element maxOccurs="unbounded" name="doctype" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeSignOneDocResp">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="signedDocBin" type="xs:string"/>
+                    <xs:element minOccurs="0" name="signedDocHash" type="xs:string"/>
+                    <xs:element minOccurs="0" name="certificateSerialNumber" type="xs:string"/>
+                    <xs:element minOccurs="0" name="certificate" type="xs:string"/>
+                    <xs:element name="message" type="tns:typeMessage"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeCloseSignSessionResp">
+                <xs:sequence>
+                    <xs:element name="sessionId" type="xs:string"/>
+                    <xs:element name="message" type="tns:typeMessage"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeCloseSignSessionReq">
+                <xs:sequence>
+                    <xs:element name="sessionId" type="xs:string"/>
+                    <xs:element name="action" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="typeSignOneDocReq">
+                <xs:sequence>
+                    <xs:element name="user" type="tns:typeUser"/>
+                    <xs:element name="credentials" type="tns:typeCredentials"/>
+                    <xs:element minOccurs="0" name="certificateId" type="xs:string"/>
+                    <xs:element minOccurs="0" name="signaturePowerId" type="xs:string"/>
+                    <xs:element name="document" type="tns:typeDocument"/>
+                    <xs:element name="signProperties" type="tns:typeSignProperties"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="SignOneDocResponse">
+    <wsdl:part element="tns:SignOneDocResp" name="SignOneDocResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OpenSignSession">
+    <wsdl:part element="tns:OpenSignSessionReq" name="OpenSignSessionRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CloseSignSessionResponse">
+    <wsdl:part element="tns:CloseSignSessionResp" name="CloseSignSessionResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CloseSignSession">
+    <wsdl:part element="tns:CloseSignSessionReq" name="CloseSignSessionRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OpenSignSessionResponse">
+    <wsdl:part element="tns:OpenSignSessionResp" name="OpenSignSessionResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="SignDoc">
+    <wsdl:part element="tns:SignDocReq" name="SignDocRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="SignDocResponse">
+    <wsdl:part element="tns:SignDocResp" name="SignDocResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="SignOneDoc">
+    <wsdl:part element="tns:SignOneDocReq" name="SignOneDocRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="ScrybaSignServerSync">
+    <wsdl:operation name="OpenSignSession">
+      <wsdl:input message="tns:OpenSignSession" name="OpenSignSession">
+    </wsdl:input>
+      <wsdl:output message="tns:OpenSignSessionResponse" name="OpenSignSessionResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SignDoc">
+      <wsdl:input message="tns:SignDoc" name="SignDoc">
+    </wsdl:input>
+      <wsdl:output message="tns:SignDocResponse" name="SignDocResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CloseSignSession">
+      <wsdl:input message="tns:CloseSignSession" name="CloseSignSession">
+    </wsdl:input>
+      <wsdl:output message="tns:CloseSignSessionResponse" name="CloseSignSessionResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SignOneDoc">
+      <wsdl:input message="tns:SignOneDoc" name="SignOneDoc">
+    </wsdl:input>
+      <wsdl:output message="tns:SignOneDocResponse" name="SignOneDocResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="SyncSignServiceSoapBinding" type="tns:ScrybaSignServerSync">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="OpenSignSession">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/SyncSign/v3/OpenSignSession" style="document"/>
+      <wsdl:input name="OpenSignSession">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="OpenSignSessionResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SignDoc">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/SyncSign/v3/SignDoc" style="document"/>
+      <wsdl:input name="SignDoc">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="SignDocResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CloseSignSession">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/SyncSign/v3/CloseSignSession" style="document"/>
+      <wsdl:input name="CloseSignSession">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="CloseSignSessionResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SignOneDoc">
+      <soap:operation soapAction="http://demo.medas-solutions.it/ScrybaSignServer/SyncSign/v3/SignOneDoc" style="document"/>
+      <wsdl:input name="SignOneDoc">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="SignOneDocResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="SyncSignService">
+    <wsdl:port binding="tns:SyncSignServiceSoapBinding" name="SyncSignServicePort">
+      <soap:address location="https://localhost/ScrybaSignServer/services/syncsign/v3"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

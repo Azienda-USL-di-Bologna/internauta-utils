@@ -1,10 +1,11 @@
 package it.bologna.ausl.estrattore;
 
-import it.bologna.ausl.estrattoremaven.exception.ExtractorException;
+import it.bologna.ausl.estrattore.exception.ExtractorException;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import org.apache.tika.mime.MediaType;
 
@@ -13,10 +14,6 @@ import org.apache.tika.mime.MediaType;
  * @author Giuseppe De Marco (gdm)
  */
 public class ExtractorCreator {
-
-    public Object stream() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
     public enum MimeTypeSetOperation {
         ALLOWED, DENIED
@@ -105,7 +102,18 @@ public class ExtractorCreator {
                 resultFileName = file.getName();
             }
             
-            ExtractorResult extractorResult = new ExtractorResult(resultFileName, mimeType != null ? mimeType : Extractor.getMimeType(file), file.length(), Extractor.getHashFromFile(file, "SHA-256"), file.getAbsolutePath(), level,padre ,antenati);
+            ExtractorResult extractorResult = new ExtractorResult(
+                    resultFileName, 
+                    mimeType != null ? mimeType : Extractor.getMimeType(file), 
+                    file.length(), 
+                    Extractor.getHashFromFile(file, "SHA-256"), 
+                    file.getAbsolutePath(), 
+                    level,
+                    padre ,
+                    antenati,
+                    isExtractable(file),
+                    Extractor.getHashFromFile(file, "MD5").toLowerCase()
+            );
             partialRes.add(extractorResult);
 //            }
             if (extractorClass != null) {
@@ -116,7 +124,7 @@ public class ExtractorCreator {
                     ArrayList<ExtractorResult> res = extractor.extract(outputDir, nameForCreatedFile);
                     for (ExtractorResult er : res) {
                         File fileToExtract = new File(er.getPath());
-                        if (antenati != null && !antenati.isEmpty() && !antenati.equals("null")){
+                        if (antenati != null && !antenati.isEmpty() && !antenati.equals("null")) {
                             antenati = antenati + "\\";
                         }
                         else

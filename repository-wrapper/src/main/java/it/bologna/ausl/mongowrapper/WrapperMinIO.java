@@ -506,9 +506,9 @@ public class WrapperMinIO extends MongoWrapper {
 //            }
             MinIOWrapperFileInfo fileInfo;
             if (f != null) {
-                fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                fileInfo = minIOWrapper.putWithBucket(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
             } else {
-                fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                fileInfo = minIOWrapper.putWithBucket(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
             }
 //            if (overwrite) {
 //                super.delete(mongoUuid);
@@ -591,5 +591,14 @@ public class WrapperMinIO extends MongoWrapper {
         return Optional.ofNullable(collection)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty);
+    }
+
+    @Override
+    public String getMongoUuidByFileUuid(String fileUuid) throws MongoWrapperException {
+        try{
+            return minIOWrapper.getMongoUuidByFileUuid(fileUuid);
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
     }
 }

@@ -45,16 +45,21 @@ public class EmlHandler {
         if (dir != null) {
             workingDir = new File(dir);
         } else {
-            dir = null;
+            workingDir = null;
         }
     }
 
     public EmlHandlerResult handleRawEml() throws EmlHandlerException, UnsupportedEncodingException 
     {
-        return handleRawEml(rawMessage, workingDir);
+        return handleRawEml(rawMessage, workingDir, false);
+    }
+    
+    public EmlHandlerResult handleRawEml(Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException 
+    {
+        return handleRawEml(rawMessage, workingDir, setAttachmentsStream);
     }
 
-    public static EmlHandlerResult handleEml(String filePath)
+    public static EmlHandlerResult handleEml(String filePath, Boolean setAttachmentsStream)
             throws EmlHandlerException, UnsupportedEncodingException {
         FileInputStream is = null;
         MimeMessage m = null;
@@ -71,7 +76,7 @@ public class EmlHandler {
                         "Unable to open file " + filePath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            res = processEml(m, dir);
+            res = processEml(m, dir, setAttachmentsStream);
             return res;
         } finally {
             try {
@@ -111,7 +116,7 @@ public class EmlHandler {
                         "Unable to open file " + filePath, e);
             }
             m = EmlHandlerUtils.BuildMailMessageFromInputStream(is);
-            res = processEml(m, dir, saveAttachments);
+            res = processEml(m, dir, false, saveAttachments);
             return res;
 
         } finally {
@@ -124,20 +129,20 @@ public class EmlHandler {
 
     }
 
-    public static EmlHandlerResult handleRawEml(String rawMessage, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
+    public static EmlHandlerResult handleRawEml(String rawMessage, File working_dir, Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException {
 
         MimeMessage m = null;
         EmlHandlerResult res = null;
 
         m = EmlHandlerUtils.BuildMailMessageFromString(rawMessage);
         //TODO: decidere cosa fare con il path
-        res = processEml(m, working_dir);
+        res = processEml(m, working_dir, setAttachmentsStream);
         return res;
 
     }
     
-    private static EmlHandlerResult processEml(MimeMessage m, File working_dir) throws EmlHandlerException, UnsupportedEncodingException {
-        return processEml(m, working_dir, false);
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean setAttachmentsStream) throws EmlHandlerException, UnsupportedEncodingException {
+        return processEml(m, working_dir, setAttachmentsStream, false);
     }
 
     /**
@@ -146,7 +151,7 @@ public class EmlHandler {
      * @return EmlHandlerResult contenente il risultato dell'elaborazione
      * @throws EmlHandlerException
      */
-    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
+    private static EmlHandlerResult processEml(MimeMessage m, File working_dir, Boolean setAttachmentsStream, Boolean saveAttachments) throws EmlHandlerException, UnsupportedEncodingException {
 
         File dir = working_dir;
         EmlHandlerResult res = new EmlHandlerResult();
@@ -154,7 +159,11 @@ public class EmlHandler {
         try {
             Address[] from = m.getFrom();
             if (from != null && from[0] != null) {
-                res.setFrom(MimeUtility.decodeText(from[0].toString()));
+                try {
+                    res.setFrom(MimeUtility.decodeText(from[0].toString()));
+                } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                    res.setFrom(MimeUtility.decodeText(from[0].toString().replace("?", "_")));
+                }
             }
         } catch (MessagingException e1) {
             // TODO Auto-generated catch block
@@ -165,7 +174,11 @@ public class EmlHandler {
             if (recipients != null) {
                 String[] rec = new String[recipients.length];
                 for (int i = 0; i < recipients.length; i++) {
-                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    try {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString().replace("?", "_"));
+                    }
                 }
                 res.setTo(rec);
             }
@@ -178,7 +191,11 @@ public class EmlHandler {
             if (recipients != null) {
                 String[] rec = new String[recipients.length];
                 for (int i = 0; i < recipients.length; i++) {
-                    rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    try {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString());
+                    } catch (UnsupportedEncodingException unsupportedEncodingException) {
+                        rec[i] = MimeUtility.decodeText(recipients[i].toString().replace("?", "_"));
+                    }
                 }
                 res.setCc(rec);
             }
@@ -217,7 +234,9 @@ public class EmlHandler {
         
         try {
             if (dir != null) {
-                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, saveAttachments));
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, setAttachmentsStream, saveAttachments));
+            } else {
+                res.setAttachments(EmlHandlerUtils.getAttachments(m, dir, setAttachmentsStream, false));
             }
         } catch (MessagingException e) {
             // TODO Auto-generated catch block

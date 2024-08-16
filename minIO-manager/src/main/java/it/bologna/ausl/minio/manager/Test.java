@@ -207,7 +207,7 @@ public class Test {
         MinIOWrapper minIOWrapper = getDefaultConfigurationMinIOWrapperInstance();
         String fileId = "f0/a7/a5/78/f0a7a578-707d-4334-9935-d1ce3bd96896/aaa.pdf";
 
-        try (InputStream res = minIOWrapper.getByFileId(fileId);) {
+        try ( InputStream res = minIOWrapper.getByFileId(fileId);) {
             File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
             java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
@@ -218,7 +218,7 @@ public class Test {
         String path = "/gdm/";
         String fileName = "aaa.pdf";
 
-        try (InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, "105");) {
+        try ( InputStream res = minIOWrapper.getByPathAndFileName(path, fileName, "105");) {
             File targetFile = new File("D:\\tmp\\testzip\\bbb.pdf");
             java.nio.file.Files.copy(res, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
@@ -230,7 +230,7 @@ public class Test {
         metadata.put("key1", "val1");
         metadata.put("key2", 4);
         boolean overwrite = true;
-        MinIOWrapperFileInfo res = minIOWrapper.put(new FileInputStream("D:\\tmp\\tmp\\mail_grossa.eml"), "105", "/gdm/123/1/", "aaaf.pdf", metadata, overwrite, "1");
+        MinIOWrapperFileInfo res = minIOWrapper.putWithBucket(new FileInputStream("D:\\tmp\\tmp\\mail_grossa.eml"), "105", "/gdm/123/1/", "aaaf.pdf", metadata, overwrite, "1");
         System.out.println("res: " + res.toString());
     }
 

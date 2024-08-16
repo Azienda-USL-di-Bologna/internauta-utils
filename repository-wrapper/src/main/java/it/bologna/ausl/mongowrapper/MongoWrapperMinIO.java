@@ -4,18 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
-import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.mongowrapper.exceptions.MongoWrapperException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
@@ -24,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -668,9 +664,9 @@ public class MongoWrapperMinIO extends MongoWrapper {
             try {
                 lockByPath(StringUtils.trimTrailingCharacter(StringUtils.cleanPath(dirname), '/') + "/" + filename);
                 if (f != null) {
-                    fileInfo = minIOWrapper.put(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                    fileInfo = minIOWrapper.putWithBucket(f, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
                 } else {
-                    fileInfo = minIOWrapper.put(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid);
+                    fileInfo = minIOWrapper.putWithBucket(is, codiceAzienda, dirname, filename, metadata, overwrite, uuid, null);
                 }
                 if (overwrite) {
                     super.delete(mongoUuid);
@@ -758,4 +754,12 @@ public class MongoWrapperMinIO extends MongoWrapper {
                 .orElseGet(Stream::empty);
     }
 
+    @Override
+    public String getMongoUuidByFileUuid(String fileUuid) throws MongoWrapperException {
+        try{
+            return minIOWrapper.getMongoUuidByFileUuid(fileUuid);
+        } catch (Exception ex) {
+            throw new MongoWrapperException("errore", ex);
+        }
+    }
 }
