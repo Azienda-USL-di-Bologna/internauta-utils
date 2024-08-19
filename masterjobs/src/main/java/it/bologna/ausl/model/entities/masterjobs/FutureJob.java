@@ -9,32 +9,30 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.UUID;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author gusgus
  */
-@TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-})
+//@TypeDefs({
+//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+//})
 @Entity
 @Table(name = "future_jobs", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -54,7 +52,7 @@ public class FutureJob implements Serializable, JobInterface {
     private String name;
     
     @Basic(optional = true)
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private HashMap<String, Object> data;
     
@@ -75,7 +73,8 @@ public class FutureJob implements Serializable, JobInterface {
     
     @Basic(optional = true)
     @Column(name = "hash")
-    @Type(type="pg-uuid")
+//    @Type("pg-uuid")
+//    @Type(type="pg-uuid")
     private UUID hash;
     
     @Basic(optional = false)

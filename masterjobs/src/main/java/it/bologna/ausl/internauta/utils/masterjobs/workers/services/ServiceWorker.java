@@ -9,7 +9,7 @@ import it.bologna.ausl.model.entities.masterjobs.QService;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ScheduledFuture;
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.TransactionDefinition;

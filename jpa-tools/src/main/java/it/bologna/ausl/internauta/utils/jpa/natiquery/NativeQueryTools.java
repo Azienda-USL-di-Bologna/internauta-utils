@@ -22,9 +22,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
-import javax.persistence.Column;
-import javax.persistence.EntityManager;
-import javax.xml.bind.annotation.XmlAttribute;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityManager;
+import jakarta.xml.bind.annotation.XmlAttribute;
 import org.hibernate.Session;
 
 /**

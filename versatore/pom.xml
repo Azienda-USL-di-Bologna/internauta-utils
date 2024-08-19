@@ -29,14 +29,19 @@
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-tools</artifactId>
-            <version>2.3.5</version>
+            <version>4.0.3</version>
         </dependency>
         <dependency>
-            <groupId>javax.jws</groupId>
-            <artifactId>javax.jws-api</artifactId>
-            <version>1.1</version>
+            <groupId>jakarta.jws</groupId>
+            <artifactId>jakarta.jws-api</artifactId>
+            <version>3.0.0</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>jakarta.xml.ws</groupId>
+            <artifactId>jakarta.xml.ws-api</artifactId>
+        </dependency>
+        
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-rest-core</artifactId>
@@ -45,16 +50,20 @@
         <dependency>
             <groupId>com.querydsl</groupId>
             <artifactId>querydsl-apt</artifactId>
+            <version>5.1.0</version>
+            <classifier>jakarta</classifier>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.querydsl</groupId>
             <artifactId>querydsl-jpa</artifactId>
+            <version>5.1.0</version>
+            <classifier>jakarta</classifier>
         </dependency>
         <dependency>
             <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.10.2</version>
+            <artifactId>hibernate-types-60</artifactId>
+            <version>2.21.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -92,13 +101,13 @@
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-core</artifactId>
-            <version>1.9.1</version>
+            <version>2.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-data</artifactId>
-            <version>1.9.1</version>
+            <version>2.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -128,21 +137,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-test</artifactId>
-            <version>2.6.12</version>
             <scope>test</scope>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>5.3.23</version>
             <scope>test</scope>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20180813</version>
+            <version>20240303</version>
         </dependency>
     </dependencies>
     <build>
@@ -156,6 +163,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArguments>
+                        <proc:none/>
+                    </compilerArguments>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>com.mysema.maven</groupId>
                 <artifactId>apt-maven-plugin</artifactId>
@@ -172,6 +190,14 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.querydsl</groupId>
+                        <artifactId>querydsl-apt</artifactId>
+                        <version>5.1.0</version>
+                        <classifier>jakarta</classifier>
+                    </dependency>
+                </dependencies>
             </plugin>
 <!--            <plugin>
                 <groupId>org.jvnet.jaxb2.maven2</groupId>
@@ -224,9 +250,9 @@
                 </executions>
             </plugin>-->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>com.sun.xml.ws</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
-                <version>2.6</version>
+                <version>4.0.3</version>
                 <executions>
                     <execution>
                         <goals>
@@ -238,7 +264,7 @@
                             </wsdlFiles>
                             <packageName>it.bologna.ausl.utils.versatore.infocert.wsclient</packageName>
                             <vmArgs>
-                                <vmArg>-Djavax.xml.accessExternalSchema=all</vmArg>
+                                <vmArg>-Djakarta.xml.accessExternalSchema=all</vmArg>
                             </vmArgs>
                             <wsdlLocation>http://10.145.3.149:8180/protocolli/GenericDocumentService?wsdl</wsdlLocation>
                             <staleFile>${project.build.directory}/jaxws/stale/GenericDocumentService.stale</staleFile>
@@ -249,9 +275,9 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>javax.xml</groupId>
-                        <artifactId>webservices-api</artifactId>
-                        <version>2.0</version>
+                        <groupId>jakarta.xml.ws</groupId>
+                        <artifactId>jakarta.xml.ws-api</artifactId>
+                        <version>4.0.2</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -265,7 +291,7 @@
             <plugin>
                 <groupId>org.jvnet.jaxb2.maven2</groupId>
                 <artifactId>maven-jaxb2-plugin</artifactId>
-                <version>0.12.0</version>
+                <version>0.15.3</version>
                 <executions>
                     <execution>
                         <goals>
@@ -303,4 +329,8 @@
             </plugin>
         </plugins>
     </build>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
 </project>

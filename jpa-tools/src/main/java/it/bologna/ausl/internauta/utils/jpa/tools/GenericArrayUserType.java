@@ -59,7 +59,7 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
     public int hashCode(Object x) throws HibernateException {
         return x.hashCode();
     }
-
+    
     @Override
     public Object nullSafeGet(ResultSet resultSet, String[] names, SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException, SQLException {
 
@@ -70,12 +70,8 @@ public class GenericArrayUserType<T extends Serializable> implements UserType, P
 
             if (property != null) {
                 switch (property) {
-                    case INTEGER_ELEMENT_TYPE:
-                        res = java.lang.reflect.Array.newInstance(Integer.class, 0);
-                        break;
-                    case TEXT_ELEMENT_TYPE:
-                        res = java.lang.reflect.Array.newInstance(String.class, 0);
-                        break;
+                    case INTEGER_ELEMENT_TYPE -> res = java.lang.reflect.Array.newInstance(Integer.class, 0);
+                    case TEXT_ELEMENT_TYPE -> res = java.lang.reflect.Array.newInstance(String.class, 0);
                 }
             }
             return res;

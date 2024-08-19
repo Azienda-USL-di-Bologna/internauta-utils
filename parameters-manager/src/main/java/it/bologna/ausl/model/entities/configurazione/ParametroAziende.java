@@ -6,26 +6,25 @@ import com.vladmihalcea.hibernate.type.array.StringArrayType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author spritz
  */
-@TypeDef(name = "string-array", typeClass = StringArrayType.class)
+//@TypeDef(name = "string-array", typeClass = StringArrayType.class)
 @Entity
 @Table(name = "parametri_aziende", schema = "configurazione")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -55,13 +54,13 @@ public class ParametroAziende implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_applicazioni", columnDefinition = "text[]")
-    @Type(type = "string-array")
+    @Type(StringArrayType.class)
     private String[] idApplicazioni;
     
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_aziende", columnDefinition = "integer[]")
-    @Type(type = "string-array")
+    @Type(StringArrayType.class)
     private Integer[] idAziende;
 
     @Basic(optional = false)

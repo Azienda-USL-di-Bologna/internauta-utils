@@ -2,7 +2,7 @@ package it.bologna.ausl.eml.handler;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.mail.*;
+import jakarta.mail.*;
 
 /**
  * @author andrea zucchelli

@@ -6,11 +6,10 @@ import it.bologna.ausl.dss.data.DSSValidatorReponse;
 import it.bologna.ausl.dss.data.exceptions.NoSignException;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.repositories.RequestParameterRepository;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -32,13 +31,9 @@ import it.bologna.ausl.internauta.utils.firma.validator.exceptions.DssResponseEx
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.logging.Level;
 import org.apache.commons.io.IOUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -169,7 +164,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
                 if (StringUtils.hasText(resString)) {
                     log.info(resString);
                     DSSValidatorReponse dSSValidatorReponse = new DSSValidatorReponse(resString);
-                    String reportString = dSSValidatorReponse.getReportString();
+                    String reportString = dSSValidatorReponse.getSignReportString();
                     return reportString;
                 } else {
                     String error = "la chiamata al validatore DSS ha tornato una risposta vuota";

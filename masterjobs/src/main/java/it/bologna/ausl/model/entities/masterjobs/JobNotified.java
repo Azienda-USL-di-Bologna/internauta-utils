@@ -12,30 +12,28 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author gdm
  */
-@TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-})
+//@TypeDefs({
+//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+//})
 @Entity
 @Table(name = "jobs_notified", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -56,7 +54,7 @@ public class JobNotified implements Serializable {
     private String jobName;
     
     @Basic(optional = true)
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "job_data", columnDefinition = "jsonb")
     private Map<String, Object> jobData;
     
@@ -98,7 +96,7 @@ public class JobNotified implements Serializable {
     private String insertedFrom;
     
     @Basic(optional = true)
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "working_objects", columnDefinition = "jsonb")
     private List<MasterjobsWorkingObject> workingObjects;
     

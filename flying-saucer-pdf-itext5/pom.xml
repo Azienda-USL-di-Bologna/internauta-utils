@@ -37,12 +37,12 @@
     <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>itextpdf</artifactId>
-        <version>5.5.13.2</version>
+        <version>5.5.13.4</version>
     </dependency>
     <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>itext-pdfa</artifactId>
-        <version>5.5.13.2</version>
+        <version>5.5.13.4</version>
     </dependency>
     <dependency>
         <groupId>org.xhtmlrenderer</groupId>
@@ -73,6 +73,7 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
+        <version>5.1.9</version>
         <executions>
           <execution>
             <id>bundle-manifest</id>
@@ -98,4 +99,8 @@
       </plugin>
     </plugins>
   </build>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
 </project>

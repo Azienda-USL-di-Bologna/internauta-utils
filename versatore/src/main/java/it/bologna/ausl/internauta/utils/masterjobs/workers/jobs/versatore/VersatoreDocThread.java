@@ -17,7 +17,7 @@ import it.bologna.ausl.model.entities.versatore.VersamentoAllegato;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.support.TransactionTemplate;
