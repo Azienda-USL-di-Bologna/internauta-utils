@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
@@ -19,6 +20,7 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -164,14 +166,15 @@ public abstract class FirmaRemota {
      * Questo metodo indica se sono presenti le credenziali dell'utente all'interno del sistema di memorizzazioni delle credenziali.
      * @param userInformation
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return true se sono presenti, false altrimenti
      * @throws FirmaRemotaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
-    public final boolean existingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public final boolean existingCredential(UserInformation userInformation, String hostId, Map<String, Object> additionalData) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         if (configuration.getInternalCredentialsManager()) {
-            return this.internalCredentialManager.existingCredential(userInformation.getUsername(), hostId);
+            return this.internalCredentialManager.existingCredential(userInformation.getUsername(), hostId, additionalData);
         } else {
             return this.externalExistingCredential(userInformation, hostId);
         }
@@ -192,15 +195,16 @@ public abstract class FirmaRemota {
      * Permette di memorizzare le credenziali di un utente per permetterli di non doverle inserire tutte le volte
      * @param userInformation
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return true se l'operazioni va a buon fine, false o eccezione altrimenti.
      * @throws FirmaRemotaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
-    public boolean setCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public boolean setCredential(UserInformation userInformation, String hostId, Map<String, Object> additionalData) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         if (configuration.getInternalCredentialsManager()) {
             try {
-                return this.internalCredentialManager.setCredential(userInformation.getUsername(), userInformation.getPassword(), hostId);
+                return this.internalCredentialManager.setCredential(userInformation.getUsername(), userInformation.getPassword(), hostId, additionalData);
             } catch (EncryptionException ex) {
                 throw new InvalidCredentialException("errore nel setCredential", ex);
             }
@@ -225,14 +229,15 @@ public abstract class FirmaRemota {
      * Elimina le eventuali credenziali salvate per l'utente passato
      * @param userInformation
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
+     * @param additionalData
      * @return true se le credenziali esistevano e sono state rimosse, false altrimenti
      * @throws FirmaRemotaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
-    public boolean removeCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public boolean removeCredential(UserInformation userInformation, String hostId, Map<String, Object> additionalData) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
         if (configuration.getInternalCredentialsManager()) {
-            return this.internalCredentialManager.removeCredential(userInformation.getUsername(), hostId);
+            return this.internalCredentialManager.removeCredential(userInformation.getUsername(), hostId, additionalData);
         } else {
             return this.externalRemoveCredential(userInformation, hostId);
         }
@@ -249,4 +254,6 @@ public abstract class FirmaRemota {
      * @throws RemoteServiceException 
      */
     protected abstract boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException;
+
+    public abstract List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException;
 }

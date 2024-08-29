@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.SignAppearance;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice.ArubaUserInformation.ModalitaFirma;
@@ -386,7 +387,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * @throws IOException 
      */
     private PdfSignApparence getPdfSignApparence(File file, SignAppearance signAppearance) throws IOException {
-        PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(file), signAppearance);
+        PdfSignFieldDescriptor pdfSignFieldDescriptor = PdfUtils.toPdfSignFieldDescriptor(new FileInputStream(file), signAppearance, null, null);
 
         PdfSignApparence pdfApparence = new PdfSignApparence();
         pdfApparence.setPage(pdfSignFieldDescriptor.getPage());
@@ -543,5 +544,10 @@ public class FirmaRemotaAruba extends FirmaRemota {
                     throw new RemoteServiceException(String.format("remote server error. code: %s - description: %s", code, description));
             }
         }
+    }
+
+    @Override
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+        return null;
     }
 }

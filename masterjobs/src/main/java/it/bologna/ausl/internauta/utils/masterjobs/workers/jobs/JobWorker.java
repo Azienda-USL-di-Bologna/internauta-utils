@@ -244,10 +244,10 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     protected abstract R doRealWork() throws MasterjobsWorkerException;
     
-    public UUID calcolaMD5() throws JsonProcessingException, NoSuchAlgorithmException{
+    public UUID calcolaMD5(boolean future, ZonedDateTime executionTs) throws JsonProcessingException, NoSuchAlgorithmException{
         //String md5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
         log.info("inizio calcolo applicativo md5");
-        String md5 = getMD5(this);
+        String md5 = getMD5(this, future, executionTs);
         log.info("fine calcolo applicativo md5");
         return UUID.fromString(md5.replaceFirst( 
             "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5" 
@@ -261,11 +261,12 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      * @throws NoSuchAlgorithmException
      * @throws JsonProcessingException 
      */
-    private String getMD5(JobWorker worker) throws NoSuchAlgorithmException, JsonProcessingException {
+    private String getMD5(JobWorker worker, boolean future, ZonedDateTime executionTs) throws NoSuchAlgorithmException, JsonProcessingException {
         String strData = 
                 worker.getName() + 
                 (worker.getData() != null? worker.getData().toJsonString(objectMapper): "") +
-                worker.isDeferred();
+                worker.isDeferred() +
+                (future ? executionTs : "");
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.reset();
         m.update(strData.getBytes());

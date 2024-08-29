@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota.arubasignservice;
 
+import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaModalitaFirma;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 
 /**
@@ -8,16 +9,22 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
  */
 public class ArubaUserInformation extends UserInformation {
 
-    public static enum ModalitaFirma {
-        ARUBACALL, OTP, APP
+    public static enum ModalitaFirma implements FirmaRemotaModalitaFirma {
+        ARUBACALL, OTP, APP;
+
+        @Override
+        public FirmaRemotaModalitaFirma getAutodetectValue() {
+            return null;
+        }
     };
+    
     private String username;
     private String password;
     private String token;
-    private ModalitaFirma modalitaFirma;
     private String certId; // rappresenta l'id del certificato di firma remota dell'utente. Non sappiamo se servirà
     private String dominioFirma; // rappresenta il dominio della firma (es. frAUSLBO)
     private Boolean useSavedCredential;
+    private ModalitaFirma modalitaFirma;
 
     public ArubaUserInformation() {
     }
@@ -54,6 +61,16 @@ public class ArubaUserInformation extends UserInformation {
     public Boolean useSavedCredential() {
         return useSavedCredential;
     }
+    
+    
+    @Override
+    public ModalitaFirma getModalitaFirma() {
+        return modalitaFirma;
+    }
+
+    public void setModalitaFirma(ModalitaFirma modalitaFirma) {
+        this.modalitaFirma = modalitaFirma;
+    }
 
     public void setUseSavedCredential(Boolean useSavedCredential) {
         this.useSavedCredential = useSavedCredential;
@@ -65,14 +82,6 @@ public class ArubaUserInformation extends UserInformation {
 
     public void setToken(String token) {
         this.token = token;
-    }
-
-    public ModalitaFirma getModalitaFirma() {
-        return modalitaFirma;
-    }
-
-    public void setModalitaFirma(ModalitaFirma modalitaFirma) {
-        this.modalitaFirma = modalitaFirma;
     }
 
     public String getCertId() {

@@ -41,13 +41,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class Set implements Serializable {
-
-    public static enum SetPriority {
-        NORMAL,
-        HIGH,
-        HIGHEST
-    }
+public class Set implements Serializable, SetInterface {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -155,8 +149,8 @@ public class Set implements Serializable {
         return jobList;
     }
 
-    public void setJobList(List<Job> jobList) {
-        this.jobList = jobList;
+    public void setJobList(List<? extends JobInterface> jobList) {
+        this.jobList = (List<Job>) jobList;
     }
 
     public ZonedDateTime getNextExecutableCheck() {
@@ -166,4 +160,10 @@ public class Set implements Serializable {
     public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
         this.nextExecutableCheck = nextExecutableCheck;
     }
+    
+    public ZonedDateTime getExecutionTs() {
+        return null;
+    }
+
+    public void setExecutionTs(ZonedDateTime executionTs) {    }
 }

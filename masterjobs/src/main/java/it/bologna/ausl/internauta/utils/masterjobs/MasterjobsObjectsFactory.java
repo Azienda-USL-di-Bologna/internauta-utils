@@ -149,7 +149,7 @@ public class MasterjobsObjectsFactory {
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
     public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis, List<MasterjobsWorkingObject> workingObjects) throws MasterjobsWorkerInitializationException {
-        Class<? extends JobWorker> jobWorkerClass = (Class<? extends JobWorker>)workerMap.get(name);
+        Class<? extends JobWorker> jobWorkerClass = (Class<? extends JobWorker>) workerMap.get(name);
         JobWorker worker = getJobWorker(jobWorkerClass, workerData, deferred, executableCheckEveryMillis, workingObjects);
         return worker;
     }

@@ -1,12 +1,14 @@
 package it.bologna.ausl.model.entities.masterjobs;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
-import it.bologna.ausl.model.entities.masterjobs.Set.SetPriority;
+import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +27,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
@@ -98,6 +101,11 @@ public class JobNotified implements Serializable {
     @Type(type = "jsonb")
     @Column(name = "working_objects", columnDefinition = "jsonb")
     private List<MasterjobsWorkingObject> workingObjects;
+    
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @Column(name = "execution_ts")
+    private ZonedDateTime executionTs;
     
     public JobNotified() {
     }
@@ -196,6 +204,14 @@ public class JobNotified implements Serializable {
 
     public void setWorkingObjects(List<MasterjobsWorkingObject> workingObjects) {
         this.workingObjects = workingObjects;
+    }
+
+    public ZonedDateTime getExecutionTs() {
+        return executionTs;
+    }
+
+    public void setExecutionTs(ZonedDateTime executionTs) {
+        this.executionTs = executionTs;
     }
 
     @Override

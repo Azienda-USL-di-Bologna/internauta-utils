@@ -12,7 +12,7 @@ public class FirmaRemotaInformation {
 
     // elenco dei vari provider supportati
     public static enum FirmaRemotaProviders {
-        ARUBA, INFOCERT, NAMIRIAL
+        ARUBA, INFOCERT, NAMIRIAL, MEDAS
     };
 
     // elenco dei file da firmare

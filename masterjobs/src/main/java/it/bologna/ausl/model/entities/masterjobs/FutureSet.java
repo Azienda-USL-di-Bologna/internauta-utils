@@ -1,45 +1,47 @@
-package it.bologna.ausl.model.entities.masterjobs.views;
+package it.bologna.ausl.model.entities.masterjobs;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.array.ListArrayType;
-import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
- * @author gdm
+ * @author gusgus
  */
 @TypeDefs({
-    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
+    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 })
 @Entity
-@Table(name = "set_with_jobs_array", catalog = "internauta", schema = "masterjobs")
+@Table(name = "future_sets", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class SetWithJobIdsArray implements Serializable {
+public class FutureSet implements Serializable, SetInterface {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -74,17 +76,16 @@ public class SetWithJobIdsArray implements Serializable {
     @Column(name = "inserted_from")
     private String insertedFrom;
     
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
+    @JsonBackReference(value = "jobList")
+    private List<FutureJob> jobList;
+    
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @Column(name = "next_executable_check")
-    @Basic(optional = true)
-    private ZonedDateTime nextExecutableCheck;
+    @Column(name = "execution_ts")
+    private ZonedDateTime executionTs;
     
-    @Column(name = "jobs_ids", columnDefinition = "int8[]")
-    @Type(type = "list-array")
-    private List<Long> jobsIds;
-    
-    public SetWithJobIdsArray() {
+    public FutureSet() {
     }
 
     public Long getId() {
@@ -143,24 +144,26 @@ public class SetWithJobIdsArray implements Serializable {
         this.insertedFrom = insertedFrom;
     }
 
+    public List<FutureJob> getJobList() {
+        return jobList;
+    }
+
+    public void setJobList(List<? extends JobInterface> jobList) {
+        this.jobList = (List<FutureJob>) jobList;
+    }
+
     public ZonedDateTime getNextExecutableCheck() {
-        return nextExecutableCheck;
+        return null;
     }
 
     public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
-        this.nextExecutableCheck = nextExecutableCheck;
+    }
+    
+    public ZonedDateTime getExecutionTs() {
+        return executionTs;
     }
 
-    public List<Long> getJobsIds() {
-        return jobsIds;
-    }
-
-    public void setJobsIds(List<Long> jobsIds) {
-        this.jobsIds = jobsIds;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getName() + "[ id=" + id + " ]";
+    public void setExecutionTs(ZonedDateTime executionTs) {
+        this.executionTs = executionTs;
     }
 }
