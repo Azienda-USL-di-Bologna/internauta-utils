@@ -6,7 +6,7 @@ import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreato
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -118,7 +118,7 @@ public class FirmaRemotaDownloaderUtils {
         }
     }
     
-    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl) throws FirmaRemotaHttpException {
+    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl) throws FirmaHttpException {
         return uploadToUploader(file, filename, mimeType, forceDownload, downloadUrl, uploadUrl, null);
     }
     
@@ -132,9 +132,9 @@ public class FirmaRemotaDownloaderUtils {
      * @param uploadUrl l'url da usare per generare queello di upload
      * @param downloadTokenExpireSeconds il tempo in secondi per la scadenza del token per scaricare il download
      * @return l'url per poter scaricare il file attraverso la funzione download del Downloader
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      */
-    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl, Integer downloadTokenExpireSeconds) throws FirmaRemotaHttpException {
+    public String uploadToUploader(InputStream file, String filename, String mimeType, Boolean forceDownload, String downloadUrl, String uploadUrl, Integer downloadTokenExpireSeconds) throws FirmaHttpException {
         String res;
         String token;
         
@@ -144,7 +144,7 @@ public class FirmaRemotaDownloaderUtils {
         } catch (Exception ex) {
             String errorMessage = "errore nella creazione del token per l'upload";
             logger.error(errorMessage, ex);
-            throw new FirmaRemotaHttpException(errorMessage, ex);
+            throw new FirmaHttpException(errorMessage, ex);
         }
 
         File tmpFileToUpload = null;
@@ -156,7 +156,7 @@ public class FirmaRemotaDownloaderUtils {
             } catch (Exception ex) {
                 String errorMessage = "errore nella creazione del file temporaneo per l'upload";
                 logger.error(errorMessage, ex);
-                throw new FirmaRemotaHttpException(errorMessage, ex);
+                throw new FirmaHttpException(errorMessage, ex);
             }
             
             // creo la richiesta multipart mettendo il token nei query-params
@@ -177,9 +177,9 @@ public class FirmaRemotaDownloaderUtils {
             ResponseBody content = response.body();
             if (!response.isSuccessful()) {
                 if (content != null) {
-                    throw new FirmaRemotaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: %s", uploadUrl, content.string()));
+                    throw new FirmaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: %s", uploadUrl, content.string()));
                 } else {
-                    throw new FirmaRemotaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: null", uploadUrl));
+                    throw new FirmaHttpException(String.format("errore nella chiamata all'URL: %s RESPONSE: null", uploadUrl));
                 }
             } else { // tutto ok
                 if (content != null) {
@@ -188,7 +188,7 @@ public class FirmaRemotaDownloaderUtils {
                     res = buildDownloadUrl(filename, mimeType, downloadParams, forceDownload, downloadUrl, downloadTokenExpireSeconds);
                 }
                 else {
-                    throw new FirmaRemotaHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
+                    throw new FirmaHttpException(String.format("l'upload non ha tornato risultato", uploadUrl));
                 }
             }
             return res;
@@ -196,7 +196,7 @@ public class FirmaRemotaDownloaderUtils {
         catch (Exception ex) {
             String errorMessage = "errore nella creazione del token per l'upload";
             logger.error(errorMessage, ex);
-            throw new FirmaRemotaHttpException(errorMessage, ex);
+            throw new FirmaHttpException(errorMessage, ex);
         } finally { // elimina sempre il file temporaneo creato e chiude lo stream del file passato in input
             IOUtils.closeQuietly(file);
             if (tmpFileToUpload != null && tmpFileToUpload.exists()) {

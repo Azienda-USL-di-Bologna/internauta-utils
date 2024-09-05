@@ -8,8 +8,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaUserSign;
 import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserSign;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import it.bologna.ausl.model.entities.firma.QConfiguration;
@@ -30,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaControllerHandledExceptions;
 
 /**
  * Controller che implementa le API per la firma remota
@@ -41,7 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping(value = "${firma.remota.mapping.url}")
-public class FirmaRemotaRestController implements ControllerHandledExceptions {
+public class FirmaRemotaRestController implements FirmaRemotaControllerHandledExceptions {
 
     private static Logger logger = LoggerFactory.getLogger(FirmaRemotaRestController.class);
     
@@ -62,7 +62,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * Servlet che esegue la pre-autenticazione.Da usare ad esempio con Aruba per la modalità firma con token ottenuto per sms o chiamata al telefono
      * @param firmaRemotaInformation l'oggetto può contenere solo la parte userInformation con le informazioni che identificano l'utente al quale mandare l'sms o la telefonata
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare preAutentication
      */
@@ -70,7 +70,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/telefona", method = RequestMethod.POST)
     public void telefona(
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation,
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId) throws FirmaHttpException, FirmaRemotaConfigurationException {
         firmaRemotaFactory.getFirmaRemotaInstance(hostId).preAuthentication(firmaRemotaInformation.getUserInformation());
     }
     
@@ -78,13 +78,13 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * Servlet che esegue la pre-autenticazione.Da usare ad esempio con Aruba per la modalità firma con token ottenuto per sms o chiamata al telefono
      * @param userInformation le informazioni che identificano l'utente al quale mandare l'sms o la telefonata
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/preAutentication", method = RequestMethod.POST)
     public void preAutentication(
                 @RequestBody UserInformation userInformation,
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId) throws FirmaHttpException, FirmaRemotaConfigurationException {
         firmaRemotaFactory.getFirmaRemotaInstance(hostId).preAuthentication(userInformation);
     }
 
@@ -95,7 +95,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @param request
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException
      * @deprecated legacy fino a quando usiamo le applicazioni inde, poi usare firmaRemota
      */
@@ -105,7 +105,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation,
                 @RequestParam(required = true) String hostId,
                 @RequestParam(required = true) String codiceAzienda,
-                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                HttpServletRequest request) throws FirmaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
         return res;
@@ -118,7 +118,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param codiceAzienda codice dell'azienda per la quale si vuole agire (es. 102,105,106,ecc.)
      * @param request
      * @return
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/firmaRemota", method = RequestMethod.POST)
@@ -126,7 +126,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestBody FirmaRemotaInformation firmaRemotaInformation, 
                 @RequestParam(required = true) String hostId,
                 @RequestParam(required = true) String codiceAzienda,
-                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                HttpServletRequest request) throws FirmaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         try {
             FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
@@ -142,7 +142,7 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
                 @RequestPart("files") MultipartFile[] files,
                 @RequestPart("firmaRemotaInformation") FirmaRemotaInformation firmaRemotaInformation,
                 @RequestParam(required = true) String hostId,
-                HttpServletRequest request) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                HttpServletRequest request) throws FirmaHttpException, FirmaRemotaConfigurationException {
        //MultipartHttpServletRequest
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         FirmaRemotaInformation res = firmaRemotaInstance.firmaMultipart(files, firmaRemotaInformation, hostId, request);
@@ -155,14 +155,14 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @param additionalData
      * @return
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/existingCredential", method = RequestMethod.POST)
     public Boolean existingCredential(
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) String hostId,
-                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         return firmaRemotaInstance.existingCredential(userInformation, hostId, additionalData);
     }
@@ -173,14 +173,14 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @param additionalData
      * @return true se le credenziali sono state settate, false altrimenti
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/setCredential", method = RequestMethod.POST)
     public Boolean setCredential(
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) String hostId,
-                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         return firmaRemotaInstance.setCredential(userInformation, hostId, additionalData);
     }
@@ -191,14 +191,14 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @param additionalData
      * @return true se le credenziali sono state rimosse, false altrimenti
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/removeCredential", method = RequestMethod.POST)
     public Boolean removeCredential(
                 @RequestBody UserInformation userInformation, 
                 @RequestParam(required = true) String hostId,
-                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = false) Map<String, Object> additionalData) throws FirmaHttpException, FirmaRemotaConfigurationException {
         FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
         return firmaRemotaInstance.removeCredential(userInformation, hostId, additionalData);
     }
@@ -208,13 +208,13 @@ public class FirmaRemotaRestController implements ControllerHandledExceptions {
      * @param userInformation contiene le informazioni per identificare l'utenza
      * @param hostId l'hostId della tabella Configurations che identifica l'installazione della firma remota da utilizzare
      * @return i poteri di firma dell'utente
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws FirmaRemotaConfigurationException 
      */
     @RequestMapping(value = "/getUserSigns", method = RequestMethod.POST)
     public List<FirmaRemotaUserSign> getUserSigns(
                 @RequestBody UserInformation userInformation, 
-                @RequestParam(required = true) String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+                @RequestParam(required = true) String hostId) throws FirmaHttpException, FirmaRemotaConfigurationException {
         
 //        List<FirmaRemotaUserSign> res = new ArrayList<>();
 //        MedasUserSign uno = new MedasUserSign();
