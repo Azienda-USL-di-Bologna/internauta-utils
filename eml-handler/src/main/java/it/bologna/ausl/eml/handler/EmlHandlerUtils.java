@@ -315,13 +315,17 @@ public class EmlHandlerUtils {
                 String disp = part.getHeader("Content-Disposition")[0];
                 LOG.info("Original disp: " + disp);
                 
-                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
+                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll("$1name=\"$2\"");
+                disp = matcher.replaceAll("$1name=\"$2\";");
                 
                 pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
                 matcher = pattern.matcher(disp);
                 disp = matcher.replaceAll(";");
+                
+//                pattern =Pattern.compile(";\\s*?.*=.*\"?;\\s*.*\\s.*",Pattern.MULTILINE);
+//                matcher = pattern.matcher(disp);
+//                disp = matcher.replaceAll(";");
                 
 //                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
                 LOG.info("New disp disp: " + disp);
