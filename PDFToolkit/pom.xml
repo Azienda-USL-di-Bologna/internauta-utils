@@ -4,10 +4,10 @@
     <parent>
         <groupId>it.bologna.ausl.internauta.utils</groupId>
         <artifactId>internauta-utils</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>2.0</version>
     </parent>
     <artifactId>PDFToolkit</artifactId>
-    <version>1.0</version>
+    <version>2.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,31 +45,31 @@
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>masterjobs</artifactId>
-            <version>1.1</version>
+            <version>2.0</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>authorization-utils</artifactId>
-            <version>1.0</version>
+            <version>2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>flying-saucer-pdf-itext5-local</artifactId>
-            <version>1.0</version>
+            <version>2.0</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext-pdfa</artifactId>
-            <version>5.5.13.2</version>
+            <version>5.5.13.4</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itextpdf</artifactId>
-            <version>5.5.13.2</version>
+            <version>5.5.13.4</version>
             <type>jar</type>
         </dependency>
         <dependency>
@@ -90,7 +90,7 @@
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>minIO-manager</artifactId>
-            <version>1.2</version>
+            <version>2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -100,15 +100,20 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>2.16.1</version>
             <type>jar</type>
         </dependency>
         <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.8.2</version>
+        </dependency>
+<!--        <dependency>
             <groupId>com.vladmihalcea</groupId>
             <artifactId>hibernate-types-60</artifactId>
             <version>2.21.1</version>
             <type>jar</type>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

@@ -94,12 +94,12 @@ public class ParametriAziendeReader {
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende, String[] idApplicazioni) {
         BooleanExpression filter = QParametroAziende.parametroAziende.nome.eq(nome);
         if (idAziende != null) {
-            BooleanTemplate filterAzienda = Expressions.booleanTemplate("tools.array_overlap({0}, tools.string_to_integer_array({1}, ','))=true", 
+            BooleanTemplate filterAzienda = Expressions.booleanTemplate("cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true", 
                     QParametroAziende.parametroAziende.idAziende, org.apache.commons.lang3.StringUtils.join(idAziende, ","));
             filter = filter.and(filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull()));
         }
         if (idApplicazioni != null) {
-            BooleanTemplate filterApplicazioni = Expressions.booleanTemplate("tools.array_overlap({0}, string_to_array({1}, ','))=true", 
+            BooleanTemplate filterApplicazioni = Expressions.booleanTemplate("cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true", 
                     QParametroAziende.parametroAziende.idApplicazioni, org.apache.commons.lang3.StringUtils.join(idApplicazioni, ","));
             filter = filter.and(filterApplicazioni.or(QParametroAziende.parametroAziende.idApplicazioni.isNull()));
         }

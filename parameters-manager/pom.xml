@@ -4,10 +4,10 @@
     <parent>
         <groupId>it.bologna.ausl.internauta.utils</groupId>
         <artifactId>internauta-utils</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>2.0</version>
     </parent>
     <artifactId>parameters-manager</artifactId>
-    <version>1.0</version>
+    <version>2.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,27 +41,20 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-60</artifactId>
-            <version>2.21.1</version>
-            <type>jar</type>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.8.2</version>
         </dependency>
-<!--        <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>jpa-tools</artifactId>
-            <scope>provided</scope>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>-->
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-core</artifactId>
-            <version>2.0.0</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-data</artifactId>
-            <version>2.0.0</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -69,12 +62,6 @@
             <artifactId>jakarta.servlet-api</artifactId>
             <type>jar</type>
         </dependency>
-<!--        <dependency>
-            <groupId>it.bologna.ausl.internauta.model</groupId>
-            <artifactId>internauta-model</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>-->
     </dependencies>
     <build>
         <plugins>
@@ -118,7 +105,7 @@
             <plugin>
                 <groupId>jenesisprojections.generator</groupId>
                 <artifactId>jenesis-projections-generator</artifactId>
-                <version>1.2-SNAPSHOT</version>
+                <version>2.0</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>

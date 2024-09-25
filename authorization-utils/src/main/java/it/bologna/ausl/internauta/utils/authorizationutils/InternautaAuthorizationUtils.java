@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -33,7 +35,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class InternautaAuthorizationUtils {
-    private final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.RS256;
+    private final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.HS256;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -85,10 +87,11 @@ public class InternautaAuthorizationUtils {
 
         try (FileInputStream fis = new FileInputStream(p12Path)) {
             p12.load(fis, p12Psw.toCharArray());
-            Key secretKey = p12.getKey(p12Alias, p12Psw.toCharArray());
-
-            Claims claims = Jwts.claims();
-            claims.setSubject(subject);
+            Key key = p12.getKey(p12Alias, p12Psw.toCharArray());
+            SecretKey secretKey = Keys.hmacShaKeyFor(key.getEncoded());
+            
+            
+            Claims claims = Jwts.claims().subject(subject).build();
     //        claims.put("REAL_USER", realUser);
             claims.put("COMPANY", codiceAzienda);
             claims.put("codiceRegioneAzienda", codiceRegioneAzienda);
@@ -100,9 +103,10 @@ public class InternautaAuthorizationUtils {
     //        claims.put("context", context);
 
             String token = Jwts.builder()
-                    .setClaims(claims)
+                    .claims(claims)
                     //                .setHeaderParam("x5c", x5c)
-                    .signWith(SIGNATURE_ALGORITHM, secretKey)
+                    //.signWith(SIGNATURE_ALGORITHM, secretKey)
+                    .signWith(secretKey, SIGNATURE_ALGORITHM)
                     .compact();
 
             return token;
@@ -117,7 +121,7 @@ public class InternautaAuthorizationUtils {
 
         OkHttpClient client = builder.connectTimeout(2, TimeUnit.MINUTES).readTimeout(2, TimeUnit.MINUTES).writeTimeout(2, TimeUnit.MINUTES).build();
         RequestBody body = RequestBody.create(
-                MediaType.parse("application/json"), objectMapper.writeValueAsString(new InternautaEndpointObject(preToken, applicazione)));
+                objectMapper.writeValueAsString(new InternautaEndpointObject(preToken, applicazione)), MediaType.parse("application/json"));
 //        String a = request.getScheme() + "://" + UtilityFunctions.getHostname(request) + ":" + request.getServerPort();
 
 //        String internautaLoginCompleteUrl = this.internautaLoginUrl.replace("[base_url]", preToken);

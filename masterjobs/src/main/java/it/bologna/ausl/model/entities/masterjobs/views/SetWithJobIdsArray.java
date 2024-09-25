@@ -3,7 +3,7 @@ package it.bologna.ausl.model.entities.masterjobs.views;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;

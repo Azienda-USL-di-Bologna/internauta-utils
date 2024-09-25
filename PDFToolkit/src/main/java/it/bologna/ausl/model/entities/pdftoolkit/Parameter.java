@@ -1,7 +1,7 @@
 package it.bologna.ausl.model.entities.pdftoolkit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import java.io.Serializable;
 import java.util.Map;
 import jakarta.persistence.Basic;

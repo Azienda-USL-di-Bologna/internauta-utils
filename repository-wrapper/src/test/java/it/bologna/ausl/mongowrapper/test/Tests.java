@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author gdm
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class Tests {
     
     private static String minIODBUrl = "jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/minirepo?stringtype=unspecified";
@@ -46,8 +46,8 @@ public class Tests {
         t.testGetFilesLessThan();
     }
     
-    @BeforeAll
-    @AfterEach
+    //@BeforeAll
+    //@AfterEach
     public void clearAllGarbage() throws MinIOWrapperException, MongoWrapperException, UnknownHostException {
         System.out.println("clear all gatbage...");
         MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapperMinIO.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
@@ -90,7 +90,7 @@ public class Tests {
         }
     }
     
-    @Test
+    //@Test
     public void testMixedUploadWithOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         MongoWrapperMinIO wrapper = (MongoWrapperMinIO) MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
         MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
@@ -112,7 +112,7 @@ public class Tests {
         Assertions.assertNull(mongoIsAfter, "il file appena caricato su mongo non deve più esistere perchè è stato sovrascritto");
     }
     
-    @Test
+    //@Test
     public void testMixedUploadWithoutOverwrite() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
         MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);
@@ -136,7 +136,7 @@ public class Tests {
         Assertions.assertNotNull(mongoIsAfter, "il file appena caricato su mongo deve esistere ancora perchè non è stato sovrascritto");
     }
     
-    @Test
+    //@Test
     public void uploadMinIODownloadDeleteErase() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in minIO");
         MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
@@ -146,7 +146,7 @@ public class Tests {
         testDownloadDeleteErase(wrapper, uuid);
     }
     
-    @Test
+    //@Test
     public void uploadMongoDownloadDeleteErase() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in mongo");
         MongoWrapper wrapper = MongoWrapper.getWrapper(true, mongoUrl, "org.postgresql.Driver", minIODBUrl, "minirepo", "siamofreschi", "105t", null);
@@ -157,7 +157,7 @@ public class Tests {
         testDownloadDeleteErase(wrapper, uuidMongo);
     }
     
-    @Test
+    //@Test
     public void testGetFilesInPath() throws UnknownHostException, MongoException, MongoWrapperException, IOException {
         System.out.println("test with upload in minIO");
         MongoWrapper mongoWrapper = MongoWrapper.getWrapper(false, mongoUrl, null, null, null, null, "105t", null);

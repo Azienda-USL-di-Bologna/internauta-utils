@@ -2,7 +2,7 @@ package it.bologna.ausl.model.entities.firma;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Map;
