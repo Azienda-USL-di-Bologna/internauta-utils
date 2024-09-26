@@ -2,7 +2,7 @@ package it.bologna.ausl.internauta.utils.firma.remota.controllers;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.repositories.DominioArubaRepository;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import it.bologna.ausl.model.entities.firma.DominioAruba;
@@ -27,14 +27,14 @@ public class FirmaRemotaArubaController {
     
     @RequestMapping(value = "/domini", method = RequestMethod.GET)
     public Iterable<DominioAruba> domini(
-            @QuerydslPredicate(root = DominioAruba.class) Predicate predicate) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+            @QuerydslPredicate(root = DominioAruba.class) Predicate predicate) throws FirmaHttpException, FirmaRemotaConfigurationException {
         Iterable<DominioAruba> res = dominioArubaRepository.findAll(predicate);
         return res;
     }
     
     @RequestMapping(value = "/getHostIdFromDominio", method = RequestMethod.GET)
     public String getHostIdFromDominio(
-            DominioAruba.DominiAruba dominioAruba) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+            DominioAruba.DominiAruba dominioAruba) throws FirmaHttpException, FirmaRemotaConfigurationException {
         
         String hostId = dominioArubaRepository.getHostId(dominioAruba.toString());
         return hostId;

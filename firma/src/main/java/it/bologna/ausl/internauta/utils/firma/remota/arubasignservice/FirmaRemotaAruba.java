@@ -27,7 +27,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wscli
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeOfTransportNotImplemented_Exception;
 import it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.TypeTransport;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
@@ -35,7 +35,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenE
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
-import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
 import java.io.FileInputStream;
@@ -118,10 +118,10 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * Implementazione ARUBA della firma.
      * @param firmaRemotaInformation
      * @return
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaHttpException {
         logger.info("in firma...");
 
         // prendo i file da firmare
@@ -132,7 +132,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
         try {
             identity = getIdentity((ArubaUserInformation) firmaRemotaInformation.getUserInformation());
         } catch (EncryptionException ex) {
-            throw new FirmaRemotaHttpException("errore nel reperire le credenziali", ex);
+            throw new FirmaHttpException("errore nel reperire le credenziali", ex);
         }
 
         String sessionId = null;
@@ -173,12 +173,12 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 logger.info(String.format("file %s completed", file.getFileId()));
             }
             logger.info("all file signed");
-        } catch (FirmaRemotaHttpException ex) {
+        } catch (FirmaHttpException ex) {
             logger.error("errore nella firma remota dei file: ", ex);
             throw ex;
         } catch (Exception ex) {
             logger.error("errore: ", ex);
-            throw new FirmaRemotaHttpException(ex);
+            throw new FirmaHttpException(ex);
         } finally {
             arubaSignService.closesession(identity, sessionId);
         }
@@ -188,15 +188,15 @@ public class FirmaRemotaAruba extends FirmaRemota {
     /**
      * Questo medoto fa partire la telefonata o l'sms dai quali reperire il codice OTP identificato dal parametro userInformation
      * @param userInformation
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      */
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaHttpException {
         Auth identity;
         try {
             identity = getIdentity((ArubaUserInformation) userInformation);
         } catch (EncryptionException ex) {
-            throw new FirmaRemotaHttpException("errore nel reperire le credenziali", ex);
+            throw new FirmaHttpException("errore nel reperire le credenziali", ex);
         }
         it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.ArssReturn credential = arubaSignService.sendCredential(identity, CredentialsType.ARUBACALL);
         //System.out.println(String.format("sendCredential %s %s %s", credential.getStatus(), credential.getDescription(), credential.getReturnCode()));
@@ -253,12 +253,12 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * Setta le credenziali dell'utente passato sul CredentialProxy
      * @param userInformation
      * @return "true" se le credenziali sono state settate correttamente, "false" altrimenti
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    public boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         boolean insertionSuccessful = false;
         ArubaUserInformation arubaUserInformation = (ArubaUserInformation) userInformation;
         it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.credentialproxy.ArssReturn resp = this.credentialProxyService.setCredential(
@@ -288,12 +288,12 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * Rimuove le credenziali dell'utente passato dal CredentialProxy
      * @param userInformation
      * @return "true" se le credenziali sono state rimosse correttamente, "false" altrimenti
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    public boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         if (this.credentialProxyActive) {
             boolean isCredentialRemoved = false;
             ArubaUserInformation arubaUserInformation = (ArubaUserInformation) userInformation;
@@ -433,14 +433,14 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * @return
      * @throws MalformedURLException
      * @throws IOException
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws TypeOfTransportNotImplemented_Exception
      * @throws RemoteFileNotFoundException
      * @throws RemoteServiceException
      * @throws InvalidCredentialException
      * @throws WrongTokenException 
      */
-    private InputStream sendSignRequest(String sessionId, Auth identity, FirmaRemotaFile file) throws MalformedURLException, IOException, FirmaRemotaHttpException, TypeOfTransportNotImplemented_Exception, RemoteFileNotFoundException, RemoteServiceException, InvalidCredentialException, WrongTokenException {
+    private InputStream sendSignRequest(String sessionId, Auth identity, FirmaRemotaFile file) throws MalformedURLException, IOException, FirmaHttpException, TypeOfTransportNotImplemented_Exception, RemoteFileNotFoundException, RemoteServiceException, InvalidCredentialException, WrongTokenException {
         
         File tempDir = new File(System.getProperty("java.io.tmpdir"), "firma_remota");
         if (!tempDir.exists()) {
@@ -497,7 +497,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                     }
                     break;
                 default:
-                    throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
+                    throw new FirmaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
             }
 
             if (signReturn == null) {
@@ -547,7 +547,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
     }
 
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return null;
     }
 }

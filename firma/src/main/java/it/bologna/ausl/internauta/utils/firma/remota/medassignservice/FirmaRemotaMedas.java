@@ -20,7 +20,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.Medas
 import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteFileNotFoundException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
@@ -30,7 +30,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescr
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
-import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -570,7 +570,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     }
     
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaHttpException, RemoteFileNotFoundException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
         logger.info("in firma...");
 
         // prendo i file da firmare
@@ -671,7 +671,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     }
 
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaHttpException, WrongTokenException, InvalidCredentialException, RemoteServiceException {
         MedasUserInformation medasUserInformation = (MedasUserInformation) userInformation;
         TypeDespatchOtpResp typeDespatchOtpResp;
         try {
@@ -692,12 +692,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
     
@@ -706,12 +706,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
     
@@ -720,12 +720,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
@@ -733,12 +733,12 @@ public class FirmaRemotaMedas extends FirmaRemota {
      * Rileva i poteri di firma e crea la lista di FirmaRemotaUserSign da mostrare all'utente perché selezioni quello voluto
      * @param userInformation
      * @return 
-     * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException 
+     * @throws it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException 
      * @throws it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException 
      */
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         //TODO: va fatta chiamata multipla per gestare procId e DocType multipli
         TypeGetUserInfo4Resp typeGetUserInfo4Resp;
         List<FirmaRemotaUserSign> res = new ArrayList<>();
