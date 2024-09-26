@@ -197,7 +197,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                 }
                 Persona responsabileGestioneDocumentale = new Persona();
-                if (doc.getTipologia() != DocDetailInterface.TipologiaDoc.RGPICO) {
+                if (doc.getTipologia() != Doc.TipologiaDoc.RGPICO) {
                     //controllo che il documento non sia già stato versato per questo archivio radice
                     if (!(numeroVersamentiDocPerArchivio(idDoc, versamentoDocInformation.getIdArchivio()) > 0)) {
                         archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
@@ -499,8 +499,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 .where(QDocDetail.docDetail.numeroRegistrazione.eq(numeroRegistrazione)
                         .and(QDocDetail.docDetail.annoRegistrazione.eq(anno))
                         .and(QDocDetail.docDetail.idAzienda.id.eq(idAzienda))
-                        .and(QDocDetail.docDetail.tipologia.eq(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
-                                .or(QDocDetail.docDetail.tipologia.eq(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA))))
+                        .and(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
+                                .or(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA))))
                 .fetchOne();
 
         return dataRegistrazione;
