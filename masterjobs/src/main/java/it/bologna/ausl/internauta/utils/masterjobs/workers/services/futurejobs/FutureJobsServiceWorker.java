@@ -115,7 +115,7 @@ public class FutureJobsServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(FutureSet futureSet, List<FutureJob> futureJobs ) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(FutureSet futureSet, List<FutureJob> futureJobs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         List<JobWorker> jobWorkers = new ArrayList();
         for (FutureJob futureJob : futureJobs) {
             JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, futureJob.getData());
@@ -130,7 +130,10 @@ public class FutureJobsServiceWorker extends ServiceWorker {
             futureSet.getWaitObject(), 
             futureSet.getPriority(),
             true,
-            futureSet.getInsertedFrom());
+            futureSet.getInsertedFrom(),
+            false,
+            null,
+            futureSet.getUuid());
     }
     
     private void deleteFutureSet(Long futureSetId) {

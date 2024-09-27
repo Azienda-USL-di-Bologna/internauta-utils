@@ -14,11 +14,13 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.JobNotified;
+import it.bologna.ausl.model.entities.masterjobs.QFutureSet;
 import it.bologna.ausl.model.entities.masterjobs.QJobNotified;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.hibernate.Session;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
@@ -49,6 +51,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     
     private JPAQueryFactory queryFactory;
     private final QJobNotified qJobNotified = QJobNotified.jobNotified;
+    private final QFutureSet qFutureSet = QFutureSet.futureSet;
     
     @Override
     public void preWork() throws MasterjobsWorkerException {
@@ -227,7 +230,8 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             true,
             jobNotified.getInsertedFrom(),
             future,
-            executionTs);
+            executionTs,
+            jobNotified.getUuid());
     }
     
     private void deleteJobNotified(Long jobNotifiedId) {
@@ -236,4 +240,12 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
             queryFactory.delete(qJobNotified).where(qJobNotified.id.eq(jobNotifiedId)).execute();
 //        });
     }
+    
+//    private void deleteJobNotifiedByUuid(UUID uuid) {
+//        queryFactory.delete(qJobNotified).where(qJobNotified.uuid.eq(uuid)).execute();
+//    }
+//    
+//    private void deleteFutureSetByUuid(UUID uuid) {
+//        queryFactory.delete(qFutureSet).where(qFutureSet.uuid.eq(uuid)).execute();
+//    }
 }

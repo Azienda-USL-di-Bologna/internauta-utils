@@ -1,8 +1,10 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  *
@@ -17,6 +19,8 @@ public class MultiJobQueueDescriptor {
     private Boolean waitForObject;
     private Boolean skipIfAlreadyPresent;
     private Set.SetPriority priority;
+    private ZonedDateTime executionTs;
+    private UUID uuid;
 
     public MultiJobQueueDescriptor(Builder jobQueueDescriptorBuilder) {
         this.workers = jobQueueDescriptorBuilder.getWorkers();
@@ -26,6 +30,8 @@ public class MultiJobQueueDescriptor {
         this.waitForObject = jobQueueDescriptorBuilder.getWaitForObject();
         this.skipIfAlreadyPresent = jobQueueDescriptorBuilder.getSkipIfAlreadyPresent();
         this.priority = jobQueueDescriptorBuilder.getPriority();
+        this.executionTs = jobQueueDescriptorBuilder.getExecutionTs();
+        this.uuid = jobQueueDescriptorBuilder.getUuid();
     }
 
     public static Builder newBuilder() {
@@ -88,6 +94,22 @@ public class MultiJobQueueDescriptor {
         this.priority = priority;
     }
 
+    public ZonedDateTime getExecutionTs() {
+        return executionTs;
+    }
+
+    public void setExecutionTs(ZonedDateTime executionTs) {
+        this.executionTs = executionTs;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+    
     public static class Builder {
         private List<JobWorker> workers;
         private String objectId;
@@ -97,11 +119,14 @@ public class MultiJobQueueDescriptor {
         private Boolean skipIfAlreadyPresent = false;
         private Set.SetPriority priority = Set.SetPriority.NORMAL;
         private String idPersona;
+        private ZonedDateTime executionTs;
+        private UUID uuid;
 
         public Builder() {
         }
 
         public MultiJobQueueDescriptor build() {
+//            this.uuid = UUID.randomUUID();
             return new MultiJobQueueDescriptor(this);
         }
 
@@ -215,6 +240,22 @@ public class MultiJobQueueDescriptor {
 
         public void setIdPersona(String idPersona) {
             this.idPersona = idPersona;
+        }
+        
+        public ZonedDateTime getExecutionTs() {
+            return executionTs;
+        }
+
+        public void setExecutionTs(ZonedDateTime executionTs) {
+            this.executionTs = executionTs;
+        }
+        
+        public UUID getUuid() {
+            return uuid;
+        }
+
+        public void setUuid(UUID uuid) {
+            this.uuid = uuid;
         }
     }
 }

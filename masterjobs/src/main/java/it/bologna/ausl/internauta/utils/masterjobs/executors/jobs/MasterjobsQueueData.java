@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.UUID;
 
 /**
  *
@@ -15,6 +16,7 @@ public class MasterjobsQueueData {
     private String queue;
     private Long set;
     private List<Long> jobs;
+    private UUID uuid;
     
     @JsonIgnore
     private ObjectMapper objectMapper;
@@ -48,6 +50,14 @@ public class MasterjobsQueueData {
 
     public void setJobs(List<Long> jobs) {
         this.jobs = jobs;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     public ObjectMapper getObjectMapper() {
