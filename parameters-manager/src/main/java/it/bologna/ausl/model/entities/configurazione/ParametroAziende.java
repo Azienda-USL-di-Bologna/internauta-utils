@@ -17,7 +17,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
@@ -54,13 +56,13 @@ public class ParametroAziende implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_applicazioni", columnDefinition = "text[]")
-    @Type(StringArrayType.class)
+    @JdbcTypeCode(SqlTypes.ARRAY)
     private String[] idApplicazioni;
     
     @Basic(optional = false)
     @NotNull
     @Column(name = "id_aziende", columnDefinition = "integer[]")
-    @Type(StringArrayType.class)
+    @JdbcTypeCode(SqlTypes.ARRAY)
     private Integer[] idAziende;
 
     @Basic(optional = false)

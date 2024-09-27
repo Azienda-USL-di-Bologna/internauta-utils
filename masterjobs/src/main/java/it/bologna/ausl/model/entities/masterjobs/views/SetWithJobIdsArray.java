@@ -21,6 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.Type;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -31,6 +32,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 //@TypeDefs({
 //    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
 //})
+@Immutable
 @Entity
 @Table(name = "set_with_jobs_array", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
