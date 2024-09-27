@@ -114,9 +114,9 @@ public class ConfigParams {
      */
     public String getDownloaderUrl(String scheme, String hostname, Integer port) {
         return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrl.toString()))
-                .replace("{scheme}", scheme)
-                .replace("{hostname}", hostname)
-                .replace("{port}", port.toString());
+            .replace("{scheme}", scheme)
+            .replace("{hostname}", hostname)
+            .replace("{port}", port.toString());
     }
     
     /**
@@ -128,9 +128,9 @@ public class ConfigParams {
      */
     public String getUploaderUrl(String scheme, String hostname, Integer port) {
         return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrl.toString()))
-                .replace("{scheme}", scheme)
-                .replace("{hostname}", hostname)
-                .replace("{port}", port.toString());
+            .replace("{scheme}", scheme)
+            .replace("{hostname}", hostname)
+            .replace("{port}", port.toString());
     }
     
     /**
@@ -150,9 +150,26 @@ public class ConfigParams {
      */
     public String getExternalCheckCertificateUrl(String scheme, String hostname, Integer port) {
         return ((String) this.externalCheckCertificateParams.get(ExternalCheckCertificateParamsKey.url.toString()))
-                .replace("{scheme}", scheme)
-                .replace("{hostname}", hostname)
-                .replace("{port}", port.toString());
+            .replace("{scheme}", scheme)
+            .replace("{hostname}", hostname)
+            .replace("{port}", port.toString());
+    }
+    
+    /**
+     * Torna il parametro richiesto del servizio esterno di controllo dei file firmati e dei certificati
+     * @param key la chiave del parametro che si vuole ottenere
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
+     * @return il parametro richiesto del servizio esterno di controllo dei file firmati e dei certificati
+     */
+    public String getExternalSignAndCertificateValidator(ExternalSignAndCertificateValidatorParamsKey key, String scheme, String hostname, Integer port) {
+        return ((String) this.externalSignAndCertificateValidatorParams.get(key.toString()))
+            .replace("{scheme}", scheme)
+//            .replace("{hostname}", "localhost")
+            .replace("{hostname}", hostname)
+//            .replace("{port}", "10008");
+            .replace("{port}", port.toString());
     }
     
     /**
