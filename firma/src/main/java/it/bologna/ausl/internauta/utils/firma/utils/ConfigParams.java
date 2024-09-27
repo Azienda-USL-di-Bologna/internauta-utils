@@ -32,6 +32,7 @@ public class ConfigParams {
         downloader,
         minIOConfig,
         externalCheckCertificate,
+        externalSignAndCertificateValidator
     }
     
     public enum DownloaderParamsKey {
@@ -44,6 +45,11 @@ public class ConfigParams {
         url
     }
     
+    public enum ExternalSignAndCertificateValidatorParamsKey {
+        validateDocumentUrl,
+        validateCertificateUrl
+    }
+    
     @Autowired
     private ObjectMapper objectMapper;
     
@@ -54,6 +60,7 @@ public class ConfigParams {
         
     private Map<String, Object> downloaderParams;
     private Map<String, Object> externalCheckCertificateParams;
+    private Map<String, Object> externalSignAndCertificateValidatorParams;
        
     /**
      * Questo metodo viene eseguito in fase di boot dell'applicazione.
@@ -89,6 +96,13 @@ public class ConfigParams {
             throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.externalCheckCertificate.toString()));
         }
         this.externalCheckCertificateParams = externalCheckCertificateOp.get().getValue();
+        
+        // lettura del parametro del nuovo validatore externalSignAndCertificateValidator
+        Optional<Parameter> externalSignAndCertificateValidatorOp = parameterRepository.findById(ParameterIds.externalSignAndCertificateValidator.toString());
+        if (!externalSignAndCertificateValidatorOp.isPresent() || externalSignAndCertificateValidatorOp.get().getValue().isEmpty()) {
+            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.externalSignAndCertificateValidator.toString()));
+        }
+        this.externalSignAndCertificateValidatorParams = externalSignAndCertificateValidatorOp.get().getValue();
     }
     
     /**
@@ -128,7 +142,7 @@ public class ConfigParams {
     }
     
     /**
-     * Torna l'url del servizio esterno di controllo del certificato
+     * Torna l'url del vecchio servizio esterno di controllo del certificato
      * @param scheme schema dell'url chiamante (es: http, https)
      * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
      * @param port la porta da sostituire
@@ -136,6 +150,33 @@ public class ConfigParams {
      */
     public String getExternalCheckCertificateUrl(String scheme, String hostname, Integer port) {
         return ((String) this.externalCheckCertificateParams.get(ExternalCheckCertificateParamsKey.url.toString()))
+                .replace("{scheme}", scheme)
+                .replace("{hostname}", hostname)
+                .replace("{port}", port.toString());
+    }
+    
+    /**
+     * Torna l'url del nuovo servizio esterno di controllo di un file firmato
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
+     * @return l'url del servizio esterno di controllo del certificato
+     */
+    public String getExternalSignAndCertificateValidatorValidateDocumentUrl(String scheme, String hostname, Integer port) {
+        return ((String) this.externalSignAndCertificateValidatorParams.get(ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl.toString()))
+                .replace("{scheme}", scheme)
+                .replace("{hostname}", hostname)
+                .replace("{port}", port.toString());
+    }
+    /**
+     * Torna l'url del nuovo servizio esterno di controllo del certificato
+     * @param scheme schema dell'url chiamante (es: http, https)
+     * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
+     * @param port la porta da sostituire
+     * @return l'url del servizio esterno di controllo del certificato
+     */
+    public String getExternalSignAndCertificateValidatoValidateCertificateUrl(String scheme, String hostname, Integer port) {
+        return ((String) this.externalSignAndCertificateValidatorParams.get(ExternalSignAndCertificateValidatorParamsKey.validateCertificateUrl.toString()))
                 .replace("{scheme}", scheme)
                 .replace("{hostname}", hostname)
                 .replace("{port}", port.toString());
