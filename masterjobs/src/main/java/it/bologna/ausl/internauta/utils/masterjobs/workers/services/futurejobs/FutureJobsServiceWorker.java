@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.WorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MultiJobQueueDescriptor;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.FutureJob;
 import it.bologna.ausl.model.entities.masterjobs.FutureSet;
@@ -115,22 +116,27 @@ public class FutureJobsServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(FutureSet futureSet, List<FutureJob> futureJobs ) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(FutureSet futureSet, List<FutureJob> futureJobs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         List<JobWorker> jobWorkers = new ArrayList();
         for (FutureJob futureJob : futureJobs) {
             JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, futureJob.getData());
             JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(futureJob.getName(), jobData, futureJob.getDeferred());
             jobWorkers.add(jobWorker);
         }
-        return masterjobsJobsQueuer.queue(
-            jobWorkers, 
-            futureSet.getObjectId(), 
-            futureSet.getObjectType(), 
-            futureSet.getApp(), 
-            futureSet.getWaitObject(), 
-            futureSet.getPriority(),
-            true,
-            futureSet.getInsertedFrom());
+         MultiJobQueueDescriptor multiJobQueueDescriptor = MultiJobQueueDescriptor
+                .newBuilder()
+                .workers(jobWorkers)
+                .objectId( futureSet.getObjectId())
+                .objectType( futureSet.getObjectType())
+                .app(futureSet.getApp())
+                .waitForObject(futureSet.getWaitObject())
+                .priority(futureSet.getPriority())
+                .insertedFrom(futureSet.getInsertedFrom())
+                .future(false)
+                .executionTs(futureSet.getExecutionTs())
+                .uuid(futureSet.getUuid())
+                .build();
+        return masterjobsJobsQueuer.queue(multiJobQueueDescriptor, true);
     }
     
     private void deleteFutureSet(Long futureSetId) {

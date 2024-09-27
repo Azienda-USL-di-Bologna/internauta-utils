@@ -4,11 +4,11 @@ package it.bologna.ausl.model.entities.masterjobs;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.CascadeType;
@@ -30,9 +30,6 @@ import org.springframework.format.annotation.DateTimeFormat;
  *
  * @author gdm
  */
-//@TypeDefs({
-//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-//})
 @Entity
 @Table(name = "sets", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -84,6 +81,11 @@ public class Set implements Serializable, SetInterface {
     @JsonBackReference(value = "jobList")
     private List<Job> jobList;
     
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
+        
     public Set() {
     }
 
@@ -164,4 +166,12 @@ public class Set implements Serializable, SetInterface {
     }
 
     public void setExecutionTs(ZonedDateTime executionTs) {    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 }

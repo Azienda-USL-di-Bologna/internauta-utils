@@ -12,6 +12,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
@@ -31,9 +32,6 @@ import org.springframework.format.annotation.DateTimeFormat;
  *
  * @author gdm
  */
-//@TypeDefs({
-//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-//})
 @Entity
 @Table(name = "jobs_notified", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -104,6 +102,11 @@ public class JobNotified implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @Column(name = "execution_ts")
     private ZonedDateTime executionTs;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
     
     public JobNotified() {
     }
@@ -210,6 +213,14 @@ public class JobNotified implements Serializable {
 
     public void setExecutionTs(ZonedDateTime executionTs) {
         this.executionTs = executionTs;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Override

@@ -8,6 +8,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.CascadeType;
@@ -29,9 +30,6 @@ import org.springframework.format.annotation.DateTimeFormat;
  *
  * @author gusgus
  */
-//@TypeDefs({
-//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-//})
 @Entity
 @Table(name = "future_sets", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -82,9 +80,15 @@ public class FutureSet implements Serializable, SetInterface {
     @Column(name = "execution_ts")
     private ZonedDateTime executionTs;
     
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
+    
     public FutureSet() {
     }
 
+    @Override
     public Long getId() {
         return id;
     }
@@ -162,5 +166,13 @@ public class FutureSet implements Serializable, SetInterface {
 
     public void setExecutionTs(ZonedDateTime executionTs) {
         this.executionTs = executionTs;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 }

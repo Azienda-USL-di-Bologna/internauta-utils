@@ -9,6 +9,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
@@ -22,16 +23,15 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author gdm
  */
-//@TypeDefs({
-//    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
-//})
 @Immutable
 @Entity
 @Table(name = "set_with_jobs_array", catalog = "internauta", schema = "masterjobs")
@@ -81,8 +81,14 @@ public class SetWithJobIdsArray implements Serializable {
     private ZonedDateTime nextExecutableCheck;
     
     @Column(name = "jobs_ids", columnDefinition = "int8[]")
-    @Type(ListArrayType.class)
+    @JdbcTypeCode(SqlTypes.ARRAY)
+//    @Type(ListArrayType.class)
     private List<Long> jobsIds;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
     
     public SetWithJobIdsArray() {
     }
@@ -157,6 +163,14 @@ public class SetWithJobIdsArray implements Serializable {
 
     public void setJobsIds(List<Long> jobsIds) {
         this.jobsIds = jobsIds;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Override

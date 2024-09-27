@@ -312,21 +312,8 @@ public class EmlHandlerUtils {
                 disposition = part.getDisposition();
             } catch (jakarta.mail.internet.ParseException e) {
                 // Pattern rp= Pattern.compile("^.*filename=(.*);?$",Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
-                String disp = part.getHeader("Content-Disposition")[0];
-                LOG.info("Original disp: " + disp);
-                
-                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
-                Matcher matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll("$1name=\"$2\"");
-                
-                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
-                matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll(";");
-                
-//                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                LOG.info("New disp disp: " + disp);
-                part.setHeader("Content-Disposition", disp);
-                disposition = part.getDisposition();
+                disposition = cleanHeaderAndGetDisposition(part.getHeader("Content-Disposition")[0], part);
+  
             }
 //tolto                                                                           ||(disposition.equals(Part.INLINE))
             if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)))) || (part.getFileName() != null)) {
@@ -442,20 +429,21 @@ public class EmlHandlerUtils {
             try {
                 disposition = part.getDisposition();
             } catch (jakarta.mail.internet.ParseException e) {
-                String disp = part.getHeader("Content-Disposition")[0];
-                LOG.info("Original disp: " + disp);
-//                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
-                Matcher matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll("$1name=\"$2\"");
-                
-                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
-                matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll(";");
-                
-                LOG.info("New disp disp: " + disp);
-                part.setHeader("Content-Disposition", disp);
-                disposition = part.getDisposition();
+//                String disp = part.getHeader("Content-Disposition")[0];
+//                LOG.info("Original disp: " + disp);
+////                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
+//                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
+//                Matcher matcher = pattern.matcher(disp);
+//                disp = matcher.replaceAll("$1name=\"$2\";");
+//                
+//                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+//                matcher = pattern.matcher(disp);
+//                disp = matcher.replaceAll(";");
+//                
+//                LOG.info("New disp disp: " + disp);
+//                part.setHeader("Content-Disposition", disp);
+                disposition = cleanHeaderAndGetDisposition(part.getHeader("Content-Disposition")[0], part);
+//                disposition = part.getDisposition();
             }
 
             if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)) || (disposition.equals(Part.INLINE)))) || (part.getFileName() != null)) {
@@ -620,5 +608,28 @@ public class EmlHandlerUtils {
             m.setContent(multipart);
         }
         return m;
+    }
+
+    private static String cleanHeaderAndGetDisposition(String disp, Part part) throws MessagingException {
+        LOG.info("Original disp: " + disp);
+                
+                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\";");
+                
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+                
+//                pattern =Pattern.compile(";\\s*?.*=.*\"?;\\s*.*\\s.*",Pattern.MULTILINE);
+//                matcher = pattern.matcher(disp);
+//                disp = matcher.replaceAll(";");
+                
+//                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
+                LOG.info("New disp disp: " + disp);
+                
+                part.setHeader("Content-Disposition", disp);
+                
+                return part.getDisposition();
     }
 }

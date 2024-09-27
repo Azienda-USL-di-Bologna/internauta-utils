@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
  *
@@ -69,6 +68,7 @@ public class MasterjobsObjectsFactory {
         queueData.setJobs(jobsId);
         queueData.setSet(setId);
         queueData.setQueue(queue);
+//        queueData.setUuid(uuid);
         return queueData;
     }
 
