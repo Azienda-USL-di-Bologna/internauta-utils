@@ -404,16 +404,11 @@ public class ParerVersatoreService extends VersatoreDocs {
                 resp.close(); // Close respons
             } catch (Throwable ex) {
                 log.error("Errore chiamata riversamento", ex);
-                ex.printStackTrace();
                 risultatoEVersamentiAllegati.put("response", null);
             }
             return risultatoEVersamentiAllegati;
-        } catch (MinIOWrapperException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnsupportedEncodingException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (MinIOWrapperException | UnsupportedEncodingException ex) {
+            log.error("Errore chiamata riversamento", ex);
         }
         return risultatoEVersamentiAllegati;
     }
@@ -429,7 +424,7 @@ public class ParerVersatoreService extends VersatoreDocs {
             JSONParser jsonParser = new JSONParser();
             JSONObject json = (JSONObject) jsonParser.parse(allegato.getMetadatiVersati());
             idFile = IdentityFile.parse(json);
-            Element esitoAllegato = null;
+            Element esitoAllegato;
             if(mappaEsitiAllegati.get(idFile.getUuidMongo()) != null) {
                 esitoAllegato = (Element) mappaEsitiAllegati.get(idFile.getUuidMongo());
             } else {

@@ -15,7 +15,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.3</version>
+        <version>3.3.4</version>
     </parent>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,7 +25,6 @@
    
     <!-- sub modules -->
     <modules>
-<!--        <module>bds-types</module>-->
         <module>jpa-tools</module>
         <module>parameters-manager</module>
         <module>minIO-manager</module>
@@ -46,14 +45,6 @@
         <module>flying-saucer-pdf-itext5</module>
         <module>PDFToolkit</module>
     </modules>
-    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
-<!--    <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.8.1</version>
-        </dependency>
-    </dependencies>-->
     <profiles>
         <profile>
             <id>noTest-next-spring-data-rest-framework</id>

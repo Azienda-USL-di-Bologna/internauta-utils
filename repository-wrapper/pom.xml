@@ -76,9 +76,6 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
-                    <compilerArguments>
-                        <proc:none/>
-                    </compilerArguments>
                 </configuration>
             </plugin>
             <plugin>

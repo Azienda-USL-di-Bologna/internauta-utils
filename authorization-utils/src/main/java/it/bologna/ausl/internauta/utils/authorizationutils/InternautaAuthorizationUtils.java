@@ -3,10 +3,8 @@ package it.bologna.ausl.internauta.utils.authorizationutils;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.InternautaAuthorizationHttpException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ClaimsBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,7 +16,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.crypto.SecretKey;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -35,7 +32,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class InternautaAuthorizationUtils {
-    private final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.HS256;
+//    private final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.HS256;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -88,25 +85,22 @@ public class InternautaAuthorizationUtils {
         try (FileInputStream fis = new FileInputStream(p12Path)) {
             p12.load(fis, p12Psw.toCharArray());
             Key key = p12.getKey(p12Alias, p12Psw.toCharArray());
-            SecretKey secretKey = Keys.hmacShaKeyFor(key.getEncoded());
-            
-            
-            Claims claims = Jwts.claims().subject(subject).build();
+            ClaimsBuilder claims = Jwts.claims().subject(subject);
     //        claims.put("REAL_USER", realUser);
-            claims.put("COMPANY", codiceAzienda);
-            claims.put("codiceRegioneAzienda", codiceRegioneAzienda);
-            claims.put("mode", mode);
-            claims.put("FROM_INTERNET", false);
+            claims.add("COMPANY", codiceAzienda);
+            claims.add("codiceRegioneAzienda", codiceRegioneAzienda);
+            claims.add("mode", mode);
+            claims.add("FROM_INTERNET", false);
 
-            claims.put("sub", subject);
-            claims.put("iss", "internauta-bridge");
+            claims.add("sub", subject);
+            claims.add("iss", "internauta-bridge");
     //        claims.put("context", context);
 
             String token = Jwts.builder()
-                    .claims(claims)
+                    .claims(claims.build())
                     //                .setHeaderParam("x5c", x5c)
-                    //.signWith(SIGNATURE_ALGORITHM, secretKey)
-                    .signWith(secretKey, SIGNATURE_ALGORITHM)
+//                    .signWith(secretKey)
+                    .signWith(key)
                     .compact();
 
             return token;

@@ -122,14 +122,14 @@ public class ParametriAziendeReader {
     public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda, boolean includeHiddenFromApi) {
 
         BooleanTemplate filterAzienda = Expressions.booleanTemplate(
-                "tools.array_overlap({0}, tools.string_to_integer_array({1}, ','))=true",
+                "cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
                 QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
         BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
 
-        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cardinality({0}) = 0", QParametroAziende.parametroAziende.idApplicazioni);
+        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
 
         BooleanTemplate applicazioniOverlap = Expressions.booleanTemplate(
-                "tools.array_overlap({0}, string_to_array({1}, ','))=true",
+                "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
                 QParametroAziende.parametroAziende.idApplicazioni, app);
 
         BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();

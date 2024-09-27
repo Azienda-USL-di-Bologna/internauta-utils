@@ -6,6 +6,10 @@
         <artifactId>internauta-utils</artifactId>
         <version>2.0</version>
     </parent>
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
     <artifactId>versatore</artifactId>
     <packaging>jar</packaging>
     <name>versatore</name>
@@ -172,11 +176,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <compilerArguments>
-                        <proc:none/>
-                    </compilerArguments>
-                    <source>21</source>
-                    <target>21</target>
+                    <parameters>true</parameters>
+                    <proc>none</proc>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -204,56 +207,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-<!--            <plugin>
-                <groupId>org.jvnet.jaxb2.maven2</groupId>
-                <artifactId>maven-jaxb2-plugin</artifactId>
-                <version>0.15.2</version>
-                <executions>
-                    <execution>
-                        <id>example-xml</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <generateDirectory>${project.build.directory}/generated-sources/xjc/</generateDirectory>
-                            <schemaDirectory>${basedir}/src/main/resources/schemas/xsd</schemaDirectory>
-                            <schemaIncludes>
-                                <include>edu.xsd</include>
-                            </schemaIncludes>
-                            <bindingDirectory>${basedir}/src/main/resources/schemas/xjb</bindingDirectory>
-                            <bindingIncludes>
-                                <include>edu.xjb</include>
-                            </bindingIncludes>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.glassfish.jaxb</groupId>
-                        <artifactId>jaxb-runtime</artifactId>
-                        <version>2.3.3</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.9</version>
-                <executions>
-                    <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.build.directory}/generated-sources/xjc/</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
             <plugin>
                 <groupId>com.sun.xml.ws</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
@@ -325,14 +278,14 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <strict>false</strict> 
                     <catalog>src/main/resources/jaxb/catalog.xml</catalog>
 <!--                    <catalogResolver>org.jvnet.jaxb2.maven2.resolver.tools.ClasspathCatalogResolver</catalogResolver>-->
-                    <forceRegenerate>true</forceRegenerate>
+                    <!--<forceRegenerate>true</forceRegenerate>-->
                     <generateDirectory>${project.build.directory}/generated-sources/xjc</generateDirectory>
                     <verbose>true</verbose>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-    <properties></properties>
 </project>
