@@ -9,6 +9,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -84,6 +85,11 @@ public class SetWithJobIdsArray implements Serializable {
     @Type(type = "list-array")
     private List<Long> jobsIds;
     
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
+    
     public SetWithJobIdsArray() {
     }
 
@@ -157,6 +163,14 @@ public class SetWithJobIdsArray implements Serializable {
 
     public void setJobsIds(List<Long> jobsIds) {
         this.jobsIds = jobsIds;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Override

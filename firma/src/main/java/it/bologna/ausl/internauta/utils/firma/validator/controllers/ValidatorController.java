@@ -246,8 +246,9 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         String scheme = request.getScheme();
         String hostname = CommonUtils.getHostname(request);
         Integer port = request.getServerPort();
-        
-        String url = configParams.getExternalSignAndCertificateValidator(paramKey, scheme, hostname, port);
+//        port = 10008;
+        String externalCheckCertificateUrl = configParams.getExternalSignAndCertificateValidatorValidateDocumentUrl(scheme, hostname, port);
+
         OkHttpClient client = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder()
@@ -258,7 +259,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         okhttp3.RequestBody requestBody = requestBodyBuilder.build();
         Response resp = client.newCall(
                 new Request.Builder()
-                    .url(url)
+                    .url(externalCheckCertificateUrl)
                     .post(requestBody).build()).execute();
 
         if (resp.isSuccessful() && resp.body() != null) {
@@ -269,6 +270,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
                 if (StringUtils.hasText(resString)) {
                     log.info(resString);
                     DSSValidatorReponse dSSValidatorReponse = DSSValidatorReponse.parseFromJson(resString);
+                    
                     return dSSValidatorReponse;
                 } else {
                     String error = "la chiamata al validatore DSS ha tornato una risposta vuota";

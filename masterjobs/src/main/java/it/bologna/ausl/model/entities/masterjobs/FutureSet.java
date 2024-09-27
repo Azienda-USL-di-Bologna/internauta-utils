@@ -9,6 +9,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
@@ -84,6 +85,11 @@ public class FutureSet implements Serializable, SetInterface {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @Column(name = "execution_ts")
     private ZonedDateTime executionTs;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
     
     public FutureSet() {
     }
@@ -165,5 +171,13 @@ public class FutureSet implements Serializable, SetInterface {
 
     public void setExecutionTs(ZonedDateTime executionTs) {
         this.executionTs = executionTs;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 }
