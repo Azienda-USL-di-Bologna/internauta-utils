@@ -15,13 +15,11 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
  *
@@ -65,12 +63,12 @@ public class MasterjobsObjectsFactory {
      * @param queue la coda in cui la QueueData andrà inserita
      * @return 
      */
-    public MasterjobsQueueData buildMasterjobsQueueData(List<Long> jobsId, Long setId, String queue, UUID uuid) {
+    public MasterjobsQueueData buildMasterjobsQueueData(List<Long> jobsId, Long setId, String queue) {
         MasterjobsQueueData queueData = new MasterjobsQueueData(objectMapper);
         queueData.setJobs(jobsId);
         queueData.setSet(setId);
         queueData.setQueue(queue);
-        queueData.setUuid(uuid);
+//        queueData.setUuid(uuid);
         return queueData;
     }
 

@@ -12,6 +12,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueu
 import it.bologna.ausl.internauta.utils.masterjobs.workers.WorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MultiJobQueueDescriptor;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.JobNotified;
 import it.bologna.ausl.model.entities.masterjobs.QFutureSet;
@@ -175,7 +176,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
                             
                             try {
                                 Boolean future = jobNotified.getExecutionTs() != null ? jobNotified.getExecutionTs().isAfter(ZonedDateTime.now()) : false;
-                                res = createMasterjobsQueueData(jobNotified, future, jobNotified.getExecutionTs());
+                                res = createMasterjobsQueueData(jobNotified, future);
                                 // Devo distiguere tra future jobs e jobs da accodare subito, nel primo caso è sufficiente una semplice insert sul db
                                 if (future) {
                                     // caso del future job
@@ -215,23 +216,25 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
         } while (!done);
     }
     
-    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, boolean future, ZonedDateTime executionTs) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
+    private MasterjobsQueueData createMasterjobsQueueData(JobNotified jobNotified, boolean future) throws MasterjobsParsingException, MasterjobsWorkerException, MasterjobsQueuingException {
         JobWorkerDataInterface jobData = JobWorkerDataInterface.parseFromJobData(objectMapper, jobNotified.getJobData());
         List<MasterjobsWorkingObject> workingObjects = jobNotified.getWorkingObjects();
         JobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(jobNotified.getJobName(), jobData, jobNotified.getDeferred(), workingObjects);
-        return masterjobsJobsQueuer.queue(
-            jobWorker, 
-            jobNotified.getObjectId(), 
-            jobNotified.getObjectType(), 
-            jobNotified.getApp(), 
-            jobNotified.getWaitObject(), 
-            jobNotified.getPriority(),
-            jobNotified.getSkipIfAlreadyPresent(),
-            true,
-            jobNotified.getInsertedFrom(),
-            future,
-            executionTs,
-            jobNotified.getUuid());
+        MultiJobQueueDescriptor multiJobQueueDescriptor = MultiJobQueueDescriptor
+                .newBuilder()
+                .addWorker(jobWorker)
+                .objectId( jobNotified.getObjectId())
+                .objectType( jobNotified.getObjectType())
+                .app(jobNotified.getApp())
+                .waitForObject(jobNotified.getWaitObject())
+                .priority(jobNotified.getPriority())
+                .skipIfAlreadyPresent( jobNotified.getSkipIfAlreadyPresent())
+                .insertedFrom(jobNotified.getInsertedFrom())
+                .future(future)
+                .executionTs(jobNotified.getExecutionTs())
+                .uuid(jobNotified.getUuid())
+                .build();
+        return masterjobsJobsQueuer.queue(multiJobQueueDescriptor, true);
     }
     
     private void deleteJobNotified(Long jobNotifiedId) {
@@ -241,11 +244,5 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
 //        });
     }
     
-//    private void deleteJobNotifiedByUuid(UUID uuid) {
-//        queryFactory.delete(qJobNotified).where(qJobNotified.uuid.eq(uuid)).execute();
-//    }
-//    
-//    private void deleteFutureSetByUuid(UUID uuid) {
-//        queryFactory.delete(qFutureSet).where(qFutureSet.uuid.eq(uuid)).execute();
-//    }
+
 }
