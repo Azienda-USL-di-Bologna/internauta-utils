@@ -1,31 +1,24 @@
 package it.bologna.ausl.model.entities.masterjobs.views;
 
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.array.IntArrayType;
 import com.vladmihalcea.hibernate.type.array.ListArrayType;
-import com.vladmihalcea.hibernate.type.array.StringArrayType;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import it.bologna.ausl.model.entities.masterjobs.Job;
-import it.bologna.ausl.model.entities.masterjobs.Set.SetPriority;
+import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
@@ -91,6 +84,11 @@ public class SetWithJobIdsArray implements Serializable {
     @Column(name = "jobs_ids", columnDefinition = "int8[]")
     @Type(type = "list-array")
     private List<Long> jobsIds;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
     
     public SetWithJobIdsArray() {
     }
@@ -165,6 +163,14 @@ public class SetWithJobIdsArray implements Serializable {
 
     public void setJobsIds(List<Long> jobsIds) {
         this.jobsIds = jobsIds;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Override

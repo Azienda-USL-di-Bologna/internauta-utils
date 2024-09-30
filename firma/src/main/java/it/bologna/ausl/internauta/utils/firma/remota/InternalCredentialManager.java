@@ -3,7 +3,7 @@ package it.bologna.ausl.internauta.utils.firma.remota;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
 import it.bologna.ausl.internauta.utils.firma.repositories.CredentialRepository;
 import it.bologna.ausl.internauta.utils.firma.utils.AESEncryption;
-import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import it.bologna.ausl.model.entities.firma.Credential;
 import it.bologna.ausl.model.entities.firma.QCredential;

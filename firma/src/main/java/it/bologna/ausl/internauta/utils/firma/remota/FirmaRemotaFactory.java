@@ -6,7 +6,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation
 import static it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation.FirmaRemotaProviders.ARUBA;
 import it.bologna.ausl.internauta.utils.firma.remota.arubasignservice.FirmaRemotaAruba;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.infocertsignservice.FirmaRemotaInfocert;
 import it.bologna.ausl.internauta.utils.firma.remota.medassignservice.FirmaRemotaMedas;
 import it.bologna.ausl.internauta.utils.firma.remota.namirialsignservice.FirmaRemotaNamirial;
@@ -51,7 +51,7 @@ public class FirmaRemotaFactory {
     private String dominioFirmaDefault;
 
     @PostConstruct
-    public void initFirmaRemotaFactory() throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+    public void initFirmaRemotaFactory() throws FirmaHttpException, FirmaRemotaConfigurationException {
         configurations = configurationRepository.findAll();
         for (it.bologna.ausl.model.entities.firma.Configuration configuration : configurations) {
             FirmaRemotaProviders provider = FirmaRemotaProviders.valueOf(configuration.getProvider().getId());
@@ -83,11 +83,11 @@ public class FirmaRemotaFactory {
      * @param hostId l'hostId della tabella Configurations che identifica
      * l'installazione della firma remota da utilizzare
      * @return l'istanza della classe giusta in base all'hostId passato
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws
      * it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException
      */
-    public FirmaRemota getFirmaRemotaInstance(String hostId) throws FirmaRemotaHttpException, FirmaRemotaConfigurationException {
+    public FirmaRemota getFirmaRemotaInstance(String hostId) throws FirmaHttpException, FirmaRemotaConfigurationException {
         // tramite l'hostId recupero dalla mappa l'istanza creta in fase di inizializzazione
         FirmaRemota firmaRemotaInstance = hostIdFirmaInstansceMap.get(hostId);
         return firmaRemotaInstance;

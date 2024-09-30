@@ -9,6 +9,7 @@ import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
@@ -41,13 +42,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class Set implements Serializable {
-
-    public static enum SetPriority {
-        NORMAL,
-        HIGH,
-        HIGHEST
-    }
+public class Set implements Serializable, SetInterface {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -92,6 +87,11 @@ public class Set implements Serializable {
     @JsonBackReference(value = "jobList")
     private List<Job> jobList;
     
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
+        
     public Set() {
     }
 
@@ -155,8 +155,8 @@ public class Set implements Serializable {
         return jobList;
     }
 
-    public void setJobList(List<Job> jobList) {
-        this.jobList = jobList;
+    public void setJobList(List<? extends JobInterface> jobList) {
+        this.jobList = (List<Job>) jobList;
     }
 
     public ZonedDateTime getNextExecutableCheck() {
@@ -165,5 +165,19 @@ public class Set implements Serializable {
 
     public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
         this.nextExecutableCheck = nextExecutableCheck;
+    }
+    
+    public ZonedDateTime getExecutionTs() {
+        return null;
+    }
+
+    public void setExecutionTs(ZonedDateTime executionTs) {    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 }

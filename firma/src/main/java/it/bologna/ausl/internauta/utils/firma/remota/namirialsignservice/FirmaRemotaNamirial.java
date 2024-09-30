@@ -13,14 +13,14 @@ import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.TimeoutException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
-import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
 import java.io.FileInputStream;
@@ -95,10 +95,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param firmaRemotaInformation L'oggetto contenente i files da firmare e le credenziali utente.
      * @param codiceAzienda Il codice dell'azienda, utilizzato per effettuare l'upload del file sul repository.
      * @return L'oggetto firmaRemotaInformation con le informazioni aggiuntive dei file firmati.
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaHttpException {
 
         /* 
         come prima cosa reperiamo le credenziali. Queste cambiano in base al fatto che si firmi con OTP o con firma AUTOMATICA.
@@ -123,7 +123,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             } catch (Throwable ex) {
                 String errorMessage = "errore nella creazione del Json delle credenziali";
                 logger.error(errorMessage, ex);
-                throw new FirmaRemotaHttpException(errorMessage, ex);
+                throw new FirmaHttpException(errorMessage, ex);
             }
 
             List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
@@ -151,7 +151,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     } catch (Throwable ex) {
                         String errorMessage = "errore nella creazione del file temporaneo da firmare";
                         logger.error(errorMessage, ex);
-                        throw new FirmaRemotaHttpException(errorMessage, ex);
+                        throw new FirmaHttpException(errorMessage, ex);
                     }
 
                     // se il file è più grande di 78MB (il limite è 80, ma ci teniamo leggermente più bassi per sicurezza) devo fare una chiamata ad un API diversa
@@ -178,7 +178,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                             } catch (Throwable ex) {
                                 String errorMessage = "errore nella creazione del Json delle padesPreferences ";
                                 logger.error(errorMessage, ex);
-                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                                throw new FirmaHttpException(errorMessage, ex);
                             }
                             if (!largeFile) {
                                 firmaPath = NamirialRestPathsEnum.PADES_SIGN;
@@ -199,7 +199,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                             }  catch (Throwable ex) {
                                 String errorMessage = "errore nella creazione del Json delle cadesPreferences ";
                                 logger.error(errorMessage, ex);
-                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                                throw new FirmaHttpException(errorMessage, ex);
                             }
                             if (!largeFile) {
                                 firmaPath = NamirialRestPathsEnum.CADES_SIGN;
@@ -212,7 +212,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                             }
                             break;
                         default:
-                            throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
+                            throw new FirmaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
                     }
 
                     // aggiunge il file al multipart
@@ -233,7 +233,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     } catch (Throwable ex) {
                         String errorMessage = String.format("errore nella richiesta http per la firma all'url: %s", signUrl);
                         logger.error(errorMessage, ex);
-                        throw new FirmaRemotaHttpException(errorMessage, ex);
+                        throw new FirmaHttpException(errorMessage, ex);
                     }
 
                     try (ResponseBody responseBody = response.body()) {
@@ -248,7 +248,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                             } catch (Throwable ex) {
                                 String errorMessage = "errore nell'upload del file su minIO";
                                 logger.error(errorMessage, ex);
-                                throw new FirmaRemotaHttpException(errorMessage, ex);
+                                throw new FirmaHttpException(errorMessage, ex);
                             }
                         } else { // se c'è un errore lancia l'eccezione corretta, relativa all'errore ricevuto
                             String errorMessage = "Namirial ha tornato un errore, rilancio l'eccezione appropriata...";
@@ -281,7 +281,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param userInformation Le informazioni dell'utente.
      */
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaHttpException {
         logger.info("Richiesta codice OTP per l'utente: " + userInformation.getUsername());
         try {
             String url = signServiceEndPointUri + NamirialRestPathsEnum.GET_SMS_OTP.getPath();
@@ -301,7 +301,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             }
         } catch (Throwable ex) {
             logger.error("errore nella richiesta dell'invio dell'otp per SMS", ex);
-            throw new FirmaRemotaHttpException(ex.getMessage());
+            throw new FirmaHttpException(ex.getMessage());
         }
     }
 
@@ -312,10 +312,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param response la responde della richiesta fatto con okHttp
      * @throws InvalidCredentialException Credenziali non valide.
      * @throws WrongTokenException Token non valido.
-     * @throws FirmaRemotaHttpException Altro tipo di errore.
+     * @throws FirmaHttpException Altro tipo di errore.
      * @throws TimeoutException è scaduto il tempo massimo per la firma
      */
-    public void throwCorrectException(Response response) throws InvalidCredentialException, WrongTokenException, TimeoutException, FirmaRemotaHttpException {
+    public void throwCorrectException(Response response) throws InvalidCredentialException, WrongTokenException, TimeoutException, FirmaHttpException {
         String errorCode = response.header("errorCode");
         String errorMessage = response.header("errorMsg");
 
@@ -336,10 +336,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                     throw new TimeoutException(errorMessage);
                 // TODO: inserire gli eventuali altri casi di errore
                 default:
-                    throw new FirmaRemotaHttpException(String.format("remote server error. code: %s - description: %s", errorCode, errorMessage));
+                    throw new FirmaHttpException(String.format("remote server error. code: %s - description: %s", errorCode, errorMessage));
             }
         } else {
-            throw new FirmaRemotaHttpException(String.format("remote server error. httpCode: %s - httpMessage: %s", response.code(), response.message()));
+            throw new FirmaHttpException(String.format("remote server error. httpCode: %s - httpMessage: %s", response.code(), response.message()));
         }
     }
 
@@ -350,12 +350,12 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      *  - password(se non memorizzata nell'internalCredenzialManager)
      *  - Otp
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws TimeoutException
      * @throws WrongTokenException 
      */
-    private String openSession(NamirialUserInformation userInformation) throws InvalidCredentialException, TimeoutException, WrongTokenException, FirmaRemotaHttpException {
+    private String openSession(NamirialUserInformation userInformation) throws InvalidCredentialException, TimeoutException, WrongTokenException, FirmaHttpException {
         String credentialJson;
         try {
             //credentialJson = getCredentialJson(userInformation, null);
@@ -363,7 +363,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             credentialReqMap.put("credentials", getCredentialMap(userInformation, null));
             credentialJson = this.configParams.getObjectMapper().writeValueAsString(credentialReqMap);
         } catch (Throwable ex) {
-            throw new FirmaRemotaHttpException("errore nella creazione del json delle credenziali per la richiesta http openSession", ex);
+            throw new FirmaHttpException("errore nella creazione del json delle credenziali per la richiesta http openSession", ex);
         }
         
         
@@ -384,10 +384,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
             try (ResponseBody respBody = response.body()){
                 return respBody.string();
             } catch (IOException ex) {
-                 throw new FirmaRemotaHttpException("errore nella lettura della sessionKey", ex);
+                 throw new FirmaHttpException("errore nella lettura della sessionKey", ex);
             }
         } catch (Throwable ex) {
-            throw new FirmaRemotaHttpException("errore nella richiesta http openSession", ex);
+            throw new FirmaHttpException("errore nella richiesta http openSession", ex);
         }
         
     }
@@ -396,16 +396,16 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * chiude la sessione aperta con openSession
      * @param userInformation le userInformation che devono contenere lo username
      * @param sessionKey la chiave della sessioen da chiudere (tornata dalla openSession)
-     * @throws FirmaRemotaHttpException 
+     * @throws FirmaHttpException 
      */
-    private void closeSession(NamirialUserInformation userInformation, String sessionKey) throws FirmaRemotaHttpException {
+    private void closeSession(NamirialUserInformation userInformation, String sessionKey) throws FirmaHttpException {
         String credentialJson;
         try {
             Map<String, Map<String, Object>> credentialReqMap = new HashMap<>();
             credentialReqMap.put("credentials", getCredentialMap(userInformation, sessionKey));
             credentialJson = this.configParams.getObjectMapper().writeValueAsString(credentialReqMap);
         } catch (Throwable ex) {
-            throw new FirmaRemotaHttpException("errore nella creazione del json delle credenziali per la richiesta http closeSession", ex);
+            throw new FirmaHttpException("errore nella creazione del json delle credenziali per la richiesta http closeSession", ex);
         }
         RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"),credentialJson);
 
@@ -421,7 +421,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
                 throwCorrectException(response);
             }
         } catch (Throwable ex) {
-            throw new FirmaRemotaHttpException("errore nella richiesta http closeSession", ex);
+            throw new FirmaHttpException("errore nella richiesta http closeSession", ex);
         }
     }
     
@@ -520,12 +520,12 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
     /**
@@ -533,12 +533,12 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
     /**
@@ -546,17 +546,17 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @param userInformation
      * @param hostId
      * @return
-     * @throws FirmaRemotaHttpException
+     * @throws FirmaHttpException
      * @throws InvalidCredentialException
      * @throws RemoteServiceException 
      */
     @Override
-    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return null;
     }
 }

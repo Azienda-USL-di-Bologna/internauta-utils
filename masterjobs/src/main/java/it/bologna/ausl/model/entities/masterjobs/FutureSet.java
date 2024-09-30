@@ -1,70 +1,54 @@
 package it.bologna.ausl.model.entities.masterjobs;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
-import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import javax.persistence.Basic;
 import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
- * @author gdm
+ * @author gusgus
  */
 @TypeDefs({
     @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 })
 @Entity
-@Table(name = "jobs_notified", catalog = "internauta", schema = "masterjobs")
+@Table(name = "future_sets", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 @GenerateProjections({})
 @DynamicUpdate
-public class JobNotified implements Serializable {
+public class FutureSet implements Serializable, SetInterface {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
     @Column(name = "id")
     private Long id;
-    
-    @Basic(optional = false)
-    @Column(name = "job_name")
-    @NotNull
-    private String jobName;
-    
-    @Basic(optional = true)
-    @Type(type = "jsonb")
-    @Column(name = "job_data", columnDefinition = "jsonb")
-    private Map<String, Object> jobData;
-    
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "deferred")
-    private Boolean deferred = false;
     
     @Basic(optional = true)
     @Column(name = "object_id")
@@ -74,10 +58,6 @@ public class JobNotified implements Serializable {
     @Column(name = "object_type")
     private String objectType;
     
-    @Basic(optional = true)
-    @Column(name = "app")
-    private String app;
-    
     @Basic(optional = false)
     @NotNull
     @Column(name = "wait_object")
@@ -85,23 +65,21 @@ public class JobNotified implements Serializable {
     
     @Basic(optional = false)
     @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(name = "priority")
+    @Enumerated(EnumType.STRING)
     private SetPriority priority = SetPriority.NORMAL;
-    
-    @Basic(optional = false)
-    @NotNull
-    @Column(name = "skip_if_already_present")
-    private Boolean skipIfAlreadyPresent = false;
+
+    @Basic(optional = true)
+    @Column(name = "app")
+    private String app;
     
     @Basic(optional = true)
     @Column(name = "inserted_from")
     private String insertedFrom;
     
-    @Basic(optional = true)
-    @Type(type = "jsonb")
-    @Column(name = "working_objects", columnDefinition = "jsonb")
-    private List<MasterjobsWorkingObject> workingObjects;
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, mappedBy = "set", fetch = FetchType.LAZY)
+    @JsonBackReference(value = "jobList")
+    private List<FutureJob> jobList;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -113,7 +91,7 @@ public class JobNotified implements Serializable {
     @Column(name = "uuid")
     private UUID uuid;
     
-    public JobNotified() {
+    public FutureSet() {
     }
 
     public Long getId() {
@@ -122,30 +100,6 @@ public class JobNotified implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getJobName() {
-        return jobName;
-    }
-
-    public void setJobName(String jobName) {
-        this.jobName = jobName;
-    }
-
-    public Map<String, Object> getJobData() {
-        return jobData;
-    }
-
-    public void setJobData(Map<String, Object> jobData) {
-        this.jobData = jobData;
-    }
-
-    public Boolean getDeferred() {
-        return deferred;
-    }
-
-    public void setDeferred(Boolean deferred) {
-        this.deferred = deferred;
     }
 
     public String getObjectId() {
@@ -164,14 +118,6 @@ public class JobNotified implements Serializable {
         this.objectType = objectType;
     }
 
-    public String getApp() {
-        return app;
-    }
-
-    public void setApp(String app) {
-        this.app = app;
-    }
-
     public Boolean getWaitObject() {
         return waitObject;
     }
@@ -188,12 +134,12 @@ public class JobNotified implements Serializable {
         this.priority = priority;
     }
 
-    public Boolean getSkipIfAlreadyPresent() {
-        return skipIfAlreadyPresent;
+    public String getApp() {
+        return app;
     }
 
-    public void setSkipIfAlreadyPresent(Boolean skipIfAlreadyPresent) {
-        this.skipIfAlreadyPresent = skipIfAlreadyPresent;
+    public void setApp(String app) {
+        this.app = app;
     }
 
     public String getInsertedFrom() {
@@ -204,14 +150,21 @@ public class JobNotified implements Serializable {
         this.insertedFrom = insertedFrom;
     }
 
-    public List<MasterjobsWorkingObject> getWorkingObjects() {
-        return workingObjects;
+    public List<FutureJob> getJobList() {
+        return jobList;
     }
 
-    public void setWorkingObjects(List<MasterjobsWorkingObject> workingObjects) {
-        this.workingObjects = workingObjects;
+    public void setJobList(List<? extends JobInterface> jobList) {
+        this.jobList = (List<FutureJob>) jobList;
     }
 
+    public ZonedDateTime getNextExecutableCheck() {
+        return null;
+    }
+
+    public void setNextExecutableCheck(ZonedDateTime nextExecutableCheck) {
+    }
+    
     public ZonedDateTime getExecutionTs() {
         return executionTs;
     }
@@ -226,27 +179,5 @@ public class JobNotified implements Serializable {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        // this method won't work in the case the id fields are not set
-        if (!(object instanceof JobNotified)) {
-            return false;
-        }
-        JobNotified other = (JobNotified) object;
-        return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 41 * hash + Objects.hashCode(this.id);
-        return hash;
-    }
-
-   @Override
-    public String toString() {
-        return getClass().getCanonicalName() + "[ id=" + id + " ]";
     }
 }

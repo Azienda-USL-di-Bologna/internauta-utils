@@ -12,7 +12,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemota;
 import it.bologna.ausl.internauta.utils.firma.remota.InternalCredentialManager;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaHttpException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.InvalidCredentialException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.RemoteServiceException;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenException;
@@ -20,7 +20,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloader
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
-import it.bologna.ausl.internauta.utils.firma.utils.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -105,10 +105,10 @@ public class FirmaRemotaInfocert extends FirmaRemota {
      * l'upload del file sul repository.
      * @return L'oggetto RifmaRemotaInformation con le informazioni aggiuntive
      * dei file firmati.
-     * @throws FirmaRemotaHttpException Errore durante l'upload del file.
+     * @throws FirmaHttpException Errore durante l'upload del file.
      */
     @Override
-    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaRemotaHttpException {
+    public FirmaRemotaInformation firma(FirmaRemotaInformation firmaRemotaInformation, String codiceAzienda, HttpServletRequest request) throws FirmaHttpException {
 
         List<FirmaRemotaFile> filesDaFirmare = firmaRemotaInformation.getFiles();
 
@@ -170,7 +170,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                         endPointFirmaURI = InfoCertPathEnum.FIRMA_CADES.getPath(context, userInformation.getUsername());
                         break;
                     default:
-                        throw new FirmaRemotaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
+                        throw new FirmaHttpException(String.format("unexpected or invalid sign format %s", file.getFormatoFirma()));
                 }
 
                 logger.info(String.format("sending file %s for pdf sign...", file.getFileId()));
@@ -206,7 +206,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
                 }
             } catch (IOException | EncryptionException ex) {
                 logger.error("error", ex);
-                throw new FirmaRemotaHttpException(ex.getMessage());
+                throw new FirmaHttpException(ex.getMessage());
             }
         }
 
@@ -220,7 +220,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
      * @param userInformation Le informazioni dell'utente.
      */
     @Override
-    public void preAuthentication(UserInformation userInformation) throws FirmaRemotaHttpException {
+    public void preAuthentication(UserInformation userInformation) throws FirmaHttpException {
         logger.info("Richiesta codice OTP per l'utente: " + userInformation.getUsername());
         // Non so se ha senso mettere un controllo dell'alias utente o sul numero di volte che può fare richiedi
         try {
@@ -233,22 +233,22 @@ public class FirmaRemotaInfocert extends FirmaRemota {
             call.execute();
         } catch (IOException ex) {
             logger.error("error", ex);
-            throw new FirmaRemotaHttpException(ex.getMessage());
+            throw new FirmaHttpException(ex.getMessage());
         }
     }
 
     @Override
-    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalExistingCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
     @Override
-    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalSetCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
     @Override
-    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    protected boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return false;
     }
 
@@ -297,7 +297,7 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     }
 
     @Override
-    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaRemotaHttpException, InvalidCredentialException, RemoteServiceException {
+    public List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException {
         return null;
     }
 

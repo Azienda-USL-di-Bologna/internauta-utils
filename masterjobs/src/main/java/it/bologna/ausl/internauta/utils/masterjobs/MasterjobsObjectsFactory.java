@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
  *
@@ -69,6 +68,7 @@ public class MasterjobsObjectsFactory {
         queueData.setJobs(jobsId);
         queueData.setSet(setId);
         queueData.setQueue(queue);
+//        queueData.setUuid(uuid);
         return queueData;
     }
 
@@ -149,7 +149,7 @@ public class MasterjobsObjectsFactory {
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException
      */
     public JobWorker getJobWorker(String name, JobWorkerDataInterface workerData, boolean deferred, Integer executableCheckEveryMillis, List<MasterjobsWorkingObject> workingObjects) throws MasterjobsWorkerInitializationException {
-        Class<? extends JobWorker> jobWorkerClass = (Class<? extends JobWorker>)workerMap.get(name);
+        Class<? extends JobWorker> jobWorkerClass = (Class<? extends JobWorker>) workerMap.get(name);
         JobWorker worker = getJobWorker(jobWorkerClass, workerData, deferred, executableCheckEveryMillis, workingObjects);
         return worker;
     }
