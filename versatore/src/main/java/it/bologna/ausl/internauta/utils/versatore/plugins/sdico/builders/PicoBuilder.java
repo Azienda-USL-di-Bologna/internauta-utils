@@ -86,7 +86,7 @@ public class PicoBuilder {
         String produttore = (String) parametriVersamento.get("produttore");
         //String identificativoDocumentoPrimario = ""; dato ridondante
         List<Allegato> listaAllegati = doc.getAllegati();
-        String riservato = docDetail.getRiservato() ? "SI" : "NO";
+        String riservato = docDetail.getVisibilita().equals(Doc.VisibilitaDoc.RISERVATO) ? "SI" : "NO";
         String stringaAllegati = "";
         for (Allegato allegato : doc.getAllegati()) {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
@@ -138,7 +138,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "marcatura_temporale", Arrays.asList(marcaturaTemporale), TESTO);
 
         //attributi presenti solo nei pu
-        if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
             if (firmatari != null) {
                 for (Persona firmatario : firmatari) {
                     stringaDiFirmatari += firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
@@ -178,7 +178,7 @@ public class PicoBuilder {
         }
 
         //attributi presenti solo nei pe
-        if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
             for (Allegato allegato : listaAllegati) {
                 if (allegato.getPrincipale()) {
                     firmatoDigitalmente = allegato.getFirmato() ? "SI" : "NO";
