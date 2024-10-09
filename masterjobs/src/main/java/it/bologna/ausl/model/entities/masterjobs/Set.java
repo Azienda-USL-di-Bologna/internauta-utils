@@ -84,7 +84,7 @@ public class Set implements Serializable, SetInterface {
     @NotNull
     @Basic(optional = false)
     @Column(name = "uuid")
-    private UUID uuid;
+    private UUID uuid = UUID.randomUUID();
         
     public Set() {
     }
