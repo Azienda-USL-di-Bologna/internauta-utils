@@ -111,7 +111,7 @@ public class JobNotified implements Serializable {
     @NotNull
     @Basic(optional = false)
     @Column(name = "uuid")
-    private UUID uuid;
+    private UUID uuid = UUID.randomUUID();
     
     public JobNotified() {
     }
