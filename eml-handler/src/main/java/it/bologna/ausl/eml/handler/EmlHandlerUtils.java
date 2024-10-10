@@ -153,8 +153,8 @@ public class EmlHandlerUtils {
                 }
             }
         }
-
-        InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(charSet));
+            //la codifica dei caratteri funziona meglio mettendo fisso utf 8
+        InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int reads = in.read();
 
