@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.JPQLTemplates;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
@@ -733,12 +734,12 @@ public class MasterjobsJobsQueuer {
             log.info("estraggo tutti i set dal DB...");
             
             // tramite la vista SetWithJobIdsArray tira su tutti i set e per ogni set la lista dei suoi job id
-            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            JPAQueryFactory queryFactory = new JPAQueryFactory(JPQLTemplates.DEFAULT, entityManager);
             JPAQuery<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
                 .select(qSetWithJobIdsArray)
                 .from(qSetWithJobIdsArray)
-                .orderBy(qSetWithJobIdsArray.id.asc())
-                .fetchAll();
+                .orderBy(qSetWithJobIdsArray.id.asc());
+//                .fetchAll();
             
             // usando la fetchAll ciclo tramite iteratore per evitare di caricare in memoria tutta la lista dei set
             for (Iterator<SetWithJobIdsArray> iterator = setWithJobIdsArrays.iterate(); iterator.hasNext();) {
