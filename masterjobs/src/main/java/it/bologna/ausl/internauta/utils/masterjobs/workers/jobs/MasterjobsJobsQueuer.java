@@ -45,6 +45,7 @@ import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -735,15 +736,15 @@ public class MasterjobsJobsQueuer {
             
             // tramite la vista SetWithJobIdsArray tira su tutti i set e per ogni set la lista dei suoi job id
             JPAQueryFactory queryFactory = new JPAQueryFactory(JPQLTemplates.DEFAULT, entityManager);
-            JPAQuery<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
+            Stream<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
                 .select(qSetWithJobIdsArray)
                 .from(qSetWithJobIdsArray)
-                .orderBy(qSetWithJobIdsArray.id.asc());
+                .orderBy(qSetWithJobIdsArray.id.asc())
+                .stream();
 //                .fetchAll();
             
             // usando la fetchAll ciclo tramite iteratore per evitare di caricare in memoria tutta la lista dei set
-            for (Iterator<SetWithJobIdsArray> iterator = setWithJobIdsArrays.iterate(); iterator.hasNext();) {
-                SetWithJobIdsArray setWithJobIdsArray = iterator.next();
+            setWithJobIdsArrays.forEach(setWithJobIdsArray -> {
                 log.info(String.format("processo il set %s, ne estraggo i job...", setWithJobIdsArray.getId()));
                 
                 // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
@@ -778,7 +779,7 @@ public class MasterjobsJobsQueuer {
                     }
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
                 }
-            }
+            });
         });
         if (stopThreads) {
             log.info("riattivo tutti i threads...");
