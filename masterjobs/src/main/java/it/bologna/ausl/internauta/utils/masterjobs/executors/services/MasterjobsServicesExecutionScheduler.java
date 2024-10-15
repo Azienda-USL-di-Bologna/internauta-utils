@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 /**
  *

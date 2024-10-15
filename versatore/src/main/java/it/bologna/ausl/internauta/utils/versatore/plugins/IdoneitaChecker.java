@@ -6,8 +6,8 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import java.util.Map;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;

@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;

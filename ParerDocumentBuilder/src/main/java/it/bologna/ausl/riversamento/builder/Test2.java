@@ -7,7 +7,7 @@ package it.bologna.ausl.riversamento.builder;
 
 import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
 import java.io.UnsupportedEncodingException;
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Element;
 

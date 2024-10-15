@@ -9,17 +9,17 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import javax.activation.DataHandler;
-import javax.mail.Address;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Part;
-import javax.mail.Session;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.activation.DataHandler;
+import jakarta.mail.Address;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.Jsoup;
@@ -28,13 +28,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
-import com.sun.mail.util.BASE64DecoderStream;
-import com.sun.mail.util.QPDecoderStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.eclipse.angus.mail.util.BASE64DecoderStream;
+import org.eclipse.angus.mail.util.QPDecoderStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -153,8 +153,8 @@ public class EmlHandlerUtils {
                 }
             }
         }
-
-        InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(charSet));
+            //la codifica dei caratteri funziona meglio mettendo fisso utf 8
+        InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int reads = in.read();
 
@@ -310,7 +310,7 @@ public class EmlHandlerUtils {
             String disposition = null;
             try {
                 disposition = part.getDisposition();
-            } catch (javax.mail.internet.ParseException e) {
+            } catch (jakarta.mail.internet.ParseException e) {
                 // Pattern rp= Pattern.compile("^.*filename=(.*);?$",Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
                 disposition = cleanHeaderAndGetDisposition(part.getHeader("Content-Disposition")[0], part);
   
@@ -428,7 +428,7 @@ public class EmlHandlerUtils {
             String disposition = null;
             try {
                 disposition = part.getDisposition();
-            } catch (javax.mail.internet.ParseException e) {
+            } catch (jakarta.mail.internet.ParseException e) {
 //                String disp = part.getHeader("Content-Disposition")[0];
 //                LOG.info("Original disp: " + disp);
 ////                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
@@ -473,7 +473,7 @@ public class EmlHandlerUtils {
             String disposition = null;
             try {
                 disposition = part.getDisposition();
-            } catch (javax.mail.internet.ParseException e) {
+            } catch (jakarta.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
                 LOG.info("Original disp: " + disp);
                 Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
@@ -517,7 +517,7 @@ public class EmlHandlerUtils {
             String disposition = null;
             try {
                 disposition = part.getDisposition();
-            } catch (javax.mail.internet.ParseException e) {
+            } catch (jakarta.mail.internet.ParseException e) {
                 String disp = part.getHeader("Content-Disposition")[0];
                 LOG.info("Original disp: " + disp);
                 Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);

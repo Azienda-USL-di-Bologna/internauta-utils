@@ -10,7 +10,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.mime.MimeTypeException;
 import org.springframework.util.StringUtils;
