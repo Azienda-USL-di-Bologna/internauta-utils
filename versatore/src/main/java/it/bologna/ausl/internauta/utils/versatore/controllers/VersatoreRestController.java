@@ -5,7 +5,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.VersatoreFactory;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.http.ControllerHandledExceptions;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;

@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.JPQLTemplates;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
@@ -41,9 +42,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -733,16 +735,16 @@ public class MasterjobsJobsQueuer {
             log.info("estraggo tutti i set dal DB...");
             
             // tramite la vista SetWithJobIdsArray tira su tutti i set e per ogni set la lista dei suoi job id
-            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-            JPAQuery<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
+            JPAQueryFactory queryFactory = new JPAQueryFactory(JPQLTemplates.DEFAULT, entityManager);
+            Stream<SetWithJobIdsArray> setWithJobIdsArrays = queryFactory
                 .select(qSetWithJobIdsArray)
                 .from(qSetWithJobIdsArray)
                 .orderBy(qSetWithJobIdsArray.id.asc())
-                .fetchAll();
+                .stream();
+//                .fetchAll();
             
             // usando la fetchAll ciclo tramite iteratore per evitare di caricare in memoria tutta la lista dei set
-            for (Iterator<SetWithJobIdsArray> iterator = setWithJobIdsArrays.iterate(); iterator.hasNext();) {
-                SetWithJobIdsArray setWithJobIdsArray = iterator.next();
+            setWithJobIdsArrays.forEach(setWithJobIdsArray -> {
                 log.info(String.format("processo il set %s, ne estraggo i job...", setWithJobIdsArray.getId()));
                 
                 // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
@@ -777,7 +779,7 @@ public class MasterjobsJobsQueuer {
                     }
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
                 }
-            }
+            });
         });
         if (stopThreads) {
             log.info("riattivo tutti i threads...");
