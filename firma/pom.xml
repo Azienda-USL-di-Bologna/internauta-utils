@@ -229,7 +229,8 @@
                             <vmArgs>
                                 <vmArg>-Djakarta.xml.accessExternalSchema=all</vmArg>
                             </vmArgs>
-                            <wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/syncsign/v3?wsdl</wsdlLocation>
+                            <!--<wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/syncsign/v3?wsdl</wsdlLocation>-->
+                            <wsdlLocation>https://scrybasign-cloud.medas-solutions.it/ScrybaSignServer/services/syncsign/v3?wsdl</wsdlLocation>
                             <staleFile>${project.build.directory}/jaxws/stale/syncsignV3.stale</staleFile>
                         </configuration>
                         <phase>generate-sources</phase>
@@ -243,7 +244,8 @@
                             <wsdlFiles>
                                 <wsdlFile>medas/utilsV2.0_rev1.wsdl</wsdlFile>
                             </wsdlFiles>
-                            <wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/utils/v2?wsdl</wsdlLocation>
+                            <!--<wsdlLocation>https://scrybasign.test.medas-solutions.it/ScrybaSignServer/services/utils/v2?wsdl</wsdlLocation>-->
+                            <wsdlLocation>https://scrybasign-cloud.medas-solutions.it/ScrybaSignServer/services/utils/v2?wsdl</wsdlLocation>
                             <packageName>it.bologna.ausl.internauta.utils.firma.remota.medassignservice</packageName>
                             <vmArgs>
                                 <vmArg>-Djakarta.xml.accessExternalSchema=all</vmArg>
