@@ -383,7 +383,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     
     /**
      * costruisce l'oggetto TypeUser da passare alle chiamate.
-     * Usa sempre ssn per indentificare l'utente, ma viene letto dal campo username per far funzionare iol caso di cf diverso dall'effettivo cf dell'utente. Più
+     * Usa sempre ssn per indentificare l'utente, ma viene letto dal campo username per far funzionare il caso di cf diverso dall'effettivo cf dell'utente. Più
      * che altro server per i di test
      * @param userInformation
      * @return 
