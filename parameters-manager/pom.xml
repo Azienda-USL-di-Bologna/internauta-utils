@@ -4,15 +4,13 @@
     <parent>
         <groupId>it.bologna.ausl.internauta.utils</groupId>
         <artifactId>internauta-utils</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>2.0</version>
     </parent>
     <artifactId>parameters-manager</artifactId>
-    <version>1.0</version>
+    <version>2.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     <dependencies>
         <dependency>
@@ -28,6 +26,8 @@
         <dependency>
             <groupId>com.querydsl</groupId>
             <artifactId>querydsl-apt</artifactId>
+            <classifier>jakarta</classifier>
+            <version>5.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -36,45 +36,32 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.10.2</version>
-            <type>jar</type>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.8.2</version>
         </dependency>
-<!--        <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>jpa-tools</artifactId>
-            <scope>provided</scope>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>-->
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-core</artifactId>
-            <version>1.9.1</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>it.nextsw.common</groupId>
             <artifactId>next-spring-data-rest-framework-data</artifactId>
-            <version>1.9.1</version>
+            <version>3.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <type>jar</type>
         </dependency>
-<!--        <dependency>
-            <groupId>it.bologna.ausl.internauta.model</groupId>
-            <artifactId>internauta-model</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>-->
     </dependencies>
     <build>
         <plugins>
@@ -82,8 +69,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <source>21</source>
+                    <target>21</target>
+                    <parameters>true</parameters>
+                    <proc>none</proc>
                 </configuration>
             </plugin>
             <plugin>
@@ -102,11 +91,19 @@
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.querydsl</groupId>
+                        <artifactId>querydsl-apt</artifactId>
+                        <version>5.1.0</version>
+                        <classifier>jakarta</classifier>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>jenesisprojections.generator</groupId>
                 <artifactId>jenesis-projections-generator</artifactId>
-                <version>1.2-SNAPSHOT</version>
+                <version>2.0</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>

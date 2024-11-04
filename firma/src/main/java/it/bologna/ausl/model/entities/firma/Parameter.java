@@ -1,27 +1,22 @@
 package it.bologna.ausl.model.entities.firma;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import java.io.Serializable;
 import java.util.Map;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 
 /**
  *
  * @author gdm
  */
-@TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-})
 @Entity
 @Table(name = "parameters", schema = "firma")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -36,7 +31,7 @@ public class Parameter implements Serializable {
     @Column(name = "id")
     private String id;
     
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 

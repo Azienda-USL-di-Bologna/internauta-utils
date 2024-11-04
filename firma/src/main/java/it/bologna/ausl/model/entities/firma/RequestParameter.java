@@ -2,30 +2,30 @@ package it.bologna.ausl.model.entities.firma;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+//import org.hibernate.annotations.TypeDef;
+//import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author solidus83
  */
-@TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-})
+//@TypeDefs({
+//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+//})
 @Entity
 @Table(name = "request_parameters", schema = "firma")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -40,7 +40,7 @@ public class RequestParameter implements Serializable {
     @Column(name = "id")
     private String id;
     
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private Map<String, Object> data;
 

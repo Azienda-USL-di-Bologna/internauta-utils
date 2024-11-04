@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.vladmihalcea.hibernate.type.range.Range;
+import io.hypersistence.utils.hibernate.type.range.Range;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
@@ -9,7 +9,7 @@ import it.bologna.ausl.model.entities.masterjobs.QService;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
 import java.util.concurrent.ScheduledFuture;
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.TransactionDefinition;

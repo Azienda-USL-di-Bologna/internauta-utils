@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class PdfToolkitDownloaderUtils {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static final Pattern patternUuid = Pattern.compile("\\b([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})\\b");
+    private static final Pattern PATTERN_UUID = Pattern.compile("\\b([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})\\b");
 
     /**
      * in fase di avvio dell'applicazione setta la chiave e il certificato corretti a seconda che siamo in test o in prod (basandosi sul parametro firmaMode)
@@ -95,18 +95,21 @@ public class PdfToolkitDownloaderUtils {
     @PostConstruct
     public void initialize() throws PdfToolkitConfigurationException {
         switch (pdfToolkitMode.toLowerCase()) {
-            case "test": // se sono in modalità di test prendo il certificato con la chiave pubblica di test e la chiave per cifrare il token di test
+            case "test" -> {
+                // se sono in modalità di test prendo il certificato con la chiave pubblica di test e la chiave per cifrare il token di test
                 this.downloaderPublicCertBabel = new File(this.downloaderPublicCertBabelTestLocation);
                 this.downloaderEncryptionPublicKey = new File(this.downloaderEncryptionPublicKeyTestLocation);
-                break;
-            case "prod": // se sono in modalità di test prendo il certificato con la chiave pubblica di prod e la chiave per cifrare il token di prod
+            }
+            case "prod" -> {
+                // se sono in modalità di test prendo il certificato con la chiave pubblica di prod e la chiave per cifrare il token di prod
                 this.downloaderPublicCertBabel = new File(this.downloaderPublicCertBabelProdLocation);
                 this.downloaderEncryptionPublicKey = new File(this.downloaderEncryptionPublicKeyProdLocation);
-                break;
-            default:
+            }
+            default -> {
                 String errorMessage = String.format("PdfToolkit mode deve essere \"%s\" o \"%s\". Valore trovato \"%s\"", "test", "prod", pdfToolkitMode);
                 logger.error(errorMessage);
                 throw new PdfToolkitConfigurationException(errorMessage);
+            }
         }
     }
 
@@ -192,7 +195,7 @@ public class PdfToolkitDownloaderUtils {
 
             Map<String, Object> result = new HashMap<>();
             result.put("url", res);
-            Matcher matcher = patternUuid.matcher(downloadParams.get("fileId").toString());
+            Matcher matcher = PATTERN_UUID.matcher(downloadParams.get("fileId").toString());
             if (matcher.find()) {
                 result.put("uuid", matcher.group(1));
             }

@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.internauta.utils.versatore.plugins.parer;
 
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
@@ -10,7 +5,6 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
-import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
@@ -40,7 +34,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import javax.xml.datatype.DatatypeConfigurationException;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -410,16 +404,11 @@ public class ParerVersatoreService extends VersatoreDocs {
                 resp.close(); // Close respons
             } catch (Throwable ex) {
                 log.error("Errore chiamata riversamento", ex);
-                ex.printStackTrace();
                 risultatoEVersamentiAllegati.put("response", null);
             }
             return risultatoEVersamentiAllegati;
-        } catch (MinIOWrapperException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnsupportedEncodingException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            java.util.logging.Logger.getLogger(ParerVersatoreService.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (MinIOWrapperException | UnsupportedEncodingException ex) {
+            log.error("Errore chiamata riversamento", ex);
         }
         return risultatoEVersamentiAllegati;
     }
@@ -435,7 +424,7 @@ public class ParerVersatoreService extends VersatoreDocs {
             JSONParser jsonParser = new JSONParser();
             JSONObject json = (JSONObject) jsonParser.parse(allegato.getMetadatiVersati());
             idFile = IdentityFile.parse(json);
-            Element esitoAllegato = null;
+            Element esitoAllegato;
             if(mappaEsitiAllegati.get(idFile.getUuidMongo()) != null) {
                 esitoAllegato = (Element) mappaEsitiAllegati.get(idFile.getUuidMongo());
             } else {

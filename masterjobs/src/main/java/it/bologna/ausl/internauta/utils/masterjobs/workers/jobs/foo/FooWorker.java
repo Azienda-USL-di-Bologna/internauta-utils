@@ -8,7 +8,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
