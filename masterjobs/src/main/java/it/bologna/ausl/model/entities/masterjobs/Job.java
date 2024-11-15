@@ -3,40 +3,38 @@ package it.bologna.ausl.model.entities.masterjobs;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.UUID;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author gdm
  */
-@TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-})
+//@TypeDefs({
+//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+//})
 @Entity
 @Table(name = "jobs", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -57,7 +55,7 @@ public class Job implements Serializable, JobInterface {
     private String name;
     
     @Basic(optional = true)
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private HashMap<String, Object> data;
     
@@ -88,7 +86,7 @@ public class Job implements Serializable, JobInterface {
     
     @Basic(optional = true)
     @Column(name = "hash")
-    @Type(type="pg-uuid")
+//    @Type(type="pg-uuid")
     private UUID hash;
     
     @Basic(optional = false)
@@ -97,7 +95,7 @@ public class Job implements Serializable, JobInterface {
     private Integer executableCheckEveryMillis = 100;
     
     @Basic(optional = true)
-    @Type(type = "jsonb")
+    @Type(JsonBinaryType.class)
     @Column(name = "work_data", columnDefinition = "jsonb")
     private HashMap<String, Object> workData;
         
@@ -121,105 +119,131 @@ public class Job implements Serializable, JobInterface {
     public Job() {
     }
 
+    @Override
     public Long getId() {
         return id;
     }
 
+    @Override
     public void setId(Long id) {
         this.id = id;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }
 
+    @Override
     public HashMap<String, Object> getData() {
         return data;
     }
 
+    @Override
     public void setData(HashMap<String, Object> data) {
         this.data = data;
     }
 
+    @Override
     public SetInterface getSet() {
         return set;
     }
 
+    @Override
     public void setSet(SetInterface set) {
         this.set = (Set) set;
     }
 
+    @Override
     public JobState getState() {
         return state;
     }
 
+    @Override
     public void setState(JobState state) {
         this.state = state;
     }
 
+    @Override
     public String getError() {
         return error;
     }
 
+    @Override
     public void setError(String error) {
         this.error = error;
     }
+    @Override
     public String getInsertedFrom() {
         return insertedFrom;
     }
 
+    @Override
     public void setInsertedFrom(String insertedFrom) {
         this.insertedFrom = insertedFrom;
     }
 
+    @Override
     public UUID getHash() {
         return hash;
     }
 
+    @Override
     public void setHash(UUID hash) {
         this.hash = hash;
     }
     
+    @Override
     public Boolean getDeferred() {
         return deferred;
     }
 
+    @Override
     public void setDeferred(Boolean deferred) {
         this.deferred = deferred;
     }
 
+    @Override
     public Integer getExecutableCheckEveryMillis() {
         return executableCheckEveryMillis;
     }
 
+    @Override
     public void setExecutableCheckEveryMillis(Integer executableCheckEveryMillis) {
         this.executableCheckEveryMillis = executableCheckEveryMillis;
     }
 
+    @Override
     public HashMap<String, Object> getWorkData() {
         return workData;
     }
 
+    @Override
     public void setWorkData(HashMap<String, Object> workData) {
         this.workData = workData;
     }
 
+    @Override
     public ZonedDateTime getLastExecutionTs() {
         return lastExecutionTs;
     }
 
+    @Override
     public void setLastExecutionTs(ZonedDateTime lastExecutionTs) {
         this.lastExecutionTs = lastExecutionTs;
     }
 
+    @Override
     public ZonedDateTime getInsertTs() {
         return insertTs;
     }
 
+    @Override
     public void setInsertTs(ZonedDateTime insertTs) {
         this.insertTs = insertTs;
     }

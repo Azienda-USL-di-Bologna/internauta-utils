@@ -221,6 +221,7 @@ public class ITextRenderer {
         root.setContainingBlock(new ViewportBox(getInitialExtents(c)));
         root.layout(c);
         _dim = root.getLayer().getPaintingDimension(c);
+//        root.getLayer().trimEmptyPages(_dim.height);
         root.getLayer().trimEmptyPages(c, _dim.height);
         root.getLayer().layoutPages(c);
         _root = root;

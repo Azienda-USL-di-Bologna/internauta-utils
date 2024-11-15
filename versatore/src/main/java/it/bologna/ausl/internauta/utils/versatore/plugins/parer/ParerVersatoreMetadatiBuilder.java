@@ -10,11 +10,9 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.plugins.infocert.InfocertVersatoreService;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
@@ -22,13 +20,13 @@ import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DELIBERA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DETERMINA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDELI;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDETE;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGPICO;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DELIBERA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DETERMINA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDELI;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDETE;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGPICO;
 import it.bologna.ausl.model.entities.scripta.QAllegato;
 import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
@@ -40,13 +38,11 @@ import it.bologna.ausl.riversamento.builder.IdentityFile;
 import it.bologna.ausl.riversamento.builder.ProfiloArchivistico;
 import it.bologna.ausl.riversamento.builder.UnitaDocumentariaBuilder;
 import it.bologna.ausl.riversamento.builder.oggetti.DatiSpecifici;
-import it.bologna.ausl.riversamento.builder.oggetti.UnitaDocumentaria;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -57,8 +53,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.persistence.EntityManager;
-import javax.xml.bind.JAXBException;
+import jakarta.persistence.EntityManager;
+import jakarta.xml.bind.JAXBException;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.parsers.ParserConfigurationException;
 import org.slf4j.Logger;
@@ -113,9 +109,9 @@ public final class ParerVersatoreMetadatiBuilder {
                 try {
                     log.info("buildo i dati specifici");
                     DatiSpecifici datiSpecifici = null;
-                    if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+                    if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
                         datiSpecifici = buildDatiSpecifici(doc, docDetail, dataPerDatiSpecifici, versioneDatiSpecificiPico, versioneDatiSpecificiDete, versioneDatiSpecificiDeli);
-                    } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE) {
+                    } else if (doc.getTipologia() == Doc.TipologiaDoc.RGPICO || doc.getTipologia() == Doc.TipologiaDoc.RGDELI || doc.getTipologia() == Doc.TipologiaDoc.RGDETE) {
                         datiSpecifici = buildDatiSpecificiRegistroGiornaliero(doc, docDetail, versioneDatiSpecificiRg);
                     }
                     
@@ -150,7 +146,7 @@ public final class ParerVersatoreMetadatiBuilder {
 
         DatiSpecificiBuilder datiSpecificiBuilder = new DatiSpecificiBuilder();
 
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
             datiSpecificiBuilder.insertNewTag("UnitaOperativaProponente", docDetail.getIdStrutturaRegistrazione().getNome());
         }
         List<AttoreDoc> attori = doc.getAttoriList();
@@ -161,7 +157,7 @@ public final class ParerVersatoreMetadatiBuilder {
         String nomeDirettoreSanitario = "";
         String nomeDirettoreGenerale = "";
         String operatoreDiProtocollo = "";
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
             datiSpecificiBuilder.insertNewTag("Destinatario", "Vedi annesso elenco destinatari");
             datiSpecificiBuilder.insertNewTag("Movimento", "OUT");
             datiSpecificiBuilder.insertNewTag("ModalitaTrasmissione", "BABEL");
@@ -197,29 +193,29 @@ public final class ParerVersatoreMetadatiBuilder {
                 operatoreDiProtocollo = attore.getIdPersona().getCodiceFiscale();
             }
         }
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA && !firmatariString.equals("")) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA && !firmatariString.equals("")) {
                 datiSpecificiBuilder.insertNewTag("Proponente", firmatariString);
             }
-        if (!nomeResponsabile.equals("") && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
+        if (!nomeResponsabile.equals("") && (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
             datiSpecificiBuilder.insertNewTag("ResponsabileDelProcedimento", nomeResponsabile);
         }
-        if (!nomeResponsabile.equals("") && (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA)) {
+        if (!nomeResponsabile.equals("") && (doc.getTipologia() == Doc.TipologiaDoc.DETERMINA || doc.getTipologia() == Doc.TipologiaDoc.DELIBERA)) {
             datiSpecificiBuilder.insertNewTag("ResponsabileProcedimento", nomeResponsabile);
         }
         if (!vistiString.equals("")) {
             datiSpecificiBuilder.insertNewTag("Visti", vistiString);
         }
         if (!firmatariString.equals("")) {
-            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+            if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
                 datiSpecificiBuilder.insertNewTag("Firmatario", firmatariString);
             }
-            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+            if (doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                 datiSpecificiBuilder.insertNewTag("FirmatarioAtto", firmatariString);
                 datiSpecificiBuilder.insertNewTag("UnitaOperativaFirmatarioAtto", docDetail.getIdStrutturaRegistrazione().getNome());
             }
             
         }
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
             if(nomeDirettoreAmministrativo != null) {
                 datiSpecificiBuilder.insertNewTag("DirettoreAmministrativo", nomeDirettoreAmministrativo);
             } else {
@@ -247,8 +243,8 @@ public final class ParerVersatoreMetadatiBuilder {
             }
         }
 
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
-            if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
+            if(doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                 datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
             }
             HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
@@ -268,11 +264,11 @@ public final class ParerVersatoreMetadatiBuilder {
             if (dataEsecutivita != null) {
                 datiSpecificiBuilder.insertNewTag("EsecutivitaData", dataEsecutivita.toLocalDate().toString());
             }
-            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+            if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
                 String noteEsecutivita = (String) additionalDataDoc.get("note_esecutivita");
                 datiSpecificiBuilder.insertNewTag("EsecutivitaNote", noteEsecutivita);
             }
-            if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+            if(doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
                 datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
             }
             datiSpecificiBuilder.insertNewTag("PubblicazioneRegistro", "ALBO ON LINE");
@@ -283,26 +279,26 @@ public final class ParerVersatoreMetadatiBuilder {
                 datiSpecificiBuilder.insertNewTag("PubblicazioneFine", finePubblicazione.toLocalDate().toString());
             }
             
-            if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+            if (doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                 datiSpecificiBuilder.insertNewTag("PubblicazioneTipo", "INTEGRALE");
             }
             
             datiSpecificiBuilder.insertNewTag("IdentificazioneRepository", "GEDI");
         } 
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
             datiSpecificiBuilder.insertNewTag("Mittente", docDetail.getMittente());
             datiSpecificiBuilder.insertNewTag("Movimento", "IN");
             datiSpecificiBuilder.insertNewTag("ModalitaTrasmissione", "BABEL");
             datiSpecificiBuilder.insertNewTag("OperatoreDiProtocollo", operatoreDiProtocollo);
         }
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
             datiSpecificiBuilder.insertNewTag("DataFascicolazione", dataArchiviazione);
             datiSpecificiBuilder.insertNewTag("IdentificazioneRepository", "GEDI");
             datiSpecificiBuilder.insertNewTag("Visibilita", "LIBERA");
             datiSpecificiBuilder.insertNewTag("Consultabilita", "NON PRECISATA");
 
         }
-        if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+        if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
             HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
             additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
             HashMap<String, Object> metadatiTrasparenza = new HashMap<String, Object>();
@@ -332,9 +328,9 @@ public final class ParerVersatoreMetadatiBuilder {
             
         }
         datiSpecifici = datiSpecificiBuilder.getDatiSpecifici();
-        if(doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
+        if(doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) {
             datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiPico);
-        } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+        } else if (doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
             datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiDete);
         } else {
             datiSpecifici.setVersioneDatiSpecifici(versioneDatiSpecificiDeli);
@@ -461,26 +457,26 @@ public final class ParerVersatoreMetadatiBuilder {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS[xxx]");
         for (Allegato allegato : allegati) {
             if (allegato.getTipo() != Allegato.TipoAllegato.ANNESSO && allegato.getTipo() != Allegato.TipoAllegato.ANNOTAZIONE) {
-                if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
+                if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA && allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                     unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originale.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     
-                }else  if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDELI || doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGPICO ||doc.getTipologia() == DocDetailInterface.TipologiaDoc.RGDETE )&& allegato.getPrincipale() == true) {
+                }else  if ((doc.getTipologia() == Doc.TipologiaDoc.RGDELI || doc.getTipologia() == Doc.TipologiaDoc.RGPICO ||doc.getTipologia() == Doc.TipologiaDoc.RGDETE )&& allegato.getPrincipale() == true) {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("allegato principale", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                     unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originale.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
+                } else if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("letterafirmata.pdf", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
                     unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originaleFirmato.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                } else if ((doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
+                } else if ((doc.getTipologia() == Doc.TipologiaDoc.DELIBERA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) && allegato.getFirmato() == true && allegato.getTipo() == Allegato.TipoAllegato.TESTO) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmato.pdf", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), "PDF", "application/pdf");
                     unitaDocumentariaBuilder.addDocumentoPrincipale(getUuidMinIObyFileId(originaleFirmato.getIdRepository()), traduzioneTipologiaParer(doc.getTipologia()), "", "", 1, identityFilePrincipale, docDetail.getDataRegistrazione().format(formatter), tipoDocumentoDefault, "DocumentoGenerico", "FILE", getDescrizioneRiferimentoTemporale(doc.getTipologia()));
@@ -509,7 +505,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
 
-            } else if (doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+            } else if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
                     Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", getUuidMinIObyFileId(destinatari.getIdRepository()), destinatari.getHashMd5(), "PDF", "application/pdf");
@@ -548,14 +544,14 @@ public final class ParerVersatoreMetadatiBuilder {
                     unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(stampaUnicaOmissis.getIdRepository()),"STAMPA UNICA CON OMISSIS", "", stampaUnicaOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("deliberazioneomissis.pdf", getUuidMinIObyFileId(testoOmissis.getIdRepository()), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
                     unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(testoOmissis.getIdRepository()),"DELIBERAIONE CON OMISSIS", "", testoOmissis.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Annesso", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA) {
+                } else if (allegato.getTipo() == Allegato.TipoAllegato.TESTO_OMISSIS && doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                     Allegato.DettaglioAllegato testoOmissis = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("testofirmatomissis.pdf", getUuidMinIObyFileId(testoOmissis.getIdRepository()), testoOmissis.getHashMd5(), "PDF", "application/pdf");
                     i = i + 1;
@@ -563,7 +559,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
-            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
+            } else if ( doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.DESTINATARI) {
                     Allegato.DettaglioAllegato destinatari = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("destinatari.pdf", getUuidMinIObyFileId(destinatari.getIdRepository()), destinatari.getHashMd5(), "PDF", "application/pdf");
@@ -615,7 +611,7 @@ public final class ParerVersatoreMetadatiBuilder {
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
-            } else if ( (doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == DocDetailInterface.TipologiaDoc.DETERMINA)) {
+            } else if ( (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA)) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
                     Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale = new IdentityFile("segnatura.xml", getUuidMinIObyFileId(segnatura.getIdRepository()), segnatura.getHashMd5(), "XML", "text/xml");
@@ -643,7 +639,7 @@ public final class ParerVersatoreMetadatiBuilder {
                         versamentiAllegatiInfo.add(allegatoInformation);
                     }
                 }
-            } else if ( doc.getTipologia() == DocDetailInterface.TipologiaDoc.DELIBERA) {
+            } else if ( doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
                 if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SEGNATURA) {
                     Allegato.DettaglioAllegato segnatura = allegato.getDettagli().getOriginale();
                     IdentityFile infoDocumento = new IdentityFile("segnatura.xml", getUuidMinIObyFileId(segnatura.getIdRepository()), segnatura.getHashMd5(), segnatura.getEstensione(), segnatura.getMimeType());
@@ -699,7 +695,7 @@ public final class ParerVersatoreMetadatiBuilder {
                case RGPICO:
                    documenti = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
                            .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
-                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA, DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
+                                   .and(QDocDetail.docDetail.tipologia.in(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA, Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
                                    .and(QDocDetail.docDetail.annullato.eq(Boolean.FALSE))).fetchOne();
                    //            documenti = (Integer) entityManager.createQuery("select count(*) "
 //                    + "from scripta.docs_details dd2 "
@@ -709,7 +705,7 @@ public final class ParerVersatoreMetadatiBuilder {
 //                    .setParameter("value1", d ).getSingleResult();
                    documentiAnnullati = jPAQueryFactory.select(QDocDetail.docDetail.count()).from(QDocDetail.docDetail)
                            .where(QDocDetail.docDetail.dataRegistrazione.goe(d).and(QDocDetail.docDetail.dataRegistrazione.lt(dsuccessivo))
-                                   .and(QDocDetail.docDetail.tipologia.in(DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA, DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
+                                   .and(QDocDetail.docDetail.tipologia.in(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA, Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA))
                                    .and(QDocDetail.docDetail.annullato.eq(Boolean.TRUE))).fetchOne();
                    //            documentiAnnullati = (Integer) entityManager.createQuery("select count(*) "
 //                    + "from scripta.docs_details dd2 "
@@ -778,7 +774,7 @@ public final class ParerVersatoreMetadatiBuilder {
         return datiSpecifici;
     }
     
-    public String traduzioneTipologiaRegistro(DocDetailInterface.TipologiaDoc tipo){
+    public String traduzioneTipologiaRegistro(Doc.TipologiaDoc tipo){
         String registro = "";
         switch(tipo) {
             case PROTOCOLLO_IN_USCITA:
@@ -810,7 +806,7 @@ public final class ParerVersatoreMetadatiBuilder {
         
     }
     
-    public String traduzioneTipologiaParerPerDatiSpecifici(DocDetailInterface.TipologiaDoc tipo){
+    public String traduzioneTipologiaParerPerDatiSpecifici(Doc.TipologiaDoc tipo){
         String tipologia = "";
         switch(tipo) {
             case PROTOCOLLO_IN_USCITA:
@@ -843,7 +839,7 @@ public final class ParerVersatoreMetadatiBuilder {
     }
     
     
-     public String traduzioneTipologiaParer(DocDetailInterface.TipologiaDoc tipo){
+     public String traduzioneTipologiaParer(Doc.TipologiaDoc tipo){
         String tipologia = "";
         switch(tipo) {
             case PROTOCOLLO_IN_USCITA:
@@ -875,7 +871,7 @@ public final class ParerVersatoreMetadatiBuilder {
         
     }
     
-    private String getDescrizioneRiferimentoTemporale(DocDetailInterface.TipologiaDoc tipoDocumento) {
+    private String getDescrizioneRiferimentoTemporale(Doc.TipologiaDoc tipoDocumento) {
         String res = null;
 
         switch (tipoDocumento) {

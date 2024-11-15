@@ -32,16 +32,16 @@ import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface.StatoDoc;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DELIBERA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DETERMINA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DOCUMENT;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.DOCUMENT_UTENTE;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.PROTOCOLLO_IN_USCITA;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGPICO;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDETE;
-import static it.bologna.ausl.model.entities.scripta.DocDetailInterface.TipologiaDoc.RGDELI;
+import it.bologna.ausl.model.entities.scripta.Doc.StatoDoc;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DELIBERA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DETERMINA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DOCUMENT;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DOCUMENT_UTENTE;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGPICO;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDETE;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDELI;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
 import it.bologna.ausl.model.entities.titolario.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
@@ -77,10 +77,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.activation.DataHandler;
-import javax.mail.util.ByteArrayDataSource;
-import javax.xml.ws.BindingProvider;
-import javax.xml.ws.WebServiceException;
+import jakarta.activation.DataHandler;
+import jakarta.mail.util.ByteArrayDataSource;
+import jakarta.xml.ws.BindingProvider;
+import jakarta.xml.ws.WebServiceException;
 import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -469,7 +469,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             log.warn("Titolo non trovato.");
         }
         
-        addNewAttribute(docAttributes, InfocertAttributesEnum.RISERVATO, docDetail.getRiservato().toString())
+        addNewAttribute(docAttributes, InfocertAttributesEnum.RISERVATO, ((Boolean) docDetail.getVisibilita().equals(Doc.VisibilitaDoc.RISERVATO)).toString())
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_MARCA_TEMPORALE, "false")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_SIGILLO, "false")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_CONFORMITA_COPIE, "false")

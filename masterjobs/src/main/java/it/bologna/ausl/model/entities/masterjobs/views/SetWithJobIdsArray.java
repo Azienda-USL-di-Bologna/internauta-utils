@@ -3,36 +3,36 @@ package it.bologna.ausl.model.entities.masterjobs.views;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import it.bologna.ausl.model.entities.masterjobs.SetInterface.SetPriority;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
-import javax.persistence.Basic;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import java.util.UUID;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
  * @author gdm
  */
-@TypeDefs({
-    @TypeDef(name = "list-array", typeClass = ListArrayType.class)
-})
+@Immutable
 @Entity
 @Table(name = "set_with_jobs_array", catalog = "internauta", schema = "masterjobs")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -81,8 +81,14 @@ public class SetWithJobIdsArray implements Serializable {
     private ZonedDateTime nextExecutableCheck;
     
     @Column(name = "jobs_ids", columnDefinition = "int8[]")
-    @Type(type = "list-array")
+    @JdbcTypeCode(SqlTypes.ARRAY)
+//    @Type(ListArrayType.class)
     private List<Long> jobsIds;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "uuid")
+    private UUID uuid;
     
     public SetWithJobIdsArray() {
     }
@@ -157,6 +163,14 @@ public class SetWithJobIdsArray implements Serializable {
 
     public void setJobsIds(List<Long> jobsIds) {
         this.jobsIds = jobsIds;
+    }
+    
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Override

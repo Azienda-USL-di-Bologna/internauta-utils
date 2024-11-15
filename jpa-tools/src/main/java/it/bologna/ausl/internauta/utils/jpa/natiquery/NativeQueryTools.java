@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.internauta.utils.jpa.natiquery;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,9 +17,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
-import javax.persistence.Column;
-import javax.persistence.EntityManager;
-import javax.xml.bind.annotation.XmlAttribute;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityManager;
+import jakarta.xml.bind.annotation.XmlAttribute;
 import org.hibernate.Session;
 
 /**

@@ -2,6 +2,7 @@ package it.bologna.ausl.model.entities.masterjobs;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  *
@@ -54,4 +55,9 @@ public interface SetInterface {
     public ZonedDateTime getExecutionTs();
     
     public void setExecutionTs(ZonedDateTime executionTs);
+    
+    public UUID getUuid();
+    
+    public void setUuid(UUID uuid);
+    
 }

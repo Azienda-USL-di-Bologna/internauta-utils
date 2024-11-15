@@ -24,7 +24,7 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
         log.debug("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
         //voglio versare solo gli RGPICO
-        if (doc.getTipologia().equals(DocDetailInterface.TipologiaDoc.RGPICO))
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO))
         {
             idoneo = true;
             log.info("Prendo da versare il documento id: " + id);
