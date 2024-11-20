@@ -242,7 +242,12 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         String hostname = CommonUtils.getHostname(request);
         Integer port = request.getServerPort();
         
+        log.info(String.format("scheme: %s, hostname: %s, port: %s", scheme, hostname, port));
+        
         String url = configParams.getExternalSignAndCertificateValidator(paramKey, scheme, hostname, port);
+        
+        log.info(String.format("url: %s", url));
+        
         OkHttpClient client = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
 
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder()
