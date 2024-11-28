@@ -42,7 +42,9 @@
         <module>parersender</module>
         <module>ParerDocumentBuilder</module>
         <module>versatore</module>
-        <module>flying-saucer-pdf-itext5</module>
+        <!--<module>flying-saucer-pdf-itext5</module>-->
+        <module>flying-saucer-pdf</module>
+        <module>flying-saucer-core</module>
         <module>PDFToolkit</module>
     </modules>
     <profiles>

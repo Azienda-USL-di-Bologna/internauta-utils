@@ -43,6 +43,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+        <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>masterjobs</artifactId>
             <version>2.0</version>
@@ -56,11 +61,17 @@
         </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>flying-saucer-pdf-itext5-local</artifactId>
-            <version>2.0</version>
-            <type>jar</type>
+            <artifactId>flying-saucer-core-local</artifactId>
+            <version>9.10.2</version>
         </dependency>
         <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>flying-saucer-pdf-local</artifactId>
+            <version>9.10.2</version>
+            <type>jar</type>
+        </dependency>
+        
+<!--        <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext-pdfa</artifactId>
             <version>5.5.13.4</version>
@@ -71,7 +82,7 @@
             <artifactId>itextpdf</artifactId>
             <version>5.5.13.4</version>
             <type>jar</type>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
