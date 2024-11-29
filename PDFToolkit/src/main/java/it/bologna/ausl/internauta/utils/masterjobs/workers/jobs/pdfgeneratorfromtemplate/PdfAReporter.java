@@ -56,7 +56,7 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
 
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
-       // pdfToolkitConfigParams.downloadFilesFromMinIO();
+        pdfToolkitConfigParams.downloadFilesFromMinIO();
 
         ReporterJobWorkerData workerData = getWorkerData();
         workerData.getParametriTemplate().put("resourcePath", formatPathForTemplate(DIRECTORY_FOLDER_PATH));
@@ -71,8 +71,8 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
             try (ByteArrayOutputStream templateOutput = getTemplateOutput(template, workerData.getParametriTemplate())) {
 
                 String htmlContent = templateOutput.toString(StandardCharsets.UTF_8.name());
-                System.out.println("aaaaaaaaaaaaaaaa");
-                System.out.println(htmlContent);
+//                System.out.println("aaaaaaaaaaaaaaaa");
+//                System.out.println(htmlContent);
                 List<String> listFont = getFontFamilies(htmlContent);
                 List<Path> listFontFilePaths = getFontFilePaths(listFont, DIRECTORY_FOLDER_PATH);
 
