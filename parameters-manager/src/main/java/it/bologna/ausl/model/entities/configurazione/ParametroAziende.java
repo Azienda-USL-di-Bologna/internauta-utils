@@ -2,7 +2,6 @@ package it.bologna.ausl.model.entities.configurazione;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.hypersistence.utils.hibernate.type.array.StringArrayType;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -18,7 +17,6 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
