@@ -1,12 +1,5 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
 
-import com.itextpdf.text.pdf.ICC_Profile;
-import com.itextpdf.text.pdf.PdfAConformanceLevel;
-import com.itextpdf.text.pdf.PdfAWriter;
-import com.itextpdf.text.pdf.PdfBoolean;
-import com.itextpdf.text.pdf.PdfDictionary;
-import com.itextpdf.text.pdf.PdfName;
-import com.itextpdf.text.pdf.PdfWriter;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
@@ -32,6 +25,7 @@ import freemarker.template.Version;
 import freemarker.template.TemplateExceptionHandler;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
+import it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfMetadataUtils;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import java.io.BufferedReader;
@@ -79,11 +73,10 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
         File adobeProfileFile = new File(PdfToolkitConfigParams.WORKDIR, PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH + "/AdobeRGB1998.icc");
         
         Template temp = null;
-        Map<String, Object> parametri = null;
+        Map<String, Object> parametri;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
-            ByteArrayOutputStream pdfOut = new ByteArrayOutputStream();
-            InputStream iccProfileStream = new FileInputStream(adobeProfileFile)) {
+            ByteArrayOutputStream pdfOut = new ByteArrayOutputStream()) {
             String templateName = (String) workerData.getTemplateName();
             
             if (templateName == null || templateName.equals("")) {
@@ -124,35 +117,52 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
             renderer.setListener(new PDFCreationListener() {
                 
                 @Override
-                public void preOpen(ITextRenderer itr) {
-                    PdfAWriter writer = (PdfAWriter) itr.getWriter();
-                    writer.setPdfVersion(PdfWriter.PDF_VERSION_1_4);
+                public void preOpen(ITextRenderer iTextRenderer) {
+//                    PdfAWriter writer = (PdfAWriter) itr.getWriter();
+//                    writer.setPdfVersion(PdfWriter.PDF_VERSION_1_4);
+                    
+                    iTextRenderer.getWriter().setTagged(); // a che serve?
+                    com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+                    writer.setPDFXConformance(com.lowagie.text.pdf.PdfWriter.PDFA1A);
+                    writer.setPdfVersion(com.lowagie.text.pdf.PdfWriter.PDF_VERSION_1_7);
                 }
 
                 @Override
-                public void onClose(ITextRenderer itr) {
-                    PdfAWriter writer = (PdfAWriter) itr.getWriter();
-                    try {
+                public void onClose(ITextRenderer iTextRenderer) {
+                com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+//                    PdfAWriter writer = (PdfAWriter) itr.getWriter();
+//                    try {
+//
+//                        PdfDictionary structureTreeRoot = new PdfDictionary();
+//                        structureTreeRoot.put(PdfName.TYPE, PdfName.STRUCTTREEROOT);
+//                        writer.getExtraCatalog().put(PdfName.STRUCTTREEROOT, structureTreeRoot);
+//
+//                        PdfDictionary markInfo = new PdfDictionary(PdfName.MARKINFO);
+//                        markInfo.put(PdfName.MARKED, new PdfBoolean(true));
+//                        writer.getExtraCatalog().put(PdfName.MARKINFO, markInfo);
+//
+//                        PdfDictionary l = new PdfDictionary(PdfName.LANG);
+//                        l.put(PdfName.LANG, new PdfBoolean("true"));
+//                        writer.getExtraCatalog().put(PdfName.LANG, l);
+//
+//                        ICC_Profile icc = ICC_Profile.getInstance(iccProfileStream);
+//                        writer.setOutputIntents("Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", icc);
+//
+//                        writer.createXmpMetadata();
+//                    } catch (Exception ex) {
+//                    }
 
-                        PdfDictionary structureTreeRoot = new PdfDictionary();
-                        structureTreeRoot.put(PdfName.TYPE, PdfName.STRUCTTREEROOT);
-                        writer.getExtraCatalog().put(PdfName.STRUCTTREEROOT, structureTreeRoot);
-
-                        PdfDictionary markInfo = new PdfDictionary(PdfName.MARKINFO);
-                        markInfo.put(PdfName.MARKED, new PdfBoolean(true));
-                        writer.getExtraCatalog().put(PdfName.MARKINFO, markInfo);
-
-                        PdfDictionary l = new PdfDictionary(PdfName.LANG);
-                        l.put(PdfName.LANG, new PdfBoolean("true"));
-                        writer.getExtraCatalog().put(PdfName.LANG, l);
-
-                        ICC_Profile icc = ICC_Profile.getInstance(iccProfileStream);
-                        writer.setOutputIntents("Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", icc);
-
-                        writer.createXmpMetadata();
+                        try {
+                        Object title = workerData.getParametriTemplate().get("title");
+                        if (title != null) {
+                            writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title.toString()));
+                        }
+            //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
+                        OPenPdfMetadataUtils.writeExtraCatalog(writer, adobeProfileFile);
+                        OPenPdfMetadataUtils.writeXmpMetadata(writer);
                     } catch (Exception ex) {
-//                        log.error("", ex);
-                    }
+                        log.error("ITextRenderer's pre writer failed close rhe renderer", ex);
+        }
                 }
 
                 @Override
@@ -165,7 +175,7 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
             renderer.setDocumentFromString(baos.toString("UTF-8"));
             renderer.layout();
           
-            renderer.createPDF(pdfOut, true, true, PdfAConformanceLevel.PDF_A_1A);
+            renderer.createPDF(pdfOut, true);
             String tempFileName = workerData.getFileName() != null ?  workerData.getFileName() : String.format("reporter_%s.pdf", UUID.randomUUID().toString());
             ReporterJobWorkerResult reporterWorkerResult = new ReporterJobWorkerResult();
             try (ByteArrayInputStream bis = new ByteArrayInputStream(pdfOut.toByteArray())) {

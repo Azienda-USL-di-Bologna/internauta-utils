@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.firma.remota.utils.pdf;
 
-import com.itextpdf.text.pdf.PdfReader;
+import com.lowagie.text.pdf.PdfReader;
 import it.bologna.ausl.internauta.utils.firma.data.remota.SignAppearance;
 import java.io.IOException;
 import java.io.InputStream;
