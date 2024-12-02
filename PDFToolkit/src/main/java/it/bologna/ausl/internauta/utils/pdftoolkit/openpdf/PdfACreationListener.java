@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
+package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +71,8 @@ public class PdfACreationListener implements PDFCreationListener {
         try {
             writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title));
 //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
-            ITextMetadataUtils.writeExtraCatalog(writer, fileIcc.toFile());
-            ITextMetadataUtils.writeXmpMetadata(writer);
+            OPenPdfMetadataUtils.writeExtraCatalog(writer, fileIcc.toFile());
+            OPenPdfMetadataUtils.writeXmpMetadata(writer);
         } catch (Exception ex) {
             log.error("ITextRenderer's pre writer failed close rhe renderer", ex);
         }

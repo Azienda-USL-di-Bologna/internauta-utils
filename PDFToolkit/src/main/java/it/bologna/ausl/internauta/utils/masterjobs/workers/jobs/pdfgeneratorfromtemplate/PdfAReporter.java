@@ -10,7 +10,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result.UrlAndUuidResult;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
-import it.bologna.ausl.internauta.utils.pdftoolkit.itext.PdfACreationListener;
+import it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PdfACreationListener;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import org.slf4j.Logger;
@@ -29,9 +29,9 @@ import java.util.Map;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getDefaultConfiguration;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getTemplateOutput;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.getFontFilePaths;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.formatPathForTemplate;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.getPdfA;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.getFontFilePaths;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfPdfUtils.formatPathForTemplate;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfPdfUtils.getPdfA;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH;
 

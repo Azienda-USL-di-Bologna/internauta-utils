@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
+package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
 import com.lowagie.text.DocumentException;
 import org.slf4j.Logger;
@@ -9,14 +9,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.embedFonts;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.embedFonts;
 import java.util.ArrayList;
 
 /**
  * @author ferri
  */
-public class ITextPdfUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(ITextPdfUtils.class);
+public class OPenPdfPdfUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OPenPdfPdfUtils.class);
 
     public static ByteArrayOutputStream getPdfA(ByteArrayOutputStream templateOutput, PdfACreationListener listener)
             throws DocumentException {

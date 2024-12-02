@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.embedFonts;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.embedFonts;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.FileUtils.getFilePathsWithExtension;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH;
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * @author ferri
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ITextFontUtilsTest {
+class OPenPdfFontUtilsTest {
 
     private ITextRenderer iTextRenderer;
 

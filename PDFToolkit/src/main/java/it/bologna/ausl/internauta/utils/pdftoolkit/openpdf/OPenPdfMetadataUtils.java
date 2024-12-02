@@ -1,7 +1,8 @@
-package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
+package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
 import com.lowagie.text.pdf.PdfObject;
 import java.io.File;
+import java.io.FileInputStream;
 import org.slf4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,10 +12,17 @@ import java.util.Random;
 /**
  * @author ferri
  */
-public class ITextMetadataUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(ITextMetadataUtils.class);
+public class OPenPdfMetadataUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OPenPdfMetadataUtils.class);
 
-    public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, File iccProfileStream) throws IOException{
+    public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, File iccProfileStream) throws IOException {
+                        
+        try (InputStream is = new FileInputStream(iccProfileStream)) {
+            writeExtraCatalog(writer, is);
+        }
+    }
+    
+    public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, InputStream iccProfileStream) throws IOException {
                         
         com.lowagie.text.pdf.PdfDictionary structureTreeRoot = new com.lowagie.text.pdf.PdfDictionary();
         structureTreeRoot.put(com.lowagie.text.pdf.PdfName.TYPE, com.lowagie.text.pdf.PdfName.STRUCTTREEROOT);
@@ -28,7 +36,7 @@ public class ITextMetadataUtils {
         l.put(com.lowagie.text.pdf.PdfName.LANG, new com.lowagie.text.pdf.PdfBoolean("true"));
         writer.getExtraCatalog().put(com.lowagie.text.pdf.PdfName.LANG, l);
 
-        java.awt.color.ICC_Profile icc = java.awt.color.ICC_Profile.getInstance(iccProfileStream.getAbsolutePath());
+        java.awt.color.ICC_Profile icc = java.awt.color.ICC_Profile.getInstance(iccProfileStream);
         writer.setOutputIntents("Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", icc);
     }
     

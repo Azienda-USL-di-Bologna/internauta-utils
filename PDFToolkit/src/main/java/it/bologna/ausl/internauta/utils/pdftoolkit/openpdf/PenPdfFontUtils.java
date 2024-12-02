@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.pdftoolkit.itext;
+package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.BaseFont;
@@ -17,8 +17,8 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.FileUtils.getFil
 /**
  * @author ferri
  */
-public class ITextFontUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(ITextFontUtils.class);
+public class PenPdfFontUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(PenPdfFontUtils.class);
 
     public static void embedFonts(ITextRenderer iTextRenderer, List<Path> fontsFolderPath) {
         for (Path path : fontsFolderPath) {
