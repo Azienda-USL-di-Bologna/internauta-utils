@@ -71,8 +71,8 @@ public class PdfACreationListener implements PDFCreationListener {
         try {
             writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title));
 //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
-            OPenPdfMetadataUtils.writeExtraCatalog(writer, fileIcc.toFile());
-            OPenPdfMetadataUtils.writeXmpMetadata(writer);
+            OpenPdfMetadataUtils.writeExtraCatalog(writer, fileIcc.toFile());
+            OpenPdfMetadataUtils.writeXmpMetadata(writer);
         } catch (Exception ex) {
             log.error("ITextRenderer's pre writer failed close rhe renderer", ex);
         }

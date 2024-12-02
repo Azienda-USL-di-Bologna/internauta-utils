@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
 import com.lowagie.text.DocumentException;
+import com.lowagie.text.exceptions.BadPasswordException;
+import com.lowagie.text.pdf.PdfReader;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -10,13 +12,14 @@ import java.io.InputStream;
 import java.nio.file.Path;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.embedFonts;
+import java.io.File;
 import java.util.ArrayList;
 
 /**
  * @author ferri
  */
-public class OPenPdfPdfUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OPenPdfPdfUtils.class);
+public class OpenPdfPdfUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenPdfPdfUtils.class);
 
     public static ByteArrayOutputStream getPdfA(ByteArrayOutputStream templateOutput, PdfACreationListener listener)
             throws DocumentException {
@@ -97,5 +100,23 @@ public class OPenPdfPdfUtils {
             isAllPdfAMarked = false;
         }
         return isAllPdfAMarked;
+    }
+    
+    public static boolean isPdfOpenable(InputStream pdf) throws IOException {
+        try (PdfReader reader = new PdfReader(pdf);) {
+            return true;
+        } catch (Exception ex) {
+            log.error("errore nell'aprire il pdf", ex);
+            return false;
+        }
+    }
+    
+    public static boolean isPdfProtected(InputStream pdf) throws IOException {
+        try (PdfReader reader = new PdfReader(pdf);) {
+            return true;
+        } catch (BadPasswordException ex) {
+            log.error("errore nell'aprire il pdf", ex);
+            return false;
+        }
     }
 }

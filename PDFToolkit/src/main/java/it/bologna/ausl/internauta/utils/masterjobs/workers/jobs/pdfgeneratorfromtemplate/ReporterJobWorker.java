@@ -25,7 +25,7 @@ import freemarker.template.Version;
 import freemarker.template.TemplateExceptionHandler;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
-import it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfMetadataUtils;
+import it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfMetadataUtils;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import java.io.BufferedReader;
@@ -158,8 +158,8 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
                             writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title.toString()));
                         }
             //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
-                        OPenPdfMetadataUtils.writeExtraCatalog(writer, adobeProfileFile);
-                        OPenPdfMetadataUtils.writeXmpMetadata(writer);
+                        OpenPdfMetadataUtils.writeExtraCatalog(writer, adobeProfileFile);
+                        OpenPdfMetadataUtils.writeXmpMetadata(writer);
                     } catch (Exception ex) {
                         log.error("ITextRenderer's pre writer failed close rhe renderer", ex);
         }
