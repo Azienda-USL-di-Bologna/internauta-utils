@@ -30,8 +30,8 @@ import java.util.Map;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getDefaultConfiguration;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getTemplateOutput;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.getFontFilePaths;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfPdfUtils.formatPathForTemplate;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OPenPdfPdfUtils.getPdfA;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfPdfUtils.formatPathForTemplate;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfPdfUtils.getPdfA;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH;
 

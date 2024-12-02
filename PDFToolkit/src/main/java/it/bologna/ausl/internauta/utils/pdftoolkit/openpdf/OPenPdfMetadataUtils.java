@@ -12,8 +12,8 @@ import java.util.Random;
 /**
  * @author ferri
  */
-public class OPenPdfMetadataUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OPenPdfMetadataUtils.class);
+public class OpenPdfMetadataUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenPdfMetadataUtils.class);
 
     public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, File iccProfileStream) throws IOException {
                         
