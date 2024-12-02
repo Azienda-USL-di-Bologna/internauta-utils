@@ -167,10 +167,16 @@ public final class ParerVersatoreMetadatiBuilder {
                 nomeResponsabile = attore.getIdPersona().getDescrizione() + " (" + attore.getIdStruttura().getNome() + ")";
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.VISTI) {
-                if (vistiString.equals("")) {
-                    vistiString = vistiString + attore.getIdPersona().getDescrizione();
+                String descrizione;
+                if (attore.getIdPersona() != null) {
+                    descrizione = attore.getIdPersona().getDescrizione();
                 } else {
-                    vistiString = vistiString + "; " + attore.getIdPersona().getDescrizione();
+                    descrizione = attore.getIdStruttura().getNome();
+                }
+                if (vistiString.equals("")) {
+                    vistiString = vistiString + descrizione;
+                } else {
+                    vistiString = vistiString + "; " + descrizione;
                 }
             }
             if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {

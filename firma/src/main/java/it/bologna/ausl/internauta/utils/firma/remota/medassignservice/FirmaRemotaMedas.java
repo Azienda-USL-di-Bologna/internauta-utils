@@ -383,7 +383,7 @@ public class FirmaRemotaMedas extends FirmaRemota {
     
     /**
      * costruisce l'oggetto TypeUser da passare alle chiamate.
-     * Usa sempre ssn per indentificare l'utente, ma viene letto dal campo username per far funzionare iol caso di cf diverso dall'effettivo cf dell'utente. Più
+     * Usa sempre ssn per indentificare l'utente, ma viene letto dal campo username per far funzionare il caso di cf diverso dall'effettivo cf dell'utente. Più
      * che altro server per i di test
      * @param userInformation
      * @return 
@@ -743,57 +743,64 @@ public class FirmaRemotaMedas extends FirmaRemota {
         TypeGetUserInfo4Resp typeGetUserInfo4Resp;
         List<FirmaRemotaUserSign> res = new ArrayList<>();
         MedasUserInformation medasUserInformation = (MedasUserInformation) userInformation;
-        String processId = (String) profiles.get(0).get("processId");
-        List<String> docTypes = (List<String>) profiles.get(0).get("docTypes");
-        try {
-            GetUserInfo4Req getUserInfo4Req = new GetUserInfo4Req();
-            getUserInfo4Req.setGetUserInfo4Req(
-                getTypeGetUserInfo4Req(
-                    medasUserInformation, 
-                    (String) profiles.get(0).get("processId"), 
-                    (List<String>) profiles.get(0).get("docTypes")
-                )
-            );
-            GetUserInfo4Resp getUserInfoResp = this.utilsService.getUserInfo4(getUserInfo4Req);
-            typeGetUserInfo4Resp = getUserInfoResp.getGetUserInfo4Resp();
-        } catch (Exception ex) {
-            String errorMessage = "errore generico di connessione al server per la firma";
-            logger.error(errorMessage, ex);
-            throw new RemoteServiceException(errorMessage, ex);
+        
+        for (Map<String, Object> profile : profiles) {
+            
+//            String processId = (String) profiles.get(0).get("processId");
+//            List<String> docTypes = (List<String>) profiles.get(0).get("docTypes");
+            String processId = (String) profile.get("processId");
+            List<String> docTypes = (List<String>) profile.get("docTypes");
+            try {
+                GetUserInfo4Req getUserInfo4Req = new GetUserInfo4Req();
+                getUserInfo4Req.setGetUserInfo4Req(
+                    getTypeGetUserInfo4Req(
+                        medasUserInformation, 
+                        processId, 
+                        docTypes
+                    )
+                );
+                GetUserInfo4Resp getUserInfoResp = this.utilsService.getUserInfo4(getUserInfo4Req);
+                typeGetUserInfo4Resp = getUserInfoResp.getGetUserInfo4Resp();
+            } catch (Exception ex) {
+                String errorMessage = "errore generico di connessione al server per la firma";
+                logger.error(errorMessage, ex);
+                throw new RemoteServiceException(errorMessage, ex);
+            }
+
+            TypeMessageDesc resMessage = typeGetUserInfo4Resp.getMessage();
+            if (resMessage != null) {
+                if (resMessage.getCode().intValue() > 0) {
+                    String errorMessage = String.format("il firmatario %s non ha nessun potere per il processo %s, remote server error. code: %s - message: %s", userInformation.getUsername(), processId, resMessage.getCode().intValue(), resMessage.getDescription());
+                    logger.info(errorMessage);
+//                    throw new RemoteServiceException(errorMessage);
+                } else {
+                    TypeSigningUser4 signerUser = typeGetUserInfo4Resp.getSignerUser();
+                    List<TypeSignaturePower3> signaturePowerList = signerUser.getSignaturePowerList().getSignaturePower();
+                    for (TypeSignaturePower3 signaturePower : signaturePowerList) {
+                        List<TypeCert4> certificateList = signaturePower.getCertificateList().getCertificate();
+                        for (TypeCert4 certificate : certificateList) {
+                            MedasUserSign userSign = new MedasUserSign();
+                            userSign.setActive(signaturePower.isActive());
+                            userSign.setCertificateId(certificate.getId());
+                            String otpTypesDescription = String.join(",", certificate.getOTPtypeList().getOTPtype());
+                            userSign.setDescription(String.format("%s - %s - %s", signaturePower.getDescription(), certificate.getDescription(), otpTypesDescription));
+                            userSign.setProcessId(processId); // boh
+                            userSign.setDocTypes(docTypes); // boh
+                            userSign.setOtpType(toOTPTypeList(certificate.getOTPtypeList()));
+                            userSign.setSignPowerCode(signaturePower.getCode());
+                            userSign.setSignType(MedasUserSign.SignType.valueOf(signaturePower.getSignType()));
+                            res.add(userSign);
+                        }
+                    }
+
+                    // signerUser.getSignaturePowerList().getSignaturePower().get(0).getProfile().getProcessList().getProcess().get(0);
+                }
+            } else {
+                String errorMessage = "il resultMessage è null, questo non dovrebbe succedere";
+                throw new RemoteServiceException(errorMessage);
+            }
         }
         
-        TypeMessageDesc resMessage = typeGetUserInfo4Resp.getMessage();
-        if (resMessage != null) {
-            if (resMessage.getCode().intValue() > 0) {
-                String errorMessage = String.format("remote server error. code: %s - message: %s", resMessage.getCode().intValue(), resMessage.getDescription());
-                logger.error(errorMessage);
-                throw new RemoteServiceException(errorMessage);
-            } else {
-                TypeSigningUser4 signerUser = typeGetUserInfo4Resp.getSignerUser();
-                List<TypeSignaturePower3> signaturePowerList = signerUser.getSignaturePowerList().getSignaturePower();
-                for (TypeSignaturePower3 signaturePower : signaturePowerList) {
-                    List<TypeCert4> certificateList = signaturePower.getCertificateList().getCertificate();
-                    for (TypeCert4 certificate : certificateList) {
-                        MedasUserSign userSign = new MedasUserSign();
-                        userSign.setActive(signaturePower.isActive());
-                        userSign.setCertificateId(certificate.getId());
-                        String otpTypesDescription = String.join(",", certificate.getOTPtypeList().getOTPtype());
-                        userSign.setDescription(String.format("%s - %s", certificate.getDescription(), otpTypesDescription));
-                        userSign.setProcessId(processId); // boh
-                        userSign.setDocTypes(docTypes); // boh
-                        userSign.setOtpType(toOTPTypeList(certificate.getOTPtypeList()));
-                        userSign.setSignPowerCode(signaturePower.getCode());
-                        userSign.setSignType(MedasUserSign.SignType.valueOf(signaturePower.getSignType()));
-                        res.add(userSign);
-                    }
-                }
-                
-                // signerUser.getSignaturePowerList().getSignaturePower().get(0).getProfile().getProcessList().getProcess().get(0);
-            }
-        } else {
-            String errorMessage = "il resultMessage è null, questo non dovrebbe succedere";
-            throw new RemoteServiceException(errorMessage);
-        }
         Collections.sort(res, (FirmaRemotaUserSign lhs, FirmaRemotaUserSign rhs) -> {
             if (lhs == null) {
                 return -1;
