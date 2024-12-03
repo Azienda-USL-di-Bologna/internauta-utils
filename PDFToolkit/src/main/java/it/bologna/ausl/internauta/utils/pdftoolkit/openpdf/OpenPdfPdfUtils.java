@@ -11,8 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
-import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.embedFonts;
-import java.io.File;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfFontUtils.embedFonts;
 import java.util.ArrayList;
 
 /**

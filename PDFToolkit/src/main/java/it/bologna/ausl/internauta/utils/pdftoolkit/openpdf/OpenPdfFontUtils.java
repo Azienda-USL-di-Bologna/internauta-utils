@@ -17,8 +17,8 @@ import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.FileUtils.getFil
 /**
  * @author ferri
  */
-public class PenPdfFontUtils {
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(PenPdfFontUtils.class);
+public class OpenPdfFontUtils {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenPdfFontUtils.class);
 
     public static void embedFonts(ITextRenderer iTextRenderer, List<Path> fontsFolderPath) {
         for (Path path : fontsFolderPath) {

@@ -26,8 +26,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.bologna.ausl.mavenchef.utils</groupId>
-            <artifactId>flying-saucer-core</artifactId>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>flying-saucer-core-local</artifactId>
             <version>9.10.2</version>
         </dependency>
         <dependency>
