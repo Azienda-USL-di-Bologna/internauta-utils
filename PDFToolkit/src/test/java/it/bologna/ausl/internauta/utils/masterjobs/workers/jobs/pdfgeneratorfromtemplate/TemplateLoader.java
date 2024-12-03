@@ -9,7 +9,11 @@ import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import org.apache.commons.io.IOUtils;
 
 /**
  *
@@ -24,9 +28,25 @@ public class TemplateLoader {
         
     public static void main(String[] args) throws MinIOWrapperException, IOException {
         //uploadFile();
-        try(FileInputStream fis = new FileInputStream("protetto_da_password.pdf")) {
-            boolean pdfOpenable = OpenPdfPdfUtils.isPdfOpenable(fis);
+        checkPdf();
+    }
+    
+    public static void checkPdf() throws FileNotFoundException, IOException {
+        try(FileInputStream fis = new FileInputStream("password3.pdf");) {
+            OpenPdfPdfUtils.OpenedPdfStatus pdfOpenable = OpenPdfPdfUtils.checkPdf(fis);
             System.out.println(pdfOpenable);
+        }
+    }
+    
+    public static void merge() throws FileNotFoundException, IOException {
+        ArrayList files = new ArrayList();
+        files.add(new File("password3.pdf"));
+        files.add(new File("okA_2.pdf"));
+        files.add(new File("okA.pdf"));
+        try(FileInputStream fis = new FileInputStream("password2.pdf");
+                FileInputStream icc = new FileInputStream("AdobeRGB1998.icc")) {
+            byte[] mergePdfOpenPdf = OpenPdfPdfUtils.mergePdfOpenPdf(files, icc, "ciao");
+            IOUtils.write(mergePdfOpenPdf, new FileOutputStream("merge.pdf"));
         }
     }
     
