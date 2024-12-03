@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PenPdfFontUtils.embedFonts;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfFontUtils.embedFonts;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.FileUtils.getFilePathsWithExtension;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.RESOURCES_RELATIVE_PATH;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParamsTest.TEST_DIRECTORY_FOLDER_PATH;
