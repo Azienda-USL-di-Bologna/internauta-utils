@@ -16,6 +16,44 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>flying-saucer-core-local</artifactId>
+            <version>9.10.2</version>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>flying-saucer-pdf-local</artifactId>
+            <version>9.10.2</version>
+            <type>jar</type>
+        </dependency>
+         <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>masterjobs</artifactId>
+            <version>2.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>authorization-utils</artifactId>
+            <version>2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>minIO-manager</artifactId>
+            <version>2.0</version>
+            <scope>provided</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>estrattore</artifactId>
+            <version>2.0</version>
+            <scope>provided</scope>
+            <type>jar</type>
+        </dependency>
+        
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <scope>provided</scope>
@@ -43,24 +81,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>masterjobs</artifactId>
-            <version>2.0</version>
-            <type>jar</type>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
         </dependency>
-        <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>authorization-utils</artifactId>
-            <version>2.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>flying-saucer-pdf-itext5-local</artifactId>
-            <version>2.0</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
+        
+<!--        <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext-pdfa</artifactId>
             <version>5.5.13.4</version>
@@ -71,7 +97,7 @@
             <artifactId>itextpdf</artifactId>
             <version>5.5.13.4</version>
             <type>jar</type>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
@@ -86,12 +112,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>it.bologna.ausl.internauta.utils</groupId>
-            <artifactId>minIO-manager</artifactId>
-            <version>2.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -128,6 +148,24 @@
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.sql2o</groupId>
+            <artifactId>sql2o</artifactId>
+            <version>1.8.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.sql2o.extensions</groupId>
+            <artifactId>sql2o-postgres</artifactId>
+            <version>1.8.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.79</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
