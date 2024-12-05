@@ -27,7 +27,7 @@ import org.apache.commons.io.IOUtils;
 public class OpenPdfPdfUtils {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenPdfPdfUtils.class);
 
-    public static enum OpenedPdfStatus {
+    public static enum CheckPdfStatus {
         CORRUPTED, PROTECTED, OK
     }
     
@@ -118,25 +118,16 @@ public class OpenPdfPdfUtils {
         return isAllPdfAMarked;
     }
     
-    public static OpenedPdfStatus checkPdf(InputStream pdf) throws IOException {
+    public static CheckPdfStatus checkPdf(InputStream pdf) throws IOException {
         try (PdfReader reader = new PdfReader(pdf);) {
-            return OpenedPdfStatus.OK;
+            return CheckPdfStatus.OK;
         }  catch (BadPasswordException ex) {
             log.error("errore nell'aprire il pdf", ex);
-            return OpenedPdfStatus.PROTECTED;
+            return CheckPdfStatus.PROTECTED;
         }
         catch (Exception ex) {
             log.error("errore nell'aprire il pdf", ex);
-            return OpenedPdfStatus.CORRUPTED;
-        }
-    }
-    
-    public static boolean isPdfProtected(InputStream pdf) throws IOException {
-        try (PdfReader reader = new PdfReader(pdf);) {
-            return true;
-        } catch (BadPasswordException ex) {
-            log.error("errore nell'aprire il pdf", ex);
-            return false;
+            return CheckPdfStatus.CORRUPTED;
         }
     }
     

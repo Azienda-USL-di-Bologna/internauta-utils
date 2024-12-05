@@ -33,7 +33,7 @@ public class TemplateLoader {
     
     public static void checkPdf() throws FileNotFoundException, IOException {
         try(FileInputStream fis = new FileInputStream("password3.pdf");) {
-            OpenPdfPdfUtils.OpenedPdfStatus pdfOpenable = OpenPdfPdfUtils.checkPdf(fis);
+            OpenPdfPdfUtils.CheckPdfStatus pdfOpenable = OpenPdfPdfUtils.checkPdf(fis);
             System.out.println(pdfOpenable);
         }
     }
