@@ -11,13 +11,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class PdfToolkitConfiguration {
     
-    private PdfToolkitConfigurationManager httpClientManager;
+    private PdfToolkitConfigurationManager pdfToolkitConfigurationManager;
 
-    public PdfToolkitConfigurationManager getHttpClientManager() {
-        return httpClientManager;
+    public PdfToolkitConfigurationManager getPdfToolkitConfigurationManager() {
+        return pdfToolkitConfigurationManager;
     }
 
-    public void setHttpClientManager(PdfToolkitConfigurationManager httpClientManager) {
-        this.httpClientManager = httpClientManager;
+    public void setPdfToolkitConfigurationManager(PdfToolkitConfigurationManager pdfToolkitConfigurationManager) {
+        this.pdfToolkitConfigurationManager = pdfToolkitConfigurationManager;
     }
 }
