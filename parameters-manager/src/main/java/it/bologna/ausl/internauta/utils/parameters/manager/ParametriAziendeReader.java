@@ -50,6 +50,9 @@ public class ParametriAziendeReader {
         loginConfig,
         babelshareConfig,
         oliammConfiguration,
+        ribaltoneConf,
+        processaDati,
+        usaNuovoRibaltoneVeloce,
         tabRegistrazioniScriptaActive
     }
     

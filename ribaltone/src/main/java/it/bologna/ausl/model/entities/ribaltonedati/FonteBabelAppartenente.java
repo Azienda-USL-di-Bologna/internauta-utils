@@ -3,12 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package it.bologna.ausl.internauta.model.entities.ribaltone.entita.fontebabel;
+package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.nextsw.common.data.annotations.GenerateProjections;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
@@ -31,17 +30,14 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "appartenenti", catalog = "internauta", schema = "ribaltone_utils")
+@Table(name = "fonte_babel_appartenenti", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class Appartenente implements Serializable {
+public class FonteBabelAppartenente implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static void selectAppartenentiByIdAzienda(String idAzienda) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
     @Column(name = "codice_ente")
     private String codiceEnte;
 
@@ -90,10 +86,12 @@ public class Appartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataDimissione;
+    
+    @Column(name = "responsabile")
+    private Boolean responsabile;
 
-    @JoinColumn(name = "id_azienda", referencedColumnName = "id")
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private Azienda idAzienda;
+    @Column(name = "codice_azienda")
+    private String codiceAzienda;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -106,7 +104,7 @@ public class Appartenente implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public Appartenente() {
+    public FonteBabelAppartenente() {
     }
 
     public String getCodiceEnte() {
@@ -205,12 +203,20 @@ public class Appartenente implements Serializable {
         this.dataDimissione = dataDimissione;
     }
 
-    public Azienda getIdAzienda() {
-        return idAzienda;
+    public Boolean getResponsabile() {
+        return responsabile;
     }
 
-    public void setIdAzienda(Azienda idAzienda) {
-        this.idAzienda = idAzienda;
+    public void setResponsabile(Boolean responsabile) {
+        this.responsabile = responsabile;
+    }
+
+    public String getCodiceAzienda() {
+        return codiceAzienda;
+    }
+
+    public void setCodiceAzienda(String codiceAzienda) {
+        this.codiceAzienda = codiceAzienda;
     }
 
     public Integer getId() {
@@ -239,10 +245,10 @@ public class Appartenente implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof Appartenente)) {
+        if (!(object instanceof FonteBabelAppartenente)) {
             return false;
         }
-        Appartenente other = (Appartenente) object;
+        FonteBabelAppartenente other = (FonteBabelAppartenente) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
@@ -251,7 +257,7 @@ public class Appartenente implements Serializable {
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.gru.MdrAppartenenti[ id=" + id + " ]";
+        return "it.bologna.ausl.internauta.model.entities.FonteBabelAppartenente[ id=" + id + " ]";
     }
 
 }

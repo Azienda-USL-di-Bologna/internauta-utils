@@ -1,20 +1,16 @@
-package it.bologna.ausl.internauta.model.entities.ribaltone.entita.fontebabel;
+package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.nextsw.common.data.annotations.GenerateProjections;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -26,11 +22,11 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "mdr_struttura", catalog = "internauta", schema = "gru")
+@Table(name = "dati_da_importare_strutture", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class Struttura implements Serializable {
+public class DatiDaImportareStruttura implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -61,9 +57,8 @@ public class Struttura implements Serializable {
     @Column(name = "codice_ente")
     private String codiceEnte;
 
-    @JoinColumn(name = "id_azienda", referencedColumnName = "id")
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private Azienda idAzienda;
+    @Column(name = "codice_azienda")
+    private String codiceAzienda;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -76,7 +71,7 @@ public class Struttura implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public Struttura() {
+    public DatiDaImportareStruttura() {
     }
 
     public Integer getIdCasella() {
@@ -135,12 +130,12 @@ public class Struttura implements Serializable {
         this.codiceEnte = codiceEnte;
     }
 
-    public Azienda getIdAzienda() {
-        return idAzienda;
+    public String getCodiceAzienda() {
+        return codiceAzienda;
     }
 
-    public void setIdAzienda(Azienda idAzienda) {
-        this.idAzienda = idAzienda;
+    public void setCodiceAzienda(String codiceAzienda) {
+        this.codiceAzienda = codiceAzienda;
     }
 
     public Integer getId() {
@@ -169,16 +164,16 @@ public class Struttura implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof Struttura)) {
+        if (!(object instanceof DatiDaImportareStruttura)) {
             return false;
         }
-        Struttura other = (Struttura) object;
+        DatiDaImportareStruttura other = (DatiDaImportareStruttura) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.gru.MdrStruttura[ id=" + id + " ]";
+        return "it.bologna.ausl.internauta.model.entities.DatiDaImportareStruttura[ id=" + id + " ]";
     }
 
 }

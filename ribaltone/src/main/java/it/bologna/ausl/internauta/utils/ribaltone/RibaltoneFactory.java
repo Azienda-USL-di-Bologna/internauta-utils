@@ -2,13 +2,15 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package it.bologna.ausl.internauta.model.entities.ribaltone.entita.fonteIntermedia;
+package it.bologna.ausl.internauta.utils.ribaltone;
+
+import org.springframework.stereotype.Component;
 
 /**
  *
  * @author Top
  */
-public class Appartenente {
-    
+@Component
+public class RibaltoneFactory {
     
 }

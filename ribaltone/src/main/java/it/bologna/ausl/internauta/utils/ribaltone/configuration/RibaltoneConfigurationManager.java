@@ -1,19 +1,32 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
-import java.util.Map;
-import org.sql2o.Sql2o;
-
+import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneParamConf;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  *
  * @author Top
+ * @param <T> classe che estende RibaltoneConf
  */
-public abstract class RibaltoneConfigurationManager {
+
+public abstract class RibaltoneConfigurationManager<T extends RibaltoneParamConf> {
     
-    public abstract Sql2o getConnection(Map<String, String> configuration);
+    @Autowired
+    private ObjectMapper objectMapper;
     
+    private T ribaltoneConfiguration;
     
+    public  T initRibaltone(RibaltoneParamConf ribaltoneConf){
+        ribaltoneConfiguration =  objectMapper.convertValue(ribaltoneConf.getSpecifiche(), new TypeReference<T>(){});
+        return ribaltoneConfiguration;
+    };
+
+    public T getRibaltoneConfiguration() {
+        return ribaltoneConfiguration;
+    }
+
+    public void setRibaltoneConfiguration(T ribaltoneConfiguration) {
+        this.ribaltoneConfiguration = ribaltoneConfiguration;
+    }
 }
