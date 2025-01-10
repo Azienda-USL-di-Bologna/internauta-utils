@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
 
-import com.itextpdf.text.DocumentException;
+import com.lowagie.text.DocumentException;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateModelException;
@@ -10,7 +10,7 @@ import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate.result.UrlAndUuidResult;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitHttpException;
-import it.bologna.ausl.internauta.utils.pdftoolkit.itext.PdfACreationListener;
+import it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.PdfACreationListener;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams;
 import it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitDownloaderUtils;
 import org.slf4j.Logger;
@@ -29,9 +29,9 @@ import java.util.Map;
 
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getDefaultConfiguration;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.freemarker.FreeMarkerUtils.getTemplateOutput;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextFontUtils.getFontFilePaths;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.formatPathForTemplate;
-import static it.bologna.ausl.internauta.utils.pdftoolkit.itext.ITextPdfUtils.getPdfA;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfFontUtils.getFontFilePaths;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfPdfUtils.formatPathForTemplate;
+import static it.bologna.ausl.internauta.utils.pdftoolkit.openpdf.OpenPdfPdfUtils.getPdfA;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.HtmlUtils.getFontFamilies;
 import static it.bologna.ausl.internauta.utils.pdftoolkit.utils.PdfToolkitConfigParams.DIRECTORY_FOLDER_PATH;
 
@@ -71,6 +71,8 @@ public class PdfAReporter extends JobWorker<ReporterJobWorkerData, JobWorkerResu
             try (ByteArrayOutputStream templateOutput = getTemplateOutput(template, workerData.getParametriTemplate())) {
 
                 String htmlContent = templateOutput.toString(StandardCharsets.UTF_8.name());
+//                System.out.println("aaaaaaaaaaaaaaaa");
+//                System.out.println(htmlContent);
                 List<String> listFont = getFontFamilies(htmlContent);
                 List<Path> listFontFilePaths = getFontFilePaths(listFont, DIRECTORY_FOLDER_PATH);
 
