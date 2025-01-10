@@ -254,10 +254,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         }
                     }
                 }
-                List<DocDetailInterface.Firmatario> listaFirmatari = docDetail.getFirmatari();
+                List<DocDetailInterface.FirmatarioObject> listaFirmatari = docDetail.getFirmatari();
                 List<Persona> firmatari = new ArrayList<>();
                 if (listaFirmatari != null) {
-                    for (DocDetailInterface.Firmatario firmatario : listaFirmatari) {
+                    for (DocDetailInterface.FirmatarioObject firmatario : listaFirmatari) {
                         Persona p = entityManager.find(Persona.class, firmatario.getIdPersona());
                         firmatari.add(p);
                     }
