@@ -167,8 +167,8 @@ public class PdfToolkitDownloaderUtils {
 
             // eseguo la chiamata all'upload
             OkHttpClient httpClient;
-            if (pdfToolkitHttpClientConfiguration.getHttpClientManager().getOkHttpClient() != null) {
-                httpClient = pdfToolkitHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
+            if (pdfToolkitHttpClientConfiguration.getPdfToolkitConfigurationManager().getOkHttpClient() != null) {
+                httpClient = pdfToolkitHttpClientConfiguration.getPdfToolkitConfigurationManager().getOkHttpClient();
             } else {
                 httpClient = getHttpClient();
             }
