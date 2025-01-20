@@ -1,6 +1,6 @@
-package it.bologna.ausl.internauta.utils.ribaltone;
+package it.bologna.ausl.internauta.utils.ribaltone.pluginutils;
 
-import it.bologna.ausl.internauta.utils.ribaltone.SpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 
 /**
  *

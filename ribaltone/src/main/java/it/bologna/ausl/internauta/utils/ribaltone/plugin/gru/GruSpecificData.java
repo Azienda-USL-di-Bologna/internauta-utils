@@ -6,14 +6,10 @@ package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import it.bologna.ausl.internauta.utils.ribaltone.SpecificData;
-import jakarta.persistence.Converter;
-import java.util.HashMap;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import java.util.List;
-import java.util.Map;
 import org.springframework.util.StringUtils;
 import org.sql2o.Sql2o;
-import org.sql2o.quirks.NoQuirks;
 
 /**
  *

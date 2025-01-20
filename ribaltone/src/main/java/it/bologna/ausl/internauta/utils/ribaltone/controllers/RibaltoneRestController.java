@@ -1,15 +1,18 @@
 package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import it.bologna.ausl.internauta.utils.ribaltone.SourceDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.repository.DatiDaImportareAppartenenteRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.repository.DatiDaImportareStrutturaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.repository.DatiDaImportareAnagraficaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.repository.DatiDaImportareTrasformazioneRepository;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -35,16 +38,16 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Autowired
     private RibaltoneConfiguration ribaltoneConfiguration;
-    
+
     @Autowired
     private DatiDaImportareAppartenenteRepository datiDaImportareAppartenenteRepository;
-    
+
     @Autowired
     private DatiDaImportareStrutturaRepository datiDaImportareStrutturaRepository;
-    
+
     @Autowired
     private DatiDaImportareAnagraficaRepository datiDaImportareAnagraficaRepository;
-    
+
     @Autowired
     private DatiDaImportareTrasformazioneRepository datiDaImportareTrasformazioneRepository;
 
@@ -52,15 +55,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     private EntityManager entityManager;
 
     @RequestMapping(value = "/getSourceData", method = RequestMethod.GET)
-    public void getSourceData(
+    public DatiDaImportare getSourceData(
             @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) String idConfiguration) throws Exception {
-
-        RibaltoneDataConfiguration ribaltoneConf = entityManager.find(RibaltoneDataConfiguration.class, idConfiguration);
-
-        if (ribaltoneConf == null) {
-            throw new Exception("parametro ribaltoneConf non trovato Questo non puo accadere!");
-        }
+            @RequestParam(required = true) String idConfiguration) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
         //momento in cui instanzio il plugin corretto
         SourceDataManager sourceDataManager;
         switch (ribaltoneConf.getFonte()) {
@@ -79,13 +77,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
                 List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
                 List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
-                
-                datiDaImportareAppartenenteRepository.saveAll(appartenenti);
-                datiDaImportareStrutturaRepository.saveAll(strutture);
-                datiDaImportareAnagraficaRepository.saveAll(anagrafiche);
-                datiDaImportareTrasformazioneRepository.saveAll(trasformazioni);
-                
-                break;
+
+                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni);
+                return datiDaImportare;
 
             default:
                 throw new AssertionError();
@@ -97,24 +91,33 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     }
 
-//    @RequestMapping(value = "/checkSourceData", method = RequestMethod.GET)
-//    public Map<Ribaltone.checkMapKey,Object> checkSourceData(
-//        @RequestParam(required = true) Integer idAzienda){
-//        getSourceData();
-//        cleanAndSaveOnDBSourceData();
-//        
-//        Report risultatoStr = checkStrutture();
-//        Map<String,String> risultatoApp = checkAppartenenti();
-//        Map<String,String> risultatoTra = checkTrasformazioni();
+    @RequestMapping(value = "/checkSourceData", method = RequestMethod.GET)
+    public Object checkSourceData(
+            @RequestParam(required = true) String codiceAzienda,
+            @RequestParam(required = true) String idConfiguration) throws RibaltoneHttpException {
+//        //facci la classe di sourceData
+//        Map<String, Object> sourceData = RibaltoneManagerUtils.getSourceData(codiceAzienda, idConfiguration);
+//        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
+////        cleanAndSaveSourceData(sourceData,ribaltoneConf);
+//
+//        ReportStrutture risultatoStr = ReportStrutture.check(ribaltoneConf.getCacheOperationToDo());
+//        Map<String, String> risultatoApp = ReportAppartenenti.check(ribaltoneConf.getCacheOperationToDo());
+//        Map<String, String> risultatoTra = ReportTrasformazioni.check(ribaltoneConf.getCacheOperationToDo());
 //        writeOnRedis(report);
 //        return generateReport(risultatoStr, risultatoApp, risultatoTra);
-//    }
-//    
-//    @RequestMapping(value = "/ribalta", method = RequestMethod.GET)
-//    public void ribalta(
-//    @RequestParam(required = true) Integer idAzienda
-//    ){
-//       prendedaredis()
-//        
-//    }
+ throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @RequestMapping(value = "/ribalta", method = RequestMethod.GET)
+    public void ribalta(
+            @RequestParam(required = true) Integer idAzienda
+    ) {
+         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+//        prendedaredis()
+        
+    }
+
+    private void cleanAndSaveOnDBSourceData(Map<String, Object> sourceData) {
+         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }

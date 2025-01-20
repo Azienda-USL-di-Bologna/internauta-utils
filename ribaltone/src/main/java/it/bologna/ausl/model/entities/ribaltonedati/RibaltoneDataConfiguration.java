@@ -1,12 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.internauta.utils.ribaltone.SpecificData;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.springframework.beans.factory.annotation.Autowired;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 
 /**
@@ -29,30 +22,42 @@ import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 @GenerateProjections({})
 @DynamicUpdate
 public class RibaltoneDataConfiguration {
-    
+
     @Id
     @Column(name = "id")
     String id;
-    
+
     @Column(name = "fonte")
     String fonte;
-    
+
     @Column(name = "cache_operation_to_do")
     String cacheOperationToDo;
-    
-    
+
     @Type(JsonBinaryType.class)
     @Column(name = "specifiche", columnDefinition = "jsonb")
     HashMap<String, Object> specifiche;
 
+    @Type(JsonBinaryType.class)
+    @Column(name = "cacheConfig", columnDefinition = "jsonb")
+    HashMap<String, Object> cacheConfig;
+
     public RibaltoneDataConfiguration() {
     }
 
-    public RibaltoneDataConfiguration(String id, String fonte, String cacheOperationToDo, HashMap<String, Object> specifiche) {
+    public RibaltoneDataConfiguration(String id, String fonte, String cacheOperationToDo, HashMap<String, Object> specifiche, HashMap<String, Object> cacheConfig) {
         this.id = id;
         this.fonte = fonte;
         this.cacheOperationToDo = cacheOperationToDo;
         this.specifiche = specifiche;
+        this.cacheConfig = cacheConfig;
+    }
+
+    public HashMap<String, Object> getCacheConfig() {
+        return cacheConfig;
+    }
+
+    public void setCacheConfig(HashMap<String, Object> cacheConfig) {
+        this.cacheConfig = cacheConfig;
     }
 
     public String getId() {
@@ -86,5 +91,5 @@ public class RibaltoneDataConfiguration {
     public void setSpecifiche(HashMap<String, Object> specifiche) {
         this.specifiche = specifiche;
     }
-    
+
 }

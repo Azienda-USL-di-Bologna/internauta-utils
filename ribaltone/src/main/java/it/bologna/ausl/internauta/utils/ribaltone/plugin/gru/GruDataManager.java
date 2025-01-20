@@ -2,31 +2,25 @@ package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru;
 
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Anagrafica;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 
-import it.bologna.ausl.internauta.utils.ribaltone.SourceDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
-import it.bologna.ausl.internauta.utils.ribaltone.SpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Appartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Responsabile;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Struttura;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Trasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.StringFormatter;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Map;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
-
-import jakarta.persistence.EntityManager;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,20 +32,15 @@ public class GruDataManager extends SourceDataManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(GruDataManager.class);
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    private HashSet<String> codiciFiscaliPerAnagrafica = new HashSet<String>();
-
     private GruSpecificData gruSpecificData;
 
-    public GruDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda) throws Exception {
+    public GruDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda) throws RibaltoneHttpException{
         super(specificDataConf, objectMapper, codiceAzienda);
 
         setGruSpecificData((GruSpecificData) specificDataConf);
         Boolean connessioneOk = gruSpecificData.getConnessione().build();
         if (!connessioneOk) {
-            throw new Exception("errore nella connessione a oracle di gru");
+            throw new RibaltoneHttpException("errore nella connessione a oracle di gru");
         }
 
     }
@@ -168,7 +157,7 @@ public class GruDataManager extends SourceDataManager {
         Map<String, Map<String, Object>> appartententeMap = new HashMap<>();
 
         for (Appartenente appartenente : appartenenti) {
-            codiciFiscaliPerAnagrafica.add(appartenente.getCodiceFiscale());
+//            codiciFiscaliPerAnagrafica.add(appartenente.getCodiceFiscale());
             DatiDaImportareAppartenente fonteIntermediaAppartenente = appartenente.toFonteIntermedia(codiceAzienda);
             Map<String, Object> appartenenteData = new HashMap<>();
             appartenenteData.put("codiceEnte", appartenente.getCodiceEnte());

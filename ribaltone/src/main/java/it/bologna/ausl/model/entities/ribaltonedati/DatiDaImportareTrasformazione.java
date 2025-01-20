@@ -7,6 +7,7 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportareInterface;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -31,7 +32,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareTrasformazione implements Serializable {
+public class DatiDaImportareTrasformazione implements Serializable, DatiDaImportareInterface {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -194,6 +195,11 @@ public class DatiDaImportareTrasformazione implements Serializable {
     @Override
     public String toString() {
         return "it.bologna.ausl.internauta.model.entities.DatiDaImportareTrasformazione[progressivo_riga=" + progressivoRiga + ", id_casella_partenza=" + idCasellaPartenza + ", id_casella_arrivo=" + idCasellaArrivo + ", codice_ente=" + codiceEnte + ", codice_azienda=" + codiceAzienda + ", id=" + id + " ]";
+    }
+
+    @Override
+    public String getKey() {
+        return progressivoRiga.toString();
     }
 
 }

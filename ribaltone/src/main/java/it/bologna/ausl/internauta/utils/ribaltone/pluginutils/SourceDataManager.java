@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.ribaltone;
+package it.bologna.ausl.internauta.utils.ribaltone.pluginutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
