@@ -50,6 +50,10 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
             if(doc.getPregresso()) {
                 idoneo = false;
             }
+            // non voglio che versi dei documenti più vecchi di un anno 
+            if(doc.getDataCreazione().isBefore(ZonedDateTime.now().minusYears(1))) {
+                idoneo = false;
+            }
             
             switch (doc.getTipologia()) {
                 case DELIBERA:
