@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReport.UserReportType;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReportManager;
+import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
+import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCacheConfig;
 import java.util.List;
 
@@ -13,15 +13,17 @@ public class Operations {
     
     
 
-    List<Operation> listOfOperation;
-    RibaltoneCacheConfig ribaltoneCacheConfig;
+    List<? extends Operation> listOfOperation;
+//    RibaltoneCacheConfig ribaltoneCacheConfig;
 
-    public Operations(List<Operation> listOfOperation, RibaltoneCacheConfig ribaltoneCacheConfig) {
+    public Operations(List<? extends Operation> listOfOperation 
+//            RibaltoneCacheConfig ribaltoneCacheConfig
+    ) {
         this.listOfOperation = listOfOperation;
-        this.ribaltoneCacheConfig = ribaltoneCacheConfig;
+//        this.ribaltoneCacheConfig = ribaltoneCacheConfig;
     }
     
-    public Operations(DatiDaImportare datiDaImportare, RibaltoneCacheConfig ribaltoneCacheConfig){
+    public Operations(){
     
     }
     

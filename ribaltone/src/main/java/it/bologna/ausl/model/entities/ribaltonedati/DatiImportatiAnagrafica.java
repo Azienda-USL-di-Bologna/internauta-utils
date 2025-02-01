@@ -7,18 +7,16 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -34,7 +32,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiImportatiAnagrafica implements Serializable {
+public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -177,6 +175,11 @@ public class DatiImportatiAnagrafica implements Serializable {
     @Override
     public String toString() {
         return "it.bologna.ausl.model.entities.DatiImportatiAnagrafica[ id=" + id + " ]";
+    }
+
+    @Override
+    public String getKey() {
+        return this.codiceFiscale;
     }
 
 }

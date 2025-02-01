@@ -2,21 +2,18 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package it.bologna.ausl.internauta.utils.ribaltone.basedata.datachecker;
+package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReport;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReportStrutture;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import java.util.List;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 
 /**
  *
  * @author Top
  */
-public class OperationStrutture extends Operation<DatiDaImportareStruttura>{
+public class OperationTrasformazione extends Operation<DatiDaImportareTrasformazione>{
 
-    public OperationStrutture(Azione azione, DatiDaImportareStruttura entitaCoinvolta) {
+    public OperationTrasformazione(Azione azione, DatiDaImportareTrasformazione entitaCoinvolta) {
         super(azione, entitaCoinvolta);
     }
 

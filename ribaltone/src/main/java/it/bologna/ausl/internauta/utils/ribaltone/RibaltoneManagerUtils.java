@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReport;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport.UserReportManager;
+import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCacheConfig;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
@@ -33,7 +33,8 @@ public class RibaltoneManagerUtils {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
         RibaltoneCacheConfig ribaltoneCacheConf = getRibaltoneCacheConf(objectMapper,ribaltoneConf.getCacheConfig());
         DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf);
-        Operations operations = new Operations(datiDaImportareValidated, ribaltoneCacheConf);
+        //Operations operations = new Operations(datiDaImportareValidated, ribaltoneCacheConf);
+        
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }
 
@@ -82,7 +83,7 @@ public class RibaltoneManagerUtils {
                 List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
                 List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
 
-                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni);
+                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione());
                 return datiDaImportare;
 
             case "CSV":

@@ -5,10 +5,11 @@ package it.bologna.ausl.internauta.utils.ribaltone.basedata;
  * @author Top
  * @param <T>
  */
-public abstract class Operation<T extends DatiDaImportareInterface> {
+public abstract class Operation<T extends DatiRibaltoneInterface> {
 public static enum Azione {
         INSERT,
-        EDIT
+        EDIT,
+        CHIUSURA
     }
 
     Azione azione;

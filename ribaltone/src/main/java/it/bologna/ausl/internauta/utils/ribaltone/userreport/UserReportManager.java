@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport;
+package it.bologna.ausl.internauta.utils.ribaltone.userreport;
 
 import it.bologna.ausl.internauta.utils.ribaltone.Ribaltone.TipologiaTabellaBaborg;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;

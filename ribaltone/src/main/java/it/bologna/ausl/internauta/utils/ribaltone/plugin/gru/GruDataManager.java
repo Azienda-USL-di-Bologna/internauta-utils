@@ -14,7 +14,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Apparten
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Responsabile;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Struttura;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Trasformazione;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.StringFormatter;
+import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import java.util.List;
 import java.util.Map;
 import org.sql2o.Connection;
@@ -55,7 +55,7 @@ public class GruDataManager extends SourceDataManager {
             //CODICI ENTI VALIDI 
             String codiceEnteStr;
             if (gruSpecificData.getCodiciEntiValidi() != null && !gruSpecificData.getCodiciEntiValidi().isEmpty()) {
-                String codiciEntiValidiStr = StringFormatter.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
+                String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
                 codiceEnteStr = "codice_ente in (" + codiciEntiValidiStr + ") ";
             } else {
                 codiceEnteStr = "codice_ente LIKE '" + codiceAzienda + "'|| '%' ";
@@ -67,7 +67,7 @@ public class GruDataManager extends SourceDataManager {
             // commentato perche per ora non serve ma non si sa mai
 //            // PERSONE NON SPEGNIBILI 
 //            if (gruSpecificData.getPersoneNonSpegnibili() != null && !gruSpecificData.getPersoneNonSpegnibili().isEmpty()) {
-//                String personeNonSpegnibiliStr = StringFormatter.formatStringsWithCommasAndQuotes(gruSpecificData.getPersoneNonSpegnibili());
+//                String personeNonSpegnibiliStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getPersoneNonSpegnibili());
 //                String codiciFiscaliValidi = " or u.CODICE_FISCALE IN (" + personeNonSpegnibiliStr + ") ";
 //                queryAppartenentiStr = queryAppartenentiStr.replaceAll(":codici_fiscali_validi", codiciFiscaliValidi);
 //            } else {
@@ -76,7 +76,7 @@ public class GruDataManager extends SourceDataManager {
 //
 //            //PERSONE DA SPEGNERE commentato perche per ora non serve ma non si sa mai
 //            if (gruSpecificData.getPersoneDaSpegnere() != null && !gruSpecificData.getPersoneDaSpegnere().isEmpty()) {
-//                String personeDaSpegnereStr = StringFormatter.formatStringsWithCommasAndQuotes(gruSpecificData.getPersoneDaSpegnere());
+//                String personeDaSpegnereStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getPersoneDaSpegnere());
 //                String codiciFiscaliDaSpegnereQuery = "u.CODICE_FISCALE not in (" + personeDaSpegnereStr + ")";
 //                queryAppartenentiStr = queryAppartenentiStr.replaceAll(":codici_fiscali_non_validi", codiciFiscaliDaSpegnereQuery);
 //            } else {
@@ -232,7 +232,7 @@ public class GruDataManager extends SourceDataManager {
             //CODICI ENTI VALIDI 
             String codiceEnteStr;
             if (gruSpecificData.getCodiciEntiValidi() != null && !gruSpecificData.getCodiciEntiValidi().isEmpty()) {
-                String codiciEntiValidiStr = StringFormatter.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
+                String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
                 codiceEnteStr = "codice_ente in (" + codiciEntiValidiStr + ") ";
             } else {
                 codiceEnteStr = "codice_ente LIKE '" + codiceAzienda + "'|| '%' ";

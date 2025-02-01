@@ -1,15 +1,13 @@
 package it.bologna.ausl.internauta.utils.ribaltone;
 
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportareInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.datachecker.OperationsManager;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,19 +27,11 @@ public class RibaltoneTotaleManager {
     public void ribaltaWithOutUserReport(String codiceAzienda, String idConfiguration, boolean userReportRequired) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
         DatiDaImportare validateSourceData = RibaltoneManagerUtils.validateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf);
-        ribaltaTutto(validateSourceData);
+        //ribaltaTutto(validateSourceData, codiceAzineda);
     }
     
-    private OperationsManager getOperationFromList (List<? extends DatiDaImportareInterface> listaDiDatiDaImportare){
-         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-            
-
-      
-            
-            
-    private void ribaltaTutto(DatiDaImportare datiDaImportareValidated) {
-        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated);
+    private void ribaltaTutto(DatiDaImportare datiDaImportareValidated, String codiceAzienda) {
+        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda);
         Operations operations = operationsManager.buildOperations();
         
 //        

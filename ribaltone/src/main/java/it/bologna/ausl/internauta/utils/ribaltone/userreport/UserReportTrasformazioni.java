@@ -1,13 +1,12 @@
-package it.bologna.ausl.internauta.utils.ribaltone.basedata.userreport;
+package it.bologna.ausl.internauta.utils.ribaltone.userreport;
 
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import java.io.File;
 
 /**
  *
  * @author Top
  */
-public class UserReportAppartenenti extends UserReport {
+public class UserReportTrasformazioni extends UserReport {
 
     @Override
     public File getCSV() {
