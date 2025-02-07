@@ -40,38 +40,38 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
-    
+
     @Column(name = "progressivo_riga")
     private Integer progressivoRiga;
-    
+
     @Column(name = "id_casella_partenza")
     private Integer idCasellaPartenza;
-    
+
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
-    
+
     @Column(name = "data_trasformazione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataTrasformazione;
-    
+
     @Size(max = 2147483647)
     @Column(name = "motivo")
     private String motivo;
-    
+
     @Column(name = "datain_partenza")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime datainPartenza;
-    
+
     @Column(name = "dataora_oper")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataoraOper;
-    
+
     @Column(name = "codice_ente")
     private String codiceEnte;
-    
+
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
@@ -79,7 +79,7 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
-    
+
     public DatiDaImportareTrasformazione() {
     }
 
@@ -200,6 +200,16 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     @Override
     public String getKey() {
         return progressivoRiga.toString();
+    }
+
+    @Override
+    public String getTipo() {
+        return "Trasformazione";
+    }
+
+    @Override
+    public String getClasse() {
+        return DatiDaImportareTrasformazione.class.getCanonicalName();
     }
 
 }

@@ -4,6 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 
@@ -11,9 +12,9 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
  *
  * @author Top
  */
-public class OperationTrasformazione extends Operation<DatiDaImportareTrasformazione>{
+public class OperationTrasformazione extends Operation<DatiRibaltoneInterface>{
 
-    public OperationTrasformazione(Azione azione, DatiDaImportareTrasformazione entitaCoinvolta) {
+    public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta) {
         super(azione, entitaCoinvolta);
     }
 

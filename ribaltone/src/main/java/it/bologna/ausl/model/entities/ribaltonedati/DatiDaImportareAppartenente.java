@@ -257,5 +257,15 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     public String getKey() {
         return codiceFiscale + "_" + idCasella;
     }
+
+    @Override
+    public String getTipo() {
+        return "Appartenente";
+    }
+
+    @Override
+    public String getClasse() {
+        return DatiDaImportareAppartenente.class.getCanonicalName();
+    }
     
 }

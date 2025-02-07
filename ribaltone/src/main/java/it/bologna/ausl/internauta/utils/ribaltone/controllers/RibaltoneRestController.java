@@ -119,11 +119,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @RequestMapping(value = "/ribalta", method = RequestMethod.GET)
     public void ribalta(
-            @RequestParam(required = true) Integer idAzienda,
+            @RequestParam(required = true) String codiceAzienda,
             @RequestParam(required = true) Boolean prendiDallaCache,
             @RequestParam(required = true) Boolean salvaNellaCache
             
     ) {
+        
          
     }
 

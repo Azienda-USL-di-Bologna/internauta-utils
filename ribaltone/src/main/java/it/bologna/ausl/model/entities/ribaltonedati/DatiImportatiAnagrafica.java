@@ -150,7 +150,6 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     public void setVersion(ZonedDateTime version) {
         this.version = version;
     }
-    
 
     @Override
     public int hashCode() {
@@ -180,6 +179,16 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     @Override
     public String getKey() {
         return this.codiceFiscale;
+    }
+
+    @Override
+    public String getTipo() {
+        return "Anagrafica";
+    }
+
+    @Override
+    public String getClasse() {
+        return DatiImportatiAnagrafica.class.getCanonicalName();
     }
 
 }

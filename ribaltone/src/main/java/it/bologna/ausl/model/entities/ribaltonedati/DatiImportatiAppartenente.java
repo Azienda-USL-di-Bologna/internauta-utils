@@ -82,7 +82,7 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
-    
+
     @Column(name = "responsabile")
     private Boolean resposabile;
 
@@ -257,7 +257,15 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
     public String getKey() {
         return codiceFiscale + "_" + idCasella;
     }
-    
-    
+
+    @Override
+    public String getTipo() {
+        return "Appartenente";
+    }
+
+    @Override
+    public String getClasse() {
+       return DatiImportatiAppartenente.class.getCanonicalName();
+    }
 
 }

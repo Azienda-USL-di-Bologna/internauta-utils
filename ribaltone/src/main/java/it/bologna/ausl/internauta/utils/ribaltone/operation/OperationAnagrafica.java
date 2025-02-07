@@ -1,20 +1,15 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 
 /**
  *
  * @author Top
  */
-public class OperationAnagrafica extends Operation<DatiDaImportareAnagrafica> {
+public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> {
 
-    public OperationAnagrafica(Azione azione, DatiDaImportareAnagrafica entitaCoinvolta) {
+    public OperationAnagrafica(Azione azione, DatiRibaltoneInterface entitaCoinvolta) {
         super(azione, entitaCoinvolta);
     }
 

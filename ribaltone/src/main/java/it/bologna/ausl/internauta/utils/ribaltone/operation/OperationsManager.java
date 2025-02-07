@@ -16,11 +16,9 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
-import jakarta.persistence.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -46,7 +44,7 @@ public class OperationsManager {
     private List<DatiImportatiAnagrafica> anagraficheImportate;
     private List<DatiImportatiAppartenente> appartenentiImportati;
     private List<DatiImportatiStruttura> struttureImportate;
-    private List<DatiImportatiTrasformazione> trasformazioniImportate;
+    private Integer trasformazioniImportateUltimoProgressivoRiga;
     Map<String, Integer> indexAnagraficheImportate;
     Map<String, Integer> indexAppartenentiImportati;
     Map<String, Integer> indexStruttureImportate;
@@ -57,11 +55,11 @@ public class OperationsManager {
         this.anagraficheImportate = datiImportatiAnagraficaRepository.findByCodiceAzienda(codiceAzienda);
         this.appartenentiImportati = datiImportatiAppartenenteRepository.findByCodiceAzienda(codiceAzienda);
         this.struttureImportate = datiImportatiStrutturaRepository.findByCodiceAzienda(codiceAzienda);
-        this.trasformazioniImportate = datiImportatiTrasformazioneRepository.findByCodiceAzienda(codiceAzienda);
+        this.trasformazioniImportateUltimoProgressivoRiga = datiImportatiTrasformazioneRepository.findTopByCodiceAziendaOrderByProgressivoRigaDesc(codiceAzienda);
         this.indexAnagraficheImportate = RibaltoneUtils.generateIndex2(anagraficheImportate, DatiImportatiAnagrafica::getKey);
         this.indexAppartenentiImportati = RibaltoneUtils.generateIndex2(appartenentiImportati, DatiImportatiAppartenente::getKey);
         this.indexStruttureImportate = RibaltoneUtils.generateIndex2(struttureImportate, DatiImportatiStruttura::getKey);
-        this.indexTrasformazioniImportate = RibaltoneUtils.generateIndex2(trasformazioniImportate, DatiImportatiTrasformazione::getKey);
+
     }
 
     /**
@@ -72,14 +70,14 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      */
     public Operations buildOperations() {
-        Operations operationsStrutture = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex2(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
-        Operations operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, this, indexAppartenentiImportati);
-        Operations operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
-        Operations operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportate, this.indexTrasformazioniImportate);
-        return marge(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni);
+        List<OperationStruttura> operationsStrutture = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex2(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
+        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, this, indexAppartenentiImportati);
+        List<OperationAnagrafica> operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
+        List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga, this.indexTrasformazioniImportate);
+        return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni);
     }
 
-    private Operations buildOperationsStrutture(List<DatiDaImportareStruttura> struttureDaImportare, List<DatiImportatiStruttura> struttureImportate, Map<String, Integer> indexStruttureImportate, Map<String, Integer> indexIdCasellaPartenzaTrasformazioni) {
+    private List<OperationStruttura> buildOperationsStrutture(List<DatiDaImportareStruttura> struttureDaImportare, List<DatiImportatiStruttura> struttureImportate, Map<String, Integer> indexStruttureImportate, Map<String, Integer> indexIdCasellaPartenzaTrasformazioni) {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
         Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare);
         //capiamo i cambi di padre    
@@ -109,19 +107,77 @@ public class OperationsManager {
             }
         }
 
-        return new Operations(operationStrutturaList);
+        return operationStrutturaList;
     }
 
-    private Operations buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, OperationsManager aThis, Map<String, Integer> indexAppartenentiImportati) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, OperationsManager aThis, Map<String, Integer> indexAppartenentiImportati) {
+        List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
+        //prendo in considerazione tutte le modifiche e gli inserimenti dei nuovi utenti
+        for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
+            Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
+            Operation.Azione azione = Operation.Azione.INSERT;
+            Boolean salva = true;
+            if (posizione != null) {
+                if (!appartenentiImportati.get(posizione).getResposabile().equals(datiDaImportareAppartenente.getResposabile())
+                        || !appartenentiImportati.get(posizione).getCognome().equals(datiDaImportareAppartenente.getCognome())
+                        || !appartenentiImportati.get(posizione).getNome().equals(datiDaImportareAppartenente.getNome())
+                        || !appartenentiImportati.get(posizione).getTipoAppartenenza().equals(datiDaImportareAppartenente.getTipoAppartenenza())
+                        || !appartenentiImportati.get(posizione).getCodiceMatricola().equals(datiDaImportareAppartenente.getCodiceMatricola())
+                        || !appartenentiImportati.get(posizione).getDataAssunzione().equals(datiDaImportareAppartenente.getDataAssunzione())
+                        || !appartenentiImportati.get(posizione).getDataDimissione().equals(datiDaImportareAppartenente.getDataDimissione())
+                        || !appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
+                    azione = Operation.Azione.EDIT;
+                } else {
+                    salva = false;
+                }
+            }
+            if (salva) {
+                operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente));
+            }
+        }
+        //ora pensiamo a tutte le chiusure
+        Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex2(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
+        for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
+            if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
+                operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato));
+            }
+        }
+
+        return operationAppartenentiList;
     }
 
-    private Operations buildOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    private List<OperationAnagrafica> buildOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) {
+        List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
+        for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {
+            Operation.Azione azione = Operation.Azione.INSERT;
+            Boolean salva = true;
+            Integer posizione = indexAnagraficheImportate.get(datiDaImportareAnagrafica.getKey());
+
+            if (posizione != null) {
+                if (!anagraficheImportate.get(posizione).getCognome().equals(datiDaImportareAnagrafica.getCognome())
+                        || !anagraficheImportate.get(posizione).getNome().equals(datiDaImportareAnagrafica.getNome())
+                        || !anagraficheImportate.get(posizione).getEmail().equals(datiDaImportareAnagrafica.getEmail())) {
+                    azione = Operation.Azione.EDIT;
+                } else {
+                    salva = false;
+                }
+            }
+            if (salva) {
+                operationAnagraficheList.add(new OperationAnagrafica(azione, datiDaImportareAnagrafica));
+            }
+        }
+        return operationAnagraficheList;
     }
 
-    private Operations buildOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, List<DatiImportatiTrasformazione> trasformazioniImportate, Map<String, Integer> indexTrasformazioniImportate) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    private List<OperationTrasformazione> buildOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga, Map<String, Integer> indexTrasformazioniImportate) {
+        List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
+
+        for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {
+            if (datiDaImportareTrasformazione.getProgressivoRiga() > ultimoProgressivoRiga) {
+                operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.INSERT, datiDaImportareTrasformazione));
+            }
+        }
+        return operationTrasformazioneList;
     }
 
     private Operations marge(Operations operationsStrutture, Operations operationsAppartenenti, Operations operationsAnagrafiche, Operations operationsTraformazioni) {

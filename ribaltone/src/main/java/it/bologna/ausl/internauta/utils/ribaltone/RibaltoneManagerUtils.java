@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.OperationsCacheManager;
+import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCacheConfig;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
@@ -20,20 +22,26 @@ import jakarta.persistence.EntityManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
 
 /**
  *
  * @author Top
  */
-@Component
 public class RibaltoneManagerUtils {
 
     public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
-        RibaltoneCacheConfig ribaltoneCacheConf = getRibaltoneCacheConf(objectMapper,ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper,ribaltoneConf.getCacheConfig());
+        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
+        
         DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf);
-        //Operations operations = new Operations(datiDaImportareValidated, ribaltoneCacheConf);
+        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda);
+        Operations operations = operationsManager.buildOperations();
+        
+        operationsCacheManager.dump(operations);
+        //TODO: aggiungere il tempo di cache
+        //TODO: fare il test fino al dump
+        //TODO: fare il restore e testare
         
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }
@@ -46,12 +54,12 @@ public class RibaltoneManagerUtils {
         return ribaltoneConf;
     }
     
-    public static RibaltoneCacheConfig getRibaltoneCacheConf(ObjectMapper objectMapper, HashMap<String, Object> cacheConfig) throws RibaltoneHttpException {
-        RibaltoneCacheConfig ribaltoneCacheConfig = objectMapper.convertValue(cacheConfig, RibaltoneCacheConfig.class);
-        if (ribaltoneCacheConfig == null) {
+    public static RibaltoneCache getRibaltoneCache(ObjectMapper objectMapper, HashMap<String, Object> cacheConfig) throws RibaltoneHttpException {
+        RibaltoneCache ribaltoneCache = RibaltoneCache.build(cacheConfig, objectMapper);
+        if (ribaltoneCache == null) {
             throw new RibaltoneHttpException("parametro ribaltoneConf non trovato Questo non puo accadere!");
         }
-        return ribaltoneCacheConfig;
+        return ribaltoneCache;
     }
 
     public static DatiDaImportare validateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf) throws RibaltoneHttpException {

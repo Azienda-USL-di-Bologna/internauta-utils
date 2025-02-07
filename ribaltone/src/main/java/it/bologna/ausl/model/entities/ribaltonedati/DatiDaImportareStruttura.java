@@ -182,4 +182,14 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         return idCasella.toString() +" "+ descrizione ;
     }
 
+    @Override
+    public String getTipo() {
+        return "Struttura";
+    }
+
+    @Override
+    public String getClasse() {
+        return DatiDaImportareStruttura.class.getCanonicalName();
+    }
+
 }

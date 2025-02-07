@@ -20,5 +20,7 @@ import org.springframework.stereotype.Component;
 public interface DatiImportatiTrasformazioneRepository extends QuerydslPredicateExecutor<DatiImportatiTrasformazione>, JpaRepository<DatiImportatiTrasformazione, Integer> {
 
     public List<DatiImportatiTrasformazione> findByCodiceAzienda(String codiceAzienda);
+    
+    public Integer findTopByCodiceAziendaOrderByProgressivoRigaDesc(String codiceAzienda);
 
 }

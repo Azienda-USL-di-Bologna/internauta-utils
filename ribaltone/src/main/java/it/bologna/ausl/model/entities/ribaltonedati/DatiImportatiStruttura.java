@@ -9,12 +9,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -183,6 +180,16 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     @Override
     public String getKey() {
         return idCasella.toString() +" "+ descrizione ;
+    }
+
+    @Override
+    public String getTipo() {
+        return "Struttura";
+    }
+
+    @Override
+    public String getClasse() {
+       return DatiImportatiStruttura.class.getCanonicalName();
     }
 
 }

@@ -1,17 +1,15 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
-import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
-import java.util.List;
 
 /**
  *
  * @author Top
  */
-public class OperationAppartenente extends Operation<DatiDaImportareAppartenente> {
+public class OperationAppartenente extends Operation<DatiRibaltoneInterface> {
 
-    public OperationAppartenente(Azione azione, DatiDaImportareAppartenente entitaCoinvolta) {
+    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta) {
         super(azione, entitaCoinvolta);
     }
 

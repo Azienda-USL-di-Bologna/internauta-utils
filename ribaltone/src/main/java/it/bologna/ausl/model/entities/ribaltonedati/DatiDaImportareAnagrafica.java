@@ -196,4 +196,14 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         return this.codiceFiscale;
     }
 
+    @Override
+    public String getTipo() {
+        return "Anagrafica";
+    }
+
+    @Override
+    public String getClasse() {
+        return DatiDaImportareAnagrafica.class.getCanonicalName();
+    }
+
 }

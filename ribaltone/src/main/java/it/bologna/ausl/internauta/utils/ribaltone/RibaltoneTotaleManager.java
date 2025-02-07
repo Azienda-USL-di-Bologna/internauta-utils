@@ -34,6 +34,8 @@ public class RibaltoneTotaleManager {
         OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda);
         Operations operations = operationsManager.buildOperations();
         
+        
+        
 //        
 //        ribaltaStrutture(datiDaImportareValidated.getStruttureDaImportare());
 //        RibaltoneManagerUtils.ribaltaAppartenenti(datiDaImportareValidated.getAppartenentiDaImportare(), datiDaImportareValidated.getAnagraficheDaImportare());
