@@ -38,7 +38,7 @@ public class UserReportManager {
      * @return stringa html da far vedere all'utente 
      * è l'unione delle 4 tipologie
      */
-    public String getHtml() {
+    public Object getFrontendObject() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     
@@ -49,6 +49,10 @@ public class UserReportManager {
      */
     public String gethtml(TipologiaTabellaBaborg tipologiaTabella) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public Object get() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

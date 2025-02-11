@@ -31,17 +31,18 @@ public class RibaltoneManagerUtils {
 
     public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper,ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         
         DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf);
-        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda);
+        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda, Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaAppartenenti").toString()),Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaStrutture").toString()) );
         Operations operations = operationsManager.buildOperations();
-        
+        //controllo sul numero minimo di dati
+        operationsManager.isQuantitaDatiOk();
         operationsCacheManager.dump(operations);
-        //TODO: aggiungere il tempo di cache
         //TODO: fare il test fino al dump
         //TODO: fare il restore e testare
+       
         
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }

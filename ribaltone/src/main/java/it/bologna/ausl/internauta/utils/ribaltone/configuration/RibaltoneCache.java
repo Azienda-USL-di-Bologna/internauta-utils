@@ -20,8 +20,9 @@ public abstract class RibaltoneCache {
         }
     }
     
-    public abstract void dump(Operations operations, String key);
+    public abstract void dump(Operations operations);
     
-    public abstract Operations restore(String key) throws ClassNotFoundException;
+    public abstract Operations restore() throws ClassNotFoundException;
     
+    public abstract void cleanCache();    
 }

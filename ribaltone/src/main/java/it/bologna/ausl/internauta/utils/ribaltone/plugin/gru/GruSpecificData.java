@@ -18,10 +18,6 @@ import org.sql2o.Sql2o;
 public class GruSpecificData extends SpecificData {
     private QueryRecuperoDati queryRecuperoDati;
     private List<String> codiciEntiValidi;
-    private List<String> personeNonSpegnibili;
-    private List<String> personeDaSpegnere;
-    private Integer progressivo_ultima_trasformazione;
-    
     private Connessione connessione;
 
     public GruSpecificData() {
@@ -43,22 +39,6 @@ public class GruSpecificData extends SpecificData {
         this.codiciEntiValidi = codiciEntiValidi;
     }
 
-    public List<String> getPersoneNonSpegnibili() {
-        return personeNonSpegnibili;
-    }
-
-    public void setPersoneNonSpegnibili(List<String> personeNonSpegnibili) {
-        this.personeNonSpegnibili = personeNonSpegnibili;
-    }
-
-    public List<String> getPersoneDaSpegnere() {
-        return personeDaSpegnere;
-    }
-
-    public void setPersoneDaSpegnere(List<String> personeDaSpegnere) {
-        this.personeDaSpegnere = personeDaSpegnere;
-    }
-
     public Connessione getConnessione() {
         return connessione;
     }
@@ -67,18 +47,6 @@ public class GruSpecificData extends SpecificData {
         this.connessione = connessione;
     }
 
-    public Integer getProgressivo_ultima_trasformazione() {
-        return progressivo_ultima_trasformazione;
-    }
-
-    public void setProgressivo_ultima_trasformazione(Integer progressivo_ultima_trasformazione) {
-        this.progressivo_ultima_trasformazione = progressivo_ultima_trasformazione;
-    }
-    
-    
-    
-    
-    
     public static class Connessione {
         private String tipologia;
         private String driver;

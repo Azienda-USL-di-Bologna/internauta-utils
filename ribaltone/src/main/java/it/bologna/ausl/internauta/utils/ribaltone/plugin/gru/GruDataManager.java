@@ -217,6 +217,7 @@ public class GruDataManager extends SourceDataManager {
             } else {
                 //caso in cui il responsabile non ha afferenze attive
                 //da implementare nel caso si debba far entrare lo stesso
+                //per ora pero non si fa
             }
 
         }

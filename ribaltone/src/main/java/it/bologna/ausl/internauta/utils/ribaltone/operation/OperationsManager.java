@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAppartenenteRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiStrutturaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAnagraficaRepository;
@@ -15,7 +16,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,10 @@ import org.springframework.beans.factory.annotation.Autowired;
  *
  * @author Top
  *
- * OperationsManager classe che contiene: metodo per capire, tramite confronto,
- * le operazioni da svolgere
+ * OperationsManager classe che contiene: 
+ * metodo per capire, tramite confronto, le operazioni da svolgere, 
+ * metodo per capire, se la quantita di dati è coerente con lo storico delle importazioni
+ * 
  *
  */
 public class OperationsManager {
@@ -45,12 +47,16 @@ public class OperationsManager {
     private List<DatiImportatiAppartenente> appartenentiImportati;
     private List<DatiImportatiStruttura> struttureImportate;
     private Integer trasformazioniImportateUltimoProgressivoRiga;
+    private Integer struttureChiuse;
+    private Integer utentiStrutturaChiusi;
+    private Integer tolleranzaStrutture;
+    private Integer tolleranzaAppartenenti;
     Map<String, Integer> indexAnagraficheImportate;
     Map<String, Integer> indexAppartenentiImportati;
     Map<String, Integer> indexStruttureImportate;
     Map<String, Integer> indexTrasformazioniImportate;
 
-    public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda) {
+    public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture) {
         this.datiDaImportare = datiDaImportare;
         this.anagraficheImportate = datiImportatiAnagraficaRepository.findByCodiceAzienda(codiceAzienda);
         this.appartenentiImportati = datiImportatiAppartenenteRepository.findByCodiceAzienda(codiceAzienda);
@@ -59,7 +65,8 @@ public class OperationsManager {
         this.indexAnagraficheImportate = RibaltoneUtils.generateIndex2(anagraficheImportate, DatiImportatiAnagrafica::getKey);
         this.indexAppartenentiImportati = RibaltoneUtils.generateIndex2(appartenentiImportati, DatiImportatiAppartenente::getKey);
         this.indexStruttureImportate = RibaltoneUtils.generateIndex2(struttureImportate, DatiImportatiStruttura::getKey);
-
+        this.tolleranzaAppartenenti = tolleranzaAppartenenti;
+        this.tolleranzaStrutture = tolleranzaStrutture;
     }
 
     /**
@@ -81,7 +88,7 @@ public class OperationsManager {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
         Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare);
         //capiamo i cambi di padre    
-
+        this.struttureChiuse = 0;
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
             Integer posizione = indexStruttureImportate.get(daImportareStruttura.getKey());
             if (posizione != null) {
@@ -96,14 +103,17 @@ public class OperationsManager {
                 }
             } else {
                 //allora è una nuova
+                //(mi salvo anche quante ne ho aperto per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura));
+                this.struttureChiuse--;
             }
         }
-        //capire le chiusure
+        //capire le chiusure (mi salvo anche quante ne ho da chiudere per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
         for (DatiImportatiStruttura strutturaImportata : struttureImportate) {
             if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
                     && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.EDIT, strutturaImportata));
+                this.struttureChiuse++;
             }
         }
 
@@ -132,6 +142,9 @@ public class OperationsManager {
                 }
             }
             if (salva) {
+                if (azione == Operation.Azione.INSERT) {
+                    this.utentiStrutturaChiusi--;
+                }
                 operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente));
             }
         }
@@ -140,6 +153,7 @@ public class OperationsManager {
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
                 operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato));
+                this.utentiStrutturaChiusi++;
             }
         }
 
@@ -180,7 +194,21 @@ public class OperationsManager {
         return operationTrasformazioneList;
     }
 
-    private Operations marge(Operations operationsStrutture, Operations operationsAppartenenti, Operations operationsAnagrafiche, Operations operationsTraformazioni) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public boolean isQuantitaDatiOk() throws RibaltoneHttpException {
+
+        Integer nStruttureImportate = this.struttureImportate.size();
+        Integer nStruttureDaImportare = nStruttureImportate - this.struttureChiuse;
+        Integer percentualeStruttureValide = (nStruttureDaImportare * 100) / nStruttureImportate;
+        if (tolleranzaStrutture > percentualeStruttureValide) {
+            throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di strutture che si vogliono importare non supera la tolleranza minima richiesta");
+        }
+
+        Integer nAppartenentiImportati = this.appartenentiImportati.size();
+        Integer nAppartenenti = nAppartenentiImportati - this.utentiStrutturaChiusi;
+        Integer percentualeAppartenentiValidi = (nAppartenenti * 100) / nAppartenentiImportati;
+        if (tolleranzaAppartenenti > percentualeAppartenentiValidi) {
+            throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di afferenze utente-struttura che si vogliono importare non supera la tolleranza minima richiesta");
+        }
+        return true;
     }
 }

@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazi
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -24,20 +25,25 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final Integer timeToExpire;
+    private final String key;
     
     public RibaltoneCacheRedis(ObjectMapper objectMapper, Map<String, Object> cacheConfig) {
         this.objectMapper = objectMapper;
         redisTemplate = this.buildRedisTemplate(cacheConfig);
+        this.timeToExpire = Integer.valueOf(cacheConfig.get("cacheTime").toString());
+        this.key = "RIBALTONE_" + cacheConfig.get("codiceAzienda").toString();
+        
     }
     
     @Override
-    public void dump(Operations operations, String key) {
+    public void dump(Operations operations) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     
     @Override
-    public Operations restore(String key) throws ClassNotFoundException {
+    public Operations restore() throws ClassNotFoundException {
         List<OperationStruttura> listOfOperationStrutture = new ArrayList();
         List<OperationAppartenente> listOfOperationAppartenenti = new ArrayList();
         List<OperationAnagrafica> listOfOperationAnagrafiche = new ArrayList();
@@ -104,11 +110,16 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
     
     public void saveData(String key, String value) {
-        redisTemplate.opsForValue().set(key, value);
+        redisTemplate.opsForValue().set(key, value, this.timeToExpire);
     }
 
     public List<Map<String, Object>> getData(String key) {
         return (List<Map<String, Object>>) redisTemplate.opsForValue().get(key);
     }
-    
+
+    @Override
+    public void cleanCache() {
+        Set<String> keys = redisTemplate.keys(key + "*");
+        redisTemplate.delete(keys);
+    }    
 }

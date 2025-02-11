@@ -11,19 +11,19 @@ import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 public class OperationsCacheManager {
     
     private ObjectMapper objectMapper;
-    
     private RibaltoneCache ribaltoneCache;
     
     public OperationsCacheManager(RibaltoneCache ribaltoneCache, ObjectMapper objectMapper) {
         this.objectMapper=objectMapper;
         this.ribaltoneCache = ribaltoneCache;
     }
-
+    
+    
     public void dump(Operations datiDaImportareValidati) {
-        this.ribaltoneCache.dump(datiDaImportareValidati, "key");
+        this.ribaltoneCache.dump(datiDaImportareValidati);
     }
     
-    public Operations restore(String key) throws ClassNotFoundException {
-        return this.ribaltoneCache.restore(key);
+    public Operations restore() throws ClassNotFoundException {
+        return this.ribaltoneCache.restore();
     }
 }
