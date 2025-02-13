@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.validator;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiStrutturaRepository;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import java.util.ArrayList;
@@ -10,12 +11,13 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import org.springframework.stereotype.Component;
 
 /**
  *
  * @author Top
  */
+@Component
 public class ValidatorStrutture extends AbstractValidator {
     
     @Autowired
@@ -28,7 +30,7 @@ public class ValidatorStrutture extends AbstractValidator {
     }
 
     @Override
-    public List<DatiDaImportareStruttura> validate() throws RibaltoneHttpException {
+    public List<DatiDaImportareStruttura> validate(RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         List<DatiDaImportareStruttura> struttureValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> struttureNonValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> datiDaImportareStrutture = (List<DatiDaImportareStruttura>) this.datiDaImportare;
@@ -50,7 +52,7 @@ public class ValidatorStrutture extends AbstractValidator {
                 if (antenatoMorto != null) {
                     
                     isValida=false;
-                    motivoInvalidita = "la struttura " + getDatiAntenatoMorto(antenatoMorto) + 
+                    motivoInvalidita = "la struttura " + getDatiAntenatoMorto(antenatoMorto, repositoryFactory) + 
                             " è spenta e impedisce l'importazione di " + 
                             strutturaDaImportare.getIdCasella() + 
                             " " + strutturaDaImportare.getDescrizione() +
@@ -93,8 +95,8 @@ public class ValidatorStrutture extends AbstractValidator {
         return null;
     }
 
-    private String getDatiAntenatoMorto(Integer antenatoMorto) {
-        Optional<DatiImportatiStruttura> findById = datiImportatiStrutturaRepository.findById(antenatoMorto);
+    private String getDatiAntenatoMorto(Integer antenatoMorto,RepositoryFactory repositoryFactory) {
+        Optional<DatiImportatiStruttura> findById = repositoryFactory.getDatiImportatiStrutturaRepository().findById(antenatoMorto);
         if (findById.isPresent()){
             DatiImportatiStruttura strutturaMorta = findById.get();
             return " id casella " + strutturaMorta.getIdCasella() + " con nome " + strutturaMorta.getDescrizione();

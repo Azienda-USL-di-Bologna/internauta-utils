@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
  */
 @Component("DatiDaImportareAnagraficaRepository")
 @RepositoryRestResource(collectionResourceRel = "datidaimportareanagrafica", path = "datidaimportareanagrafica", exported = false)
-public interface DatiDaImportareAnagraficaRepository extends QuerydslPredicateExecutor<DatiDaImportareAnagrafica>, JpaRepository<DatiDaImportareAnagrafica, Integer> {
+public interface DatiDaImportareAnagraficaRepository extends 
+        QuerydslPredicateExecutor<DatiDaImportareAnagrafica>, 
+        JpaRepository<DatiDaImportareAnagrafica, Integer> {
 
 }

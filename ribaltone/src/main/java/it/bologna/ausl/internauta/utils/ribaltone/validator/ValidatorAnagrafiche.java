@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.util.StringUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 
 /**
  *
@@ -18,7 +19,7 @@ public class ValidatorAnagrafiche extends AbstractValidator{
     }
 
     @Override
-    public List<DatiDaImportareAnagrafica> validate() {
+    public List<DatiDaImportareAnagrafica> validate(RepositoryFactory repositoryFactory) {
         List<DatiDaImportareAnagrafica> datiPuliti = new ArrayList<DatiDaImportareAnagrafica>();
         List<DatiDaImportareAnagrafica> datiDaNonImportare = new ArrayList<DatiDaImportareAnagrafica>();
         List<? extends DatiRibaltoneInterface> datiDaImportareAnagrafiche = this.datiDaImportare;  

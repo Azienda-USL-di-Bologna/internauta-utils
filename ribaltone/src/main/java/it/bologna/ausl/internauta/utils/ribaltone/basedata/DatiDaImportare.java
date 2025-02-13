@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAnagrafiche;
 import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAppartenenti;
@@ -29,18 +30,20 @@ public class DatiDaImportare {
     protected Map<String, Integer> indexAppartenenti;
     protected Map<String, Integer> indexAnagrafiche;
     private Integer progressivoTrasformazione;
+    private RepositoryFactory repositoryFactory;
 
-    public DatiDaImportare(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiDaImportareStruttura> struttureDaImportare, List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer progressivoTrasformazione) {
+    public DatiDaImportare(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiDaImportareStruttura> struttureDaImportare, List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer progressivoTrasformazione, RepositoryFactory repositoryFactory) {
         this.anagraficheDaImportare = anagraficheDaImportare;
         this.struttureDaImportare = struttureDaImportare;
         this.appartenentiDaImportare = appartenentiDaImportare;
         this.trasformazioniDaImportare = trasformazioniDaImportare;
         this.progressivoTrasformazione = progressivoTrasformazione;
-        this.indexStrutture = RibaltoneUtils.generateIndex2(this.struttureDaImportare, DatiDaImportareStruttura::getKey);
-        this.indexAnagrafiche = RibaltoneUtils.generateIndex2(this.anagraficheDaImportare, DatiDaImportareAnagrafica::getKey);
-        this.indexTrasformazioni = RibaltoneUtils.generateIndex2(this.trasformazioniDaImportare, DatiDaImportareTrasformazione::getKey);
-        this.indexAppartenenti = RibaltoneUtils.generateIndex2(this.appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
-        
+        //qui metto getidcasella perche altrimenti il controllo sui padri morti che prende in considerazione id padre mi verrebbe piu complicato
+        this.indexStrutture = RibaltoneUtils.generateIndex(this.struttureDaImportare, DatiDaImportareStruttura::getIdCasella);
+        this.indexAnagrafiche = RibaltoneUtils.generateIndex(this.anagraficheDaImportare, DatiDaImportareAnagrafica::getKey);
+        this.indexTrasformazioni = RibaltoneUtils.generateIndex(this.trasformazioniDaImportare, DatiDaImportareTrasformazione::getKey);
+        this.indexAppartenenti = RibaltoneUtils.generateIndex(this.appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
+        this.repositoryFactory = repositoryFactory;
     }
 
     public List<DatiDaImportareAnagrafica> getAnagraficheDaImportare() {
@@ -79,23 +82,23 @@ public class DatiDaImportare {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;
         
-        List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate();
+        List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate(repositoryFactory);
         if (!validatorStrutture.getDatiInvalidi().isEmpty()){
             //posso non controllare altro questi sono errori che bloccano il ribaltone
         }else {
-            indexStrutture = RibaltoneUtils.generateIndex(struttureValideDaImportare);
+            indexStrutture = RibaltoneUtils.generateIndex(struttureValideDaImportare,DatiDaImportareStruttura::getKey);
             ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare,indexStrutture, indexTrasformazioni, progressivoTrasformazione);
             //mi serve l'index delle strurrue per il controllo sulle trasformazioni
-            List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate();
+            List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate(repositoryFactory);
             progressivoTrasformazione = validatorTrasformazioni.getProgressivoTrasformazione();
             if (!validatorTrasformazioni.getDatiInvalidi().isEmpty()){
                 //posso non controllare altro perche ci sono problemi con le trasformazioni fornite
             }else {
                 ValidatorAppartenenti validatorAppartenenti = new ValidatorAppartenenti(appartenentiDaImportare, indexStrutture, indexAppartenenti);
-                List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate();
+                List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(repositoryFactory);
                 
-                List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate();
-                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione);
+                List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(repositoryFactory);
+                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, repositoryFactory);
             
             }
             

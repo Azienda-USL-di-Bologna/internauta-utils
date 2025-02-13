@@ -1,5 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import java.io.Serializable;
+import org.reflections.serializers.Serializer;
+
 /**
  *
  * @author Top

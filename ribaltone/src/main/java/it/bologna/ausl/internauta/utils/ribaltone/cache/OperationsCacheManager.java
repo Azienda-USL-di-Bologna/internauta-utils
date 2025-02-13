@@ -1,8 +1,10 @@
 package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 
 /**
  *
@@ -19,11 +21,11 @@ public class OperationsCacheManager {
     }
     
     
-    public void dump(Operations datiDaImportareValidati) {
+    public void dump(Operations datiDaImportareValidati) throws RibaltoneHttpException {
         this.ribaltoneCache.dump(datiDaImportareValidati);
     }
     
-    public Operations restore() throws ClassNotFoundException {
+    public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException {
         return this.ribaltoneCache.restore();
     }
 }

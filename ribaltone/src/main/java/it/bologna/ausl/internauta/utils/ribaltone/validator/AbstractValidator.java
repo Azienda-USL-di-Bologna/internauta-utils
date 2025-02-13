@@ -4,6 +4,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import java.util.ArrayList;
 import java.util.List;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 
 /**
  *  classe che si occupa di effettuare i controlli di coerenza
@@ -35,6 +36,6 @@ public abstract class AbstractValidator {
         this.datiDaImportare = datiDaImportare;
     }    
 
-    public abstract <T extends DatiRibaltoneInterface> List<T> validate() throws RibaltoneHttpException;
+    public abstract <T extends DatiRibaltoneInterface> List<T> validate(RepositoryFactory repositoryFactory) throws RibaltoneHttpException;
 
 }

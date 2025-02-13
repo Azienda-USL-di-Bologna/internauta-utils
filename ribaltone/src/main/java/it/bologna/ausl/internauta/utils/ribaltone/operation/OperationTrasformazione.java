@@ -7,12 +7,13 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
+import java.io.Serializable;
 
 /**
  *
  * @author Top
  */
-public class OperationTrasformazione extends Operation<DatiRibaltoneInterface>{
+public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> implements Serializable {
 
     public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta) {
         super(azione, entitaCoinvolta);
@@ -23,6 +24,4 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface>{
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    
-    
 }

@@ -33,10 +33,10 @@ public class DatiImportati {
         this.struttureImportati = struttureImportati;
         this.appartenentiImportati = appartenentiImportati;
         this.trasformazioniImportati = trasformazioniImportati;
-        this.indexStrutture = RibaltoneUtils.generateIndex2(this.struttureImportati, DatiImportatiStruttura::getKey);
-        this.indexAnagrafiche = RibaltoneUtils.generateIndex2(this.anagraficheImportati, DatiImportatiAnagrafica::getKey);
-        this.indexTrasformazioni = RibaltoneUtils.generateIndex2(this.trasformazioniImportati, DatiImportatiTrasformazione::getKey);
-        this.indexAppartenenti = RibaltoneUtils.generateIndex2(this.appartenentiImportati, DatiImportatiAppartenente::getKey);
+        this.indexStrutture = RibaltoneUtils.generateIndex(this.struttureImportati, DatiImportatiStruttura::getKey);
+        this.indexAnagrafiche = RibaltoneUtils.generateIndex(this.anagraficheImportati, DatiImportatiAnagrafica::getKey);
+        this.indexTrasformazioni = RibaltoneUtils.generateIndex(this.trasformazioniImportati, DatiImportatiTrasformazione::getKey);
+        this.indexAppartenenti = RibaltoneUtils.generateIndex(this.appartenentiImportati, DatiImportatiAppartenente::getKey);
 
     }
 

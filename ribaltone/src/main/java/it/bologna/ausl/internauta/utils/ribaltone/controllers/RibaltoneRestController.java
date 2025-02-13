@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
@@ -75,29 +76,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 //        //momento in cui instanzio il plugin corretto
 //        SourceDataManager sourceDataManager;
 //        DatiDaImportare datiDaImportare = null;
-//        switch (ribaltoneConf.getFonte()) {
-//            case "GRU":
-//                GruSpecificData gruSpecificData = ribaltoneConfiguration.getObjectMapper().convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
-//                Map<String, String> queryRecuperoDati = ribaltoneConfiguration.getObjectMapper()
-//                        .convertValue(ribaltoneConf.getSpecifiche().get("queryRecuperoDati"), new TypeReference<Map<String, String>>() {
-//                        });
-//                gruSpecificData.getQueryRecuperoDati().setQueryAnagrafiche(queryRecuperoDati.get("anagrafiche"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryResponsabili(queryRecuperoDati.get("responsabili"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryAppartenenti(queryRecuperoDati.get("appartenenti"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryStrutture(queryRecuperoDati.get("strutture"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryTrasformazioni(queryRecuperoDati.get("trasformazioni"));
-//                sourceDataManager = new GruDataManager(gruSpecificData, ribaltoneConfiguration.getObjectMapper(), codiceAzienda);
-//                List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
-//                List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
-//                List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
-//                List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
-//
-//                datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni,gruSpecificData.getProgressivo_ultima_trasformazione());
-//                //return datiDaImportare;
-//
-//            default:
-////                throw new AssertionError();
-//        }
+        
 //        if (datiDaImportare==null){return null;}
 //        DatiDaImportare validate = datiDaImportare.validate();
 //        
@@ -169,11 +148,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @throws java.lang.ClassNotFoundException 
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
-    public void ribaltaPostUserReport(
+    public Object ribaltaPostUserReport(
             @RequestParam(required = true) String codiceAzienda,
             @RequestParam(required = true) String idConfig
-    ) throws RibaltoneHttpException, ClassNotFoundException {
-        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfig);
+    ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
+        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfig), HttpStatus.OK);
     }
     
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)

@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.validator;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class ValidatorAppartenenti extends AbstractValidator {
     }
 
     @Override
-    public List<DatiDaImportareAppartenente> validate() {
+    public List<DatiDaImportareAppartenente> validate(RepositoryFactory repositoryFactory) {
         List<DatiDaImportareAppartenente> datiDaImportareAppartenenti = (List<DatiDaImportareAppartenente>) this.datiDaImportare;
         List<DatiDaImportareAppartenente> datiDaImportareAppartenentiValidi = new ArrayList<DatiDaImportareAppartenente>();
         List<DatiDaImportareAppartenente> appartenentiNonValidi = new ArrayList<DatiDaImportareAppartenente>();

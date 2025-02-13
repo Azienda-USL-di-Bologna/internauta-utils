@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -29,21 +30,25 @@ import java.util.Map;
  */
 public class RibaltoneManagerUtils {
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration) throws RibaltoneHttpException {
+    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-        
-        DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf);
-        OperationsManager operationsManager = new OperationsManager(datiDaImportareValidated, codiceAzienda, Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaAppartenenti").toString()),Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaStrutture").toString()) );
+
+        DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        OperationsManager operationsManager = new OperationsManager(
+                datiDaImportareValidated,
+                codiceAzienda,
+                Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaAppartenenti").toString()),
+                Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaStrutture").toString()),
+                repositoryFactory);
         Operations operations = operationsManager.buildOperations();
         //controllo sul numero minimo di dati
         operationsManager.isQuantitaDatiOk();
         operationsCacheManager.dump(operations);
         //TODO: fare il test fino al dump
         //TODO: fare il restore e testare
-       
-        
+
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }
 
@@ -54,7 +59,7 @@ public class RibaltoneManagerUtils {
         }
         return ribaltoneConf;
     }
-    
+
     public static RibaltoneCache getRibaltoneCache(ObjectMapper objectMapper, HashMap<String, Object> cacheConfig) throws RibaltoneHttpException {
         RibaltoneCache ribaltoneCache = RibaltoneCache.build(cacheConfig, objectMapper);
         if (ribaltoneCache == null) {
@@ -63,14 +68,14 @@ public class RibaltoneManagerUtils {
         return ribaltoneCache;
     }
 
-    public static DatiDaImportare validateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf) throws RibaltoneHttpException {
+    public static DatiDaImportare validateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //recupero i dati da dove dice la conf
-        DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf);
+        DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
         return datiDaImportareValidated;
     }
 
-    private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf) throws RibaltoneHttpException {
+    private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         SourceDataManager sourceDataManager;
         switch (ribaltoneConf.getFonte()) {
             case "GRU":
@@ -92,7 +97,7 @@ public class RibaltoneManagerUtils {
                 List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
                 List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
 
-                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione());
+                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
                 return datiDaImportare;
 
             case "CSV":

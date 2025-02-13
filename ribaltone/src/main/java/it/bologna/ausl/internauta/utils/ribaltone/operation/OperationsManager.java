@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAppart
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiStrutturaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAnagraficaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiTrasformazioneRepository;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
@@ -16,6 +17,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,22 +35,14 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class OperationsManager {
 
-    @Autowired
-    private DatiImportatiAnagraficaRepository datiImportatiAnagraficaRepository;
-    @Autowired
-    private DatiImportatiAppartenenteRepository datiImportatiAppartenenteRepository;
-    @Autowired
-    private DatiImportatiStrutturaRepository datiImportatiStrutturaRepository;
-    @Autowired
-    private DatiImportatiTrasformazioneRepository datiImportatiTrasformazioneRepository;
 
     private DatiDaImportare datiDaImportare;
     private List<DatiImportatiAnagrafica> anagraficheImportate;
     private List<DatiImportatiAppartenente> appartenentiImportati;
     private List<DatiImportatiStruttura> struttureImportate;
-    private Integer trasformazioniImportateUltimoProgressivoRiga;
-    private Integer struttureChiuse;
-    private Integer utentiStrutturaChiusi;
+    private Integer trasformazioniImportateUltimoProgressivoRiga = 0;
+    private Integer struttureChiuse=0;
+    private Integer utentiStrutturaChiusi=0;
     private Integer tolleranzaStrutture;
     private Integer tolleranzaAppartenenti;
     Map<String, Integer> indexAnagraficheImportate;
@@ -56,15 +50,18 @@ public class OperationsManager {
     Map<String, Integer> indexStruttureImportate;
     Map<String, Integer> indexTrasformazioniImportate;
 
-    public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture) {
+    public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture, RepositoryFactory repositoryFactory) {
         this.datiDaImportare = datiDaImportare;
-        this.anagraficheImportate = datiImportatiAnagraficaRepository.findByCodiceAzienda(codiceAzienda);
-        this.appartenentiImportati = datiImportatiAppartenenteRepository.findByCodiceAzienda(codiceAzienda);
-        this.struttureImportate = datiImportatiStrutturaRepository.findByCodiceAzienda(codiceAzienda);
-        this.trasformazioniImportateUltimoProgressivoRiga = datiImportatiTrasformazioneRepository.findTopByCodiceAziendaOrderByProgressivoRigaDesc(codiceAzienda);
-        this.indexAnagraficheImportate = RibaltoneUtils.generateIndex2(anagraficheImportate, DatiImportatiAnagrafica::getKey);
-        this.indexAppartenentiImportati = RibaltoneUtils.generateIndex2(appartenentiImportati, DatiImportatiAppartenente::getKey);
-        this.indexStruttureImportate = RibaltoneUtils.generateIndex2(struttureImportate, DatiImportatiStruttura::getKey);
+        this.anagraficheImportate = repositoryFactory.getDatiImportatiAnagraficaRepository().findByCodiceAzienda(codiceAzienda);
+        this.appartenentiImportati = repositoryFactory.getDatiImportatiAppartenenteRepository().findByCodiceAzienda(codiceAzienda);
+        this.struttureImportate = repositoryFactory.getDatiImportatiStrutturaRepository().findByCodiceAzienda(codiceAzienda);
+        DatiImportatiTrasformazione findTopByCodiceAziendaOrderByProgressivoRigaDesc = repositoryFactory.getDatiImportatiTrasformazioneRepository().findTopByCodiceAziendaOrderByProgressivoRigaDesc(codiceAzienda);
+        if (findTopByCodiceAziendaOrderByProgressivoRigaDesc!=null){
+            this.trasformazioniImportateUltimoProgressivoRiga = findTopByCodiceAziendaOrderByProgressivoRigaDesc.getProgressivoRiga();
+        }
+        this.indexAnagraficheImportate = RibaltoneUtils.generateIndex(anagraficheImportate, DatiImportatiAnagrafica::getKey);
+        this.indexAppartenentiImportati = RibaltoneUtils.generateIndex(appartenentiImportati, DatiImportatiAppartenente::getKey);
+        this.indexStruttureImportate = RibaltoneUtils.generateIndex(struttureImportate, DatiImportatiStruttura::getKey);
         this.tolleranzaAppartenenti = tolleranzaAppartenenti;
         this.tolleranzaStrutture = tolleranzaStrutture;
     }
@@ -77,7 +74,7 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      */
     public Operations buildOperations() {
-        List<OperationStruttura> operationsStrutture = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex2(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
+        List<OperationStruttura> operationsStrutture = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
         List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, this, indexAppartenentiImportati);
         List<OperationAnagrafica> operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
         List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga, this.indexTrasformazioniImportate);
@@ -86,7 +83,7 @@ public class OperationsManager {
 
     private List<OperationStruttura> buildOperationsStrutture(List<DatiDaImportareStruttura> struttureDaImportare, List<DatiImportatiStruttura> struttureImportate, Map<String, Integer> indexStruttureImportate, Map<String, Integer> indexIdCasellaPartenzaTrasformazioni) {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
-        Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare);
+        Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare,DatiDaImportareStruttura::getKey);
         //capiamo i cambi di padre    
         this.struttureChiuse = 0;
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
@@ -149,7 +146,7 @@ public class OperationsManager {
             }
         }
         //ora pensiamo a tutte le chiusure
-        Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex2(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
+        Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
                 operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato));
@@ -198,16 +195,20 @@ public class OperationsManager {
 
         Integer nStruttureImportate = this.struttureImportate.size();
         Integer nStruttureDaImportare = nStruttureImportate - this.struttureChiuse;
-        Integer percentualeStruttureValide = (nStruttureDaImportare * 100) / nStruttureImportate;
-        if (tolleranzaStrutture > percentualeStruttureValide) {
-            throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di strutture che si vogliono importare non supera la tolleranza minima richiesta");
+        if (nStruttureImportate > 0) {
+            Integer percentualeStruttureValide = (nStruttureDaImportare * 100) / nStruttureImportate;
+            if (tolleranzaStrutture > percentualeStruttureValide) {
+                throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di strutture che si vogliono importare non supera la tolleranza minima richiesta");
+            }
         }
 
         Integer nAppartenentiImportati = this.appartenentiImportati.size();
         Integer nAppartenenti = nAppartenentiImportati - this.utentiStrutturaChiusi;
-        Integer percentualeAppartenentiValidi = (nAppartenenti * 100) / nAppartenentiImportati;
-        if (tolleranzaAppartenenti > percentualeAppartenentiValidi) {
-            throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di afferenze utente-struttura che si vogliono importare non supera la tolleranza minima richiesta");
+        if (nAppartenentiImportati > 0) {
+            Integer percentualeAppartenentiValidi = (nAppartenenti * 100) / nAppartenentiImportati;
+            if (tolleranzaAppartenenti > percentualeAppartenentiValidi) {
+                throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di afferenze utente-struttura che si vogliono importare non supera la tolleranza minima richiesta");
+            }
         }
         return true;
     }

@@ -21,16 +21,16 @@ public class RibaltoneUtils {
                       .collect(Collectors.joining(", ")); // Intervalla con le virgole
     }
     
-    public static Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare) {
-        Map<String, Integer> indexToImport = new HashMap<>();
-
-        for (int i = 0; i < datiDaImportare.size(); i++) {
-            indexToImport.put(datiDaImportare.get(i).getKey(), i);
-        }
-        return indexToImport;
-    }
+//    public static Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare) {
+//        Map<String, Integer> indexToImport = new HashMap<>();
+//
+//        for (int i = 0; i < datiDaImportare.size(); i++) {
+//            indexToImport.put(datiDaImportare.get(i).getKey(), i);
+//        }
+//        return indexToImport;
+//    }
     
-    public static <T extends DatiRibaltoneInterface> Map<String, Integer> generateIndex2(List<? extends DatiRibaltoneInterface> datiDaImportare,  Function<T, Object> fn) {
+    public static <T extends DatiRibaltoneInterface> Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare,  Function<T, Object> fn) {
         Map<String, Integer> indexToImport = new HashMap<>();
         for (int i = 0; i < datiDaImportare.size(); i++) {
             T datiRibaltoneInterface =(T) datiDaImportare.get(i);

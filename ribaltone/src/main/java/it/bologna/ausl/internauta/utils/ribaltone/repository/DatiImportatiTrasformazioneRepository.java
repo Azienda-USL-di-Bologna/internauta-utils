@@ -21,6 +21,7 @@ public interface DatiImportatiTrasformazioneRepository extends QuerydslPredicate
 
     public List<DatiImportatiTrasformazione> findByCodiceAzienda(String codiceAzienda);
     
-    public Integer findTopByCodiceAziendaOrderByProgressivoRigaDesc(String codiceAzienda);
+    
+    public DatiImportatiTrasformazione findTopByCodiceAziendaOrderByProgressivoRigaDesc(String codiceAzienda);
 
 }

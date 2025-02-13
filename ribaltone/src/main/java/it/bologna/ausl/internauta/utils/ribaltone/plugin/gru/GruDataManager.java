@@ -113,6 +113,7 @@ public class GruDataManager extends SourceDataManager {
         //da fare come gli appartenenti ma attenzione che codici_enti_validi devono avete solo l'ente 01 per alcune aziende ad esempio bologna
         Sql2o sql2oConnecion = getGruSpecificData().getConnessione().getSql2oConnecion();
         List<DatiDaImportareStruttura> fonteIntermediaStrutture = new ArrayList<>();
+        LOG.info("----------queryStruttureStr------------\n" + getGruSpecificData().getQueryRecuperoDati().getQueryStrutture().replaceAll(":codice_azienda", codiceAzienda));
         try (Connection con = sql2oConnecion.open()) {
             List<Struttura> struttureOracle = con.createQuery(getGruSpecificData().getQueryRecuperoDati().getQueryStrutture())
                     .addParameter("codice_azienda", this.codiceAzienda)

@@ -1,7 +1,9 @@
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import java.util.Map;
 
 /**
@@ -20,9 +22,9 @@ public abstract class RibaltoneCache {
         }
     }
     
-    public abstract void dump(Operations operations);
+    public abstract void dump(Operations operations) throws RibaltoneHttpException;
     
-    public abstract Operations restore() throws ClassNotFoundException;
+    public abstract Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException;
     
     public abstract void cleanCache();    
 }
