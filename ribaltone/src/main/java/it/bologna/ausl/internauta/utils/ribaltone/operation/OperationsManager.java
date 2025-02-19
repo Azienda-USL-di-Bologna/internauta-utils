@@ -27,28 +27,28 @@ import org.springframework.beans.factory.annotation.Autowired;
  *
  * @author Top
  *
- * OperationsManager classe che contiene: 
- * metodo per capire, tramite confronto, le operazioni da svolgere, 
- * metodo per capire, se la quantita di dati è coerente con lo storico delle importazioni
- * 
+ * OperationsManager classe che contiene: metodo per capire, tramite confronto,
+ * le operazioni da svolgere, metodo per capire, se la quantita di dati è
+ * coerente con lo storico delle importazioni
+ *
  *
  */
 public class OperationsManager {
-
 
     private DatiDaImportare datiDaImportare;
     private List<DatiImportatiAnagrafica> anagraficheImportate;
     private List<DatiImportatiAppartenente> appartenentiImportati;
     private List<DatiImportatiStruttura> struttureImportate;
     private Integer trasformazioniImportateUltimoProgressivoRiga = 0;
-    private Integer struttureChiuse=0;
-    private Integer utentiStrutturaChiusi=0;
+    private Integer struttureChiuse = 0;
+    private Integer utentiStrutturaChiusi = 0;
     private Integer tolleranzaStrutture;
     private Integer tolleranzaAppartenenti;
     Map<String, Integer> indexAnagraficheImportate;
     Map<String, Integer> indexAppartenentiImportati;
     Map<String, Integer> indexStruttureImportate;
     Map<String, Integer> indexTrasformazioniImportate;
+    private RepositoryFactory repositoryFactory;
 
     public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture, RepositoryFactory repositoryFactory) {
         this.datiDaImportare = datiDaImportare;
@@ -56,7 +56,7 @@ public class OperationsManager {
         this.appartenentiImportati = repositoryFactory.getDatiImportatiAppartenenteRepository().findByCodiceAzienda(codiceAzienda);
         this.struttureImportate = repositoryFactory.getDatiImportatiStrutturaRepository().findByCodiceAzienda(codiceAzienda);
         DatiImportatiTrasformazione findTopByCodiceAziendaOrderByProgressivoRigaDesc = repositoryFactory.getDatiImportatiTrasformazioneRepository().findTopByCodiceAziendaOrderByProgressivoRigaDesc(codiceAzienda);
-        if (findTopByCodiceAziendaOrderByProgressivoRigaDesc!=null){
+        if (findTopByCodiceAziendaOrderByProgressivoRigaDesc != null) {
             this.trasformazioniImportateUltimoProgressivoRiga = findTopByCodiceAziendaOrderByProgressivoRigaDesc.getProgressivoRiga();
         }
         this.indexAnagraficheImportate = RibaltoneUtils.generateIndex(anagraficheImportate, DatiImportatiAnagrafica::getKey);
@@ -64,6 +64,7 @@ public class OperationsManager {
         this.indexStruttureImportate = RibaltoneUtils.generateIndex(struttureImportate, DatiImportatiStruttura::getKey);
         this.tolleranzaAppartenenti = tolleranzaAppartenenti;
         this.tolleranzaStrutture = tolleranzaStrutture;
+        this.repositoryFactory = repositoryFactory;
     }
 
     /**
@@ -83,7 +84,7 @@ public class OperationsManager {
 
     private List<OperationStruttura> buildOperationsStrutture(List<DatiDaImportareStruttura> struttureDaImportare, List<DatiImportatiStruttura> struttureImportate, Map<String, Integer> indexStruttureImportate, Map<String, Integer> indexIdCasellaPartenzaTrasformazioni) {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
-        Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare,DatiDaImportareStruttura::getKey);
+        Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare, DatiDaImportareStruttura::getKey);
         //capiamo i cambi di padre    
         this.struttureChiuse = 0;
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
@@ -91,17 +92,17 @@ public class OperationsManager {
             if (posizione != null) {
                 if (!struttureImportate.get(posizione).getIdPadre().equals(daImportareStruttura.getIdPadre())) {
                     //cambio di padre
-                    operationStrutturaList.add(new OperationStruttura(Operation.Azione.EDIT, daImportareStruttura));
+                    operationStrutturaList.add(new OperationStruttura(Operation.Azione.CAMBIO_PADRE, daImportareStruttura, repositoryFactory.getEntityManager()));
                 } else if (!struttureImportate.get(posizione).getDescrizione().equals(daImportareStruttura.getDescrizione())) {
                     //rinomina
-                    operationStrutturaList.add(new OperationStruttura(Operation.Azione.EDIT, daImportareStruttura));
+                    operationStrutturaList.add(new OperationStruttura(Operation.Azione.RINOMINA, daImportareStruttura, repositoryFactory.getEntityManager()));
                 } else {
                     //non è successo nulla è come era prima
                 }
             } else {
                 //allora è una nuova
                 //(mi salvo anche quante ne ho aperto per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
-                operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura));
+                operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura, repositoryFactory.getEntityManager()));
                 this.struttureChiuse--;
             }
         }
@@ -109,7 +110,7 @@ public class OperationsManager {
         for (DatiImportatiStruttura strutturaImportata : struttureImportate) {
             if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
                     && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
-                operationStrutturaList.add(new OperationStruttura(Operation.Azione.EDIT, strutturaImportata));
+                operationStrutturaList.add(new OperationStruttura(Operation.Azione.CHIUSURA, strutturaImportata, repositoryFactory.getEntityManager()));
                 this.struttureChiuse++;
             }
         }
@@ -142,14 +143,14 @@ public class OperationsManager {
                 if (azione == Operation.Azione.INSERT) {
                     this.utentiStrutturaChiusi--;
                 }
-                operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente));
+                operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager()));
             }
         }
         //ora pensiamo a tutte le chiusure
         Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
-                operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato));
+                operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager()));
                 this.utentiStrutturaChiusi++;
             }
         }
@@ -174,7 +175,7 @@ public class OperationsManager {
                 }
             }
             if (salva) {
-                operationAnagraficheList.add(new OperationAnagrafica(azione, datiDaImportareAnagrafica));
+                operationAnagraficheList.add(new OperationAnagrafica(azione, datiDaImportareAnagrafica, repositoryFactory.getEntityManager()));
             }
         }
         return operationAnagraficheList;
@@ -185,7 +186,7 @@ public class OperationsManager {
 
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {
             if (datiDaImportareTrasformazione.getProgressivoRiga() > ultimoProgressivoRiga) {
-                operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.INSERT, datiDaImportareTrasformazione));
+                operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.INSERT, datiDaImportareTrasformazione,repositoryFactory.getEntityManager()));
             }
         }
         return operationTrasformazioneList;

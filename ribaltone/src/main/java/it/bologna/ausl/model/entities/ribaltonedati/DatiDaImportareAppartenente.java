@@ -51,6 +51,9 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
 
     @Column(name = "id_casella")
     private Integer idCasella;
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -98,6 +101,14 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     private ZonedDateTime version;
 
     public DatiDaImportareAppartenente() {
+    }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public String getCodiceEnte() {
@@ -255,7 +266,7 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
 
     @Override
     public String getKey() {
-        return codiceFiscale + "_" + idCasella;
+        return codiceFiscale + "_" + idCasella + idAzienda;
     }
 
     @Override

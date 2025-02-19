@@ -59,6 +59,9 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Column(name = "email")
     private String email;
     
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
+    
     @Size(max = 2147483647)
     @Column(name = "password_hash")
     private String passwordHash;
@@ -108,6 +111,14 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         this.cognome = cognome;
     }
 
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+    
     public String getNome() {
         return nome;
     }

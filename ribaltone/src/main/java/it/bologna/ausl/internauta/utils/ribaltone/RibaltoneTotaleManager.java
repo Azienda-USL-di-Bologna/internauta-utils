@@ -102,7 +102,7 @@ public class RibaltoneTotaleManager {
         
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
 
         operationsCacheManager.dump(buildOperations);
@@ -114,11 +114,11 @@ public class RibaltoneTotaleManager {
     public Operations ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException, ClassNotFoundException,JsonProcessingException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildOperations = operationsCacheManager.restore();
+        buildOperations.execute();
         return buildOperations;
-        //buildOperations.execute();
     }
 
 }

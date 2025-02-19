@@ -4,6 +4,8 @@
  */
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +38,9 @@ public class RepositoryFactory {
     
     @Autowired
     private DatiDaImportareAnagraficaRepository datiDaImportareAnagraficaRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public RepositoryFactory() {
     }
@@ -73,7 +78,13 @@ public class RepositoryFactory {
     public DatiDaImportareAnagraficaRepository getDatiDaImportareAnagraficaRepository() {
         return datiDaImportareAnagraficaRepository;
     }
-    
-    
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
     
 }

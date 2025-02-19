@@ -164,15 +164,17 @@ public class Appartenente implements Serializable {
      * ritorna un appartenente in formato fonte intermedia 
      * setta sempre la responsabilita a false
      * @param codiceAzienda
+     * @param idAzienda
      * @return DatiDaImportareAppartenente 
      */
-    public DatiDaImportareAppartenente toFonteIntermedia(String codiceAzienda){
+    public DatiDaImportareAppartenente toFonteIntermedia(String codiceAzienda, Integer idAzienda){
         DatiDaImportareAppartenente fonteIntermediaAppartenente = new DatiDaImportareAppartenente();
         fonteIntermediaAppartenente.setCodiceEnte(codiceEnte);
         fonteIntermediaAppartenente.setCodiceFiscale(codiceFiscale);
         fonteIntermediaAppartenente.setCodiceMatricola(codiceMatricola);
         fonteIntermediaAppartenente.setNome(nome);
         fonteIntermediaAppartenente.setCognome(cognome);
+        fonteIntermediaAppartenente.setIdAzienda(idAzienda);
 //        fonteIntermediaAppartenente.setDataAssunzione(dataAssunzione.toInstant().atZone(ZoneId.systemDefault()));
 //        fonteIntermediaAppartenente.setDataDimissione(dataDimissione.toInstant().atZone(ZoneId.systemDefault()));
 //        fonteIntermediaAppartenente.setDatain(datain.toInstant().atZone(ZoneId.systemDefault()));

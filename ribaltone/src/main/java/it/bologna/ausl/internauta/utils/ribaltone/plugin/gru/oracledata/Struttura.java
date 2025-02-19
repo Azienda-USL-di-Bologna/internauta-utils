@@ -104,7 +104,7 @@ public class Struttura implements Serializable {
         return "it.bologna.ausl.internauta.model.entities.ribaltone.entita.plugin.gru.oracledata.Struttura[ idCasella=" + idCasella + "_idPadre_" + idPadre + " ]";
     }
 
-    public DatiDaImportareStruttura toFonteIntermedia(String codiceAzienda) {
+    public DatiDaImportareStruttura toFonteIntermedia(String codiceAzienda,Integer idAzienda) {
         DatiDaImportareStruttura fonteIntermediaStruttura = new DatiDaImportareStruttura();
         fonteIntermediaStruttura.setCodiceEnte(codiceEnte);
 //        fonteIntermediaStruttura.setDatain(datain);
@@ -112,6 +112,7 @@ public class Struttura implements Serializable {
         fonteIntermediaStruttura.setDescrizione(descrizione);
         fonteIntermediaStruttura.setIdCasella(idCasella);
         fonteIntermediaStruttura.setIdPadre(idPadre);
+        fonteIntermediaStruttura.setIdAzienda(idAzienda);
         fonteIntermediaStruttura.setTipoLegame(tipoLegame);
         fonteIntermediaStruttura.setCodiceAzienda(codiceAzienda);
 

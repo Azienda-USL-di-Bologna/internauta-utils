@@ -3,6 +3,7 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -33,6 +34,9 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
 
     @Column(name = "id_casella")
     private Integer idCasella;
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "id_padre")
     private Integer idPadre;
@@ -153,6 +157,14 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
 
     public void setVersion(ZonedDateTime version) {
         this.version = version;
+    }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     @Override

@@ -112,7 +112,7 @@ public class Trasformazione implements Serializable {
         return "it.bologna.ausl.internauta.model.entities.ribaltone.entita.plugin.gru.oracledata.Trasformazioni[progressivo_riga=" + progressivoRiga + ", id_casella_partenza=" + idCasellaPartenza + ", id_casella_arrivo=" + idCasellaArrivo + ", codice_ente=" + codiceEnte + "]";
     }
     
-    public DatiDaImportareTrasformazione toFonteIntermedia(String codiceAzienda){
+    public DatiDaImportareTrasformazione toFonteIntermedia(String codiceAzienda, Integer idAzienda){
         DatiDaImportareTrasformazione fonteIntermediaTrasformazione = new DatiDaImportareTrasformazione();
         fonteIntermediaTrasformazione.setCodiceEnte(codiceEnte);
         fonteIntermediaTrasformazione.setDataTrasformazione(dataTrasformazione);
@@ -121,6 +121,7 @@ public class Trasformazione implements Serializable {
         fonteIntermediaTrasformazione.setIdCasellaArrivo(idCasellaArrivo);
         fonteIntermediaTrasformazione.setIdCasellaPartenza(idCasellaPartenza);
         fonteIntermediaTrasformazione.setMotivo(motivo);
+        fonteIntermediaTrasformazione.setIdAzienda(idAzienda);
         fonteIntermediaTrasformazione.setProgressivoRiga(progressivoRiga);
         fonteIntermediaTrasformazione.setCodiceAzienda(codiceAzienda);
     return fonteIntermediaTrasformazione;

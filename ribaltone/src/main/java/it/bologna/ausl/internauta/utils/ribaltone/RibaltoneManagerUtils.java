@@ -14,6 +14,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -32,7 +33,7 @@ public class RibaltoneManagerUtils {
 
     public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
 
         DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
@@ -60,8 +61,8 @@ public class RibaltoneManagerUtils {
         return ribaltoneConf;
     }
 
-    public static RibaltoneCache getRibaltoneCache(ObjectMapper objectMapper, HashMap<String, Object> cacheConfig) throws RibaltoneHttpException {
-        RibaltoneCache ribaltoneCache = RibaltoneCache.build(cacheConfig, objectMapper);
+    public static RibaltoneCache getRibaltoneCache(ObjectMapper objectMapper, HashMap<String, Object> cacheConfig, EntityManager entityManager) throws RibaltoneHttpException {
+        RibaltoneCache ribaltoneCache = RibaltoneCache.build(cacheConfig, objectMapper, entityManager);
         if (ribaltoneCache == null) {
             throw new RibaltoneHttpException("parametro ribaltoneConf non trovato Questo non puo accadere!");
         }
@@ -89,17 +90,20 @@ public class RibaltoneManagerUtils {
                 gruSpecificData.getQueryRecuperoDati().setQueryAppartenenti(queryRecuperoDati.get("appartenenti"));
                 gruSpecificData.getQueryRecuperoDati().setQueryStrutture(queryRecuperoDati.get("strutture"));
                 gruSpecificData.getQueryRecuperoDati().setQueryTrasformazioni(queryRecuperoDati.get("trasformazioni"));
-                //fine aberrazione
+            //fine aberrazione
+                Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select * from baborg.aziende where codice = :codice", Azienda.class).setParameter("codice", codiceAzienda.substring(0, 3)).getSingleResult();
+                if (idAzienda == null) {
+                    throw  new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
+                } else {
+                    sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
+                    List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
+                    List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
+                    List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
+                    List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
 
-                sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda);
-                List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
-                List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
-                List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
-                List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
-
-                DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
-                return datiDaImportare;
-
+                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
+                    return datiDaImportare;
+                }
             case "CSV":
                 throw new RibaltoneHttpException("csv non ancora implementato");
 

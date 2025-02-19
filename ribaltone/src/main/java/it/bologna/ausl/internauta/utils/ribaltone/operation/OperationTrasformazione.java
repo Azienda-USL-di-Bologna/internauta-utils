@@ -7,6 +7,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
+import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 
 /**
@@ -15,13 +16,21 @@ import java.io.Serializable;
  */
 public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> implements Serializable {
 
-    public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta) {
-        super(azione, entitaCoinvolta);
+    public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
+        super(azione, entitaCoinvolta, entityManager);
     }
 
     @Override
-    public void esegui() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public void esegui(Object workToDo) {
+        switch (getAzione()) {
+            case INSERT:
+                //se si tratta di una confluenza
+                //aggiustare permessi ecc della confluenza
+                //aggiustare unificazione
+                break;
+            default:
+                throw new AssertionError();
+        }
     }
 
 }

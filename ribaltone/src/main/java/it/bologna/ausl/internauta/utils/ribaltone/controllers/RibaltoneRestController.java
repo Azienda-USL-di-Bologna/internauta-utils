@@ -161,7 +161,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             @RequestParam(required = true) String idConfiguration
     ) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig());
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
     }
 }

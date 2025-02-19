@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
@@ -19,7 +20,7 @@ public class Operations implements Serializable {
     private List<OperationAppartenente> listOfOperationAppartenenti;
     private List<OperationAnagrafica> listOfOperationAnagrafiche;
     private List<OperationTrasformazione> listOfOperationTrasformazioni;
-
+    private Object workToDo;
     public Operations(List<OperationStruttura> listOfOperationStruttura,
             List<OperationAppartenente> listOfOperationAppartenenti,
             List<OperationAnagrafica> listOfOperationAnagrafiche,
@@ -35,18 +36,21 @@ public class Operations implements Serializable {
 
     }
 
-    public void execute() {
+    public void execute() throws RibaltoneHttpException {
         for (OperationStruttura operation : listOfOperationStruttura) {
-            operation.esegui();
+            operation.esegui(workToDo);
         }
+        workToDo = null;
         for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
-            operation.esegui();
+            operation.esegui(workToDo);
         }
+        workToDo = null;
         for (OperationAppartenente operation : listOfOperationAppartenenti) {
-            operation.esegui();
+            operation.esegui(workToDo);
         }
+        workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
-            operation.esegui();
+            operation.esegui(workToDo);
         }
     }
 

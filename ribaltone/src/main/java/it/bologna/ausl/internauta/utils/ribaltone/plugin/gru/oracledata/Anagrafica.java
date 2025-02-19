@@ -82,7 +82,7 @@ public class Anagrafica implements Serializable {
         return "it.bologna.ausl.internauta.model.entities.ribaltone.entita.plugin.gru.oracledata.Anagrafica[ codiceFiscale=" + codiceFiscale + " ]";
     }
 
-    public DatiDaImportareAnagrafica toFonteIntermedia(String codiceAzienda){
+    public DatiDaImportareAnagrafica toFonteIntermedia(String codiceAzienda, Integer idAzienda){
         DatiDaImportareAnagrafica fonteIntermediaAnagrafica = new DatiDaImportareAnagrafica();
         fonteIntermediaAnagrafica.setCodiceEnte(codiceEnte);
         fonteIntermediaAnagrafica.setCodiceFiscale(codiceFiscale);
@@ -90,6 +90,7 @@ public class Anagrafica implements Serializable {
         fonteIntermediaAnagrafica.setCognome(cognome);
         fonteIntermediaAnagrafica.setNome(nome);
         fonteIntermediaAnagrafica.setEmail(email);
+        fonteIntermediaAnagrafica.setIdAzienda(idAzienda);
         fonteIntermediaAnagrafica.setCodiceAzienda(codiceAzienda);
         return fonteIntermediaAnagrafica;
     }

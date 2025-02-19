@@ -34,8 +34,8 @@ public class GruDataManager extends SourceDataManager {
 
     private GruSpecificData gruSpecificData;
 
-    public GruDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda) throws RibaltoneHttpException{
-        super(specificDataConf, objectMapper, codiceAzienda);
+    public GruDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda, Integer idAzienda) throws RibaltoneHttpException {
+        super(specificDataConf, objectMapper, codiceAzienda, idAzienda);
 
         setGruSpecificData((GruSpecificData) specificDataConf);
         Boolean connessioneOk = gruSpecificData.getConnessione().build();
@@ -120,7 +120,7 @@ public class GruDataManager extends SourceDataManager {
                     .setAutoDeriveColumnNames(true)
                     .setCaseSensitive(false)
                     .executeAndFetch(Struttura.class);
-            struttureOracle.forEach(struttura -> fonteIntermediaStrutture.add(struttura.toFonteIntermedia(codiceAzienda)));
+            struttureOracle.forEach(struttura -> fonteIntermediaStrutture.add(struttura.toFonteIntermedia(codiceAzienda, idAzienda)));
             return fonteIntermediaStrutture;
         } catch (Exception e) {
             throw new RuntimeException("Errore durante il recupero degli appartenenti.", e);
@@ -138,7 +138,7 @@ public class GruDataManager extends SourceDataManager {
                     .setAutoDeriveColumnNames(true)
                     .setCaseSensitive(false)
                     .executeAndFetch(Trasformazione.class);
-            trasformazioniOracle.forEach(traformazione -> fonteIntermediaTrasformazioni.add(traformazione.toFonteIntermedia(codiceAzienda)));
+            trasformazioniOracle.forEach(traformazione -> fonteIntermediaTrasformazioni.add(traformazione.toFonteIntermedia(codiceAzienda, idAzienda)));
             return fonteIntermediaTrasformazioni;
         } catch (Exception e) {
             throw new RuntimeException("Errore durante il recupero degli appartenenti.", e);
@@ -159,7 +159,7 @@ public class GruDataManager extends SourceDataManager {
 
         for (Appartenente appartenente : appartenenti) {
 //            codiciFiscaliPerAnagrafica.add(appartenente.getCodiceFiscale());
-            DatiDaImportareAppartenente fonteIntermediaAppartenente = appartenente.toFonteIntermedia(codiceAzienda);
+            DatiDaImportareAppartenente fonteIntermediaAppartenente = appartenente.toFonteIntermedia(codiceAzienda, idAzienda);
             Map<String, Object> appartenenteData = new HashMap<>();
             appartenenteData.put("codiceEnte", appartenente.getCodiceEnte());
             appartenenteData.put("codiceMatricola", appartenente.getCodiceMatricola());
@@ -247,7 +247,7 @@ public class GruDataManager extends SourceDataManager {
                     .setAutoDeriveColumnNames(true)
                     .setCaseSensitive(false)
                     .executeAndFetch(Anagrafica.class);
-            anagraficheOracle.forEach(anagrafica -> fonteIntermediaAnagrafiche.add(anagrafica.toFonteIntermedia(codiceAzienda)));
+            anagraficheOracle.forEach(anagrafica -> fonteIntermediaAnagrafiche.add(anagrafica.toFonteIntermedia(codiceAzienda, idAzienda)));
             return fonteIntermediaAnagrafiche;
         }
     }

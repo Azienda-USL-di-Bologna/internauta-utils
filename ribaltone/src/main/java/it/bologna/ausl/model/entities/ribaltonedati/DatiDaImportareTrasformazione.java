@@ -49,6 +49,9 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
 
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "data_trasformazione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -86,6 +89,16 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     public DatiDaImportareTrasformazione(Integer id) {
         this.id = id;
     }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+    
+    
 
     public Integer getProgressivoRiga() {
         return progressivoRiga;

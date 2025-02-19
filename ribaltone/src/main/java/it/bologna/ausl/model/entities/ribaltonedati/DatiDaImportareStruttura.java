@@ -57,6 +57,9 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Column(name = "codice_ente")
     private String codiceEnte;
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
@@ -89,6 +92,14 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     public void setIdPadre(Integer idPadre) {
         this.idPadre = idPadre;
+    }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public String getDescrizione() {

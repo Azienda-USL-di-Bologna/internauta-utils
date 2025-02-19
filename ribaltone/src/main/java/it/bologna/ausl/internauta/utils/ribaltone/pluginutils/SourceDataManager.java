@@ -19,10 +19,13 @@ public abstract class SourceDataManager {
     
     protected String codiceAzienda;
     
-    protected SourceDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda) {
+    protected Integer idAzienda;
+    
+    protected SourceDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda, Integer idAzienda) {
         this.specificDataConf = specificDataConf;
         this.objectMapper = objectMapper;
         this.codiceAzienda = codiceAzienda;
+        this.idAzienda = idAzienda;
     }
 
     public SpecificData getSpecificDataConf() {

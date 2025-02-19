@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +36,14 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     private final RedisTemplate<String, Object> redisTemplate;
     private final Integer timeToExpire;
     private final String key;
+    private final EntityManager entityManager;
     
-    public RibaltoneCacheRedis(ObjectMapper objectMapper, Map<String, Object> cacheConfig) {
+    public RibaltoneCacheRedis(ObjectMapper objectMapper, Map<String, Object> cacheConfig, EntityManager entityManager) {
         this.objectMapper = objectMapper;
         redisTemplate = this.buildRedisTemplate(cacheConfig);
         this.timeToExpire = Integer.valueOf(cacheConfig.get("cacheTime").toString());
         this.key = "RIBALTONE_" + cacheConfig.get("codiceAzienda").toString(); 
+        this.entityManager = entityManager;
     }
     
     @Override
@@ -77,16 +80,16 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
                 switch (operationDaRedis.get("tipo").toString()) {
                     case "Anagrafica":
-                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta));
+                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                         break;
                     case "Appartenente":
-                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta));
+                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                         break;
                     case "Struttura":
-                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta));
+                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                         break;
                     case "Trasformazione":
-                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta));
+                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                         break;
                 }
             }      
