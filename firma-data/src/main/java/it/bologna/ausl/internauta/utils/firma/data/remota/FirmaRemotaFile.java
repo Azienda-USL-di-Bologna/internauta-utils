@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.firma.data.remota;
 
+import java.util.Map;
+
 /**
  *
  * @author gdm
@@ -14,7 +16,8 @@ public class FirmaRemotaFile {
     public static enum OutputType{URL, UUID};
     
     // in
-    private String fileId; // guid del file per identificarlo
+    private String fileId; // id del file per identificarlo
+    private Map<String, Object> bag; // informazioni bag, saranno tornate così come sono passate
     //private String name;  // non sappiamo se ci servirà
     private String url; // url per scaricare il file da firmare
     private String mimeType; // mime Type del file da firmare
@@ -54,6 +57,15 @@ public class FirmaRemotaFile {
         this.formatoFirma = formatoFirma;
         this.signAppearance = signAppearance;
     }
+    
+    public FirmaRemotaFile(String fileId, Map<String, Object> bag, String url, String mimeType, FormatiFirma formatoFirma, SignAppearance signAppearance) {
+        this.fileId = fileId;
+        this.bag = bag;
+        this.url = url;
+        this.mimeType = mimeType;
+        this.formatoFirma = formatoFirma;
+        this.signAppearance = signAppearance;
+    }
 
     public FirmaRemotaFile(String fileId, String url, String mimeType, FormatiFirma formatoFirma, SignAppearance signAppearance, String uuidFirmato) {
         this.fileId = fileId;
@@ -70,6 +82,14 @@ public class FirmaRemotaFile {
 
     public void setFileId(String fileId) {
         this.fileId = fileId;
+    }
+
+    public Map<String, Object> getBag() {
+        return bag;
+    }
+
+    public void setBag(Map<String, Object> bag) {
+        this.bag = bag;
     }
 
     public String getUrl() {
