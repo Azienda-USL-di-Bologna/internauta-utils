@@ -9,6 +9,7 @@ import it.bologna.ausl.internauta.utils.firma.data.remota.UserInformation;
 import it.bologna.ausl.internauta.utils.firma.data.remota.medassignservice.MedasUserSign;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmaRemotaManager;
 import it.bologna.ausl.internauta.utils.firma.repositories.ConfigurationRepository;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import it.bologna.ausl.model.entities.firma.QConfiguration;
@@ -127,15 +128,11 @@ public class FirmaRemotaRestController implements FirmaRemotaControllerHandledEx
                 @RequestParam(required = true) String hostId,
                 @RequestParam(required = true) String codiceAzienda,
                 HttpServletRequest request) throws FirmaHttpException, FirmaRemotaConfigurationException {
-        FirmaRemota firmaRemotaInstance = firmaRemotaFactory.getFirmaRemotaInstance(hostId);
-        try {
-            FirmaRemotaInformation res = firmaRemotaInstance.firma(firmaRemotaInformation, codiceAzienda, request);
-            return res;
-        } catch (Exception ex) {
-            logger.error("errore nella firma", ex);
-            throw ex;
-        }
+        FirmaRemotaManager firmaRemotaManager = new FirmaRemotaManager(firmaRemotaFactory);
+        return firmaRemotaManager.firma(firmaRemotaInformation, hostId, codiceAzienda, request);
     }
+    
+
     
     @RequestMapping(value = "/firmaRemotaMultpart", consumes = "multipart/form-data", method = RequestMethod.POST)
     public FirmaRemotaInformation firmaRemotaMultipart(
