@@ -452,9 +452,16 @@ public class FirmaRemotaMedas extends FirmaRemota {
         typeDocument.setDocType(docTypes.get(0));
         typeDocument.setSignStringCode("");
         
+        Integer bigDocSize = null;
+        if (this.SFTPConnectionParams.containsKey("bigDocSize")) {
+            bigDocSize = (Integer) this.SFTPConnectionParams.get("bigDocSize");
+        }
+        
         String fileBase64;
         long fileSize = tmpFileToSign.length();
-        boolean largeFile = fileSize > 10 * 1000000;
+        boolean largeFile = bigDocSize != null && fileSize > bigDocSize;
+        //boolean largeFile = fileSize > 10 * 1000000;
+        
         // largeFile = true;
         logger.info(String.format("file size: %s bytes, largeFile: %s", fileSize, largeFile));
         if (largeFile && isSftpForLargeFileEnabled()) {

@@ -35,8 +35,15 @@ public class ConvertZonedDateTimeToDate implements TemplateMethodModelEx {
                 Date date = Date.valueOf(zonedDateTime.toLocalDate());
                 res = new SimpleDate(date);
             } catch (DateTimeParseException | NullPointerException | IllegalArgumentException subEx) {
-                throw new TemplateModelException("Unable to covert argument to type date. Argument passed: " +
+                try {
+                    ZonedDateTime zonedDateTime = ZonedDateTime.parse(String.valueOf(args.get(0)), DateTimeFormatter.ISO_ZONED_DATE_TIME);
+                    Date date = Date.valueOf(zonedDateTime.toLocalDate());
+                    res = new SimpleDate(date);
+                } catch (DateTimeParseException | NullPointerException | IllegalArgumentException subSubEx) {
+                    throw new TemplateModelException("Unable to covert argument to type date. Argument passed: " +
                     args.get(0).toString() + " expected format:" + ZONED_DATE_FORMATTER, subEx);
+                }
+                
             }
         }
         return res;
