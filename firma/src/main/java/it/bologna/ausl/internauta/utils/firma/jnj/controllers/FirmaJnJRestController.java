@@ -90,6 +90,8 @@ public class FirmaJnJRestController implements FirmaRemotaControllerHandledExcep
         return "ciao " + nome + cognome;
     }
     
+    
+    
     /**
      * torna i parametri (settati con la setParameters) per la sessione di firma jnj
      * @param token il token che identifica i parametri, tornato dalla setParameters

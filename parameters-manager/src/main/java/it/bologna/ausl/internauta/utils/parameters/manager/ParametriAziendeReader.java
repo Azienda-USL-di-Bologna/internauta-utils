@@ -50,7 +50,8 @@ public class ParametriAziendeReader {
         loginConfig,
         babelshareConfig,
         oliammConfiguration,
-        tabRegistrazioniScriptaActive
+        tabRegistrazioniScriptaActive,
+        firmaJNJ
     }
     
     @Autowired
