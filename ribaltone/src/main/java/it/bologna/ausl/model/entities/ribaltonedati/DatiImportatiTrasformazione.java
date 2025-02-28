@@ -49,6 +49,10 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
 
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
+    
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "data_trasformazione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -74,6 +78,8 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
+    
+    
 
     @Version()
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -173,6 +179,14 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
 
     public void setVersion(ZonedDateTime version) {
         this.version = version;
+    }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     @Override

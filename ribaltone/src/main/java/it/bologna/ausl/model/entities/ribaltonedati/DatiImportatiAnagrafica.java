@@ -38,6 +38,10 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
 
     @Column(name = "codice_ente")
     private String codiceEnte;
+    
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "codice_matricola")
     private String codiceMatricola;
@@ -150,6 +154,16 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     public void setVersion(ZonedDateTime version) {
         this.version = version;
     }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+    
+    
 
     @Override
     public int hashCode() {

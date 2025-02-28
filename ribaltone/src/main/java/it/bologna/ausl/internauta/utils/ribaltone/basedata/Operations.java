@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
@@ -7,6 +8,12 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
+import it.bologna.ausl.model.entities.baborg.QUtente;
+import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
+import it.bologna.ausl.model.entities.baborg.Utente;
+import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.io.Serializable;
 import java.util.List;
 
@@ -15,6 +22,9 @@ import java.util.List;
  * @author Top
  */
 public class Operations implements Serializable {
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private List<OperationStruttura> listOfOperationStruttura;
     private List<OperationAppartenente> listOfOperationAppartenenti;
@@ -48,6 +58,7 @@ public class Operations implements Serializable {
         for (OperationAppartenente operation : listOfOperationAppartenenti) {
             operation.esegui(workToDo);
         }
+        risistemaAfferenze();
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
             operation.esegui(workToDo);
@@ -94,6 +105,41 @@ public class Operations implements Serializable {
 
     public void setListOfOperationTrasformazioni(List<OperationTrasformazione> listOfOperationTrasformazioni) {
         this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
+    }
+
+    /**
+     * funzione che data un'azienda prende tutti gli utenti struttura diretti attivi
+     * li confronta con il numero di utenti attivi se ci sono più di un'afferenza diretta per utente
+     * mette tutte quelle di troppo come funzionali. (ritorna gli utenti struttura cambiati)
+     */
+    private void risistemaAfferenze() {
+        //faccio la query di select
+        //count e poi vedo che fare
+        QUtenteStruttura us = QUtenteStruttura.utenteStruttura;
+        QUtente u = QUtente.utente;
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        
+        List<Integer> idUtentiConNAfferenzeDirette = queryFactory
+                .select(us.idUtente.id)
+                .from(us)
+                .where(us.attivo.isTrue()
+                        .and(us.idUtente.idAzienda.id.eq(2))
+                        .and(us.idAfferenzaStruttura.id.eq(1)))
+                .groupBy(us.idUtente)
+                .having(us.id.count().gt(1))  // COUNT(id_afferenza_struttura) > 1
+                .fetch();
+        
+        List<UtenteStruttura> utentiStrutturaDaSistemare = queryFactory
+                .select(us)
+                .from(us)
+                .where(us.attivo.isTrue()
+                        .and(us.idUtente.idAzienda.id.eq(2))
+                        .and(us.idAfferenzaStruttura.id.eq(1))
+                        .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette)))  // Join con il risultato della prima query
+                .fetch();
+        //ora ho tutte le afferenze plurime dirette devo andare a sistemarle
+        //direi che una a caso (direi dalla seconda che esamino) diverranno funzionali
+        
     }
     
 }

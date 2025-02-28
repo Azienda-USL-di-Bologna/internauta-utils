@@ -51,6 +51,9 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
 
     @Column(name = "id_casella")
     private Integer idCasella;
+    
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -266,6 +269,15 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
     @Override
     public String getClasse() {
        return DatiImportatiAppartenente.class.getCanonicalName();
+    }
+
+    @Override
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
 }
