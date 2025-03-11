@@ -18,7 +18,7 @@ public class FirmaRemotaFile {
     // in
     private String fileId; // id del file per identificarlo
     private Map<String, Object> bag; // informazioni bag, saranno tornate così come sono passate
-    //private String name;  // non sappiamo se ci servirà
+    private String name;  // non sappiamo se ci servirà
     private String url; // url per scaricare il file da firmare
     private String mimeType; // mime Type del file da firmare
     private FormatiFirma formatoFirma; //formato firma da ottenere 
@@ -58,8 +58,9 @@ public class FirmaRemotaFile {
         this.signAppearance = signAppearance;
     }
     
-    public FirmaRemotaFile(String fileId, Map<String, Object> bag, String url, String mimeType, FormatiFirma formatoFirma, SignAppearance signAppearance) {
+    public FirmaRemotaFile(String fileId, String name, Map<String, Object> bag, String url, String mimeType, FormatiFirma formatoFirma, SignAppearance signAppearance) {
         this.fileId = fileId;
+        this.name = name;
         this.bag = bag;
         this.url = url;
         this.mimeType = mimeType;
@@ -82,6 +83,14 @@ public class FirmaRemotaFile {
 
     public void setFileId(String fileId) {
         this.fileId = fileId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Map<String, Object> getBag() {

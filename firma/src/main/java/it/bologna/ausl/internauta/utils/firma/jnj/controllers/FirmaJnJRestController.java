@@ -128,6 +128,10 @@ public class FirmaJnJRestController implements FirmaRemotaControllerHandledExcep
 
     @RequestMapping(value = "/setParameters", method = RequestMethod.POST)
     public String setParameters(@RequestBody(required = true) SignParams signParams) throws SignParamsException {
+        return saveRequestParameters(signParams);
+    }
+    
+    public String saveRequestParameters(SignParams signParams) throws SignParamsException {
         RequestParameter requestParameter = new RequestParameter();
         String token = UUID.randomUUID().toString();
         requestParameter.setId(token);

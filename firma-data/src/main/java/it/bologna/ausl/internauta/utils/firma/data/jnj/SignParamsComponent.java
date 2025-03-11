@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class EndSign {
+    public static class EndSign implements Serializable {
         public static enum EndSignResults {
             ALL_SIGNED, PARTIALLY_SIGNED, ERROR, ABORT
         }
@@ -80,10 +81,10 @@ public class SignParamsComponent {
     } 
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignDocument {
+    public static class SignDocument implements Serializable {
         public static enum SignTypes {CADES, PADES, XADES}
         public static enum Sources {URI, FILE_SYSTEM, BASE_64}
-         public static enum SignDocumentResults {
+        public static enum SignDocumentResults {
             SIGNED, ERROR, SKIPPED
         }
         private String file;
@@ -191,7 +192,7 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignFileAttributes {
+    public static class SignFileAttributes implements Serializable {
         private Boolean visible;
         private String textTemplate;
         private SignFileAttributesPosition position;
@@ -225,7 +226,7 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignFileAttributesPosition {
+    public static class SignFileAttributesPosition implements Serializable {
         public static enum AlignmentVerticalPositions {TOP, BOTTOM, MIDDLE, NONE}
         public static enum AlignmentHorizontalPositions {LEFT, RIGHT, CENTER, NONE}
         private AlignmentVerticalPositions alignmentVertical;
