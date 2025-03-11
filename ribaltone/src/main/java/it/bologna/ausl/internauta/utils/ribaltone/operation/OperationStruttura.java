@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CHIUSURA;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
@@ -29,7 +30,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
     }
 
     @Override
-    public void esegui(Object workToDo) throws RibaltoneHttpException {
+    public void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //string = codiceCasellaPadre che sto aspettando di inserire
         //List<Integer> = lista di id di strutture figlie che ho gia inserito e sulle quali devo fare update in idStrutturaPadre
         //dovro anche andare a ad inserire in storico relazione la riga
@@ -65,6 +66,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
                 OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
+                //TODO: spegnere permessi veicolati
 
             }
             break;

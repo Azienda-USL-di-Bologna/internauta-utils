@@ -37,6 +37,7 @@ public class RibaltoneTotaleManager {
 
     @Autowired
     private RepositoryFactory repositoryFactory;
+    
 
     public void ribaltaWithOutUserReport(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
@@ -45,7 +46,7 @@ public class RibaltoneTotaleManager {
         OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, specificData.getTolleranzaAppartenenti(), specificData.getTolleranzaStrutture(), repositoryFactory);
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
-        buildOperations.execute();
+        buildOperations.execute(repositoryFactory);
     }
 
     private void ribaltaTutto(DatiDaImportare datiDaImportareValidated, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture) {
@@ -117,7 +118,7 @@ public class RibaltoneTotaleManager {
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildOperations = operationsCacheManager.restore();
-        buildOperations.execute();
+        buildOperations.execute(repositoryFactory);
         return buildOperations;
     }
 

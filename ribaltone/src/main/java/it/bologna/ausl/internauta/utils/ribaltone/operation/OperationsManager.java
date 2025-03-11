@@ -4,10 +4,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAppartenenteRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiStrutturaRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiAnagraficaRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiImportatiTrasformazioneRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
@@ -21,7 +17,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *

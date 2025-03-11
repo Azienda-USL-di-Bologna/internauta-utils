@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.model.entities.baborg.QUtente;
@@ -46,22 +47,22 @@ public class Operations implements Serializable {
 
     }
 
-    public void execute() throws RibaltoneHttpException {
+    public void execute(RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         for (OperationStruttura operation : listOfOperationStruttura) {
-            operation.esegui(workToDo);
+            operation.esegui(workToDo,repositoryFactory);
         }
         workToDo = null;
         for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
-            operation.esegui(workToDo);
+            operation.esegui(workToDo,repositoryFactory);
         }
         workToDo = null;
         for (OperationAppartenente operation : listOfOperationAppartenenti) {
-            operation.esegui(workToDo);
+            operation.esegui(workToDo, repositoryFactory);
         }
         risistemaAfferenze();
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
-            operation.esegui(workToDo);
+            operation.esegui(workToDo,repositoryFactory);
         }
     }
 

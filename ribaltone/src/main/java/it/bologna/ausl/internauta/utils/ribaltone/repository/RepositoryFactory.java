@@ -4,6 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
+import it.bologna.ausl.blackbox.PermissionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,9 @@ public class RepositoryFactory {
     
     @PersistenceContext
     private EntityManager entityManager;
+    
+    @Autowired
+    private PermissionManager permissionManager;
 
     public RepositoryFactory() {
     }
@@ -86,5 +90,15 @@ public class RepositoryFactory {
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
+
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    public void setPermissionManager(PermissionManager permissionManager) {
+        this.permissionManager = permissionManager;
+    }
+    
+    
     
 }

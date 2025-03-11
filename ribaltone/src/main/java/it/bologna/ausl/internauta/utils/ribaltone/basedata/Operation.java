@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import jakarta.persistence.EntityManager;
 
 /**
@@ -55,6 +56,6 @@ public static enum Azione {
         this.entityManager = entityManager;
     }
     
-    public abstract void esegui(Object workToDo) throws RibaltoneHttpException ;
+    public abstract void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException ;
 }
 

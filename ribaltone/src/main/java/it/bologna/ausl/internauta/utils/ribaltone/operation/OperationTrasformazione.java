@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
@@ -28,7 +29,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
     }
 
     @Override
-    public void esegui(Object workToDo) throws RibaltoneHttpException {
+    public void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         EntityManager em = getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QStruttura qStruttura = QStruttura.struttura;
