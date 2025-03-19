@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.authorizationutils.session;
 
-import it.bologna.ausl.internauta.utils.authorizationutils.cache.AuthorizationUtilsCachedEntities;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.Applicazione;
@@ -20,17 +19,17 @@ public class AuthenticatedSessionDataBuilder {
     protected final ThreadLocal<TokenBasedAuthentication> threadLocalAuthentication = new ThreadLocal();
 
     @Autowired
-    private AuthorizationUtilsCachedEntities cachedEntities;
+    private AuthorizationUtilsSessionCachedEntities cachedEntities;
     
     public AuthenticatedSessionData getAuthenticatedUserProperties() {
         setAuthentication();
         Utente user = (Utente) threadLocalAuthentication.get().getPrincipal();
         Utente realUser = (Utente) threadLocalAuthentication.get().getRealUser();
         int idSessionLog = threadLocalAuthentication.get().getIdSessionLog();
-        Persona person = cachedEntities.getPersonaFromUtente(user);
+        Persona person = (Persona) cachedEntities.getPersonaFromUtente(user.getId());
         Persona realPerson = null;
         if (realUser != null) {
-            realPerson = cachedEntities.getPersonaFromUtente(realUser);
+            realPerson = (Persona) cachedEntities.getPersonaFromUtente(realUser.getId());
         }
         Applicazione.Applicazioni applicazione =  threadLocalAuthentication.get().getApplicazione();
         String token =  threadLocalAuthentication.get().getToken();
