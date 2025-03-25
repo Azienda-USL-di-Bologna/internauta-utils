@@ -56,18 +56,22 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura,
                         struttureDaAggiornareConPadre
                 );
+                
+                //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
             }
             break;
 
             case CHIUSURA: {
+                //non serve spegnere i permessi veicolati qui perche tanto gli utenti 
+                //che facevano parte della struttura chiusa o non potranno entrare o 
+                //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
                 Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
-                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
-                //TODO: spegnere permessi veicolati
-
+                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);                
+                //ora gestisco il caso in cui chiudo la struttura e tocco un'unificazione
             }
             break;
 
@@ -107,6 +111,8 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStrutturaUnificata);
                 //spostaStrutture
                 OperationsUtils.spostaStruttura(em,strutturaChiusa.getId(),strutturaAppenaInserita.getId(), operazione,strutturaAppenaInserita.getDataAttivazione().toString());
+                
+                //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
             break;
 //             {
 //                DatiDaImportareStruttura entitaDaRinomina = (DatiDaImportareStruttura) getEntitaCoinvolta();

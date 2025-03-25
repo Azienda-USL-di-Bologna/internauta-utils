@@ -22,8 +22,6 @@ public abstract class SpecificData {
     private List<String> personeNonSpegnibili;
     private List<String> personeDaSpegnere;
     private Integer progressivo_ultima_trasformazione;
-    private Integer tolleranzaStrutture;
-    private Integer tolleranzaAppartenenti;
 
     public List<String> getPersoneNonSpegnibili() {
         return personeNonSpegnibili;
@@ -47,22 +45,6 @@ public abstract class SpecificData {
 
     public void setProgressivo_ultima_trasformazione(Integer progressivo_ultima_trasformazione) {
         this.progressivo_ultima_trasformazione = progressivo_ultima_trasformazione;
-    }
-
-    public Integer getTolleranzaStrutture() {
-        return tolleranzaStrutture;
-    }
-
-    public void setTolleranzaStrutture(Integer tolleranzaStrutture) {
-        this.tolleranzaStrutture = tolleranzaStrutture;
-    }
-
-    public Integer getTolleranzaAppartenenti() {
-        return tolleranzaAppartenenti;
-    }
-
-    public void setTolleranzaAppartenenti(Integer tolleranzaAppartenenti) {
-        this.tolleranzaAppartenenti = tolleranzaAppartenenti;
     }
     
 }

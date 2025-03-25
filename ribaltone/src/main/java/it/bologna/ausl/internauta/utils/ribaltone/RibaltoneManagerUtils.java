@@ -15,6 +15,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -31,8 +32,8 @@ import java.util.Map;
  */
 public class RibaltoneManagerUtils {
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, String idConfiguration, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, idConfiguration);
+    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, configRibaltoneView.getFonteDefault());
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
 
@@ -40,8 +41,8 @@ public class RibaltoneManagerUtils {
         OperationsManager operationsManager = new OperationsManager(
                 datiDaImportareValidated,
                 codiceAzienda,
-                Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaAppartenenti").toString()),
-                Integer.valueOf(ribaltoneConf.getSpecifiche().get("tolleranzaStrutture").toString()),
+                configRibaltoneView.getTolleranzaAppartenenti(),
+                configRibaltoneView.getTolleranzaStrutture(),
                 repositoryFactory);
         Operations operations = operationsManager.buildOperations();
         //controllo sul numero minimo di dati

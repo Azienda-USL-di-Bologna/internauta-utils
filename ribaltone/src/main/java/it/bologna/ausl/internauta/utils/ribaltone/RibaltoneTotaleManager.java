@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -39,11 +40,11 @@ public class RibaltoneTotaleManager {
     private RepositoryFactory repositoryFactory;
     
 
-    public void ribaltaWithOutUserReport(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
+    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteDefault());
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
         DatiDaImportare validateSourceData = RibaltoneManagerUtils.validateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
-        OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, specificData.getTolleranzaAppartenenti(), specificData.getTolleranzaStrutture(), repositoryFactory);
+        OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
         buildOperations.execute(repositoryFactory);
@@ -89,16 +90,16 @@ public class RibaltoneTotaleManager {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    public Object ribaltaWithUserReportAndCacheOperation(String codiceAzienda, String idConfiguration, UserReport.UserReportType typeUserReport) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
+    public Object ribaltaWithUserReportAndCacheOperation(String codiceAzienda, ConfigRibaltoneView configRibaltoneView, UserReport.UserReportType typeUserReport) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteDefault());
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
         DatiDaImportare validateSourceData = RibaltoneManagerUtils.validateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         
         OperationsManager operationsManager = new OperationsManager(
                 validateSourceData,
                 codiceAzienda,
-                specificData.getTolleranzaAppartenenti(),
-                specificData.getTolleranzaStrutture(),
+                configRibaltoneView.getTolleranzaAppartenenti(),
+                configRibaltoneView.getTolleranzaStrutture(),
                 repositoryFactory);
         
         Operations buildOperations = operationsManager.buildOperations();

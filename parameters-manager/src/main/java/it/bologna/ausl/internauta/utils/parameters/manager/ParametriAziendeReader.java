@@ -83,7 +83,7 @@ public class ParametriAziendeReader {
     }
 
     public List<ParametroAziende> getParameters(String nome, String[] idApplicazioni) {
-        return getParameters(nome, null, idApplicazioni);
+        return getParameters(nome, null, idApplicazioni);        
     }
 /**
  * Metodo che prende in ingresso

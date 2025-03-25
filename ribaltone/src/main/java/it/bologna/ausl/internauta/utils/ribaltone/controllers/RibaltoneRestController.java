@@ -1,33 +1,18 @@
 package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
-import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiDaImportareAppartenenteRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiDaImportareStrutturaRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiDaImportareAnagraficaRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiDaImportareTrasformazioneRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
+import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,21 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "${ribaltone.mapping.url.root}")
 public class RibaltoneRestController implements ControllerHandledExceptions {
 
-//    @Autowired
-//    private RibaltoneConfiguration ribaltoneConfiguration;
-//
-//    @Autowired
-//    private DatiDaImportareAppartenenteRepository datiDaImportareAppartenenteRepository;
-//
-//    @Autowired
-//    private DatiDaImportareStrutturaRepository datiDaImportareStrutturaRepository;
-//
-//    @Autowired
-//    private DatiDaImportareAnagraficaRepository datiDaImportareAnagraficaRepository;
-//
-//    @Autowired
-//    private DatiDaImportareTrasformazioneRepository datiDaImportareTrasformazioneRepository;
-    
     @Autowired
     private RibaltoneTotaleManager ribaltoneTotaleManager;
     
@@ -118,7 +88,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
             @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) String idConfig
+            @RequestParam(required = true) ConfigRibaltoneView idConfig
     ) throws RibaltoneHttpException {
         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, idConfig);
          
@@ -134,7 +104,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
             @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) String idConfig,
+            @RequestParam(required = true) ConfigRibaltoneView idConfig,
             @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, idConfig, typeUserReport), HttpStatus.OK);

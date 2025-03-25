@@ -71,9 +71,9 @@ public class OperationsManager {
      */
     public Operations buildOperations() {
         List<OperationStruttura> operationsStrutture = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
-        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, this, indexAppartenentiImportati);
+        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati);
         List<OperationAnagrafica> operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
-        List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga, this.indexTrasformazioniImportate);
+        List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
         return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni);
     }
 
@@ -113,7 +113,7 @@ public class OperationsManager {
         return operationStrutturaList;
     }
 
-    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, OperationsManager aThis, Map<String, Integer> indexAppartenentiImportati) {
+    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati,  Map<String, Integer> indexAppartenentiImportati) {
         List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
         //prendo in considerazione tutte le modifiche e gli inserimenti dei nuovi utenti
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
@@ -176,7 +176,7 @@ public class OperationsManager {
         return operationAnagraficheList;
     }
 
-    private List<OperationTrasformazione> buildOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga, Map<String, Integer> indexTrasformazioniImportate) {
+    private List<OperationTrasformazione> buildOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga) {
         List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
 
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {

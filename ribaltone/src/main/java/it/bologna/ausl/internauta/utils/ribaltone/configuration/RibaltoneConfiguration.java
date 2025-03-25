@@ -12,16 +12,6 @@ import org.springframework.stereotype.Component;
 public class RibaltoneConfiguration {
     
     private ObjectMapper objectMapper;
-    
-    //private EntityManager entityManager;
-
-//    public EntityManager getEntityManager() {
-//        return entityManager;
-//    }
-//
-//    public void setEntityManager(EntityManager entityManager) {
-//        this.entityManager = entityManager;
-//    }
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;

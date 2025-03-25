@@ -111,6 +111,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                     }
                 }
+            //TODO: ora gestisco il caso in cui inserisco un utente unificato
             }
             break;
 
@@ -132,6 +133,18 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     try {
                                 permissionManager.deletePermission(
                                         persona,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        "ribaltone",
+                                        struttura);
+                    //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
+                                permissionManager.deletePermission(
+                                        utente,
                                         null,
                                         null,
                                         null,
@@ -188,23 +201,23 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                 }
 
                 //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
-                //TODO
                 if (entitaDaChiudere.getResposabile()) {
                     try {
-                        permissionManager.deletePermission(
-                                utente,
-                                struttura,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                "ribaltone");
+                         permissionManager.deletePermission(
+                                        utente,
+                                        struttura,
+                                        BlackBoxConstants.Predicato.FIRMA.toString(),
+                                        "ribaltone",
+                                        Boolean.FALSE,
+                                        Boolean.FALSE,
+                                        BlackBoxConstants.Ambito.PICO.toString(),
+                                        BlackBoxConstants.Tipo.FLUSSO.toString(),
+                                        "ribaltone");
                     } catch (BlackBoxPermissionException ex) {
                         throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                     }
                 }
+                //TODO: ora gestisco il caso in cui inserisco un utente unificato
             }
             break;
             case EDIT: {
@@ -264,11 +277,11 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                 }
                 //che cambia nome
                 // verificare baborg.persona
-                //che cambia tipologia di afferenza
+                //che cambia tipologia verificare baborg.perdi afferenza
                 //verificare baborg.utenti_strutttura
                 //che cambia username
                 //modificare username su baborg.utenti
-                //TODO: permessi di flusso
+                //TODO: ora gestisco il caso in cui edito un utente unificato
                 break;
             }
         }
