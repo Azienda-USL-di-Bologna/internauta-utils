@@ -96,8 +96,8 @@ public class OperationsManager {
                 }
             } else {
                 //allora è una nuova
-                //(mi salvo anche quante ne ho aperto per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura, repositoryFactory.getEntityManager()));
+                //(mi salvo anche quante ne ho aperto per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
                 this.struttureChiuse--;
             }
         }
