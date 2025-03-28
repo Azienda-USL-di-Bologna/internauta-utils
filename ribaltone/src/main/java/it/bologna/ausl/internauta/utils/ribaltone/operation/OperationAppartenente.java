@@ -59,7 +59,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
         Persona persona = null;
         UtenteStruttura utenteStruttura = null;
         List<Integer> idAziendeList = new ArrayList<>();
-        List<Struttura> struttureUnificate  = new ArrayList<>();
+        List<Struttura> struttureUnificate = new ArrayList<>();
         List<StrutturaUnificata> entitaCoinvoltaUnificazioni = OperationsUtils.entitaCoinvoltaTouchUnificazioni(queryFactory, getEntitaCoinvolta(), qStruttura);
         if (entitaCoinvoltaUnificazioni != null && !entitaCoinvoltaUnificazioni.isEmpty()) {
             idAziendeList = entitaCoinvoltaUnificazioni.stream().flatMap(a -> Stream.of(
@@ -68,7 +68,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             ))
                     .distinct()
                     .collect(Collectors.toList());
-             struttureUnificate = entitaCoinvoltaUnificazioni.stream()
+            struttureUnificate = entitaCoinvoltaUnificazioni.stream()
                     .flatMap(a -> Stream.of(
                     a.getIdStrutturaDestinazione(),
                     a.getIdStrutturaSorgente()
@@ -83,7 +83,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     .toList();
 
         } else {
-            
+
         }
 
         switch (getAzione()) {
@@ -106,7 +106,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         persona.setIdAziendaDefault(strutturaAppartenteOriginale.getIdAzienda());
                     }
                     persona.setAttiva(Boolean.TRUE);
-                    utenti = getUtenti(queryFactory, idAziendaArray, persona);
+                    utenti = getUtenti(queryFactory, idAziendeList, persona);
                     for (Utente utente : utenti) {
                         if (utente == null) {
                             utente = new Utente();
@@ -118,29 +118,34 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         utente.setDataSpegnimento(null);
                         utente.setIdPersona(persona);
 
-                        utenteStruttura.setIdUtente(utente);
-                        utenteStruttura.setAttivoDal(ZonedDateTime.now());
-                        utenteStruttura.setIdStruttura(strutturaAppartenteOriginale);
-                        utenteStruttura.setAttivo(Boolean.TRUE);
-                        utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getTipoAppartenenza()));
-                        utenteStruttura.setResponsabile(entitaDaInserire.getResposabile());
+                        for (Struttura struttura : struttureUnificate) {
+                            if (struttura.getIdAzienda().getId().equals(utente.getIdAzienda().getId())) {
+                                utenteStruttura.setIdUtente(utente);
+                                utenteStruttura.setAttivoDal(ZonedDateTime.now());
+                                utenteStruttura.setIdStruttura(strutturaAppartenteOriginale);
+                                utenteStruttura.setAttivo(Boolean.TRUE);
+                                utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getTipoAppartenenza()));
+                                utenteStruttura.setResponsabile(entitaDaInserire.getResposabile());
+                                getEntityManager().persist(utenteStruttura);
 
-                        getEntityManager().persist(utenteStruttura);
-                        if (entitaDaInserire.getResposabile()) {
-                            try {
-                                permissionManager.insertSimplePermission(
-                                        utente,
-                                        strutturaAppartenteOriginale,
-                                        BlackBoxConstants.Predicato.FIRMA.toString(),
-                                        "ribaltone",
-                                        Boolean.FALSE,
-                                        Boolean.FALSE,
-                                        BlackBoxConstants.Ambito.PICO.toString(),
-                                        BlackBoxConstants.Tipo.FLUSSO.toString());
-                            } catch (BlackBoxPermissionException ex) {
-                                throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+                                if (entitaDaInserire.getResposabile()) {
+                                    try {
+                                        permissionManager.insertSimplePermission(
+                                                utente,
+                                                strutturaAppartenteOriginale,
+                                                BlackBoxConstants.Predicato.FIRMA.toString(),
+                                                "ribaltone",
+                                                Boolean.FALSE,
+                                                Boolean.FALSE,
+                                                BlackBoxConstants.Ambito.PICO.toString(),
+                                                BlackBoxConstants.Tipo.FLUSSO.toString());
+                                    } catch (BlackBoxPermissionException ex) {
+                                        throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+                                    }
+                                }
                             }
                         }
+
                     }
                 } else {
                     throw new RibaltoneHttpException(" non trovata la struttura di un utente qualcosa nei controlli è andato male!!!");
@@ -326,7 +331,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
         }
     }
 
-    private List<Utente> getUtenti(JPAQueryFactory queryFactory, Integer[] idAziende, Persona persona) {
+    private List<Utente> getUtenti(JPAQueryFactory queryFactory, List<Integer> idAziende, Persona persona) {
         if (persona.getId() != null) {
             return queryFactory
                     .select(qUtente)
