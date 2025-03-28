@@ -31,7 +31,7 @@ public class RibaltoneTotaleManager {
     private EntityManager entityManager;
 
     @Autowired
-    private static RibaltoneConfiguration ribaltoneConfiguration;
+    private RibaltoneConfiguration ribaltoneConfiguration;
 
     @Autowired
     private ObjectMapper objectMapper;
