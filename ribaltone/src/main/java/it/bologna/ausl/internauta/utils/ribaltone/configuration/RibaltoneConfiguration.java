@@ -21,3 +21,4 @@ public class RibaltoneConfiguration {
         this.objectMapper = objectMapper;
     }  
 }
+
