@@ -447,6 +447,24 @@ public class MinIOWrapper {
         return name;
 
     }
+    
+    /**
+     * Funzione che pulisce il fileName, toglie caratteri speciali e tronca la stringa a 255 caratteri
+     * @param fileName
+     * @return 
+     */
+    public String cleanFileName(String fileName) {
+        // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
+        fileName = fileName.replaceAll("[\\[\\]\\/:àèéòòù*?\"<>|\\-\\'(),&%{}\\s]", "_").replaceAll("\\u201D", "_").replaceAll("\\u201C", "").replaceAll("\\u2019", "");
+
+        // Se il nome è più lungo di 255 caratteri minIO da errore:
+        // quindi bisogna accorciarlo cercando di mantenere l'estensione
+        // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
+        if (fileName.getBytes().length >= 255) {
+            fileName = getMinioTruncatedName(fileName);
+        }
+        return fileName;
+    }
 
     /**
      * Carica un file sul repository
@@ -485,15 +503,7 @@ public class MinIOWrapper {
 
             // in base al serveId letto prendo l'istanza del repository
             MinioClient minIOClient = minIOServerClientMap.get(serverId);
-            // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
-            fileName = fileName.replaceAll("[\\[\\]\\/:àèéòòù*?\"<>|\\-\\'(),&%{}\\s]", "_").replaceAll("\\u201D", "_").replaceAll("\\u201C", "").replaceAll("\\u2019", "");
-
-            // Se il nome è più lungo di 255 caratteri minIO da errore:
-            // quindi bisogna accorciarlo cercando di mantenere l'estensione
-            // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
-            if (fileName.getBytes().length >= 255) {
-                fileName = getMinioTruncatedName(fileName);
-            }
+            fileName = cleanFileName(fileName);
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();
