@@ -1,7 +1,11 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.*;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
@@ -19,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import com.querydsl.jpa.JPQLQuery;
 
 /**
  *
@@ -229,6 +234,15 @@ public class OperationsUtils {
 
     }
 
+    /**
+     * *
+     *
+     * @param queryFactory
+     * @param idCasella
+     * @param idAzienda
+     * @param qStruttura
+     * @return
+     */
     public static Struttura getStrutturaFromIdCasellaAndIdAziendaAndAttiva(JPAQueryFactory queryFactory, Integer idCasella, Integer idAzienda, QStruttura qStruttura) {
         return queryFactory
                 .select(qStruttura)
@@ -281,5 +295,50 @@ public class OperationsUtils {
                 .fetch();
 
         return struttureUnificateAttive;
+    }
+
+    public static void manageUnificazioni(EntityManager entityManager, List<OperationStruttura> listOfOperationStruttura) {
+        for (OperationStruttura operationStruttura : listOfOperationStruttura) {
+            //prendo tutti i padri della struttura
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            List<Struttura> struttureDaConsiderare = new ArrayList<>();
+            QStruttura qStruttura = QStruttura.struttura;
+            QStrutturaUnificata qStrutturaUnificataSorg = QStrutturaUnificata.strutturaUnificata;
+            QStrutturaUnificata qStrutturaUnificataDest = QStrutturaUnificata.strutturaUnificata;
+            switch (operationStruttura.getAzione()) {
+                case INSERT -> {
+                    DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) operationStruttura.getEntitaCoinvolta();
+                    //prendo i padri della struttura aperta
+                    struttureDaConsiderare.addAll(getStruttureAntenateAttiveONo(queryFactory, entitaDaInserire.getIdCasella(), true));
+                    List<Struttura> strutture = queryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .leftJoin(qStrutturaUnificataSorg).on(qStruttura.id.eq(qStrutturaUnificataSorg.idStrutturaSorgente.id))
+                            .leftJoin(qStrutturaUnificataDest).on(qStruttura.id.eq(qStrutturaUnificataDest.idStrutturaDestinazione.id))
+                            .where(qStrutturaUnificataSorg.isNotNull().or(qStrutturaUnificataDest.isNotNull())).fetch();
+                    //per ogni struttura trovata vado a inserire la nuova struttrua se non c'è gia
+                   
+                }
+                case CHIUSURA -> {
+                    DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) operationStruttura.getEntitaCoinvolta();
+                    //prendo i padri della struttura chiusa
+                    struttureDaConsiderare.addAll(getStruttureAntenateAttiveONo(queryFactory, entitaDaChiudere.getIdCasella(), false));
+                }
+                case CAMBIO_PADRE, RINOMINA -> {
+                    DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) operationStruttura.getEntitaCoinvolta();
+                    //prendo i padri della struttura chiusa
+                    struttureDaConsiderare.addAll(getStruttureAntenateAttiveONo(queryFactory, entitaDaCambio.getIdCasella(), true));
+                    //prendo i padri della struttura aperta
+                    struttureDaConsiderare.addAll(getStruttureAntenateAttiveONo(queryFactory, entitaDaCambio.getIdCasella(), false));
+                }
+                //controllo se qualcuno fa parte di una unificazione e nel caso faccio le operazioni di sincronizzazione
+            }
+        }
+    }
+
+    private static List<Struttura> getStruttureAntenateAttiveONo(JPAQueryFactory queryFactory, Integer idCasella, Boolean attiva) {
+        return queryFactory.select(
+                Expressions.template(Struttura.class, "baborg.strutture_antenate_attive_o_no({0}, {1})", idCasella, attiva)
+        ).fetch();
     }
 }

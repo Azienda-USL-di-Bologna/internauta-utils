@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
@@ -51,6 +52,7 @@ public class Operations implements Serializable {
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo,repositoryFactory);
         }
+        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(),listOfOperationStruttura);
         workToDo = null;
         for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
             operation.esegui(workToDo,repositoryFactory);

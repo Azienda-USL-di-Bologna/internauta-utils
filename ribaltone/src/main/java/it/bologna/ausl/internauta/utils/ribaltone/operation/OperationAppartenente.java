@@ -263,11 +263,14 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         }
                     }
                 }
-
-                //TODO: ora gestisco il caso in cui inserisco un utente unificato
             }
             case EDIT -> {
                 //sicuramente non ha cambiato struttura perche questa operazione si traduce in una insert e una chiusura
+                // quindi o cambia nome e bisogna verificare baborg.persona
+                // o  cambia tipologia afferenza verificare baborg.perdi 
+                //verificare baborg.utenti_strutttura
+                //che cambia username
+                //modificare username su baborg.utenti
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())).fetchFirst();
                 // è il caso di utente che diventa o non è più responsabile,
@@ -324,14 +327,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                             }
                         }
                     }
-                }
-                //che cambia nome
-                // verificare baborg.persona
-                //che cambia tipologia verificare baborg.perdi afferenza
-                //verificare baborg.utenti_strutttura
-                //che cambia username
-                //modificare username su baborg.utenti
-                //TODO: ora gestisco il caso in cui edito un utente unificato
+                }             
             }
         }
     }

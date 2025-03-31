@@ -12,12 +12,16 @@ import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -37,12 +41,15 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         if (workToDo == null) {
             workToDo = new HashMap<Integer, List<Integer>>();
         }
-        HashMap<Integer, List<Integer>> struttureDaAggiornareConPadre = (HashMap<Integer, List<Integer>>) workToDo;
+        HashMap<Integer, List<Integer>> struttureDaAggiornareConPadreNonAncoraInserito = (HashMap<Integer, List<Integer>>) workToDo;
         EntityManager em = getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QStruttura qStruttura = QStruttura.struttura;
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+        List<Integer> idAziendeList = new ArrayList<>();
+        List<Struttura> struttureUnificate = new ArrayList<>();
+
         switch (getAzione()) {
             case INSERT: {
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
@@ -54,11 +61,11 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         entitaDaInserire.getDescrizione(),
                         entitaDaInserire.getIdPadre(),
                         qStruttura,
-                        struttureDaAggiornareConPadre
+                        struttureDaAggiornareConPadreNonAncoraInserito
                 );
-                
-                //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
             }
+
+            //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
             break;
 
             case CHIUSURA: {
@@ -70,25 +77,25 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
-                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);                
+                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
                 //ora gestisco il caso in cui chiudo la struttura e tocco un'unificazione
             }
             break;
 
             case CAMBIO_PADRE:
             case RINOMINA:
-                String operazione = getAzione().equals(RINOMINA) ?  "R" : "T";
+                String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
                 DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) getEntitaCoinvolta();
-            //chiudere su baborg strutture old
-            //chiudere su baborg storico relazione old
-            Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    entitaDaCambio.getIdCasella(),
-                    entitaDaCambio.getIdAzienda(),
-                    queryFactory,
-                    qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                //chiudere su baborg strutture old
+                //chiudere su baborg storico relazione old
+                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
+                        entitaDaCambio.getIdCasella(),
+                        entitaDaCambio.getIdAzienda(),
+                        queryFactory,
+                        qStruttura,
+                        qStoricoRelazione,
+                        qStrutturaUnificata,
+                        false);
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
@@ -100,75 +107,23 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         entitaDaCambio.getDescrizione(),
                         entitaDaCambio.getIdPadre(),
                         qStruttura,
-                        struttureDaAggiornareConPadre
+                        struttureDaAggiornareConPadreNonAncoraInserito
                 );
                 //aggiustare unificazione
-                OperationsUtils.aggiustaUnificazioni(
-                        entitaDaCambio.getIdCasella(), 
-                        strutturaAppenaInserita,
-                        em, 
-                        queryFactory, 
-                        qStrutturaUnificata);
+//                OperationsUtils.aggiustaUnificazioni(
+//                        entitaDaCambio.getIdCasella(),
+//                        strutturaAppenaInserita,
+//                        em,
+//                        queryFactory,
+//                        qStrutturaUnificata);
                 //spostaStrutture
-                OperationsUtils.spostaStruttura(em,strutturaChiusa.getId(),strutturaAppenaInserita.getId(), operazione,strutturaAppenaInserita.getDataAttivazione().toString());
-                
+                OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAppenaInserita.getId(), operazione, strutturaAppenaInserita.getDataAttivazione().toString());
+
                 //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
-            break;
-//             {
-//                DatiDaImportareStruttura entitaDaRinomina = (DatiDaImportareStruttura) getEntitaCoinvolta();
-//                chiudiStruttura(entitaDaRinomina.getIdCasella(), entitaDaRinomina.getIdAzienda(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, false);
-//                //Inserire su baborg strutture new
-//                //Inserire su baborg storico relazione new
-//                //chiudere su baborg strutture old
-//                //chiudere su baborg storico relazione old
-//                Struttura strutturaAppenaInserita = inserisciStruttura(
-//                        em,
-//                        queryFactory,
-//                        entitaDaRinomina.getIdAzienda(),
-//                        entitaDaRinomina.getIdCasella(),
-//                        entitaDaRinomina.getDescrizione(),
-//                        entitaDaRinomina.getIdPadre(),
-//                        qStruttura,
-//                        struttureDaAggiornareConPadre
-//                );
-//                //aggiustare unificazione
-//                aggiustaUnificazioni(entitaDaRinomina.getIdCasella(), strutturaAppenaInserita, em, queryFactory, qStrutturaUnificata);
-//                //spostaStrutture
-//            }
-//            break;
-
-//             {
-//                DatiDaImportareStruttura entitaDaRinomina = (DatiDaImportareStruttura) getEntitaCoinvolta();
-//                chiudiStruttura(entitaDaRinomina.getIdCasella(), entitaDaRinomina.getIdAzienda(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, false);
-//                //Inserire su baborg strutture new
-//                //Inserire su baborg storico relazione new
-//                //chiudere su baborg strutture old
-//                //chiudere su baborg storico relazione old
-//                Struttura strutturaAppenaInserita = inserisciStruttura(
-//                        em,
-//                        queryFactory,
-//                        entitaDaRinomina.getIdAzienda(),
-//                        entitaDaRinomina.getIdCasella(),
-//                        entitaDaRinomina.getDescrizione(),
-//                        entitaDaRinomina.getIdPadre(),
-//                        qStruttura,
-//                        struttureDaAggiornareConPadre
-//                );
-//                //aggiustare unificazione
-//                aggiustaUnificazioni(entitaDaRinomina.getIdCasella(), strutturaAppenaInserita, em, queryFactory, qStrutturaUnificata);
-//                //spostaStrutture
-//            }
-//            break;
-
+                break;
             default:
                 throw new AssertionError();
         }
     }
 
-    
-
-    
-    
-
-    
 }
