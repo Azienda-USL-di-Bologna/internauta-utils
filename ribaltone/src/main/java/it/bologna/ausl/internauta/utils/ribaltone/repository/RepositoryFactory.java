@@ -8,6 +8,7 @@ import it.bologna.ausl.blackbox.PermissionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,9 +43,11 @@ public class RepositoryFactory {
     
     @PersistenceContext
     private EntityManager entityManager;
-    
-    @Autowired
+    //TODO : DA SCOMMENTARE
+//    @Autowired
     private PermissionManager permissionManager;
+    
+    
 
     public RepositoryFactory() {
     }

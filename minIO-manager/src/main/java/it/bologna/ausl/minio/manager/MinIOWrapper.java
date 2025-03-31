@@ -81,7 +81,7 @@ public class MinIOWrapper {
 
     // mappo anche il serverId di ogni azienda (serve solo per l'upload, per il resto prendo il serverId presente in tabella repo.files)
     private static final Map<String, Integer> minIOServerAziendaMap = new HashMap<>();
-    
+
     // Mappa dei parametri di configurazione per il repository S3
     private static final Map<String, String> repositoryConfigurations = new HashMap<>();
 
@@ -89,7 +89,7 @@ public class MinIOWrapper {
     private static Sql2o sql2oConnection = null;
 
     private final ObjectMapper objectMapper;
-    
+
     public Map<String, String> getRepositoryConfigurations() {
         return repositoryConfigurations;
     }
@@ -169,10 +169,10 @@ public class MinIOWrapper {
      * tramite la lettura dei dati dalle tabelle repo.servers e servers_upload.
      */
     private void buildConnectionsMap() {
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             List<Map<String, Object>> res = conn.createQuery(
-                    " select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key, s.retry_on_connection_failure " +
-                    "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
+                    " select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key, s.retry_on_connection_failure "
+                    + "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
                     .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
                 Integer serverId = (Integer) row.get("server_id");
@@ -186,7 +186,7 @@ public class MinIOWrapper {
                     String accessKey = (String) row.get("access_key");
                     String secretKey = (String) row.get("secret_key");
                     Boolean retryOnConnectionFailure = (Boolean) row.get("retry_on_connection_failure");
-                    
+
 //                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
                     OkHttpClient customHttpClient = new OkHttpClient().newBuilder()
                             .connectTimeout(1, TimeUnit.HOURS)
@@ -195,8 +195,8 @@ public class MinIOWrapper {
                             .callTimeout(1, TimeUnit.HOURS)
                             .protocols(Arrays.asList(Protocol.HTTP_1_1))
                             .retryOnConnectionFailure(retryOnConnectionFailure)
-//                            .connectionPool(p)
-                    .build();
+                            //                            .connectionPool(p)
+                            .build();
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
                     MinioClient minioClient = MinioClient.builder()
                             .httpClient(customHttpClient)
@@ -210,9 +210,10 @@ public class MinIOWrapper {
             }
         }
     }
-    
+
     /**
-     * Carica i parametri di configurazione del repository S3 e popola la mappa statica.
+     * Carica i parametri di configurazione del repository S3 e popola la mappa
+     * statica.
      */
     private void loadConfigurations() {
         try (Connection conn = (Connection) sql2oConnection.open()) {
@@ -227,10 +228,12 @@ public class MinIOWrapper {
             }
         }
     }
-    
+
     /**
-     * Il metodo restituisce il nome del bucket aggiungendo un prefisso se presente nella configurazione
-     * al parametro passato altrimenti restituisce il parametro stesso.
+     * Il metodo restituisce il nome del bucket aggiungendo un prefisso se
+     * presente nella configurazione al parametro passato altrimenti restituisce
+     * il parametro stesso.
+     *
      * @param bucketName Il nome del bucket al quale verrà aggiunto il prefisso.
      * @return il nome del bucket.
      */
@@ -292,7 +295,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public MinIOWrapperFileInfo putWithBucket(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String bucket) throws MinIOWrapperException, FileNotFoundException, IOException {
-        try ( FileInputStream fis = new FileInputStream(file)) {
+        try (FileInputStream fis = new FileInputStream(file)) {
             MinIOWrapperFileInfo res = putWithBucket(fis, codiceAzienda, path, fileName, metadata, overWrite, null, bucket);
             return res;
         }
@@ -320,11 +323,11 @@ public class MinIOWrapper {
      * @throws java.io.FileNotFoundException
      */
     public MinIOWrapperFileInfo put(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite) throws MinIOWrapperException, FileNotFoundException, IOException {
-        try ( FileInputStream fis = new FileInputStream(file)) {
+        try (FileInputStream fis = new FileInputStream(file)) {
             return put(fis, codiceAzienda, path, fileName, metadata, overWrite);
         }
     }
-    
+
     /**
      * Carica un file sul repository
      *
@@ -377,7 +380,7 @@ public class MinIOWrapper {
      * @throws java.io.FileNotFoundException
      */
     public MinIOWrapperFileInfo putWithBucket(File file, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid, String bucket) throws MinIOWrapperException, FileNotFoundException, IOException {
-        try ( FileInputStream fis = new FileInputStream(file)) {
+        try (FileInputStream fis = new FileInputStream(file)) {
             MinIOWrapperFileInfo res = putWithBucket(fis, codiceAzienda, path, fileName, metadata, overWrite, mongoUuid, bucket);
             return res;
         }
@@ -520,7 +523,7 @@ public class MinIOWrapper {
             // prendo un advisory lock sull'hash della stringa formata dall'unione del path, filename e codice_azienda in modo che sono sicuro che non ne verrà eventualmente caricato uno nel frattempo
             // NB: essendo un hash può essere che scatti il lock anche per una stringa che non sia quella voluta, nel caso quel caricamento si metterà in coda anche se non deve, ma non è un problema
             // TODO: provare a usare la pg_advisory_xact_lock con 2 parametri
-            try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+            try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
                 int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
                 conn.createQuery(
                         "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
@@ -638,7 +641,7 @@ public class MinIOWrapper {
     }
 
     public String getFileNameForNotOverwrite(String fileName) {
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             return getFileNameForNotOverwrite(conn, fileName);
         }
     }
@@ -774,14 +777,13 @@ public class MinIOWrapper {
      *
      * @param fileId
      * @param includeDeleted se true il file verrà cercato anche all'interno del
-     * cestino
-     * inferiore alla data passata (la data passata è compresa)
+     * cestino inferiore alla data passata (la data passata è compresa)
      * @return le informazioni relative al file identificato dal fileId passato
      * @throws MinIOWrapperException
      */
     private MinIOWrapperFileInfo getFileInfo(String fileId, String mongoUuid, String path, String fileName, String codiceAzienda, boolean includeDeleted) throws MinIOWrapperException {
 
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query = null;
             String queryString = "select id, file_id, mongo_uuid, path, filename, size, md5, server_id, codice_azienda, uuid, bucket, metadata, deleted, upload_date, modified_date, delete_date from repo.files [WHERE]" + (!includeDeleted ? " and deleted = false" : "");
             if (fileId != null) {
@@ -941,7 +943,7 @@ public class MinIOWrapper {
      * nome, nello stesso path, con lo stesso codice_azienda
      */
     public void renameByFileId(String fileId, String newFileName, boolean includeDeleted) throws MinIOWrapperException {
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             // siccome può esistere già un file con il nuovo nome che inserisco, similmente all'upload devo prendere un lock.
             // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
 
@@ -992,7 +994,7 @@ public class MinIOWrapper {
         // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
 
         // recupero il codice_azienda del file da rinominare
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathAndAzienda = conn.createQuery(
                     "select codice_azienda "
                     + "from repo.files "
@@ -1042,7 +1044,7 @@ public class MinIOWrapper {
         // siccome può esistere già un file con il nuovo nome che inserisco, similmente all'upload devo prendere un lock.
         // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
         // recupero il codice_azienda del file da rinominare
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, codiceAzienda).hashCode();
@@ -1088,7 +1090,7 @@ public class MinIOWrapper {
         // siccome può esistere già un file con il nuovo nome che inserisco, similmente all'upload devo prendere un lock.
         // Così facendo blocco eventuali altre rinomine o upload con lo stesso nome
         // recupero il path e il codice_azienda del file da rinominare
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathFromDB = conn.createQuery(
                     "select \"path\" "
                     + "from repo.files "
@@ -1176,7 +1178,7 @@ public class MinIOWrapper {
                 + "set deleted = true,  delete_date = now(), bucket = :bucket "
                 + "[WHERE] "
                 + "returning (select array[server_id::text, bucket, file_id] from repo.files where id = f.id)";
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             Query query = null;
             if (fileId != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
@@ -1223,7 +1225,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public void restoreByFileId(String fileId) throws MinIOWrapperException {
-        try ( Connection conn = (Connection) sql2oConnection.beginTransaction()) {
+        try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathAndAzienda = conn.createQuery(
                     "select \"path\", filename, codice_azienda, bucket, server_id "
                     + "from repo.files "
@@ -1279,24 +1281,28 @@ public class MinIOWrapper {
 
     /**
      * Sposta il file in un altro bucket senza rimuovere il bucket sorgente
+     *
      * @param fileId il fileId del file da spostare
      * @param srcBucket il bucket in cui il filesi trova
      * @param serverId il serverId del file
      * @param dstBucket il bucket in cui spostare il file
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     public void moveToAnotherBucket(String fileId, String srcBucket, Integer serverId, String dstBucket) throws MinIOWrapperException {
         moveToAnotherBucket(fileId, srcBucket, serverId, dstBucket, false);
     }
-    
+
     /**
-     * Sposta il file in un altro bucket con la possibilità di rimuovere il bucket sorgente
+     * Sposta il file in un altro bucket con la possibilità di rimuovere il
+     * bucket sorgente
+     *
      * @param fileId il fileId del file da spostare
      * @param srcBucket il bucket in cui il filesi trova
      * @param serverId il serverId del file
      * @param dstBucket il bucket in cui spostare il file
-     * @param removeSrcBucket passare true se si vuole eliminare il bucket sorgente
-     * @throws MinIOWrapperException 
+     * @param removeSrcBucket passare true se si vuole eliminare il bucket
+     * sorgente
+     * @throws MinIOWrapperException
      */
     public void moveToAnotherBucket(String fileId, String srcBucket, Integer serverId, String dstBucket, boolean removeSrcBucket) throws MinIOWrapperException {
         // dato che minIO non supporta lo spostamento, prima copiamo il file nel nuovo bucket e poi eliminiamo dal vecchio
@@ -1316,7 +1322,7 @@ public class MinIOWrapper {
             throw new MinIOWrapperException("errore nello spostamento del file all'interno del bucket " + dstBucket, ex);
         }
     }
-    
+
     /**
      * Sposta un file dal bucket passato al bucket di trash
      *
@@ -1374,7 +1380,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public void removeByFileId(String fileId, boolean onlyDeleted) throws MinIOWrapperException {
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
                     = "delete "
                     + "from repo.files "
@@ -1438,7 +1444,7 @@ public class MinIOWrapper {
      */
     public List<MinIOWrapperFileInfo> getFilesInPath(String path, boolean includeDeleted, boolean includeSubDir, String codiceAzienda) throws MinIOWrapperException {
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
 
             // tramite questa query si riescono a prendere tutte le righe nel path e nei sotto-path.
@@ -1524,7 +1530,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
                     = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
                     + "from repo.files "
@@ -1607,7 +1613,7 @@ public class MinIOWrapper {
     public void delFilesInPath(String path, boolean includeSubDir, String codiceAzienda) throws MinIOWrapperException {
         path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
 
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query;
             Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
             String queryString
@@ -1661,8 +1667,7 @@ public class MinIOWrapper {
     }
 
     /**
-     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino
-     * alla data passata
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata
      *
      * @param codiceAzienda se "null" torna quelli di tutte le aziende
      * @param lessThan se null, torna tutti i file eliminati, altrimenti torna
@@ -1671,7 +1676,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getDeleted(String codiceAzienda, ZonedDateTime lessThan) throws MinIOWrapperException {
-        try ( Connection conn = (Connection) sql2oConnection.open()) {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query;
             String queryString
                     = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
@@ -1754,7 +1759,7 @@ public class MinIOWrapper {
             throw new MinIOWrapperException("errore nel reperimento dei metadati", ex);
         }
     }
-    
+
     private <T> T getJsonField(Object field, Class<T> type) throws MinIOWrapperException {
         return getJsonField(field, new TypeReference<T>() {
             @Override
@@ -1805,7 +1810,7 @@ public class MinIOWrapper {
         }
     }
 
-    public String getMongoUuidByFileUuid(String fileUuid)  throws MinIOWrapperException {
+    public String getMongoUuidByFileUuid(String fileUuid) throws MinIOWrapperException {
         return getMongoUuidByFileUuid(fileUuid, false);
     }
 
@@ -1814,12 +1819,36 @@ public class MinIOWrapper {
             throw new MinIOWrapperException("Invalid fileUuid: " + fileUuid);
         }
 
-        String queryString = "SELECT mongo_uuid FROM repo.files WHERE uuid = :fileUuid" +
-                (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+        String queryString = "SELECT mongo_uuid FROM repo.files WHERE uuid = :fileUuid"
+                + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
 
-        try (Connection conn = sql2oConnection.open();
-             Query query = conn.createQuery(queryString).addParameter("fileUuid", fileUuid)) {
+        try (Connection conn = sql2oConnection.open(); Query query = conn.createQuery(queryString).addParameter("fileUuid", fileUuid)) {
             return query.executeScalar(String.class);
         }
     }
+
+    public MinIOWrapperFileInfo getFileInfoByMd5(String md5, boolean includeDeleted) throws MinIOWrapperException {
+        String queryString = "SELECT file_id FROM repo.files WHERE md5 = :md5"
+                + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+        String file_id;
+        try (Connection conn = sql2oConnection.open(); Query query = conn.createQuery(queryString).addParameter("md5", md5)) {
+            file_id = query.executeScalar(String.class);
+        }
+        if (file_id == null) {
+            return null;
+        } else {
+            return getFileInfoByFileId(file_id);
+        }
+    }
+
+//    public MinIOWrapperFileInfo getFileInfoByFileName(String fileName, boolean includeDeleted) throws MinIOWrapperException {
+//        String queryString = "SELECT file_id FROM repo.files WHERE file_name = :fileName" +
+//                (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+//        String file_id;
+//        try (Connection conn = sql2oConnection.open();
+//             Query query = conn.createQuery(queryString).addParameter("fileName", fileName)) {
+//             file_id = query.executeScalar(String.class);
+//        }
+//        return getFileInfoByFileId(file_id);
+//    }
 }

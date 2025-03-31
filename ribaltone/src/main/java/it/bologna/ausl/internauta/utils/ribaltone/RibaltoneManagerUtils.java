@@ -37,7 +37,7 @@ public class RibaltoneManagerUtils {
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
 
-        DatiDaImportare datiDaImportareValidated = validateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        DatiDaImportare datiDaImportareValidated = getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         OperationsManager operationsManager = new OperationsManager(
                 datiDaImportareValidated,
                 codiceAzienda,
@@ -70,7 +70,7 @@ public class RibaltoneManagerUtils {
         return ribaltoneCache;
     }
 
-    public static DatiDaImportare validateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+    public static DatiDaImportare getAndValidateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //recupero i dati da dove dice la conf
         DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
