@@ -31,7 +31,7 @@ public class RibaltoneTotaleManager {
     private EntityManager entityManager;
 
     @Autowired
-    private static RibaltoneConfiguration ribaltoneConfiguration;
+    private RibaltoneConfiguration ribaltoneConfiguration;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -43,7 +43,7 @@ public class RibaltoneTotaleManager {
     public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteDefault());
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validateSourceData = RibaltoneManagerUtils.validateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
+        DatiDaImportare validateSourceData = RibaltoneManagerUtils.getAndValidateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
         OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
@@ -93,7 +93,7 @@ public class RibaltoneTotaleManager {
     public Object ribaltaWithUserReportAndCacheOperation(String codiceAzienda, ConfigRibaltoneView configRibaltoneView, UserReport.UserReportType typeUserReport) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteDefault());
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validateSourceData = RibaltoneManagerUtils.validateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        DatiDaImportare validateSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         
         OperationsManager operationsManager = new OperationsManager(
                 validateSourceData,

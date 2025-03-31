@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
@@ -9,6 +10,10 @@ import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.StoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -222,5 +227,59 @@ public class OperationsUtils {
                 .setParameter("id_strutturtext_data_trasformazionea_vecchia", dataTrasformazioneStr)
                 .getSingleResult();
 
+    }
+
+    public static Struttura getStrutturaFromIdCasellaAndIdAziendaAndAttiva(JPAQueryFactory queryFactory, Integer idCasella, Integer idAzienda, QStruttura qStruttura) {
+        return queryFactory
+                .select(qStruttura)
+                .from(qStruttura)
+                .where(qStruttura.idCasella.eq(idCasella)
+                        .and(qStruttura.attiva)
+                        .and(qStruttura.idAzienda.id.eq(idAzienda)))
+                .fetchFirst();
+    }
+
+    public static List<StrutturaUnificata> entitaCoinvoltaTouchUnificazioni(JPAQueryFactory queryFactory, DatiRibaltoneInterface entitaCoinvolta, QStruttura qStruttura) {
+        Struttura strutturaCoinvolta = null;
+        switch (entitaCoinvolta.getTipo()) {
+            case "Appartenente":
+                if (entitaCoinvolta.getClasse().equals(DatiDaImportareAppartenente.class.getCanonicalName())) {
+                    DatiDaImportareAppartenente datiDaImportareAppartenente = (DatiDaImportareAppartenente) entitaCoinvolta;
+                    strutturaCoinvolta = getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, datiDaImportareAppartenente.getIdCasella(), datiDaImportareAppartenente.getIdAzienda(), qStruttura);
+                } else {
+                    DatiImportatiAppartenente datiImportatiAppartenente = (DatiImportatiAppartenente) entitaCoinvolta;
+                    strutturaCoinvolta = getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, datiImportatiAppartenente.getIdCasella(), datiImportatiAppartenente.getIdAzienda(), qStruttura);
+                }
+                break;
+            case "Struttura":
+                if (entitaCoinvolta.getClasse().equals(DatiDaImportareStruttura.class.getCanonicalName())) {
+                    DatiDaImportareStruttura datiDaImportareStruttura = (DatiDaImportareStruttura) entitaCoinvolta;
+                    strutturaCoinvolta = getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, datiDaImportareStruttura.getIdCasella(), datiDaImportareStruttura.getIdAzienda(), qStruttura);
+                } else {
+                    DatiImportatiStruttura datiImportatiStruttura = (DatiImportatiStruttura) entitaCoinvolta;
+                    strutturaCoinvolta = getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, datiImportatiStruttura.getIdCasella(), datiImportatiStruttura.getIdAzienda(), qStruttura);
+                }
+                break;
+
+            default:
+                throw new AssertionError();
+        }
+        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+        List<StrutturaUnificata> struttureUnificateAttive = queryFactory
+                .select(qStrutturaUnificata)
+                .from(qStrutturaUnificata)
+                .where((qStrutturaUnificata.idStrutturaSorgente.id.eq(strutturaCoinvolta.getId())
+                        .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(strutturaCoinvolta.getId())))
+                        .and(qStrutturaUnificata.dataAttivazione.isNotNull()
+                                .and(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now()))
+                                .and(
+                                        qStrutturaUnificata.dataDisattivazione.isNull()
+                                                .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
+                                )
+                        )
+                )
+                .fetch();
+
+        return struttureUnificateAttive;
     }
 }

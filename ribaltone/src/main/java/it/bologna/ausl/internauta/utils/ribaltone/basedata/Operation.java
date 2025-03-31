@@ -15,7 +15,8 @@ public static enum Azione {
         EDIT,
         CHIUSURA,
         CAMBIO_PADRE,
-        RINOMINA;
+        RINOMINA,
+        UNIFICAZIONE;
     }
 
     private Azione azione;
