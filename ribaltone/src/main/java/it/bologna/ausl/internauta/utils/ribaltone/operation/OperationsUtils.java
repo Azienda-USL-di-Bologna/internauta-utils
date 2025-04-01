@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import static com.fasterxml.jackson.databind.type.LogicalType.Integer;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
@@ -24,6 +25,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import com.querydsl.jpa.JPQLQuery;
+import it.bologna.ausl.model.entities.baborg.AttributiStruttura;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -31,6 +35,18 @@ import com.querydsl.jpa.JPQLQuery;
  */
 public class OperationsUtils {
 
+    /**
+     *
+     * @param em
+     * @param queryFactory
+     * @param idAzienda
+     * @param idCasella
+     * @param descrizione
+     * @param idCasellaPadre
+     * @param qStruttura
+     * @param struttureDaAggiornareConPadre
+     * @return
+     */
     public static Struttura inserisciStruttura(
             EntityManager em,
             JPAQueryFactory queryFactory,
@@ -304,21 +320,67 @@ public class OperationsUtils {
             List<Struttura> struttureDaConsiderare = new ArrayList<>();
             QStruttura qStruttura = QStruttura.struttura;
             QStrutturaUnificata qStrutturaUnificataSorg = QStrutturaUnificata.strutturaUnificata;
-            QStrutturaUnificata qStrutturaUnificataDest = QStrutturaUnificata.strutturaUnificata;
             switch (operationStruttura.getAzione()) {
                 case INSERT -> {
                     DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) operationStruttura.getEntitaCoinvolta();
                     //prendo i padri della struttura aperta
                     struttureDaConsiderare.addAll(getStruttureAntenateAttiveONo(queryFactory, entitaDaInserire.getIdCasella(), true));
-                    List<Struttura> strutture = queryFactory
-                            .select(qStruttura)
+                    List<Integer> idsStrutture = struttureDaConsiderare.stream().map(struttura -> struttura.getId()).collect(Collectors.toList());
+                    //controllo se uno dei padri o io siamo coinvolti in una unificazione
+                    //todo deve essere attiva l'unificazione
+                    //se l'unificazione è una fusione è impossibile fondermi (la fusione fonde due strutture non due alberature)
+                    //se l'unificazione è una replica devo vedere se uno dei miei antenati è una sorgente e nel caso replicarmi
+                    List<StrutturaUnificata> struttureUnificateCoinvolte = queryFactory
+                            .select(qStrutturaUnificataSorg)
                             .from(qStruttura)
-                            .leftJoin(qStrutturaUnificataSorg).on(qStruttura.id.eq(qStrutturaUnificataSorg.idStrutturaSorgente.id))
-                            .leftJoin(qStrutturaUnificataDest).on(qStruttura.id.eq(qStrutturaUnificataDest.idStrutturaDestinazione.id))
-                            .where(qStrutturaUnificataSorg.isNotNull().or(qStrutturaUnificataDest.isNotNull())).fetch();
-                    //per ogni struttura trovata vado a inserire la nuova struttrua se non c'è gia
-                   
+                            .join(qStrutturaUnificataSorg).on(qStruttura.id.eq(qStrutturaUnificataSorg.idStrutturaSorgente.id))
+                            .where(
+                                    (qStrutturaUnificataSorg.dataDisattivazione.isNull().or(qStrutturaUnificataSorg.dataDisattivazione.after(ZonedDateTime.now())))
+                                            .and(qStrutturaUnificataSorg.idStrutturaSorgente.id.in(idsStrutture)))
+                            .fetch();
+                    
+                    Boolean replica = false;
+                    for (StrutturaUnificata strutturaUnificata : struttureUnificateCoinvolte) {
+                        //per ogni struttura trovata vado a inserire la nuova struttrua se non c'è gia
+                        for (Struttura s : struttureDaConsiderare) {
+                            if (s.getId().equals(strutturaUnificata.getIdStrutturaSorgente().getId())) {
+                                //dal prossimo giro devo iniziare a replicare l'alberatura
+                                replica = true;
+                            } else if (replica) {
+
+                                Struttura strPadreDiAziendaSuCuiReplicare = queryFactory
+                                        .select(qStruttura)
+                                        .from(qStruttura)
+                                        .where(qStruttura.attiva.and(
+                                                qStruttura.idStrutturaReplicata.id.eq(s.getIdStrutturaPadre().getId())
+                                                        .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                                        )).limit(1)
+                                        .fetchOne();
+                                AttributiStruttura attributiStruttura = new AttributiStruttura();
+                                attributiStruttura.setIdTipologiaStruttura(s.getAttributiStruttura().getIdTipologiaStruttura());
+                                Struttura strReplicata = new Struttura(s.getCodice(),
+                                        s.getNome(),
+                                        ZonedDateTime.now(),
+                                        null,
+                                        true,
+                                        strPadreDiAziendaSuCuiReplicare,
+                                        s.getIdCasella(),
+                                        strPadreDiAziendaSuCuiReplicare.getIdCasella(),
+                                        s.getUfficio(),
+                                        attributiStruttura,
+                                        strPadreDiAziendaSuCuiReplicare.getIdAzienda());
+                                strReplicata.setIdStrutturaReplicata(s);
+                                StoricoRelazione storicoRelazione = new StoricoRelazione();
+                                storicoRelazione.setAttivaDal(ZonedDateTime.now());
+                                storicoRelazione.setIdStrutturaFiglia(strReplicata);
+                                storicoRelazione.setIdStrutturaPadre(strPadreDiAziendaSuCuiReplicare);
+
+                                entityManager.persist(storicoRelazione);
+                            }
+                        }
+                    }
                 }
+
                 case CHIUSURA -> {
                     DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) operationStruttura.getEntitaCoinvolta();
                     //prendo i padri della struttura chiusa
