@@ -28,6 +28,7 @@ public class SignParamsComponent {
         }
         
         private String callBackUrl;
+        private Map<String, String> callBackHeaders;
         private Map<String, Object> endSignParams;
         private List<SignDocument> signedFileList;
         private EndSignResults endSignResult;
@@ -41,6 +42,14 @@ public class SignParamsComponent {
 
         public void setCallBackUrl(String callBackUrl) {
             this.callBackUrl = callBackUrl;
+        }
+
+        public Map<String, String> getCallBackHeaders() {
+            return callBackHeaders;
+        }
+
+        public void setCallBackHeaders(Map<String, String> callBackheaders) {
+            this.callBackHeaders = callBackheaders;
         }
 
         public Map<String, Object> getEndSignParams() {

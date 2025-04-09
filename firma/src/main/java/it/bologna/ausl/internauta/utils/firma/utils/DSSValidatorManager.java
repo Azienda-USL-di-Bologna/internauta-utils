@@ -92,7 +92,7 @@ public class DSSValidatorManager {
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder()
             .addFormDataPart("file", "file.tmp", okhttp3.RequestBody.create(MediaType.parse("application/octet-stream"), file));
         if (validationDate != null) {
-            requestBodyBuilder.addFormDataPart("validationDate", validationDate.atZone(ZoneId.of("Europe/Rome")).format(DateTimeFormatter.ISO_DATE_TIME));
+            requestBodyBuilder.addFormDataPart("validationDate", validationDate.atZone(ZoneId.of("Europe/Rome")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")));
         }
         okhttp3.RequestBody requestBody = requestBodyBuilder.build();
         Response resp = client.newCall(
