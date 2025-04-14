@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.firma.jnj;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParams;
 import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaParameterException;
