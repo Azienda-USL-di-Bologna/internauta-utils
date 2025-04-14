@@ -39,6 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
@@ -491,6 +492,7 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public MinIOWrapperFileInfo putWithBucket(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid, String bucket) throws MinIOWrapperException {
+        MinioClient minIOClient = null;
         try {
             // wrappo lo stream dentro uno DigestInputStream per poter calcolare md5
             DigestInputStream digestInputStream = new DigestInputStream(obj, MessageDigest.getInstance("MD5"));
@@ -502,8 +504,16 @@ public class MinIOWrapper {
             Integer serverId = minIOServerAziendaMap.get(codiceAzienda);
 
             // in base al serveId letto prendo l'istanza del repository
-            MinioClient minIOClient = minIOServerClientMap.get(serverId);
-            fileName = cleanFileName(fileName);
+            minIOClient = minIOServerClientMap.get(serverId);
+            // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
+            fileName = fileName.replaceAll("[\\[\\]\\/:àèéòòù*?\"<>|\\-\\'(),&%{}\\s]", "_").replaceAll("\\u201D", "_").replaceAll("\\u201C", "").replaceAll("\\u2019", "");
+
+            // Se il nome è più lungo di 255 caratteri minIO da errore:
+            // quindi bisogna accorciarlo cercando di mantenere l'estensione
+            // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
+            if (fileName.getBytes().length >= 255) {
+                fileName = getMinioTruncatedName(fileName);
+            }
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();
@@ -572,7 +582,14 @@ public class MinIOWrapper {
                 }
 
                 // upload del file presente nello stream "digestInputStream" sul bucket "bucketName" nel path "physicalPath"
-                minIOClient.putObject(PutObjectArgs.builder().bucket(bucketName).object(physicalPath).stream(digestInputStream, -1, 10485760).build());
+                try {
+                    minIOClient.putObject(PutObjectArgs.builder().bucket(bucketName).object(physicalPath).stream(digestInputStream, -1, 10485760).build());
+                } catch (Exception ex) {
+                    String errorMessage = String.format("errore nel putObject: bucketName: %s - physicalPath: %s", bucketName, physicalPath);
+                    logger.error(errorMessage, ex);
+                    throw ex;
+                }
+                    
 
                 // leggo la dimensione del file dal repository
                 long size = getSize(physicalPath, serverId, bucketName);
@@ -647,6 +664,14 @@ public class MinIOWrapper {
             }
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nell'upload del file", ex);
+        } finally {
+            if (minIOClient != null) {
+                try {
+                    minIOClient.close();
+                } catch (Exception ex) {
+                    logger.error("errore nella minIOClient.close()", ex);
+                }
+            }
         }
     }
 
@@ -1480,58 +1505,14 @@ public class MinIOWrapper {
                         .addParameter("codice_azienda", codiceAzienda);
             }
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
-            List<MinIOWrapperFileInfo> res = null;
-            if (!queryRes.isEmpty()) {
-                res = new ArrayList<>();
-                for (Map<String, Object> foundFile : queryRes) {
-                    Integer fileTableId = (Integer) foundFile.get("id");
-                    String fileId = (String) foundFile.get("file_id");
-                    String uuid = (String) foundFile.get("uuid");
-                    String mongoUuid = (String) foundFile.get("mongo_uuid");
-                    String bucket = (String) foundFile.get("bucket");
-                    Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {
-                    });
-                    String filePath = (String) foundFile.get("path");
-                    String fileName = (String) foundFile.get("filename");
-                    String codiceAziendaLetto = (String) foundFile.get("codice_azienda");
-                    Integer serverId = (Integer) foundFile.get("server_id");
-                    Integer size = (Integer) foundFile.get("size");
-                    String md5 = (String) foundFile.get("md5");
-                    Boolean deleted = (Boolean) foundFile.get("deleted");
-                    ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
-                    ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
-                    ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
-
-                    MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                            fileTableId,
-                            fileId,
-                            mongoUuid,
-                            filePath,
-                            fileName,
-                            size,
-                            md5,
-                            serverId,
-                            uuid,
-                            codiceAziendaLetto,
-                            bucket,
-                            metadata,
-                            deleted,
-                            uploadDate,
-                            modifiedDate,
-                            deleteDate
-                    );
-                    res.add(fileInfo);
-                }
-            }
-            return res;
+            return buildMinIOWrapperFileInfo(queryRes);
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
     }
-
+    
     /**
-     * Torna tutti i file con data inferiore alla data passata (la data passata
-     * è inclusa)
+     * Torna tutti i file con data inferiore alla data passata (la data passata è inclusa) relativi al codiceAzienda passato
      *
      * @param codiceAzienda
      * @param time
@@ -1540,64 +1521,132 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
+        return getFilesLessThan(codiceAzienda, time, includeDeleted, null);
+    }
+    
+    /**
+     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al codiceAzienda passato facendo una limit per limitare i risultati
+     * @param codiceAzienda
+     * @param time
+     * @param includeDeleted
+     * @param limit
+     * @return
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted, Integer limit) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
                     = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
                     + "from repo.files "
-                    + "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : "");
+                    + "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : "")
+                    + (limit != null? " limit " + limit: "");
 
             Query query = conn.createQuery(queryString)
                     .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
                     .addParameter("codice_azienda", codiceAzienda);
 
+            logger.info(String.format("query eliminazione files: %s", queryString));
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
-            List<MinIOWrapperFileInfo> res = null;
-            if (!queryRes.isEmpty()) {
-                res = new ArrayList<>();
-                for (Map<String, Object> foundFile : queryRes) {
-                    Integer fileTableId = (Integer) foundFile.get("id");
-                    String fileId = (String) foundFile.get("file_id");
-                    String uuid = (String) foundFile.get("uuid");
-                    String mongoUuid = (String) foundFile.get("mongo_uuid");
-                    String bucket = (String) foundFile.get("bucket");
-                    Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {
-                    });
-                    String filePath = (String) foundFile.get("path");
-                    String fileName = (String) foundFile.get("filename");
-                    String codiceAziendaFound = (String) foundFile.get("codice_azienda");
-                    Integer serverId = (Integer) foundFile.get("server_id");
-                    Integer size = (Integer) foundFile.get("size");
-                    String md5 = (String) foundFile.get("md5");
-                    Boolean deleted = (Boolean) foundFile.get("deleted");
-                    ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
-                    ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
-                    ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
-
-                    MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                            fileTableId,
-                            fileId,
-                            mongoUuid,
-                            filePath,
-                            fileName,
-                            size,
-                            md5,
-                            serverId,
-                            uuid,
-                            codiceAziendaFound,
-                            bucket,
-                            metadata,
-                            deleted,
-                            uploadDate,
-                            modifiedDate,
-                            deleteDate
-                    );
-                    res.add(fileInfo);
-                }
-            }
-            return res;
+            return buildMinIOWrapperFileInfo(queryRes);
+            
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
+    }
+    
+    /**
+     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al cucket passato
+     * @param bucket
+     * @param time
+     * @param includeDeleted
+     * @return
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getFilesLessThanBucket(String bucket, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
+        return getFilesLessThanBucket(bucket, time, includeDeleted, null);
+    }
+    
+    /**
+     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al cucket passato facendo una limit per limitare i risultati
+     * @param bucket
+     * @param time
+     * @param includeDeleted
+     * @param limit
+     * @return
+     * @throws MinIOWrapperException 
+     */
+    public List<MinIOWrapperFileInfo> getFilesLessThanBucket(String bucket, ZonedDateTime time, boolean includeDeleted, Integer limit) throws MinIOWrapperException {
+        try (Connection conn = (Connection) sql2oConnection.open()) {
+            String queryString
+                    = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
+                    + "from repo.files "
+                    + "where upload_date <= :upload_date and bucket = :bucket" + (!includeDeleted ? " and deleted = false" : "")
+                    + (limit != null? " limit " + limit: "");
+
+            Query query = conn.createQuery(queryString)
+                    .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
+                    .addParameter("bucket", bucket);
+
+            logger.info(String.format("query eliminazione files: %s", queryString));
+            List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
+            return buildMinIOWrapperFileInfo(queryRes);
+            
+        } catch (Exception ex) {
+            throw new MinIOWrapperException("errore nel reperimento dei files", ex);
+        }
+    }
+    
+    /**
+     * builda la lista di MinIOWrapperFileInfo a partire dal risultato della query che gli tira fuori
+     * @param minIOWrapperFileInfoQueryRes
+     * @return
+     * @throws MinIOWrapperException 
+     */
+    private List<MinIOWrapperFileInfo> buildMinIOWrapperFileInfo(List<Map<String, Object>> minIOWrapperFileInfoQueryRes) throws MinIOWrapperException {
+        List<MinIOWrapperFileInfo> res = null;
+        if (!minIOWrapperFileInfoQueryRes.isEmpty()) {
+            res = new ArrayList<>();
+            for (Map<String, Object> foundFile : minIOWrapperFileInfoQueryRes) {
+                Integer fileTableId = (Integer) foundFile.get("id");
+                String fileId = (String) foundFile.get("file_id");
+                String uuid = (String) foundFile.get("uuid");
+                String mongoUuid = (String) foundFile.get("mongo_uuid");
+                String bucket = (String) foundFile.get("bucket");
+                Map<String, Object> metadata = getJsonField(foundFile.get("metadata"), new TypeReference<Map<String, Object>>() {
+                });
+                String filePath = (String) foundFile.get("path");
+                String fileName = (String) foundFile.get("filename");
+                String codiceAziendaFound = (String) foundFile.get("codice_azienda");
+                Integer serverId = (Integer) foundFile.get("server_id");
+                Integer size = (Integer) foundFile.get("size");
+                String md5 = (String) foundFile.get("md5");
+                Boolean deleted = (Boolean) foundFile.get("deleted");
+                ZonedDateTime uploadDate = getZonedDateTime(foundFile.get("upload_date"));
+                ZonedDateTime modifiedDate = getZonedDateTime(foundFile.get("modified_date"));
+                ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
+
+                MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
+                        fileTableId,
+                        fileId,
+                        mongoUuid,
+                        filePath,
+                        fileName,
+                        size,
+                        md5,
+                        serverId,
+                        uuid,
+                        codiceAziendaFound,
+                        bucket,
+                        metadata,
+                        deleted,
+                        uploadDate,
+                        modifiedDate,
+                        deleteDate
+                );
+                res.add(fileInfo);
+            }
+        }
+        return res;
     }
 
     /**
@@ -1673,25 +1722,38 @@ public class MinIOWrapper {
      * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getDeleted() throws MinIOWrapperException {
-        return getDeleted(null, null);
+        return getDeleted(null, null, null);
     }
-
+    
     /**
      * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata
      *
      * @param codiceAzienda se "null" torna quelli di tutte le aziende
-     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna
-     * tutti quelli eliminati fino a quella data (compresa)
+     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna tutti quelli eliminati fino a quella data (compresa)
      * @return l'elenco dei file cancellati logicamente per l'azienda passata
-     * @throws MinIOWrapperException
+     * @throws it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getDeleted(String codiceAzienda, ZonedDateTime lessThan) throws MinIOWrapperException {
+        return getDeleted(codiceAzienda, lessThan, null);
+    }
+
+    /**
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata facendo una limit per limitare i risultati
+     *
+     * @param codiceAzienda se "null" torna quelli di tutte le aziende
+     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna tutti quelli eliminati fino a quella data (compresa)
+     * @param limit
+     * @return l'elenco dei file cancellati logicamente per l'azienda passata
+     * @throws it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException
+     */
+    public List<MinIOWrapperFileInfo> getDeleted(String codiceAzienda, ZonedDateTime lessThan, Integer limit) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query;
             String queryString
                     = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
                     + "from repo.files "
-                    + "[WHERE] [DATE]";
+                    + "[WHERE] [DATE]"
+                    + (limit != null? " limit " + limit: "");
             if (lessThan != null) {
                 queryString = queryString.replace("[DATE]", "and delete_date <= :delete_date");
             } else {
@@ -1708,6 +1770,7 @@ public class MinIOWrapper {
             if (lessThan != null) {
                 query.addParameter("delete_date", Timestamp.valueOf(lessThan.toLocalDateTime()));
             }
+            logger.info(String.format("query eliminazione: %s", query));
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             List<MinIOWrapperFileInfo> res = null;
             if (!queryRes.isEmpty()) {
