@@ -172,9 +172,9 @@ public class MinIOWrapper {
     private void buildConnectionsMap() {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             List<Map<String, Object>> res = conn.createQuery(
-                    " select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key, s.retry_on_connection_failure "
-                    + "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
-                    .executeAndFetchTable().asList();
+                " select su.codice_azienda as codice_azienda, s.id as server_id, s.urls as urls, s.access_key as access_key, s.secret_key as secret_key, s.retry_on_connection_failure "
+                + "from repo.servers_upload su join repo.servers s on su.server_id = s.id ")
+                .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
                 Integer serverId = (Integer) row.get("server_id");
                 String codiceAzienda = (String) row.get("codice_azienda");
@@ -190,20 +190,20 @@ public class MinIOWrapper {
 
 //                    ConnectionPool p = new ConnectionPool(10, 60, TimeUnit.SECONDS);
                     OkHttpClient customHttpClient = new OkHttpClient().newBuilder()
-                            .connectTimeout(1, TimeUnit.HOURS)
-                            .readTimeout(1, TimeUnit.HOURS)
-                            .writeTimeout(1, TimeUnit.HOURS)
-                            .callTimeout(1, TimeUnit.HOURS)
-                            .protocols(Arrays.asList(Protocol.HTTP_1_1))
-                            .retryOnConnectionFailure(retryOnConnectionFailure)
-                            //                            .connectionPool(p)
-                            .build();
+                        .connectTimeout(1, TimeUnit.HOURS)
+                        .readTimeout(1, TimeUnit.HOURS)
+                        .writeTimeout(1, TimeUnit.HOURS)
+                        .callTimeout(1, TimeUnit.HOURS)
+                        .protocols(Arrays.asList(Protocol.HTTP_1_1))
+                        .retryOnConnectionFailure(retryOnConnectionFailure)
+                        //                            .connectionPool(p)
+                        .build();
 //                    httpClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, Integer.MAX_VALUE);
                     MinioClient minioClient = MinioClient.builder()
-                            .httpClient(customHttpClient)
-                            .endpoint(endPointUrl)
-                            .credentials(accessKey, secretKey)
-                            .build();
+                        .httpClient(customHttpClient)
+                        .endpoint(endPointUrl)
+                        .credentials(accessKey, secretKey)
+                        .build();
 //                    minioClient.setTimeout(0, 0, 0);
 //                    minioClient.setTimeout(TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1), TimeUnit.HOURS.toMillis(1));
                     minIOServerClientMap.put(serverId, minioClient);
@@ -219,7 +219,7 @@ public class MinIOWrapper {
     private void loadConfigurations() {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             List<Map<String, Object>> res = conn.createQuery("select c.key, c.value from repo.configurations c")
-                    .executeAndFetchTable().asList();
+                .executeAndFetchTable().asList();
             for (Map<String, Object> row : res) {
                 try {
                     repositoryConfigurations.put((String) row.get("key"), getJsonField(row.get("value"), String.class));
@@ -448,11 +448,13 @@ public class MinIOWrapper {
         return name;
 
     }
-    
+
     /**
-     * Funzione che pulisce il fileName, toglie caratteri speciali e tronca la stringa a 255 caratteri
+     * Funzione che pulisce il fileName, toglie caratteri speciali e tronca la
+     * stringa a 255 caratteri
+     *
      * @param fileName
-     * @return 
+     * @return
      */
     public String cleanFileName(String fileName) {
         // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
@@ -506,14 +508,7 @@ public class MinIOWrapper {
             // in base al serveId letto prendo l'istanza del repository
             minIOClient = minIOServerClientMap.get(serverId);
             // tolgo i caratteri speciali perché sennò potrebbe contarmi il nome file più lungo e non riuscire a salvarmelo
-            fileName = fileName.replaceAll("[\\[\\]\\/:àèéòòù*?\"<>|\\-\\'(),&%{}\\s]", "_").replaceAll("\\u201D", "_").replaceAll("\\u201C", "").replaceAll("\\u2019", "");
-
-            // Se il nome è più lungo di 255 caratteri minIO da errore:
-            // quindi bisogna accorciarlo cercando di mantenere l'estensione
-            // NB: in tabella rimane il nome originale: solo il nome salvato su minIO viene accorciato
-            if (fileName.getBytes().length >= 255) {
-                fileName = getMinioTruncatedName(fileName);
-            }
+            fileName = cleanFileName(fileName);
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();
@@ -546,18 +541,18 @@ public class MinIOWrapper {
             try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
                 int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
                 conn.createQuery(
-                        "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                        .addParameter("locking_hash", lockingHash)
-                        .executeAndFetchTable();
+                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                    .addParameter("locking_hash", lockingHash)
+                    .executeAndFetchTable();
 
                 List<Map<String, Object>> res = conn.createQuery(
-                        "select id, file_id, uuid, upload_date, modified_date "
-                        + "from repo.files "
-                        + "where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false")
-                        .addParameter("path", path)
-                        .addParameter("filename", fileName)
-                        .addParameter("codice_azienda", codiceAzienda)
-                        .executeAndFetchTable().asList();
+                    "select id, file_id, uuid, upload_date, modified_date "
+                    + "from repo.files "
+                    + "where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false")
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
+                    .executeAndFetchTable().asList();
 
                 // se ne trovo uno...
                 if (!res.isEmpty()) {
@@ -589,7 +584,6 @@ public class MinIOWrapper {
                     logger.error(errorMessage, ex);
                     throw ex;
                 }
-                    
 
                 // leggo la dimensione del file dal repository
                 long size = getSize(physicalPath, serverId, bucketName);
@@ -600,41 +594,41 @@ public class MinIOWrapper {
                 switch (fileTableOperation) {
                     case INSERT: // se devo inserire, faccio l'insert
                         String insertQuery
-                                = "INSERT INTO repo.files "
-                                + "(file_id, uuid, bucket, metadata, \"path\", filename, codice_azienda, server_id, \"size\", upload_date, deleted, md5, mongo_uuid) "
-                                + "VALUES(:file_id, :uuid, :bucket, :metadata::jsonb, :path, :filename, :codice_azienda, :server_id, :size, :upload_date, false, :md5, :mongo_uuid)";
+                            = "INSERT INTO repo.files "
+                            + "(file_id, uuid, bucket, metadata, \"path\", filename, codice_azienda, server_id, \"size\", upload_date, deleted, md5, mongo_uuid) "
+                            + "VALUES(:file_id, :uuid, :bucket, :metadata::jsonb, :path, :filename, :codice_azienda, :server_id, :size, :upload_date, false, :md5, :mongo_uuid)";
                         fileTableId = conn.createQuery(insertQuery, true)
-                                .addParameter("file_id", physicalPath)
-                                .addParameter("uuid", uuid)
-                                .addParameter("bucket", bucketName)
-                                .addParameter("metadata", metadataToStringNullSafe(metadata))
-                                .addParameter("path", path)
-                                .addParameter("filename", fileName)
-                                .addParameter("codice_azienda", codiceAzienda)
-                                .addParameter("server_id", minIOServerAziendaMap.get(codiceAzienda))
-                                .addParameter("upload_date", Timestamp.valueOf(uploadDate.toLocalDateTime()))
-                                .addParameter("size", size)
-                                .addParameter("md5", md5)
-                                .addParameter("mongo_uuid", mongoUuid)
-                                .executeUpdate().getKey(Integer.class);
+                            .addParameter("file_id", physicalPath)
+                            .addParameter("uuid", uuid)
+                            .addParameter("bucket", bucketName)
+                            .addParameter("metadata", metadataToStringNullSafe(metadata))
+                            .addParameter("path", path)
+                            .addParameter("filename", fileName)
+                            .addParameter("codice_azienda", codiceAzienda)
+                            .addParameter("server_id", minIOServerAziendaMap.get(codiceAzienda))
+                            .addParameter("upload_date", Timestamp.valueOf(uploadDate.toLocalDateTime()))
+                            .addParameter("size", size)
+                            .addParameter("md5", md5)
+                            .addParameter("mongo_uuid", mongoUuid)
+                            .executeUpdate().getKey(Integer.class);
                         break;
 
                     case UPDATE: // se devo fare l'update faccio l'update
                         // faccio l'update (solo in caso di overwrite), di quello che può essere cambiato: filename, metadata, server_id, size, modified_date, md5
                         String updateQuery
-                                = "UPDATE repo.files "
-                                + "SET metadata=:metadata, server_id=:server_id, size=:size, modified_date=:modified_date , md5=:md5, mongo_uuid = :mongo_uuid "
-                                + "where id = :id and deleted=false";
+                            = "UPDATE repo.files "
+                            + "SET metadata=:metadata, server_id=:server_id, size=:size, modified_date=:modified_date , md5=:md5, mongo_uuid = :mongo_uuid "
+                            + "where id = :id and deleted=false";
                         conn.createQuery(updateQuery, true)
-                                //.addParameter("filename", fileName)
-                                .addParameter("metadata", metadataToStringNullSafe(metadata))
-                                .addParameter("server_id", minIOServerAziendaMap.get(codiceAzienda))
-                                .addParameter("size", size)
-                                .addParameter("modified_date", Timestamp.valueOf(modifiedDate.toLocalDateTime()))
-                                .addParameter("md5", md5)
-                                .addParameter("mongo_uuid", mongoUuid)
-                                .addParameter("id", fileTableId)
-                                .executeUpdate();
+                            //.addParameter("filename", fileName)
+                            .addParameter("metadata", metadataToStringNullSafe(metadata))
+                            .addParameter("server_id", minIOServerAziendaMap.get(codiceAzienda))
+                            .addParameter("size", size)
+                            .addParameter("modified_date", Timestamp.valueOf(modifiedDate.toLocalDateTime()))
+                            .addParameter("md5", md5)
+                            .addParameter("mongo_uuid", mongoUuid)
+                            .addParameter("id", fileTableId)
+                            .executeUpdate();
                         break;
                 }
 
@@ -643,22 +637,22 @@ public class MinIOWrapper {
 
                 // creo l'oggetto da tornare, conterrà tutte le informazioni del file
                 MinIOWrapperFileInfo uploadRes = new MinIOWrapperFileInfo(
-                        fileTableId,
-                        physicalPath,
-                        mongoUuid,
-                        path,
-                        fileName,
-                        Math.toIntExact(size),
-                        md5,
-                        serverId,
-                        uuid,
-                        codiceAzienda,
-                        bucketName,
-                        metadata,
-                        false,
-                        uploadDate,
-                        modifiedDate,
-                        null
+                    fileTableId,
+                    physicalPath,
+                    mongoUuid,
+                    path,
+                    fileName,
+                    Math.toIntExact(size),
+                    md5,
+                    serverId,
+                    uuid,
+                    codiceAzienda,
+                    bucketName,
+                    metadata,
+                    false,
+                    uploadDate,
+                    modifiedDate,
+                    null
                 );
                 return uploadRes;
             }
@@ -683,7 +677,7 @@ public class MinIOWrapper {
 
     public String getFileNameForNotOverwrite(Connection conn, String fileName) {
         Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
-                .executeAndFetchFirst(Integer.class);
+            .executeAndFetchFirst(Integer.class);
         return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
     }
 
@@ -825,14 +819,14 @@ public class MinIOWrapper {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
                 queryString = queryString.replace("[WHERE]", "where file_id = :file_id");
                 query = conn.createQuery(queryString)
-                        .addParameter("file_id", fileId);
+                    .addParameter("file_id", fileId);
 
             } else if (mongoUuid != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
                 queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid");
 
                 query = conn.createQuery(queryString)
-                        .addParameter("mongo_uuid", mongoUuid);
+                    .addParameter("mongo_uuid", mongoUuid);
 
             } else if (path != null && fileName != null && codiceAzienda != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
@@ -840,9 +834,9 @@ public class MinIOWrapper {
                 queryString = queryString.replace("[WHERE]", "where path = :path and filename = :filename and codice_azienda = :codice_azienda");
 
                 query = conn.createQuery(queryString)
-                        .addParameter("path", path)
-                        .addParameter("filename", fileName)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda);
 
             } else {
                 throw new MinIOWrapperException("non è stata passata nessuan clausula di filtro");
@@ -870,22 +864,22 @@ public class MinIOWrapper {
                 ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
 
                 MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                        fileTableId,
-                        fileIdFound,
-                        mongoUuidFound,
-                        pathFound,
-                        fileNameFound,
-                        size,
-                        md5,
-                        serverId,
-                        uuidFound,
-                        codiceAziendaFound,
-                        bucket,
-                        metadata,
-                        deleted,
-                        uploadDate,
-                        modifiedDate,
-                        deleteDate
+                    fileTableId,
+                    fileIdFound,
+                    mongoUuidFound,
+                    pathFound,
+                    fileNameFound,
+                    size,
+                    md5,
+                    serverId,
+                    uuidFound,
+                    codiceAziendaFound,
+                    bucket,
+                    metadata,
+                    deleted,
+                    uploadDate,
+                    modifiedDate,
+                    deleteDate
                 );
                 return fileInfo;
             }
@@ -984,34 +978,34 @@ public class MinIOWrapper {
 
             // recupero il path e il codice_azienda del file da rinominare
             List<Map<String, Object>> pathAndAzienda = conn.createQuery(
-                    "select \"path\", codice_azienda "
-                    + "from repo.files "
-                    + "where file_id = :file_id")
-                    .addParameter("file_id", fileId)
-                    .executeAndFetchTable().asList();
+                "select \"path\", codice_azienda "
+                + "from repo.files "
+                + "where file_id = :file_id")
+                .addParameter("file_id", fileId)
+                .executeAndFetchTable().asList();
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathAndAzienda.get(0).get("path"), newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                    .addParameter("locking_hash", lockingHash)
-                    .executeAndFetchTable();
+                "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                .addParameter("locking_hash", lockingHash)
+                .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
             List<Map<String, Object>> res = conn.createQuery(
-                    "select 1 "
-                    + "from repo.files f1 join repo.files f2 on f1.\"path\" = f2.\"path\" and f1.codice_azienda = f2.codice_azienda "
-                    + "where f2.file_id = :file_id "
-                    + "and f1.filename = :new_filename" + (!includeDeleted ? " and f1.deleted = false" : ""))
-                    .addParameter("file_id", fileId)
-                    .addParameter("new_filename", newFileName)
-                    .executeAndFetchTable().asList();
+                "select 1 "
+                + "from repo.files f1 join repo.files f2 on f1.\"path\" = f2.\"path\" and f1.codice_azienda = f2.codice_azienda "
+                + "where f2.file_id = :file_id "
+                + "and f1.filename = :new_filename" + (!includeDeleted ? " and f1.deleted = false" : ""))
+                .addParameter("file_id", fileId)
+                .addParameter("new_filename", newFileName)
+                .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
-                        "update repo.files set filename = :new_filename, modified_date = now() "
-                        + "where file_id = :file_id" + (!includeDeleted ? " and deleted = false" : ""))
-                        .addParameter("new_filename", newFileName)
-                        .addParameter("file_id", fileId)
-                        .executeUpdate();
+                    "update repo.files set filename = :new_filename, modified_date = now() "
+                    + "where file_id = :file_id" + (!includeDeleted ? " and deleted = false" : ""))
+                    .addParameter("new_filename", newFileName)
+                    .addParameter("file_id", fileId)
+                    .executeUpdate();
                 conn.commit();
             } else {
                 throw new MinIOWrapperException("impossibile rinominare: esiste già un file con lo stesso nome nello stesso path");
@@ -1031,35 +1025,35 @@ public class MinIOWrapper {
         // recupero il codice_azienda del file da rinominare
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathAndAzienda = conn.createQuery(
-                    "select codice_azienda "
-                    + "from repo.files "
-                    + "where file_id = :file_id ")
-                    .addParameter("file_id", fileId)
-                    .executeAndFetchTable().asList();
+                "select codice_azienda "
+                + "from repo.files "
+                + "where file_id = :file_id ")
+                .addParameter("file_id", fileId)
+                .executeAndFetchTable().asList();
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, pathAndAzienda.get(0).get("codice_azienda")).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                    .addParameter("locking_hash", lockingHash)
-                    .executeAndFetchTable();
+                "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                .addParameter("locking_hash", lockingHash)
+                .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
             List<Map<String, Object>> res = conn.createQuery(
-                    "select 1 "
-                    + "from repo.files "
-                    + "where \"path\" = :newPath and filename = :new_filename" + (!includeDeleted ? " and deleted = false" : ""))
-                    .addParameter("newPath", newPath)
-                    .addParameter("new_filename", newFileName)
-                    .executeAndFetchTable().asList();
+                "select 1 "
+                + "from repo.files "
+                + "where \"path\" = :newPath and filename = :new_filename" + (!includeDeleted ? " and deleted = false" : ""))
+                .addParameter("newPath", newPath)
+                .addParameter("new_filename", newFileName)
+                .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
-                        "update repo.files set path = :new_path, filename = :new_filename, modified_date = now() "
-                        + "where file_id = :file_id" + (!includeDeleted ? " and deleted = false" : ""))
-                        .addParameter("new_path", newPath)
-                        .addParameter("new_filename", newFileName)
-                        .addParameter("file_id", fileId)
-                        .executeUpdate();
+                    "update repo.files set path = :new_path, filename = :new_filename, modified_date = now() "
+                    + "where file_id = :file_id" + (!includeDeleted ? " and deleted = false" : ""))
+                    .addParameter("new_path", newPath)
+                    .addParameter("new_filename", newFileName)
+                    .addParameter("file_id", fileId)
+                    .executeUpdate();
                 conn.commit();
             } else {
                 throw new MinIOWrapperException("impossibile rinominare: esiste già un file con lo stesso nome nello stesso path");
@@ -1084,29 +1078,29 @@ public class MinIOWrapper {
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", newPath, newFileName, codiceAzienda).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                    .addParameter("locking_hash", lockingHash)
-                    .executeAndFetchTable();
+                "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                .addParameter("locking_hash", lockingHash)
+                .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
             List<Map<String, Object>> res = conn.createQuery(
-                    "select 1 "
-                    + "from repo.files "
-                    + "where \"path\" = :newPath and filename = :new_filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
-                    .addParameter("newPath", newPath)
-                    .addParameter("new_filename", newFileName)
-                    .addParameter("codice_azienda", codiceAzienda)
-                    .executeAndFetchTable().asList();
+                "select 1 "
+                + "from repo.files "
+                + "where \"path\" = :newPath and filename = :new_filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
+                .addParameter("newPath", newPath)
+                .addParameter("new_filename", newFileName)
+                .addParameter("codice_azienda", codiceAzienda)
+                .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
-                        "update repo.files set path = :new_path, filename = :new_filename, modified_date = now() "
-                        + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
-                        .addParameter("new_path", newPath)
-                        .addParameter("new_filename", newFileName)
-                        .addParameter("path", path)
-                        .addParameter("filename", fileName)
-                        .addParameter("codice_azienda", codiceAzienda)
-                        .executeUpdate();
+                    "update repo.files set path = :new_path, filename = :new_filename, modified_date = now() "
+                    + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
+                    .addParameter("new_path", newPath)
+                    .addParameter("new_filename", newFileName)
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
+                    .executeUpdate();
                 conn.commit();
             } else {
                 throw new MinIOWrapperException("impossibile rinominare: esiste già un file con lo stesso nome nello stesso path");
@@ -1127,41 +1121,41 @@ public class MinIOWrapper {
         // recupero il path e il codice_azienda del file da rinominare
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathFromDB = conn.createQuery(
-                    "select \"path\" "
-                    + "from repo.files "
-                    + "where path = :path and filename = :filename and codice_azienda = :codice_azienda")
-                    .addParameter("path", path)
-                    .addParameter("filename", fileName)
-                    .addParameter("codice_azienda", codiceAzienda)
-                    .executeAndFetchTable().asList();
+                "select \"path\" "
+                + "from repo.files "
+                + "where path = :path and filename = :filename and codice_azienda = :codice_azienda")
+                .addParameter("path", path)
+                .addParameter("filename", fileName)
+                .addParameter("codice_azienda", codiceAzienda)
+                .executeAndFetchTable().asList();
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             int lockingHash = String.format("%s_%s_%s", pathFromDB.get(0).get("path"), newFileName, codiceAzienda).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                    .addParameter("locking_hash", lockingHash)
-                    .executeAndFetchTable();
+                "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                .addParameter("locking_hash", lockingHash)
+                .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
             List<Map<String, Object>> res = conn.createQuery(
-                    "select 1 "
-                    + "from repo.files f1 join repo.files f2 on f1.\"path\" = f2.\"path\" and f1.codice_azienda = f2.codice_azienda "
-                    + "where f2.\"path\" = :path and f2.filename = :filename "
-                    + "and f1.filename = :new_filename and f1.codice_azienda = :codice_azienda" + (!includeDeleted ? " and f1.deleted = false" : ""))
-                    .addParameter("path", path)
-                    .addParameter("filename", fileName)
-                    .addParameter("new_filename", newFileName)
-                    .addParameter("codice_azienda", codiceAzienda)
-                    .executeAndFetchTable().asList();
+                "select 1 "
+                + "from repo.files f1 join repo.files f2 on f1.\"path\" = f2.\"path\" and f1.codice_azienda = f2.codice_azienda "
+                + "where f2.\"path\" = :path and f2.filename = :filename "
+                + "and f1.filename = :new_filename and f1.codice_azienda = :codice_azienda" + (!includeDeleted ? " and f1.deleted = false" : ""))
+                .addParameter("path", path)
+                .addParameter("filename", fileName)
+                .addParameter("new_filename", newFileName)
+                .addParameter("codice_azienda", codiceAzienda)
+                .executeAndFetchTable().asList();
             if (res.isEmpty()) {
                 conn.createQuery(
-                        "update repo.files set filename = :new_filename, modified_date = now() "
-                        + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
-                        .addParameter("new_filename", newFileName)
-                        .addParameter("path", path)
-                        .addParameter("filename", fileName)
-                        .addParameter("codice_azienda", codiceAzienda)
-                        .executeUpdate();
+                    "update repo.files set filename = :new_filename, modified_date = now() "
+                    + "where path = :path and filename = :filename and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : ""))
+                    .addParameter("new_filename", newFileName)
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
+                    .executeUpdate();
                 conn.commit();
             } else {
                 throw new MinIOWrapperException("impossibile rinominare: esiste già un file con lo stesso nome nello stesso path");
@@ -1209,33 +1203,33 @@ public class MinIOWrapper {
 
     private void delete(String fileId, String mongoUuid, String path, String fileName, String codiceAzienda) throws MinIOWrapperException {
         String queryString
-                = "update repo.files f "
-                + "set deleted = true,  delete_date = now(), bucket = :bucket "
-                + "[WHERE] "
-                + "returning (select array[server_id::text, bucket, file_id] from repo.files where id = f.id)";
+            = "update repo.files f "
+            + "set deleted = true,  delete_date = now(), bucket = :bucket "
+            + "[WHERE] "
+            + "returning (select array[server_id::text, bucket, file_id] from repo.files where id = f.id)";
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             Query query = null;
             if (fileId != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per file_id
                 queryString = queryString.replace("[WHERE]", "where file_id = :file_id and deleted = false");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("file_id", fileId)
-                        .addParameter("bucket", trashBucket);
+                    .addParameter("file_id", fileId)
+                    .addParameter("bucket", trashBucket);
             } else if (mongoUuid != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per uuid di mongo
                 queryString = queryString.replace("[WHERE]", "where mongo_uuid = :mongo_uuid and deleted = false");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("mongo_uuid", mongoUuid)
-                        .addParameter("bucket", trashBucket);
+                    .addParameter("mongo_uuid", mongoUuid)
+                    .addParameter("bucket", trashBucket);
             } else if (path != null && fileName != null && codiceAzienda != null) {
                 // reperisco le informazioni dalla tabella repo.files cercando il file per path, file_name e codice_azienda
                 path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
                 queryString = queryString.replace("[WHERE]", "where path = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("path", path)
-                        .addParameter("filename", fileName)
-                        .addParameter("codice_azienda", codiceAzienda)
-                        .addParameter("bucket", trashBucket);
+                    .addParameter("path", path)
+                    .addParameter("filename", fileName)
+                    .addParameter("codice_azienda", codiceAzienda)
+                    .addParameter("bucket", trashBucket);
             }
             logger.info("query eliminazione: " + query.toString());
             PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
@@ -1262,11 +1256,11 @@ public class MinIOWrapper {
     public void restoreByFileId(String fileId) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.beginTransaction()) {
             List<Map<String, Object>> pathAndAzienda = conn.createQuery(
-                    "select \"path\", filename, codice_azienda, bucket, server_id "
-                    + "from repo.files "
-                    + "where file_id = :file_id")
-                    .addParameter("file_id", fileId)
-                    .executeAndFetchTable().asList();
+                "select \"path\", filename, codice_azienda, bucket, server_id "
+                + "from repo.files "
+                + "where file_id = :file_id")
+                .addParameter("file_id", fileId)
+                .executeAndFetchTable().asList();
 
             // prendo in lock basato sul path, il nuovo nome e il codice azienda
             String path = (String) pathAndAzienda.get(0).get("path");
@@ -1276,33 +1270,33 @@ public class MinIOWrapper {
             Integer serverId = (Integer) pathAndAzienda.get(0).get("server_id");
             int lockingHash = String.format("%s_%s_%s", path, fileName, codiceAzienda).hashCode();
             conn.createQuery(
-                    "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
-                    .addParameter("locking_hash", lockingHash)
-                    .executeAndFetchTable();
+                "SELECT pg_advisory_xact_lock(:locking_hash::bigint)")
+                .addParameter("locking_hash", lockingHash)
+                .executeAndFetchTable();
 
             // controllo se esiste già un file nello stesso path con lo stesso nome, se esiste lancio eccezione
             List<Map<String, Object>> res = conn.createQuery(
-                    "select 1 "
-                    + "from repo.files "
-                    + "where \"path\" = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false ")
-                    .addParameter("path", path)
-                    .addParameter("filename", fileName)
-                    .addParameter("codice_azienda", codiceAzienda)
-                    .executeAndFetchTable().asList();
+                "select 1 "
+                + "from repo.files "
+                + "where \"path\" = :path and filename = :filename and codice_azienda = :codice_azienda and deleted = false ")
+                .addParameter("path", path)
+                .addParameter("filename", fileName)
+                .addParameter("codice_azienda", codiceAzienda)
+                .executeAndFetchTable().asList();
             String fileIdUpdated;
             if (!res.isEmpty()) {
                 // per non avere un file con lo stesso nome di un file già presente (nello stesso path per lo stesso codice_azienda, cambio il nome
                 Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
-                        .executeAndFetchFirst(Integer.class);
+                    .executeAndFetchFirst(Integer.class);
                 fileName = StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
             }
 
             fileIdUpdated = conn.createQuery(
-                    "update repo.files set filename = :filename, deleted = false, delete_date = null, bucket = codice_azienda "
-                    + "where file_id = :file_id and deleted = true returning file_id", true)
-                    .addParameter("file_id", fileId)
-                    .addParameter("filename", fileName)
-                    .executeUpdate().getKey(String.class);
+                "update repo.files set filename = :filename, deleted = false, delete_date = null, bucket = codice_azienda "
+                + "where file_id = :file_id and deleted = true returning file_id", true)
+                .addParameter("file_id", fileId)
+                .addParameter("filename", fileName)
+                .executeUpdate().getKey(String.class);
 
             if (StringUtils.hasText(fileIdUpdated)) {
                 // se ho effettivamente trovato il file da riprostinare, lo ripristino
@@ -1348,7 +1342,7 @@ public class MinIOWrapper {
                 minIOClient.makeBucket(MakeBucketArgs.builder().bucket(dstBucket).build());
             }
             minIOClient.copyObject(CopyObjectArgs.builder().bucket(dstBucket).object(fileId)
-                    .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
+                .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
             minIOClient.removeObject(RemoveObjectArgs.builder().bucket(srcBucket).object(fileId).build());
             if (removeSrcBucket) {
                 minIOClient.removeBucket(RemoveBucketArgs.builder().bucket(srcBucket).build());
@@ -1375,7 +1369,7 @@ public class MinIOWrapper {
                 minIOClient.makeBucket(MakeBucketArgs.builder().bucket(trashBucket).build());
             }
             minIOClient.copyObject(CopyObjectArgs.builder().bucket(trashBucket).object(fileId)
-                    .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
+                .source(CopySource.builder().bucket(srcBucket).object(fileId).build()).build());
             minIOClient.removeObject(RemoveObjectArgs.builder().bucket(srcBucket).object(fileId).build());
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nello spostamento del file all'interno del bucket " + trashBucket, ex);
@@ -1399,7 +1393,7 @@ public class MinIOWrapper {
                 minIOClient.makeBucket(MakeBucketArgs.builder().bucket(srcBucket).build());
             }
             minIOClient.copyObject(CopyObjectArgs.builder().bucket(srcBucket).object(fileId)
-                    .source(CopySource.builder().bucket(trashBucket).object(fileId).build()).build());
+                .source(CopySource.builder().bucket(trashBucket).object(fileId).build()).build());
             minIOClient.removeObject(RemoveObjectArgs.builder().bucket(trashBucket).object(fileId).build());
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nello ripristino del file dal bucket " + trashBucket, ex);
@@ -1417,12 +1411,12 @@ public class MinIOWrapper {
     public void removeByFileId(String fileId, boolean onlyDeleted) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
-                    = "delete "
-                    + "from repo.files "
-                    + "where file_id = :file_id" + (onlyDeleted ? " and deleted = true " : " ")
-                    + "returning array[server_id::text, bucket]";
+                = "delete "
+                + "from repo.files "
+                + "where file_id = :file_id" + (onlyDeleted ? " and deleted = true " : " ")
+                + "returning array[server_id::text, bucket]";
             Query query = conn.createQuery(queryString, true)
-                    .addParameter("file_id", fileId);
+                .addParameter("file_id", fileId);
 
             // logger.info("eseguo la query:" + query.toString());
             PgArray keyPgArray = (PgArray) query.executeUpdate().getKey();
@@ -1489,20 +1483,20 @@ public class MinIOWrapper {
             // postgres farà prima la ricerca sugli array, dato che c'è un indice.
             Query query;
             String queryString
-                    = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
-                    + "from repo.files "
-                    + "[WHERE]" + (!includeDeleted ? " and deleted = false" : "");
+                = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
+                + "from repo.files "
+                + "[WHERE]" + (!includeDeleted ? " and deleted = false" : "");
             if (includeSubDir) {
                 queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%'" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
-                        .addParameter("path_array", pathsArray)
-                        .addParameter("path", path)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("path_array", pathsArray)
+                    .addParameter("path", path)
+                    .addParameter("codice_azienda", codiceAzienda);
             } else {
                 queryString = queryString.replace("[WHERE]", "where path = :path" + (codiceAzienda != null ? " and codice_azienda = :codice_azienda" : ""));
                 query = conn.createQuery(queryString)
-                        .addParameter("path", path)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("path", path)
+                    .addParameter("codice_azienda", codiceAzienda);
             }
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             return buildMinIOWrapperFileInfo(queryRes);
@@ -1510,9 +1504,10 @@ public class MinIOWrapper {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
     }
-    
+
     /**
-     * Torna tutti i file con data inferiore alla data passata (la data passata è inclusa) relativi al codiceAzienda passato
+     * Torna tutti i file con data inferiore alla data passata (la data passata
+     * è inclusa) relativi al codiceAzienda passato
      *
      * @param codiceAzienda
      * @param time
@@ -1523,84 +1518,94 @@ public class MinIOWrapper {
     public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
         return getFilesLessThan(codiceAzienda, time, includeDeleted, null);
     }
-    
+
     /**
-     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al codiceAzienda passato facendo una limit per limitare i risultati
+     * Torna i file con data inferiore alla data passata (la data passata è
+     * inclusa) relativi al codiceAzienda passato facendo una limit per limitare
+     * i risultati
+     *
      * @param codiceAzienda
      * @param time
      * @param includeDeleted
      * @param limit
      * @return
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getFilesLessThan(String codiceAzienda, ZonedDateTime time, boolean includeDeleted, Integer limit) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
-                    = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
-                    + "from repo.files "
-                    + "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : "")
-                    + (limit != null? " limit " + limit: "");
+                = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
+                + "from repo.files "
+                + "where upload_date <= :upload_date and codice_azienda = :codice_azienda" + (!includeDeleted ? " and deleted = false" : "")
+                + (limit != null ? " limit " + limit : "");
 
             Query query = conn.createQuery(queryString)
-                    .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
-                    .addParameter("codice_azienda", codiceAzienda);
+                .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
+                .addParameter("codice_azienda", codiceAzienda);
 
             logger.info(String.format("query eliminazione files: %s", queryString));
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             return buildMinIOWrapperFileInfo(queryRes);
-            
+
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
     }
-    
+
     /**
-     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al cucket passato
+     * Torna i file con data inferiore alla data passata (la data passata è
+     * inclusa) relativi al cucket passato
+     *
      * @param bucket
      * @param time
      * @param includeDeleted
      * @return
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getFilesLessThanBucket(String bucket, ZonedDateTime time, boolean includeDeleted) throws MinIOWrapperException {
         return getFilesLessThanBucket(bucket, time, includeDeleted, null);
     }
-    
+
     /**
-     * Torna i file con data inferiore alla data passata (la data passata è inclusa) relativi al cucket passato facendo una limit per limitare i risultati
+     * Torna i file con data inferiore alla data passata (la data passata è
+     * inclusa) relativi al cucket passato facendo una limit per limitare i
+     * risultati
+     *
      * @param bucket
      * @param time
      * @param includeDeleted
      * @param limit
      * @return
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     public List<MinIOWrapperFileInfo> getFilesLessThanBucket(String bucket, ZonedDateTime time, boolean includeDeleted, Integer limit) throws MinIOWrapperException {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             String queryString
-                    = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
-                    + "from repo.files "
-                    + "where upload_date <= :upload_date and bucket = :bucket" + (!includeDeleted ? " and deleted = false" : "")
-                    + (limit != null? " limit " + limit: "");
+                = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
+                + "from repo.files "
+                + "where upload_date <= :upload_date and bucket = :bucket" + (!includeDeleted ? " and deleted = false" : "")
+                + (limit != null ? " limit " + limit : "");
 
             Query query = conn.createQuery(queryString)
-                    .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
-                    .addParameter("bucket", bucket);
+                .addParameter("upload_date", Timestamp.valueOf(time.toLocalDateTime()))
+                .addParameter("bucket", bucket);
 
             logger.info(String.format("query eliminazione files: %s", queryString));
             List<Map<String, Object>> queryRes = query.executeAndFetchTable().asList();
             return buildMinIOWrapperFileInfo(queryRes);
-            
+
         } catch (Exception ex) {
             throw new MinIOWrapperException("errore nel reperimento dei files", ex);
         }
     }
-    
+
     /**
-     * builda la lista di MinIOWrapperFileInfo a partire dal risultato della query che gli tira fuori
+     * builda la lista di MinIOWrapperFileInfo a partire dal risultato della
+     * query che gli tira fuori
+     *
      * @param minIOWrapperFileInfoQueryRes
      * @return
-     * @throws MinIOWrapperException 
+     * @throws MinIOWrapperException
      */
     private List<MinIOWrapperFileInfo> buildMinIOWrapperFileInfo(List<Map<String, Object>> minIOWrapperFileInfoQueryRes) throws MinIOWrapperException {
         List<MinIOWrapperFileInfo> res = null;
@@ -1626,22 +1631,22 @@ public class MinIOWrapper {
                 ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
 
                 MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                        fileTableId,
-                        fileId,
-                        mongoUuid,
-                        filePath,
-                        fileName,
-                        size,
-                        md5,
-                        serverId,
-                        uuid,
-                        codiceAziendaFound,
-                        bucket,
-                        metadata,
-                        deleted,
-                        uploadDate,
-                        modifiedDate,
-                        deleteDate
+                    fileTableId,
+                    fileId,
+                    mongoUuid,
+                    filePath,
+                    fileName,
+                    size,
+                    md5,
+                    serverId,
+                    uuid,
+                    codiceAziendaFound,
+                    bucket,
+                    metadata,
+                    deleted,
+                    uploadDate,
+                    modifiedDate,
+                    deleteDate
                 );
                 res.add(fileInfo);
             }
@@ -1676,23 +1681,23 @@ public class MinIOWrapper {
             Query query;
             Sql2oArray pathsArray = new Sql2oArray(StringUtils.delimitedListToStringArray(StringUtils.trimLeadingCharacter(path, '/'), "/"));
             String queryString
-                    = "update repo.files f "
-                    + "set deleted = true, delete_date = now(), bucket = :bucket "
-                    + "[WHERE] and deleted = false "
-                    + "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
+                = "update repo.files f "
+                + "set deleted = true, delete_date = now(), bucket = :bucket "
+                + "[WHERE] and deleted = false "
+                + "returning (select array[file_id, bucket, server_id::text] from repo.files where id = f.id)";
             if (includeSubDir) {
                 queryString = queryString.replace("[WHERE]", "where :path_array::text[] <@ paths_array and path like :path || '%' and deleted = false and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("bucket", trashBucket)
-                        .addParameter("path_array", pathsArray)
-                        .addParameter("path", path)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("bucket", trashBucket)
+                    .addParameter("path_array", pathsArray)
+                    .addParameter("path", path)
+                    .addParameter("codice_azienda", codiceAzienda);
             } else {
                 queryString = queryString.replace("[WHERE]", "where path = :path and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString, true)
-                        .addParameter("bucket", trashBucket)
-                        .addParameter("path", path)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("bucket", trashBucket)
+                    .addParameter("path", path)
+                    .addParameter("codice_azienda", codiceAzienda);
             }
 
             // tramite questa query si riescono a prendere tutte le righe nel path e nei sotto-path.
@@ -1724,12 +1729,14 @@ public class MinIOWrapper {
     public List<MinIOWrapperFileInfo> getDeleted() throws MinIOWrapperException {
         return getDeleted(null, null, null);
     }
-    
+
     /**
-     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino
+     * alla data passata
      *
      * @param codiceAzienda se "null" torna quelli di tutte le aziende
-     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna tutti quelli eliminati fino a quella data (compresa)
+     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna
+     * tutti quelli eliminati fino a quella data (compresa)
      * @return l'elenco dei file cancellati logicamente per l'azienda passata
      * @throws it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException
      */
@@ -1738,10 +1745,12 @@ public class MinIOWrapper {
     }
 
     /**
-     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata facendo una limit per limitare i risultati
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino
+     * alla data passata facendo una limit per limitare i risultati
      *
      * @param codiceAzienda se "null" torna quelli di tutte le aziende
-     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna tutti quelli eliminati fino a quella data (compresa)
+     * @param lessThan se null, torna tutti i file eliminati, altrimenti torna
+     * tutti quelli eliminati fino a quella data (compresa)
      * @param limit
      * @return l'elenco dei file cancellati logicamente per l'azienda passata
      * @throws it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException
@@ -1750,10 +1759,10 @@ public class MinIOWrapper {
         try (Connection conn = (Connection) sql2oConnection.open()) {
             Query query;
             String queryString
-                    = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
-                    + "from repo.files "
-                    + "[WHERE] [DATE]"
-                    + (limit != null? " limit " + limit: "");
+                = "select id, file_id, mongo_uuid, uuid, bucket, metadata, path, filename, codice_azienda, server_id, size, md5, deleted, upload_date, modified_date, delete_date "
+                + "from repo.files "
+                + "[WHERE] [DATE]"
+                + (limit != null ? " limit " + limit : "");
             if (lessThan != null) {
                 queryString = queryString.replace("[DATE]", "and delete_date <= :delete_date");
             } else {
@@ -1765,7 +1774,7 @@ public class MinIOWrapper {
             } else {
                 queryString = queryString.replace("[WHERE]", "where deleted = true and codice_azienda = :codice_azienda");
                 query = conn.createQuery(queryString)
-                        .addParameter("codice_azienda", codiceAzienda);
+                    .addParameter("codice_azienda", codiceAzienda);
             }
             if (lessThan != null) {
                 query.addParameter("delete_date", Timestamp.valueOf(lessThan.toLocalDateTime()));
@@ -1795,22 +1804,22 @@ public class MinIOWrapper {
                     ZonedDateTime deleteDate = getZonedDateTime(foundFile.get("delete_date"));
 
                     MinIOWrapperFileInfo fileInfo = new MinIOWrapperFileInfo(
-                            fileTableId,
-                            fileId,
-                            mongoUuid,
-                            filePath,
-                            fileName,
-                            size,
-                            md5,
-                            serverId,
-                            uuid,
-                            codiceAziendaFound,
-                            bucket,
-                            metadata,
-                            deleted,
-                            uploadDate,
-                            modifiedDate,
-                            deleteDate
+                        fileTableId,
+                        fileId,
+                        mongoUuid,
+                        filePath,
+                        fileName,
+                        size,
+                        md5,
+                        serverId,
+                        uuid,
+                        codiceAziendaFound,
+                        bucket,
+                        metadata,
+                        deleted,
+                        uploadDate,
+                        modifiedDate,
+                        deleteDate
                     );
                     res.add(fileInfo);
                 }
@@ -1893,7 +1902,7 @@ public class MinIOWrapper {
         }
 
         String queryString = "SELECT mongo_uuid FROM repo.files WHERE uuid = :fileUuid"
-                + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+            + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
 
         try (Connection conn = sql2oConnection.open(); Query query = conn.createQuery(queryString).addParameter("fileUuid", fileUuid)) {
             return query.executeScalar(String.class);
@@ -1902,7 +1911,7 @@ public class MinIOWrapper {
 
     public MinIOWrapperFileInfo getFileInfoByMd5(String md5, boolean includeDeleted) throws MinIOWrapperException {
         String queryString = "SELECT file_id FROM repo.files WHERE md5 = :md5"
-                + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
+            + (!includeDeleted ? " AND deleted = false" : "") + " LIMIT 1";
         String file_id;
         try (Connection conn = sql2oConnection.open(); Query query = conn.createQuery(queryString).addParameter("md5", md5)) {
             file_id = query.executeScalar(String.class);
