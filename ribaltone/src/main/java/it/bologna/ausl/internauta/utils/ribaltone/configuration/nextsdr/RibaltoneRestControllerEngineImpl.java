@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.configuration.nextsdr;
+package it.bologna.ausl.internauta.utils.ribaltone.configuration.nextsdr;
 
 import it.nextsw.common.controller.RestControllerEngine;
 import org.springframework.stereotype.Service;
@@ -8,6 +8,6 @@ import org.springframework.stereotype.Service;
  * @author gsugus
  */
 @Service
-public class MasterjobsRestControllerEngineImpl extends RestControllerEngine {
+public class RibaltoneRestControllerEngineImpl extends RestControllerEngine {
 
 }

@@ -42,7 +42,7 @@ public class RibaltoneDataConfiguration {
     HashMap<String, Object> cacheConfig;
 
     /**
-     *  Chiavi delle spechiviche che contengono dati sensibili
+     * Chiavi delle spechiviche che contengono dati sensibili. TO_DO: scegliere quali siano effettivamente
      */
     public enum SpecificheSensibiliKeys {
         classz,
@@ -53,9 +53,9 @@ public class RibaltoneDataConfiguration {
         personeNonSpegnibili,
         progressivo_ultima_trasformazione
     }
-    
-     /**
-     * Chiavi delle spechiviche che non contengono dati sensibili
+
+    /**
+     * Chiavi delle spechiviche che non contengono dati sensibili. TO_DO: scegliere quali siano effettivamente
      */
     public enum SpecificheNonSensibiliKeys {
         codiciEntiValidi,

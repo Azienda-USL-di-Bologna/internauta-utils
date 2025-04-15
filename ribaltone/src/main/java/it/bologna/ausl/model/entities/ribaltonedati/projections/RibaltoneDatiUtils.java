@@ -21,7 +21,7 @@ public class RibaltoneDatiUtils {
     @Autowired
     private EntityManager entityManager;
 
-    public HashMap<String, Object> getOnlyRequestedSpecifiche(RibaltoneDataConfiguration dataConfiguration) {
+    public HashMap<String, Object> getOnlySpecificheNonSensibili(RibaltoneDataConfiguration dataConfiguration) {
         RibaltoneDataConfiguration ribaltoneConf = entityManager.find(RibaltoneDataConfiguration.class, dataConfiguration.getId());
         HashMap<String, Object> specifiche = (HashMap<String, Object>) ribaltoneConf.getSpecifiche();
         HashMap<String, Object> specificheRicheste = new HashMap<>();
