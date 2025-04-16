@@ -59,8 +59,8 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         //creazione del json
         //creazione dell xml
         MetadatiBuilder metadatiBuilder = new MetadatiBuilder();
-        VersamentoBuilder versamentoBuilder = metadatiBuilder.build();
-        String metadati = versamentoBuilder.toString();
+        metadatiBuilder.build();
+        String metadati = metadatiBuilder.toString();
         risultatoEVersamentiAllegati.put("metadati", metadati);
         //stream dei file
         //creazione del multipart
