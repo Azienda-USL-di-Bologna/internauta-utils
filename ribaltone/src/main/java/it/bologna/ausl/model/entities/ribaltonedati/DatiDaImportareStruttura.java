@@ -57,7 +57,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Column(name = "codice_ente")
     private String codiceEnte;
-    
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
 
@@ -190,12 +190,12 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Override
     public String getKey() {
-        return idCasella.toString() +" "+ descrizione ;
+        return idCasella.toString() + " " + descrizione;
     }
 
     @Override
-    public String getTipo() {
-        return "Struttura";
+    public TipologiaCsv getTipo() {
+        return TipologiaCsv.STRUTTURA;
     }
 
     @Override

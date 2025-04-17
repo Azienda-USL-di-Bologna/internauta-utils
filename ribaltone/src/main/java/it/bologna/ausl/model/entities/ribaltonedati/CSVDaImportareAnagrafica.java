@@ -6,8 +6,8 @@
 package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -22,25 +22,23 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 
 /**
  *
  * @author Top
  */
 @Entity
-@Table(name = "dati_importati_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInterface {
+public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInterface {
 
     private static final long serialVersionUID = 1L;
 
-    @Column(name = "codice_ente")
-    private String codiceEnte;
-
-    @Column(name = "id_azienda")
-    private Integer idAzienda;
+    @Column(name = "errore")
+    private String errore;
 
     @Column(name = "codice_matricola")
     private String codiceMatricola;
@@ -61,8 +59,15 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     @Column(name = "email")
     private String email;
 
+    @Size(max = 2147483647)
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @Column(name = "codice_azienda")
     private String codiceAzienda;
+
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -75,19 +80,11 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public DatiImportatiAnagrafica() {
+    public CSVDaImportareAnagrafica() {
     }
 
-    public DatiImportatiAnagrafica(Integer id) {
+    public CSVDaImportareAnagrafica(Integer id) {
         this.id = id;
-    }
-
-    public String getCodiceEnte() {
-        return codiceEnte;
-    }
-
-    public void setCodiceEnte(String codiceEnte) {
-        this.codiceEnte = codiceEnte;
     }
 
     public String getCodiceMatricola() {
@@ -104,6 +101,10 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
 
     public void setCognome(String cognome) {
         this.cognome = cognome;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public String getNome() {
@@ -154,12 +155,20 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
         this.version = version;
     }
 
-    public Integer getIdAzienda() {
-        return idAzienda;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setIdAzienda(Integer idAzienda) {
-        this.idAzienda = idAzienda;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
     }
 
     @Override
@@ -172,10 +181,10 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof DatiImportatiAnagrafica)) {
+        if (!(object instanceof CSVDaImportareAnagrafica)) {
             return false;
         }
-        DatiImportatiAnagrafica other = (DatiImportatiAnagrafica) object;
+        CSVDaImportareAnagrafica other = (CSVDaImportareAnagrafica) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
@@ -184,9 +193,10 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.DatiImportatiAnagrafica[ id=" + id + " ]";
+        return "it.bologna.ausl.model.entities.DatiDaImportareAnagrafica[ id=" + id + " ]";
     }
 
+    @JsonIgnore
     @Override
     public String getKey() {
         return this.codiceFiscale;
@@ -199,7 +209,12 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
 
     @Override
     public String getClasse() {
-        return DatiImportatiAnagrafica.class.getCanonicalName();
+        return CSVDaImportareAnagrafica.class.getCanonicalName();
+    }
+
+    @Override
+    public Integer getIdAzienda() {
+        return this.idAzienda;
     }
 
 }

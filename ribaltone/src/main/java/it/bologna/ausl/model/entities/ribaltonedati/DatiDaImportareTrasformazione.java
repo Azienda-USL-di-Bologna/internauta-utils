@@ -49,7 +49,7 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
 
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
-    
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
 
@@ -97,8 +97,6 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     public void setIdAzienda(Integer idAzienda) {
         this.idAzienda = idAzienda;
     }
-    
-    
 
     public Integer getProgressivoRiga() {
         return progressivoRiga;
@@ -216,8 +214,8 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     }
 
     @Override
-    public String getTipo() {
-        return "Trasformazione";
+    public TipologiaCsv getTipo() {
+        return TipologiaCsv.TRASFORMAZIONE;
     }
 
     @Override

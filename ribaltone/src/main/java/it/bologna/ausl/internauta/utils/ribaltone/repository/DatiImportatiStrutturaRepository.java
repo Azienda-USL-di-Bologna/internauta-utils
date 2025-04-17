@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
@@ -18,16 +14,15 @@ import org.springframework.stereotype.Component;
 /**
  *
  * @author Top
- * 
+ *
  */
 @Component("DatiImportatiStrutturaRepository")
 @RepositoryRestResource(collectionResourceRel = "datiimportatistruttura", path = "datiimportatistruttura", exported = false)
 @NextSdrRepository(repositoryPath = "${ribaltone.mapping.url.root}/datiimportatistruttura", defaultProjection = DatiImportatiStrutturaWithPlainFields.class)
-public interface DatiImportatiStrutturaRepository extends 
-        QuerydslPredicateExecutor<DatiImportatiStruttura>, 
-        JpaRepository<DatiImportatiStruttura, Integer>,
-        NextSdrQueryDslRepository<DatiImportatiStruttura, Integer, QDatiImportatiStruttura>
-{
+public interface DatiImportatiStrutturaRepository extends
+    QuerydslPredicateExecutor<DatiImportatiStruttura>,
+    JpaRepository<DatiImportatiStruttura, Integer>,
+    NextSdrQueryDslRepository<DatiImportatiStruttura, Integer, QDatiImportatiStruttura> {
 
     public List<DatiImportatiStruttura> findByCodiceAzienda(String codiceAzienda);
 

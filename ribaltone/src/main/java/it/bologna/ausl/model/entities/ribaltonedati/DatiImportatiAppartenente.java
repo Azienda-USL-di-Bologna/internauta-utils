@@ -51,7 +51,7 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
 
     @Column(name = "id_casella")
     private Integer idCasella;
-    
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
 
@@ -262,13 +262,13 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
     }
 
     @Override
-    public String getTipo() {
-        return "Appartenente";
+    public TipologiaCsv getTipo() {
+        return TipologiaCsv.APPARTENENTE;
     }
 
     @Override
     public String getClasse() {
-       return DatiImportatiAppartenente.class.getCanonicalName();
+        return DatiImportatiAppartenente.class.getCanonicalName();
     }
 
     @Override

@@ -2,8 +2,6 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -18,25 +16,23 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 
 /**
  *
  * @author Top
  */
 @Entity
-@Table(name = "dati_importati_strutture", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_strutture", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterface {
+public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInterface {
 
     private static final long serialVersionUID = 1L;
 
     @Column(name = "id_casella")
     private Integer idCasella;
-
-    @Column(name = "id_azienda")
-    private Integer idAzienda;
 
     @Column(name = "id_padre")
     private Integer idPadre;
@@ -59,8 +55,11 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     @Column(name = "tipo_legame")
     private String tipoLegame;
 
-    @Column(name = "codice_ente")
-    private String codiceEnte;
+    @Column(name = "errore")
+    private String errore;
+
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
@@ -76,7 +75,7 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public DatiImportatiStruttura() {
+    public CSVDaImportareStruttura() {
     }
 
     public Integer getIdCasella() {
@@ -93,6 +92,14 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
 
     public void setIdPadre(Integer idPadre) {
         this.idPadre = idPadre;
+    }
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public String getDescrizione() {
@@ -127,12 +134,12 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
         this.tipoLegame = tipoLegame;
     }
 
-    public String getCodiceEnte() {
-        return codiceEnte;
+    public String getErrore() {
+        return errore;
     }
 
-    public void setCodiceEnte(String codiceEnte) {
-        this.codiceEnte = codiceEnte;
+    public void setErrore(String errore) {
+        this.errore = errore;
     }
 
     public String getCodiceAzienda() {
@@ -159,14 +166,6 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
         this.version = version;
     }
 
-    public Integer getIdAzienda() {
-        return idAzienda;
-    }
-
-    public void setIdAzienda(Integer idAzienda) {
-        this.idAzienda = idAzienda;
-    }
-
     @Override
     public int hashCode() {
         int hash = 0;
@@ -177,16 +176,16 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof DatiImportatiStruttura)) {
+        if (!(object instanceof CSVDaImportareStruttura)) {
             return false;
         }
-        DatiImportatiStruttura other = (DatiImportatiStruttura) object;
+        CSVDaImportareStruttura other = (CSVDaImportareStruttura) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.internauta.model.entities.DatiImportatiStruttura[ id=" + id + " ]";
+        return "it.bologna.ausl.internauta.model.entities.DatiDaImportareStruttura[ id=" + id + " ]";
     }
 
     @Override
@@ -201,7 +200,7 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
 
     @Override
     public String getClasse() {
-        return DatiImportatiStruttura.class.getCanonicalName();
+        return CSVDaImportareStruttura.class.getCanonicalName();
     }
 
 }

@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import jakarta.persistence.EntityManager;
@@ -10,7 +11,8 @@ import jakarta.persistence.EntityManager;
  * @param <T>
  */
 public abstract class Operation<T extends DatiRibaltoneInterface> {
-public static enum Azione {
+
+    public static enum Azione {
         INSERT,
         EDIT,
         CHIUSURA,
@@ -28,8 +30,8 @@ public static enum Azione {
         this.entitaCoinvolta = entitaCoinvolta;
         this.entityManager = entityManager;
     }
-    
-    public String getTipo(){
+
+    public TipologiaCsv getTipo() {
         return this.entitaCoinvolta.getTipo();
     }
 
@@ -56,7 +58,6 @@ public static enum Azione {
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
-    
-    public abstract void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException ;
-}
 
+    public abstract void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException;
+}

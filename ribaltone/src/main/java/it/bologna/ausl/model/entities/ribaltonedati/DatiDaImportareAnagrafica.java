@@ -58,10 +58,10 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Size(max = 2147483647)
     @Column(name = "email")
     private String email;
-    
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
-    
+
     @Size(max = 2147483647)
     @Column(name = "password_hash")
     private String passwordHash;
@@ -74,7 +74,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
-    
+
     @Version()
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -118,7 +118,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     public void setIdAzienda(Integer idAzienda) {
         this.idAzienda = idAzienda;
     }
-    
+
     public String getNome() {
         return nome;
     }
@@ -175,7 +175,6 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         this.passwordHash = passwordHash;
     }
 
-
     @Override
     public int hashCode() {
         int hash = 0;
@@ -200,16 +199,16 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     public String toString() {
         return "it.bologna.ausl.model.entities.DatiDaImportareAnagrafica[ id=" + id + " ]";
     }
-    
+
     @JsonIgnore
     @Override
-    public String getKey(){
+    public String getKey() {
         return this.codiceFiscale;
     }
 
     @Override
-    public String getTipo() {
-        return "Anagrafica";
+    public TipologiaCsv getTipo() {
+        return TipologiaCsv.ANAGRAFICA;
     }
 
     @Override

@@ -7,7 +7,6 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -22,17 +21,18 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 
 /**
  *
  * @author Top
  */
 @Entity
-@Table(name = "dati_importati_trasformazioni", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_trasformazioni", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneInterface {
+public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltoneInterface {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -50,8 +50,8 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
 
-    @Column(name = "id_azienda")
-    private Integer idAzienda;
+    @Column(name = "errore")
+    private String errore;
 
     @Column(name = "data_trasformazione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -72,22 +72,31 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataoraOper;
 
-    @Column(name = "codice_ente")
-    private String codiceEnte;
-
     @Column(name = "codice_azienda")
     private String codiceAzienda;
+
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Version()
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public DatiImportatiTrasformazione() {
+    public CSVDaImportareTrasformazione() {
     }
 
-    public DatiImportatiTrasformazione(Integer id) {
+    public CSVDaImportareTrasformazione(Integer id) {
         this.id = id;
+    }
+
+    @Override
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
     }
 
     public Integer getProgressivoRiga() {
@@ -146,14 +155,6 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
         this.dataoraOper = dataoraOper;
     }
 
-    public String getCodiceEnte() {
-        return codiceEnte;
-    }
-
-    public void setCodiceEnte(String codiceEnte) {
-        this.codiceEnte = codiceEnte;
-    }
-
     public String getCodiceAzienda() {
         return codiceAzienda;
     }
@@ -178,12 +179,12 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
         this.version = version;
     }
 
-    public Integer getIdAzienda() {
-        return idAzienda;
+    public String getErrore() {
+        return errore;
     }
 
-    public void setIdAzienda(Integer idAzienda) {
-        this.idAzienda = idAzienda;
+    public void setErrore(String errore) {
+        this.errore = errore;
     }
 
     @Override
@@ -196,16 +197,16 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof DatiImportatiTrasformazione)) {
+        if (!(object instanceof CSVDaImportareTrasformazione)) {
             return false;
         }
-        DatiImportatiTrasformazione other = (DatiImportatiTrasformazione) object;
+        CSVDaImportareTrasformazione other = (CSVDaImportareTrasformazione) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.internauta.model.entities.DatiImportatiTrasformazione[progressivo_riga=" + progressivoRiga + ", id_casella_partenza=" + idCasellaPartenza + ", id_casella_arrivo=" + idCasellaArrivo + ", codice_ente=" + codiceEnte + ", codiceAzienda=" + codiceAzienda + ", id=" + id + " ]";
+        return "it.bologna.ausl.internauta.model.entities.DatiDaImportareTrasformazione[progressivo_riga=" + progressivoRiga + ", id_casella_partenza=" + idCasellaPartenza + ", id_casella_arrivo=" + idCasellaArrivo + ", codice_azienda=" + codiceAzienda + ", id=" + id + " ]";
     }
 
     @Override
@@ -220,7 +221,7 @@ public class DatiImportatiTrasformazione implements Serializable, DatiRibaltoneI
 
     @Override
     public String getClasse() {
-        return DatiImportatiTrasformazione.class.getCanonicalName();
+        return CSVDaImportareTrasformazione.class.getCanonicalName();
     }
 
 }

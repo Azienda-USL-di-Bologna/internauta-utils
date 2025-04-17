@@ -10,6 +10,8 @@ import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
@@ -39,11 +41,11 @@ public class RibaltoneManagerUtils {
 
         DatiDaImportare datiDaImportareValidated = getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         OperationsManager operationsManager = new OperationsManager(
-                datiDaImportareValidated,
-                codiceAzienda,
-                configRibaltoneView.getTolleranzaAppartenenti(),
-                configRibaltoneView.getTolleranzaStrutture(),
-                repositoryFactory);
+            datiDaImportareValidated,
+            codiceAzienda,
+            configRibaltoneView.getTolleranzaAppartenenti(),
+            configRibaltoneView.getTolleranzaStrutture(),
+            repositoryFactory);
         Operations operations = operationsManager.buildOperations();
         //controllo sul numero minimo di dati
         operationsManager.isQuantitaDatiOk();
@@ -79,22 +81,23 @@ public class RibaltoneManagerUtils {
 
     private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         SourceDataManager sourceDataManager;
+        Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select * from baborg.aziende where codice = :codice", Azienda.class).setParameter("codice", codiceAzienda.substring(0, 3)).getSingleResult();
         switch (ribaltoneConf.getFonte()) {
-            case "GRU":
+            case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
-                Map<String, String> queryRecuperoDati = objectMapper
-                        .convertValue(ribaltoneConf.getSpecifiche().get("queryRecuperoDati"), new TypeReference<Map<String, String>>() {
-                        });
                 //capire cosa succede e perche sono costretto a fare questa cosa abberrante
+                Map<String, String> queryRecuperoDati = objectMapper
+                    .convertValue(ribaltoneConf.getSpecifiche().get("queryRecuperoDati"), new TypeReference<Map<String, String>>() {
+                    });
                 gruSpecificData.getQueryRecuperoDati().setQueryAnagrafiche(queryRecuperoDati.get("anagrafiche"));
                 gruSpecificData.getQueryRecuperoDati().setQueryResponsabili(queryRecuperoDati.get("responsabili"));
                 gruSpecificData.getQueryRecuperoDati().setQueryAppartenenti(queryRecuperoDati.get("appartenenti"));
                 gruSpecificData.getQueryRecuperoDati().setQueryStrutture(queryRecuperoDati.get("strutture"));
                 gruSpecificData.getQueryRecuperoDati().setQueryTrasformazioni(queryRecuperoDati.get("trasformazioni"));
-            //fine aberrazione
-                Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select * from baborg.aziende where codice = :codice", Azienda.class).setParameter("codice", codiceAzienda.substring(0, 3)).getSingleResult();
+                //fine aberrazione
+
                 if (idAzienda == null) {
-                    throw  new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
+                    throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
                 } else {
                     sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
                     List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
@@ -105,12 +108,25 @@ public class RibaltoneManagerUtils {
                     DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
                     return datiDaImportare;
                 }
-            case "CSV":
-                throw new RibaltoneHttpException("csv non ancora implementato");
+            }
+            case "CSV" -> {
+                CSVSpecificData csvSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), CSVSpecificData.class);
+                if (idAzienda == null) {
+                    throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
+                } else {
+                    sourceDataManager = new CSVDataManager(csvSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
+                    List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
+                    List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
+                    List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
+                    List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
+                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, csvSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
+                    return datiDaImportare;
+                }
+            }
 
-            case "ASTRA":
+            case "ASTRA" ->
                 throw new RibaltoneHttpException("astra non ancora implementato");
-            default:
+            default ->
                 throw new AssertionError();
         }
     }

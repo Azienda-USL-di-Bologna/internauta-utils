@@ -23,16 +23,13 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
  * @author Top
  */
 @Entity
-@Table(name = "dati_da_importare_appartenenti", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_appartenenti", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneInterface {
+public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneInterface {
 
     private static final long serialVersionUID = 1L;
-
-    @Column(name = "codice_ente")
-    private String codiceEnte;
 
     @Column(name = "codice_matricola")
     private String codiceMatricola;
@@ -51,9 +48,6 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
 
     @Column(name = "id_casella")
     private Integer idCasella;
-
-    @Column(name = "id_azienda")
-    private Integer idAzienda;
 
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -86,8 +80,14 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
+
     @Column(name = "responsabile")
     private Boolean resposabile;
+
+    @Column(name = "errore")
+    private String errore;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -100,7 +100,8 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public DatiDaImportareAppartenente() {
+    public CSVDaImportareAppartenente() {
+
     }
 
     public Integer getIdAzienda() {
@@ -111,12 +112,12 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         this.idAzienda = idAzienda;
     }
 
-    public String getCodiceEnte() {
-        return codiceEnte;
+    public String getErrore() {
+        return errore;
     }
 
-    public void setCodiceEnte(String codiceEnte) {
-        this.codiceEnte = codiceEnte;
+    public void setErrore(String errore) {
+        this.errore = errore;
     }
 
     public String getCodiceMatricola() {
@@ -249,10 +250,10 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof DatiDaImportareAppartenente)) {
+        if (!(object instanceof CSVDaImportareAppartenente)) {
             return false;
         }
-        DatiDaImportareAppartenente other = (DatiDaImportareAppartenente) object;
+        CSVDaImportareAppartenente other = (CSVDaImportareAppartenente) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
@@ -276,7 +277,7 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
 
     @Override
     public String getClasse() {
-        return DatiDaImportareAppartenente.class.getCanonicalName();
+        return CSVDaImportareAppartenente.class.getCanonicalName();
     }
 
 }
