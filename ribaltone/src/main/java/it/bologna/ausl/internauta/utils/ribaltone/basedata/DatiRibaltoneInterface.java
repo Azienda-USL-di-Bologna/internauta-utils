@@ -19,7 +19,7 @@ public interface DatiRibaltoneInterface {
         TRASFORMAZIONE
     }
 
-    public static <T extends ImportazioneOggetto> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {
+    public static <T extends DatiRibaltoneInterface> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {
         T res = null;
         switch (tipologia) {
             case ANAGRAFICA:

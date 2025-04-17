@@ -79,8 +79,8 @@ public class CsvImportManager {
 
             Class aEnum = ColonneImportazioneCSVRibaltone.getColumnsEnum(tipologia);
             Object[] enumConstants = aEnum.getEnumConstants();
-            ColonneImportazioneOggetto[] columns = (ColonneImportazioneOggetto[]) enumConstants;
-            for (ColonneImportazioneOggetto column : columns) {
+            ColonneImportazioneCSVRibaltone[] columns = (ColonneImportazioneCSVRibaltone[]) enumConstants;
+            for (ColonneImportazioneCSVRibaltone column : columns) {
                 if (!column.equals(column.getErroriColumn())) {
                     boolean headerFound = headerNames.stream().anyMatch(h -> h.equalsIgnoreCase(column.toString()) || column.getValue().contains(h.toLowerCase()));
                     if (!headerFound) {

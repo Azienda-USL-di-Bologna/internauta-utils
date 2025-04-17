@@ -133,9 +133,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 utenteStruttura.setAttivo(Boolean.TRUE);
                                 //inserire in baborg utenti_struttura se non c'è l'afferenza ricordandosi di una sola afferenza diretta e n funzionali
                                 utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, struttura.getId().equals(strutturaAppartenteOriginale.getId()) ? entitaDaInserire.getTipoAppartenenza() : "U"));
-                                utenteStruttura.setResponsabile(entitaDaInserire.getResposabile());
+                                utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
                                 getEntityManager().persist(utenteStruttura);
-                                if (entitaDaInserire.getResposabile()) {
+                                if (entitaDaInserire.getResponsabile()) {
                                     try {
                                         permissionManager.insertSimplePermission(
                                                 utente,
@@ -289,11 +289,11 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 utente.setIdPersona(persona);
                                 utenteStruttura = getUtenteStruttura(queryFactory, struttura, utente);
                                 if (utenteStruttura != null) {
-                                    utenteStruttura.setResponsabile(entitaDaInserire.getResposabile());
+                                    utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
                                     utenteStruttura.setIdUtente(utente);
                                     utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getTipoAppartenenza()));
                                     getEntityManager().persist(utenteStruttura);
-                                    if (entitaDaInserire.getResposabile()) {
+                                    if (entitaDaInserire.getResponsabile()) {
                                         try {
                                             permissionManager.insertSimplePermission(
                                                     utente,

@@ -41,16 +41,6 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
     @Column(name = "descrizione")
     private String descrizione;
 
-    @Column(name = "datain")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime datain;
-
-    @Column(name = "datafi")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime datafi;
-
     @Size(max = 2147483647)
     @Column(name = "tipo_legame")
     private String tipoLegame;
@@ -108,22 +98,6 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
     public void setDescrizione(String descrizione) {
         this.descrizione = descrizione;
-    }
-
-    public ZonedDateTime getDatain() {
-        return datain;
-    }
-
-    public void setDatain(ZonedDateTime datain) {
-        this.datain = datain;
-    }
-
-    public ZonedDateTime getDatafi() {
-        return datafi;
-    }
-
-    public void setDatafi(ZonedDateTime datafi) {
-        this.datafi = datafi;
     }
 
     public String getTipoLegame() {

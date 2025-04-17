@@ -185,7 +185,7 @@ public class GruDataManager extends SourceDataManager {
                         && fonteIntermediaAppartenente.getIdCasella().equals(responsabile.getIdCasella())
                         && fonteIntermediaAppartenente.getCodiceEnte().equals(responsabile.getCodiceEnte())) {
 
-                    fonteIntermediaAppartenente.setResposabile(true);
+                    fonteIntermediaAppartenente.setResponsabile(true);
                     responsabili.remove(j);//
                     trovato = true;
                 }
@@ -212,7 +212,7 @@ public class GruDataManager extends SourceDataManager {
 //                fonteIntermediaAppartenente.setDataDimissione(appartenenteData.get("dataDimissione") != null ? ((Date) appartenenteData.get("dataDimissione")).toInstant().atZone(ZoneId.systemDefault()) : null);
 //                fonteIntermediaAppartenente.setDatain(responsabileTotale.getDatain().toInstant().atZone(ZoneId.systemDefault()));
 //                fonteIntermediaAppartenente.setDatafi(responsabileTotale.getDatafi().toInstant().atZone(ZoneId.systemDefault()));
-                fonteIntermediaAppartenente.setResposabile(true);
+                fonteIntermediaAppartenente.setResponsabile(true);
                 fonteIntermediaAppartenente.setTipoAppartenenza("F");
                 fonteIntermediaAppartenenti.add(fonteIntermediaAppartenente);
             } else {

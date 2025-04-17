@@ -183,7 +183,7 @@ public class Appartenente implements Serializable {
         fonteIntermediaAppartenente.setTipoAppartenenza(tipoAppartenenza);
         fonteIntermediaAppartenente.setUsername(username);
         fonteIntermediaAppartenente.setCodiceAzienda(codiceAzienda);
-        fonteIntermediaAppartenente.setResposabile(Boolean.FALSE);
+        fonteIntermediaAppartenente.setResponsabile(Boolean.FALSE);
     return fonteIntermediaAppartenente;
     }
 

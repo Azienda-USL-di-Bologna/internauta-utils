@@ -87,7 +87,7 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     private String codiceAzienda;
 
     @Column(name = "responsabile")
-    private Boolean resposabile;
+    private Boolean responsabile;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -207,12 +207,12 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         this.dataDimissione = dataDimissione;
     }
 
-    public Boolean getResposabile() {
-        return resposabile;
+    public Boolean getResponsabile() {
+        return responsabile;
     }
 
-    public void setResposabile(Boolean resposabile) {
-        this.resposabile = resposabile;
+    public void setResponsabile(Boolean responsabile) {
+        this.responsabile = responsabile;
     }
 
     public String getCodiceAzienda() {

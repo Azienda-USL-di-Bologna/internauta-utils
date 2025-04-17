@@ -10,17 +10,13 @@ import java.util.List;
 public class ColonneImportazioneCSVRibaltoneEnums {
 
     public static enum ColonneAppartenente implements ColonneImportazioneCSVRibaltone {
-        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola")),
+        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola", "codice_matricola")),
         nome(Arrays.asList("nome")),
-        codiceFiscale(Arrays.asList("codiceFiscale", "codice fiscale")),
-        idCasella(Arrays.asList("idCasella", "id casella")),
-        datain(Arrays.asList("datain", "data inizio")),
-        datafi(Arrays.asList("datafi", "data fine")),
-        tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza")),
+        codiceFiscale(Arrays.asList("codiceFiscale", "codice fiscale", "codice_fiscale")),
+        idCasella(Arrays.asList("idCasella", "id casella", "id_casella")),
+        tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza")),
         username(Arrays.asList("username")),
-        dataAssunzione(Arrays.asList("dataAssunzione", "data assunzione")),
-        dataDimissione(Arrays.asList("dataDimissione", "data dimissione")),
-        resposabile(Arrays.asList("resposabile")),
+        responsabile(Arrays.asList("responsabile")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -47,12 +43,10 @@ public class ColonneImportazioneCSVRibaltoneEnums {
     }
 
     public static enum ColonneStruttura implements ColonneImportazioneCSVRibaltone {
-        idCasella(Arrays.asList("idCasella", "id casella")),
-        idPadre(Arrays.asList("idPadre", "id casella padre", "id padre")),
+        idCasella(Arrays.asList("idCasella", "id casella", "id_casella")),
+        idPadre(Arrays.asList("idPadre", "id casella padre", "id padre", "id_padre")),
         descrizione(Arrays.asList("descrizione")),
-        datain(Arrays.asList("datain", "data inizio")),
-        datafi(Arrays.asList("datafi", "data fine")),
-        tipoLegame(Arrays.asList("tipoLegame", "tipo legame")),
+        tipoLegame(Arrays.asList("tipoLegame", "tipo legame", "tipo_legame")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -79,11 +73,11 @@ public class ColonneImportazioneCSVRibaltoneEnums {
     }
 
     public static enum ColonneAnagrafica implements ColonneImportazioneCSVRibaltone {
-        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola")),
+        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola", "codice_matricola")),
         cognome(Arrays.asList("cognome")),
         nome(Arrays.asList("nome")),
-        codiceFiscale(Arrays.asList("codiceFiscale", "cf", "Codice Fiscale")),
-        email(Arrays.asList("email", "e-mail")),
+        codiceFiscale(Arrays.asList("codiceFiscale", "cf", "Codice Fiscale", "codice_fiscale")),
+        email(Arrays.asList("email", "e-mail", "e_mail")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -110,12 +104,12 @@ public class ColonneImportazioneCSVRibaltoneEnums {
     }
 
     public static enum ColonneTrasformazione implements ColonneImportazioneCSVRibaltone {
-        progressivoRiga(Arrays.asList("progressivoRiga", "progressivo riga")),
-        idCasellaPartenza(Arrays.asList("idCasellaPartenza", "id casella partenza")),
-        idCasellaArrivo(Arrays.asList("idCasellaArrivo", "id casella arrivo")),
-        dataTrasformazione(Arrays.asList("dataTrasformazione", "data trasformazione")),
+        progressivoRiga(Arrays.asList("progressivoRiga", "progressivo riga", "progressivo_riga")),
+        idCasellaPartenza(Arrays.asList("idCasellaPartenza", "id casella partenza", "id_casella_partenza")),
+        idCasellaArrivo(Arrays.asList("idCasellaArrivo", "id casella arrivo", "id_casella_arrivo")),
+        dataTrasformazione(Arrays.asList("dataTrasformazione", "data trasformazione", "data_trasformazione")),
         motivo(Arrays.asList("motivo")),
-        datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza")),
+        datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;

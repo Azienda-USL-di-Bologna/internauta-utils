@@ -121,7 +121,7 @@ public class OperationsManager {
             Operation.Azione azione = Operation.Azione.INSERT;
             Boolean salva = true;
             if (posizione != null) {
-                if (!appartenentiImportati.get(posizione).getResposabile().equals(datiDaImportareAppartenente.getResposabile())
+                if (!appartenentiImportati.get(posizione).getResponsabile().equals(datiDaImportareAppartenente.getResponsabile())
                         || !appartenentiImportati.get(posizione).getCognome().equals(datiDaImportareAppartenente.getCognome())
                         || !appartenentiImportati.get(posizione).getNome().equals(datiDaImportareAppartenente.getNome())
                         || !appartenentiImportati.get(posizione).getTipoAppartenenza().equals(datiDaImportareAppartenente.getTipoAppartenenza())

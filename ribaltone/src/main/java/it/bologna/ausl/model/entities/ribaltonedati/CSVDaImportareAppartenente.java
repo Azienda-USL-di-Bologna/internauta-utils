@@ -49,16 +49,6 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @Column(name = "id_casella")
     private Integer idCasella;
 
-    @Column(name = "datain")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime datain;
-
-    @Column(name = "datafi")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime datafi;
-
     @Size(max = 2147483647)
     @Column(name = "tipo_appartenenza")
     private String tipoAppartenenza;
@@ -67,16 +57,6 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @Column(name = "username")
     private String username;
 
-    @Column(name = "data_assunzione")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime dataAssunzione;
-
-    @Column(name = "data_dimissione")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime dataDimissione;
-
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
@@ -84,7 +64,7 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     private Integer idAzienda;
 
     @Column(name = "responsabile")
-    private Boolean resposabile;
+    private Boolean responsabile;
 
     @Column(name = "errore")
     private String errore;
@@ -160,22 +140,6 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         this.idCasella = idCasella;
     }
 
-    public ZonedDateTime getDatain() {
-        return datain;
-    }
-
-    public void setDatain(ZonedDateTime datain) {
-        this.datain = datain;
-    }
-
-    public ZonedDateTime getDatafi() {
-        return datafi;
-    }
-
-    public void setDatafi(ZonedDateTime datafi) {
-        this.datafi = datafi;
-    }
-
     public String getTipoAppartenenza() {
         return tipoAppartenenza;
     }
@@ -192,28 +156,12 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         this.username = username;
     }
 
-    public ZonedDateTime getDataAssunzione() {
-        return dataAssunzione;
+    public Boolean getResponsabile() {
+        return responsabile;
     }
 
-    public void setDataAssunzione(ZonedDateTime dataAssunzione) {
-        this.dataAssunzione = dataAssunzione;
-    }
-
-    public ZonedDateTime getDataDimissione() {
-        return dataDimissione;
-    }
-
-    public void setDataDimissione(ZonedDateTime dataDimissione) {
-        this.dataDimissione = dataDimissione;
-    }
-
-    public Boolean getResposabile() {
-        return resposabile;
-    }
-
-    public void setResposabile(Boolean resposabile) {
-        this.resposabile = resposabile;
+    public void setResponsabile(Boolean responsabile) {
+        this.responsabile = responsabile;
     }
 
     public String getCodiceAzienda() {

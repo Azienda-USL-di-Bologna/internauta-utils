@@ -2,19 +2,30 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.core.types.dsl.EntityPathBase;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICA;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.APPARTENENTE;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.STRUTTURA;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONE;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -99,14 +110,37 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     }
 
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
     public void importaCSV(
-        @RequestParam(required = true) String codiceAzienda,
+        @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
         @RequestParam(required = true, name = "csv") MultipartFile csv,
         @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
         @RequestParam(required = true, name = "separatore") String separatore
     ) throws RibaltoneHttpException {
         File csvFile = null;
+
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
+        switch (tipologia) {
+            case APPARTENENTE:
+                jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
+                    QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
+                break;
+            case STRUTTURA:
+                jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
+                    QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
+                break;
+            case ANAGRAFICA:
+                jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
+                    QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
+                break;
+            case TRASFORMAZIONE:
+                jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
+                    QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
+                break;
+            default:
+                throw new AssertionError();
+        }
         try {
             // creo il csv come file temporaneo e lo cancello al termine
             csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
