@@ -6,8 +6,8 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoExceptionRitentabile;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -41,13 +41,13 @@ public class AllegatiBuilder {
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilder.class);
 
-    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatoreSdicoException, VersatoreSdicoExceptionRitentabile {
+    public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatorePluginException, VersatorePluginExceptionRitentabile {
         Map<String, Object> mappaAllegati = new HashMap<>();
         try {
             mappaAllegati = buildAllegati(doc, docDetail, allegati, versamentoBuilder);
         } catch (MinIOWrapperException ex) {
             log.error("Errore di comunicazione nel recuperare i dati degli allegati", ex);
-            throw new VersatoreSdicoExceptionRitentabile("Errore di comunicazione nel recuperare i dati degli allegati");
+            throw new VersatorePluginExceptionRitentabile("Errore di comunicazione nel recuperare i dati degli allegati");
         }
 
         return mappaAllegati;
@@ -59,7 +59,7 @@ public class AllegatiBuilder {
      *
      * @return
      */
-    public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws MinIOWrapperException, VersatoreSdicoException {
+    public Map<String, Object> buildAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws MinIOWrapperException, VersatorePluginException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
         List<IdentityFile> identityFiles = new ArrayList<>();
@@ -129,7 +129,7 @@ public class AllegatiBuilder {
      * @return
      * @throws MinIOWrapperException
      */
-    private IdentityFile getAllegatoInformation(Allegato.DettaglioAllegato dettaglio) throws MinIOWrapperException, VersatoreSdicoException {
+    private IdentityFile getAllegatoInformation(Allegato.DettaglioAllegato dettaglio) throws MinIOWrapperException, VersatorePluginException {
         //Controllo se nel nome del file è già inserita l'estensione
         int lastDotIndex = dettaglio.getNome().lastIndexOf(".");
         String estensione = "";
@@ -199,9 +199,9 @@ public class AllegatiBuilder {
      * @param identityFile
      * @return
      * @throws MinIOWrapperException
-     * @throws VersatoreSdicoException 
+     * @throws VersatorePluginException 
      */
-    private IdentityFile calcolaSHA256(IdentityFile identityFile) throws MinIOWrapperException, VersatoreSdicoException {
+    private IdentityFile calcolaSHA256(IdentityFile identityFile) throws MinIOWrapperException, VersatorePluginException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         InputStream is = identityFile.getUuidMongo() != null
                 ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
@@ -210,7 +210,7 @@ public class AllegatiBuilder {
             identityFile.setHash(org.apache.commons.codec.digest.DigestUtils.sha256Hex(is));
         } catch (IOException ex) {
             log.error("Errore nel calcoalre l'hashSHA256", ex);
-            throw new VersatoreSdicoException("Errore nel calcoalre l'hashSHA256");
+            throw new VersatorePluginException("Errore nel calcoalre l'hashSHA256");
         }
         return identityFile;
     }

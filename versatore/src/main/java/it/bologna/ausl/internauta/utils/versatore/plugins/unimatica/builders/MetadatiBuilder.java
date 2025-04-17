@@ -16,7 +16,9 @@ import org.slf4j.LoggerFactory;
 public class MetadatiBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(MetadatiBuilder.class);
-    private Documento d;
+    private Documento documento;
+    private Documento.Profilo profilo;
+    private Documento.Profilo.MetadatiAGID metadatiAGID;
     private Marshaller marshaller;
     private String codificaMarshaller;
 
@@ -27,7 +29,11 @@ public class MetadatiBuilder {
             marshaller = jaxb.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_ENCODING, codificaMarshaller);
-            d = new Documento();
+            documento = new Documento();
+            profilo = new Documento.Profilo();
+            metadatiAGID = new Documento.Profilo.MetadatiAGID();
+            profilo.setMetadatiAGID(metadatiAGID);
+            documento.setProfilo(profilo);
 
         } catch (JAXBException ex) {
             log.error("errore nella costruzione di VersamentoBuilder", ex);
@@ -35,7 +41,8 @@ public class MetadatiBuilder {
     }
 
     public void build() {
-        //d.setDocType("ciao");
+        //metadatiAGID.setTempoDiConservazione(9999);
+        //metadatiAGID.setDocumentoAmministrativoInformatico("ciao");
     }
 
     @Override
@@ -43,7 +50,7 @@ public class MetadatiBuilder {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         String out;
         try {
-            marshaller.marshal(d, baos);
+            marshaller.marshal(documento, baos);
         } catch (JAXBException e) {
             return "Document Error unable to serialize: " + e;
         }

@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -54,7 +54,7 @@ public class DeteBuilder {
      *
      * @return
      */
-    public VersamentoBuilder build() throws VersatoreSdicoException {
+    public VersamentoBuilder build() throws VersatorePluginException {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
@@ -79,7 +79,7 @@ public class DeteBuilder {
             }
         }
         if (ufficioProduttore == null) {
-            throw new VersatoreSdicoException("La Determina non ha Ufficio Produttore");
+            throw new VersatorePluginException("La Determina non ha Ufficio Produttore");
         }
         //String codiceRegistro = registro.getCodice().toString();
         //TODO in futuro prendere da db scripta.registro
@@ -94,7 +94,7 @@ public class DeteBuilder {
                 stringaDiFirmatari += firmatario.getCodiceFiscale() + " - " + firmatario.getDescrizione() + ", ";
             }
         } else {
-            throw new VersatoreSdicoException("La Determina non ha firmatari");
+            throw new VersatorePluginException("La Determina non ha firmatari");
         }
         stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String numeroProposta = docDetail.getAnnoProposta().toString() + "-" + df.format(docDetail.getNumeroProposta());
@@ -106,13 +106,13 @@ public class DeteBuilder {
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita") + ".000";
                 } else {
-                    throw new VersatoreSdicoException("La Determina non ha data esecutivita");
+                    throw new VersatorePluginException("La Determina non ha data esecutivita");
                 }
             } else {
-                throw new VersatoreSdicoException("La Determina non ha i dati di pubblicazione");
+                throw new VersatorePluginException("La Determina non ha i dati di pubblicazione");
             }
         } else {
-            throw new VersatoreSdicoException("La Determina non ha gli additionalData");
+            throw new VersatorePluginException("La Determina non ha gli additionalData");
         }
         String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
         String stringaAllegati = "";
@@ -175,7 +175,7 @@ public class DeteBuilder {
         if (docDetail.getDataPubblicazione() != null) {
             versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
         } else {
-            throw new VersatoreSdicoException("La Determina non ha data pubblicazione");
+            throw new VersatorePluginException("La Determina non ha data pubblicazione");
         }
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
 

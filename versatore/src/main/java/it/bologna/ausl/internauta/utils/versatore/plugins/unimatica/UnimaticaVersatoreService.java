@@ -4,7 +4,6 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
-import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.VersamentoBuilder;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import java.util.HashMap;
 import java.util.Map;

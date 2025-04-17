@@ -1,17 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-           targetNamespace="http://www.example.com/namespace" 
-           xmlns="http://www.example.com/namespace" 
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-           elementFormDefault="qualified">
-
-    <!-- Definizione del tipo semplice TempoDiConservazioneType -->
-    <xs:simpleType name="TempoDiConservazioneType">
-        <xs:restriction base="xs:integer">
-            <xs:minInclusive value="1"/>
-            <xs:maxInclusive value="9999"/>
-        </xs:restriction>
-    </xs:simpleType>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    
+    <xs:import schemaLocation="documentoAmministrativoInformatico.xsd"/>
 
     <xs:element name="Documento">
         <xs:complexType>
@@ -40,8 +30,7 @@
                             <xs:element name="MetadatiAGID">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <!-- Utilizzo del tipo TempoDiConservazioneType -->
-                                        <xs:element name="TempoDiConservazione" type="TempoDiConservazioneType" minOccurs="0"/>
+                                        <xs:element ref="DocumentoAmministrativoInformatico" minOccurs="0"/>
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
