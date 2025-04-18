@@ -7,6 +7,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.utils.service;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +35,13 @@ public class ConversionServices {
             String.class,
             ZonedDateTime.class,
             (Converter) source -> {
-                return ZonedDateTime.parse((String) source, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+                try {
+                    return ZonedDateTime.parse((String) source, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+                } catch (Exception e) {
+                    return LocalDateTime.parse((String) source, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")).atZone(java.time.ZoneId.of("Europe/Rome"));
+                }
             });
         return conversionService;
+
     }
 }

@@ -108,6 +108,7 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         idCasellaPartenza(Arrays.asList("idCasellaPartenza", "id casella partenza", "id_casella_partenza")),
         idCasellaArrivo(Arrays.asList("idCasellaArrivo", "id casella arrivo", "id_casella_arrivo")),
         dataTrasformazione(Arrays.asList("dataTrasformazione", "data trasformazione", "data_trasformazione")),
+        dataOraOper(Arrays.asList("dataOraOper", "dataora_oper", "dataOraOper")),
         motivo(Arrays.asList("motivo")),
         datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
         errori(Arrays.asList("errori"));

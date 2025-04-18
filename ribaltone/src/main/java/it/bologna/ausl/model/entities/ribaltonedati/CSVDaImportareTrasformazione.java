@@ -70,7 +70,7 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
     @Column(name = "dataora_oper")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
-    private ZonedDateTime dataoraOper;
+    private ZonedDateTime dataOraOper;
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
@@ -147,12 +147,12 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
         this.datainPartenza = datainPartenza;
     }
 
-    public ZonedDateTime getDataoraOper() {
-        return dataoraOper;
+    public ZonedDateTime getDataOraOper() {
+        return dataOraOper;
     }
 
-    public void setDataoraOper(ZonedDateTime dataoraOper) {
-        this.dataoraOper = dataoraOper;
+    public void setDataOraOper(ZonedDateTime dataOraOper) {
+        this.dataOraOper = dataOraOper;
     }
 
     public String getCodiceAzienda() {
