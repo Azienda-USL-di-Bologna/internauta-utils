@@ -33,6 +33,8 @@ public class ParametriAziendeReader {
      */
     public enum ParametriAzienda {
         minIOConfig,
+        minIOTrashAndDownloadCleaner,
+        minIOServiceBucketsCleaner,
         mongoConfig,
         mongoAndMinIOActive,
         firmaRemota,

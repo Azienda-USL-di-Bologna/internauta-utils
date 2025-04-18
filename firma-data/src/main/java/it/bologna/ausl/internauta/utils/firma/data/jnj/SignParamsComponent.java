@@ -27,6 +27,7 @@ public class SignParamsComponent {
             ALL_SIGNED, PARTIALLY_SIGNED, ERROR, ABORT
         }
         
+        private boolean clientMode = false;
         private String callBackUrl;
         private Map<String, String> callBackHeaders;
         private Map<String, Object> endSignParams;
@@ -34,6 +35,15 @@ public class SignParamsComponent {
         private EndSignResults endSignResult;
 
         public EndSign() {
+        }
+        
+        public EndSign(boolean clientMode) {
+            this.clientMode = clientMode;
+        }
+
+        @JsonIgnore
+        public boolean isClientMode() {
+            return clientMode;
         }
         
         public String getCallBackUrl() {
@@ -110,6 +120,14 @@ public class SignParamsComponent {
 
         public SignDocument() {
         }
+
+        public SignDocument(String file, Sources source, String name) {
+            this.file = file;
+            this.source = source;
+            this.name = name;
+        }
+        
+        
 
         public String getFile() {
             return file;
