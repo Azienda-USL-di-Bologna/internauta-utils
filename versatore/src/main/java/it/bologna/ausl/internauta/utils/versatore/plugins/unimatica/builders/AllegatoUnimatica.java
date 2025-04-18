@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  *
  * @author boria
@@ -8,13 +10,15 @@ public class AllegatoUnimatica {
 
     private Integer idFile;
     private String nomeFile;
+    private byte[] impronta;
 
     public AllegatoUnimatica() {
     }
 
-    public AllegatoUnimatica(Integer idFile, String nomeFile) {
+    public AllegatoUnimatica(Integer idFile, String nomeFile, String impronta) {
         this.idFile = idFile;
         this.nomeFile = nomeFile;
+        this.impronta = impronta.getBytes(StandardCharsets.UTF_8);
     }
 
     public Integer getIdFile() {
@@ -31,6 +35,14 @@ public class AllegatoUnimatica {
 
     public void setNomeFile(String nomeFile) {
         this.nomeFile = nomeFile;
+    }
+
+    public byte[] getImpronta() {
+        return impronta;
+    }
+
+    public void setImpronta(byte[] impronta) {
+        this.impronta = impronta;
     }
 
 }

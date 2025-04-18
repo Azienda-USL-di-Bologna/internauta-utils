@@ -30,16 +30,16 @@ import org.springframework.stereotype.Component;
  * @author boria
  */
 @Component
-public class AllegatiBuilder {
+public class AllegatiBuilderSdico {
 
     private static VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
 
-    public AllegatiBuilder(VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
+    public AllegatiBuilderSdico(VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
 //    @Autowired
 //    VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilder.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilderSdico.class);
 
     public Map<String, Object> buildMappaAllegati(Doc doc, DocDetail docDetail, List<Allegato> allegati, VersamentoBuilder versamentoBuilder) throws VersatorePluginException, VersatorePluginExceptionRitentabile {
         Map<String, Object> mappaAllegati = new HashMap<>();

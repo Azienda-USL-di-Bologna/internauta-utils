@@ -7,7 +7,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.PicoBui
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DocumentoGEDIBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeteBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
-import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilder;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilderSdico;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
@@ -320,7 +320,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
 
                 log.info("accedo ai dati degli allegati e li inserisco nell'XML");
                 List<Allegato> allegati = doc.getAllegati();
-                AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
+                AllegatiBuilderSdico allegatiBuild = new AllegatiBuilderSdico(versatoreRepositoryConfiguration);
                 Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
                 List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
                 List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");

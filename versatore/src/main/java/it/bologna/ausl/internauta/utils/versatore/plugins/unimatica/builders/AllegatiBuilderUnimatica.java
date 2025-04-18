@@ -4,7 +4,6 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
-import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.VersamentoBuilder;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
@@ -26,17 +25,17 @@ import org.springframework.stereotype.Component;
  * @author boria
  */
 @Component
-public class AllegatiBuilder {
+public class AllegatiBuilderUnimatica {
 
     private static VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
 
-    public AllegatiBuilder(VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
+    public AllegatiBuilderUnimatica(VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilder.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilderSdico.class);
 
-    public Map<String, Object> buildMappaAllegati(List<Allegato> allegatiList, Doc doc) throws VersatorePluginExceptionRitentabile, VersatorePluginException {
+    public Map<String, Object> buildMappaAllegati(Doc doc, List<Allegato> allegatiList) throws VersatorePluginExceptionRitentabile, VersatorePluginException {
         Map<String, Object> mappaAllegati = new HashMap<>();
         try {
             mappaAllegati = buildAllegati(allegatiList, doc);
@@ -52,36 +51,72 @@ public class AllegatiBuilder {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
         List<IdentityFile> identityFiles = new ArrayList<>();
-        AllegatoUnimatica allegatoPrincipale = new AllegatoUnimatica();
+        AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
         for (Allegato allegato : allegatiList) {
             log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
             if (allegato.getFirmato()) {
                 //guardo se è firmato e in tal caso lo processo
-                //se sono in un pe guardo se è l'allegato principale, in quel caso lo aggiungo come allegato principale
-                //altrimenti lo aggiungo agli allegati secondari
-                //se sono in un pu ed è di tipo testo (la lettera) lo aggiungo come allegato principale
-                //altrimenti lo aggiungo agli allegati secondari
+                Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
+                IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
+                identityFiles.add(identityFile);
+                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
+                versamentiAllegatiInfo.add(allegatoInformation);
+                AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
+                    allegato.getDettagli().getOriginale().getNome(),
+                    identityFile.getHash());
+                //assegno il documento principale
+                if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
+                    || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) && allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
+                    //se sono in un pe guardo se è l'allegato principale
+                    //oppure sono in un pu ed è di tipo testo (la lettera),
+                    //in quel caso lo aggiungo come allegato principale
+                    documentoPrincipale = allegatoUnimatica;
+                } else {
+                    //altrimenti lo aggiungo agli allegati secondari
+                    allegatiSecondariList.add(allegatoUnimatica);
+                }
             } else {
                 if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)
-                    || (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale())) {
-                    //guardo se è la stampa unica o l'allegato principale di un pe, in quel caso la processo
+                    || (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale())
+                    || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
+                    && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))) {
+                    //guardo se è la stampa unica
+                    //oppure l'allegato principale di un pe
+                    //oppure il testo omissis o la stampa unica omissis di una dete o una deli,
+                    //in quel caso la processo
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFile = getAllegatoInformation(originale);
                     identityFiles.add(identityFile);
                     Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                    AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(), allegato.getDettagli().getOriginale().getNome());
+                    //assegno il documento principale
+                    AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
+                        allegato.getDettagli().getOriginale().getNome(),
+                        identityFile.getHash());
                     if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()) {
-                        allegatoPrincipale = allegatoUnimatica;
+                        //se sono in un pe guardo se è l'allegato principale,
+                        //in quel caso lo aggiungo come allegato principale
+                        documentoPrincipale = allegatoUnimatica;
+                    } else {
+                        //altrimenti lo aggiungo agli allegati secondari
+                        allegatiSecondariList.add(allegatoUnimatica);
                     }
-                    //se sono in un pe guardo se è l'allegato principale, in quel caso lo processo e lo aggiungo come allegato principale
-                    //altrimenti lo aggiungo agli allegati secondari
                 }
             }
         }
-        //controllo che l'allegato principale sia presente e in quel caso lo inserisco nella mappa
+        mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
+        mappaPerAllegati.put("identityFiles", identityFiles);
+        mappaPerAllegati.put("allegatiSecondari", allegatiSecondariList);
+        //controllo il documento principale sia presente e in quel caso lo inserisco nella mappa
+        if (documentoPrincipale.getIdFile() != null) {
+            mappaPerAllegati.put("documentoPrincipale", documentoPrincipale);
+        } else {
+            log.error("Il documento non ha un allegato da definire come Documento principale");
+            throw new VersatorePluginException("Il documento non ha un allegato da definire come Documento principale");
+        }
         return mappaPerAllegati;
     }
 
