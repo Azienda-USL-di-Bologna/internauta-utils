@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.data.ColonneImportazioneCSVRibaltone;
+import it.bologna.ausl.internauta.utils.ribaltone.utils.service.ConversionServices;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareAnagrafica;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.core.convert.ConversionService;
 
 /**
  *
@@ -43,10 +45,12 @@ public class CsvImportManager {
 
     private ObjectMapper objectMapper;
     private EntityManager entityManager;
+    private ConversionService conversionService;
 
-    public CsvImportManager(ObjectMapper objectMapper, EntityManager entityManager) {
+    public CsvImportManager(ObjectMapper objectMapper, EntityManager entityManager, ConversionService conversionService) {
         this.objectMapper = objectMapper;
         this.entityManager = entityManager;
+        this.conversionService = conversionService;
     }
 
     public void csvImportAndValidate(
@@ -259,6 +263,7 @@ public class CsvImportManager {
         per ogni header bisogna capire in che campo della classe ImportazioneOggetto scriverlo. Per farlo viene usato un enum che ha come chiave il nome del campo
         della classe e come valori i possibili nomi degli header associati
          */
+        wrapper.setConversionService(conversionService);
         for (String headerName : csvRowMap.keySet()) {
             // reperisce il valore enum corretto a seconda dell'header
             ColonneImportazioneCSVRibaltone colonnaEnum = ColonneImportazioneCSVRibaltone.findKey(headerName, tipologia);
@@ -269,7 +274,10 @@ public class CsvImportManager {
                 noi lo prendiamo bene lo stesso
                  */
                 if (colonnaEnum != colonnaEnum.getErroriColumn()) {
-                    wrapper.setPropertyValue(colonnaEnum.toString(), csvRowMap.get(headerName));
+
+                    Object convertIfNecessary = wrapper.convertIfNecessary(csvRowMap.get(headerName), wrapper.getPropertyDescriptor(colonnaEnum.toString()).getPropertyType());
+
+                    wrapper.setPropertyValue(colonnaEnum.toString(), convertIfNecessary);
                 }
             } else { // se non lo trovo, stampo un errore e lo ignoro
                 log.error(String.format("header csv %s non previsto dal tracciato, il campo sarà ignorato", headerName));

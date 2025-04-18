@@ -17,6 +17,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+import it.bologna.ausl.internauta.utils.ribaltone.utils.service.ConversionServices;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.core.convert.ConversionService;
 
 /**
  *
@@ -55,6 +57,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private ConversionService conversionService;
 
 //    @RequestMapping(value = "/cleanSourceData", method = RequestMethod.GET)
 //    public DatiDaImportare cleanSourceData(
@@ -150,7 +155,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     IOUtils.copy(csvIs, fos);
                 }
             }
-            CsvImportManager csvImportManager = new CsvImportManager(objectMapper, entityManager);
+            CsvImportManager csvImportManager = new CsvImportManager(objectMapper, entityManager, conversionService);
             csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
 
         } catch (Exception ex) {
