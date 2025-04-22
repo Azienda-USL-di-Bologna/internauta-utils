@@ -33,7 +33,7 @@ public class AllegatiBuilderUnimatica {
         this.versatoreRepositoryConfiguration = versatoreRepositoryConfiguration;
     }
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilderSdico.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilderUnimatica.class);
 
     public Map<String, Object> buildMappaAllegati(Doc doc, List<Allegato> allegatiList) throws VersatorePluginExceptionRitentabile, VersatorePluginException {
         Map<String, Object> mappaAllegati = new HashMap<>();
@@ -79,11 +79,11 @@ public class AllegatiBuilderUnimatica {
                 }
             } else {
                 if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)
-                    || (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale())
+                    || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
                     || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
                     && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))) {
                     //guardo se è la stampa unica
-                    //oppure l'allegato principale di un pe
+                    //oppure l'allegato principale di un pe o di un rgpico
                     //oppure il testo omissis o la stampa unica omissis di una dete o una deli,
                     //in quel caso la processo
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
@@ -96,8 +96,8 @@ public class AllegatiBuilderUnimatica {
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
                         allegato.getDettagli().getOriginale().getNome(),
                         identityFile.getHash());
-                    if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()) {
-                        //se sono in un pe guardo se è l'allegato principale,
+                    if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale()) {
+                        //se sono in un pe o in un rgpico guardo se è l'allegato principale,
                         //in quel caso lo aggiungo come allegato principale
                         documentoPrincipale = allegatoUnimatica;
                     } else {
