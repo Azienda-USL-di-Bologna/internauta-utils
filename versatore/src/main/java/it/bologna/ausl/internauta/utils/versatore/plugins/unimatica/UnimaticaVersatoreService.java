@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
@@ -9,6 +10,7 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatiBuilderUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatoUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.IndiceJsonBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
@@ -20,9 +22,14 @@ import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import jakarta.persistence.EntityManager;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +75,8 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
      * @param versamentoDocInformation
      * @return
      */
-    //TODO togliere entity manager e vers conf
-    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration) throws VersatoreProcessingException {
+    //TODO togliere entity manager e vers conf e object mapper
+    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, ObjectMapper objectMapper) throws VersatoreProcessingException {
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
         //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
@@ -142,11 +149,25 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, allegati);
                 AllegatoUnimatica documentoPrincipale = (AllegatoUnimatica) mappaDatiAllegati.get("documentoPrincipale");
                 List<AllegatoUnimatica> allegatiSecondariList = (List<AllegatoUnimatica>) mappaDatiAllegati.get("allegatiSecondari");
-                //creazione dell xml
+                //creazione dell xml dei metadati
                 MetadatiBuilder metadatiBuilder = new MetadatiBuilder(parametriVersamento, doc, archivio, documentoPrincipale, allegatiSecondariList);
                 metadatiBuilder.build();
                 String metadati = metadatiBuilder.toString();
                 risultatoEVersamentiAllegati.put("metadati", metadati);
+                byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
+                //calcolo lo sha 256 del file di metadati
+                String sha256HexMetadati = "";
+                try (InputStream is = new ByteArrayInputStream(fileMetadati)) {
+                    sha256HexMetadati = DigestUtils.sha256Hex(is);
+                } catch (IOException ex) {
+                    log.error("Errore nel calcoalre l'hashSHA256 di metadati.xml", ex);
+                    throw new VersatorePluginException("Errore nel calcoalre l'hashSHA256 di metadati.xml");
+                }
+                //creazione dell'indice json
+                IndiceJsonBuilder indiceJsonBuilder = new IndiceJsonBuilder(parametriVersamento, doc, documentoPrincipale, allegatiSecondariList, sha256HexMetadati);
+                Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
+                String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
+                risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
             } catch (VersatorePluginException e) {
                 log.error("Errore:", e);
                 //TODO fare una response per unimatica

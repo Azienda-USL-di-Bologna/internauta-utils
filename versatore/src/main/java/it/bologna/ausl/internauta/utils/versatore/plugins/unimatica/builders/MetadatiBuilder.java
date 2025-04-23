@@ -1,20 +1,26 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.AggType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.AllegatiType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ChiaveDescrittivaType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ClassificazioneType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.DatiDiRegistrazioneType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.Documento;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.DocumentoAmministrativoInformaticoType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IdAggType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IdDocType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ImprontaCrittograficaDelDocumentoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IndiceAllegatiType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ModalitaDiFormazioneType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoAggregazioneType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoRegistroType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
+import static it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils.buildIdFascicolo;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
+import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
@@ -87,17 +93,17 @@ public class MetadatiBuilder {
         //TODO devo inserire i metadati specifici?
         //creo i metadati agid creando il Documento Amministrativo Informatico e settandone i campi
         DocumentoAmministrativoInformaticoType documentoAmministrativoInformatico = new DocumentoAmministrativoInformaticoType();
-        IdDocType idDoc = new IdDocType();
+        IdDocType idDocPrimario = new IdDocType();
         ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumento = new ImprontaCrittograficaDelDocumentoType();
         //impronta del documento principale
         improntaCrittograficaDelDocumento.setImpronta(documentoPrincipale.getImpronta());
         //algoritmo del documento principale
         improntaCrittograficaDelDocumento.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
-        idDoc.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
+        idDocPrimario.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
         //TODO identificativo cosa prendo?
         //TODO e segnatura?
         //identificativo del documento
-        documentoAmministrativoInformatico.setIdDoc(idDoc);
+        documentoAmministrativoInformatico.setIdDoc(idDocPrimario);
         //modalità di formazione
         documentoAmministrativoInformatico.setModalitaDiFormazione(ModalitaDiFormazioneType.CREAZIONE_TRAMITE_UTILIZZO_DI_STRUMENTI_SOFTWARE_CHE_ASSICURINO_LA_PRODUZIONE_DI_DOCUMENTI_NEI_FORMATI_PREVISTI_IN_ALLEGATO_2);
         //tipologia documentale
@@ -154,10 +160,10 @@ public class MetadatiBuilder {
         //oggetto
         chiaveDescrittiva.setOggetto(doc.getOggetto());
         documentoAmministrativoInformatico.setChiaveDescrittiva(chiaveDescrittiva);
+        //allegati
         if (allegatiSecondariList.size() > 0) {
             AllegatiType allegati = new AllegatiType();
             allegati.setNumeroAllegati(allegatiSecondariList.size());
-            //allegati
             for (AllegatoUnimatica allegatoUnimatica : allegatiSecondariList) {
                 IndiceAllegatiType indiceAllegati = new IndiceAllegatiType();
                 IdDocType idDocAllegato = new IdDocType();
@@ -179,8 +185,59 @@ public class MetadatiBuilder {
         documentoAmministrativoInformatico.setClassificazione(classificazione);
         //riservato
         documentoAmministrativoInformatico.setRiservato(doc.getVisibilita().equals(Doc.VisibilitaDoc.RISERVATO));
+        //TODO formato
+        VerificaType verifica = new VerificaType();
+        //firmato digitalmente
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
+            verifica.setFirmatoDigitalmente(documentoPrincipale.getFirmato());
+        } else {
+            verifica.setFirmatoDigitalmente((boolean) mappaParametri.get("firmatoDigitalmente"));
+        }
+        //sigillato elettornicamente
+        verifica.setSigillatoElettronicamente((boolean) mappaParametri.get("sigillatoElettronicamente"));
+        //marcatura temporale
+        verifica.setMarcaturaTemporale((boolean) mappaParametri.get("marcaturaTemporale"));
+        documentoAmministrativoInformatico.setVerifica(verifica);
+        //fascicoli
+        AggType agg = new AggType();
+        for (ArchivioDoc archivioDoc : doc.getArchiviDocList()) {
+            if (archivioDoc.getDataEliminazione() == null && archivioDoc.getIdArchivio().getIdArchivioRadice().getId() == archivio.getIdArchivioRadice().getId()) {
+                IdAggType idAgg = new IdAggType();
+                idAgg.setTipoAggregazione(TipoAggregazioneType.FASCICOLO);
+                idAgg.setIdAggregazione(buildIdFascicolo(archivioDoc.getIdArchivio()));
+                agg.getTipoAgg().add(idAgg);
+            }
+        }
+        documentoAmministrativoInformatico.setAgg(agg);
+        documentoAmministrativoInformatico.setIdIdentificativoDocumentoPrimario(idDocPrimario);
+        //nome del documento principale
+        documentoAmministrativoInformatico.setNomeDelDocumento(documentoPrincipale.getNomeFile());
+        //TODO versione del documento?
+        //tempo di conservazione
+        Integer tempoDiConservazione = 9999;
+        if (archivio.getAnniTenuta() != 999) {
+            tempoDiConservazione = archivio.getAnniTenuta();
+        }
+        documentoAmministrativoInformatico.setTempoDiConservazione(tempoDiConservazione);
+        //note
 
         metadatiAGID.setDocumentoAmministrativoInformatico(documentoAmministrativoInformatico);
+    }
+
+    /**
+     * Metodo che formatta il singolo idFascicolo
+     * @param archivio
+     * @return
+     */
+    public static String buildIdFascicolo(Archivio archivio) {
+        String numero = archivio.getNumero().toString();
+        if (archivio.getIdArchivioPadre() != null) {
+            numero = archivio.getIdArchivioPadre().getNumero().toString() + "-" + numero;
+            if (archivio.getIdArchivioPadre().getIdArchivioPadre() != null) {
+                numero = archivio.getIdArchivioPadre().getIdArchivioPadre().getNumero() + "-" + numero;
+            }
+        }
+        return (numero + "/" + archivio.getAnno() + " [id_" + archivio.getId() + "]");
     }
 
     @Override

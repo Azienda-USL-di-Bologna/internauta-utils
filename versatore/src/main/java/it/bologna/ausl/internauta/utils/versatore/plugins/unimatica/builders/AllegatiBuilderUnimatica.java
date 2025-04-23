@@ -65,7 +65,10 @@ public class AllegatiBuilderUnimatica {
                 versamentiAllegatiInfo.add(allegatoInformation);
                 AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
                     allegato.getDettagli().getOriginale().getNome(),
-                    identityFile.getHash());
+                    identityFile.getHash(),
+                    allegato.getFirmato(),
+                    originaleFirmato.getMimeType()
+                );
                 //assegno il documento principale
                 if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
                     || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) && allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
@@ -95,7 +98,10 @@ public class AllegatiBuilderUnimatica {
                     //assegno il documento principale
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
                         allegato.getDettagli().getOriginale().getNome(),
-                        identityFile.getHash());
+                        identityFile.getHash(),
+                        allegato.getFirmato(),
+                        originale.getMimeType()
+                    );
                     if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale()) {
                         //se sono in un pe o in un rgpico guardo se è l'allegato principale,
                         //in quel caso lo aggiungo come allegato principale
