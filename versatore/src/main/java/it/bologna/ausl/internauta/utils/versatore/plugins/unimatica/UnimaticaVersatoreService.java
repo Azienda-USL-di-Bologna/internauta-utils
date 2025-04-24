@@ -1,17 +1,22 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
+import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.SdicoResponse;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatiBuilderUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatoUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.IndiceJsonBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -21,15 +26,27 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
+import it.bologna.ausl.riversamento.builder.IdentityFile;
+import it.bologna.ausl.riversamento.sender.PaccoFile;
 import jakarta.persistence.EntityManager;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import okhttp3.Credentials;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +63,9 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
     private static final String UNIMATICA_VERSATORE_SERVICE = "UnimaticaVersatoreService";
 
     private String unimaticaServizioVersamentoURI;
+
+    @Autowired
+    VersatoreHttpClientConfiguration versatoreHttpClientConfiguration;
 
     @Override
     public void init(VersatoreConfiguration versatoreConfiguration) {
@@ -160,14 +180,98 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 try (InputStream is = new ByteArrayInputStream(fileMetadati)) {
                     sha256HexMetadati = DigestUtils.sha256Hex(is);
                 } catch (IOException ex) {
-                    log.error("Errore nel calcoalre l'hashSHA256 di metadati.xml", ex);
-                    throw new VersatorePluginException("Errore nel calcoalre l'hashSHA256 di metadati.xml");
+                    log.error("Errore nel calcoalre l'hashSHA256 del file xml dei metadati", ex);
+                    throw new VersatorePluginException("Errore nel calcoalre l'hashSHA256 del file xml dei metadati");
                 }
                 //creazione dell'indice json
                 IndiceJsonBuilder indiceJsonBuilder = new IndiceJsonBuilder(parametriVersamento, doc, documentoPrincipale, allegatiSecondariList, sha256HexMetadati);
                 Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
                 String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
                 risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
+
+                // --Sezione di collegamento con UNIMATICA e versamento--
+                //creazione del multipart
+                //metadati e json
+                //TODO vedere come costruire il nome
+                String nomeFileMetadati = "idDoc" + doc.getId() + "_idArchivio" + archivio.getId() + "_" + documentoPrincipale.getNomeFile() + ".xml";
+                MultipartBody.Builder buildernew = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addPart(
+                        Headers.of("Content-Disposition", "form-data; name=\"json\""),
+                        RequestBody.create(indiceJsonString, MediaType.parse("application/json"))
+                    )
+                    .addFormDataPart("file", nomeFileMetadati, RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+
+                // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
+                List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
+                List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
+                log.info("Ciclo i file...");
+                if (paccoFiles != null) {
+                    for (PaccoFile paccoFile : paccoFiles) {
+                        log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+                        byte[] bytes;
+                        try (InputStream is = paccoFile.getInputStream()) {
+                            bytes = IOUtils.toByteArray(is);
+                            buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                        } catch (Exception ex) {
+                            log.error("Problemi con l'inputstream dei file", ex);
+                        }
+                    }
+                }
+                // creazione di body multipart
+                log.info("Costruisco il MultiPart");
+                MultipartBody requestBody = buildernew.build();
+                //TODO da togliere
+                risultatoEVersamentiAllegati.put("requestBody", requestBody);
+                //credenziali autorizzazione
+                String username = (String) parametriVersamento.get("username");
+                String password = (String) parametriVersamento.get("password");
+
+                // richiesta
+                log.info("Costruisco la request");
+                Request request = new Request.Builder()
+                    .url(unimaticaServizioVersamentoURI)
+                    .post(requestBody)
+                    .header("Authorization", Credentials.basic(username, password)) // Basic Auth
+                    .build();
+                log.info("Uri: " + unimaticaServizioVersamentoURI);
+                log.info("Effettuo la chiamata a Unimatica");
+                // inizializzazione http client
+                OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
+                try (Response resp = okHttpClient.newCall(request).execute()) {
+                    if (resp.isSuccessful()) {
+                        log.info("Message: " + resp.message());
+                        String resBodyString = resp.body().string();
+                        log.info("Body: " + resBodyString);
+                        risultatoEVersamentiAllegati.put("responseJson", resBodyString);
+                        //ObjectMapper objectMapper = new ObjectMapper();
+                        /*try {
+                            //TODO response unimatica
+                            //response = objectMapper.readValue(resBodyString, SdicoResponse.class);
+
+                        } catch (JsonProcessingException ex) {
+                            log.error("Errore nel parsing della response arrivata da SDICO", ex);
+                        }*/
+                    } else {
+                        log.error("ERROR: message = " + resp.message());
+                        String resBodyString = resp.body().string();
+                        log.error("Body: " + resBodyString);
+                        log.error(resp.toString());
+                        //TODO response unimatica
+                        /*response.setErrorMessage(resp.toString());
+                        if (resp.code() == 500) {
+                            response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
+                        } else {
+                            response.setResponseCode(ERRORE_PLUG_IN);
+                        }*/
+                    }
+                    resp.close(); // chiudo la response
+                } catch (Throwable ex) {
+                    log.error("Errore nella chiamata di riversamento", ex);
+                    //TODO response unimatica
+                    //response.setErrorMessage("Errore nella chiamata di riversamento");
+                    //response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
+                }
             } catch (VersatorePluginException e) {
                 log.error("Errore:", e);
                 //TODO fare una response per unimatica
@@ -185,12 +289,6 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
             //response.setResponseCode(ERRORE_PLUG_IN);
             log.error("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage(), e);
         }
-        //chiamata autenticazione
-        //creazione del json
-        //stream dei file
-        //creazione del multipart
-        //invio
-        //lettura esito
         return risultatoEVersamentiAllegati;
     }
 
@@ -229,5 +327,34 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 .and(QPersona.persona.idAziendaDefault.id.eq(idAzienda)))
             .fetchOne();
         return persona;
+    }
+
+    /**
+     * Metodo che impacchetta i dati degli allegati, reperisce i file e li
+     * prepara per essere versati
+     *
+     * @param identityFiles
+     * @return
+     */
+    //TODO togliere minio wrapper
+    private List<PaccoFile> creazionePaccoFile(List<IdentityFile> identityFiles) {
+        List<PaccoFile> filesList = new ArrayList<>();
+        for (IdentityFile identityFile : identityFiles) {
+            log.info("Cerco l'allegato: " + identityFile.getFileName());
+            PaccoFile paccoFile = new PaccoFile();
+            /*try {
+                InputStream is = identityFile.getUuidMongo() != null
+                    ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
+                    : minIOWrapper.getByFileId(identityFile.getFileBase64());
+                paccoFile.setInputStream(is);*/
+            paccoFile.setMime(identityFile.getMime());
+            paccoFile.setFileName(identityFile.getFileName());
+            paccoFile.setId(identityFile.getId());
+            filesList.add(paccoFile);
+            /*} catch (MinIOWrapperException ex) {
+                log.error("Errore nel reperire il file da MinIO", ex);
+            }*/
+        }
+        return filesList;
     }
 }

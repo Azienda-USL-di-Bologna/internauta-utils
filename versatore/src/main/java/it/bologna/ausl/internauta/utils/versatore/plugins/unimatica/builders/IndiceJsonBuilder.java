@@ -95,7 +95,7 @@ public class IndiceJsonBuilder {
         //parametri
         Map<String, Object> parametriDocumento = new HashMap();
         //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...
-        parametriDocumento.put("aggiungiFirma", documentoPrincipale.getFirmato());
+        parametriDocumento.put("aggiungiFirma", (boolean) parametriVersamento.get("aggiungiFirma"));
         parametriDocumento.put("verificaFirma", documentoPrincipale.getFirmato());
         documento.put("parametriDocumento", parametriDocumento);
         //allegati

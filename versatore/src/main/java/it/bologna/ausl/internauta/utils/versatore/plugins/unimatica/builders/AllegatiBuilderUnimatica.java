@@ -84,10 +84,12 @@ public class AllegatiBuilderUnimatica {
                 if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)
                     || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
                     || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
-                    && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))) {
+                    && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))
+                    || allegato.getNome().equalsIgnoreCase("segnatura.xml")) {
                     //guardo se è la stampa unica
                     //oppure l'allegato principale di un pe o di un rgpico
-                    //oppure il testo omissis o la stampa unica omissis di una dete o una deli,
+                    //oppure il testo omissis o la stampa unica omissis di una dete o una deli
+                    //oppure è la segnatura
                     //in quel caso la processo
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFile = getAllegatoInformation(originale);

@@ -5,16 +5,25 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.AggType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.AllegatiType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ChiaveDescrittivaType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ClassificazioneType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.CodiceIPAType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.DatiDiRegistrazioneType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.Documento;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.DocumentoAmministrativoInformaticoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IdAggType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IdDocType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IdentificativoDelFormatoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ImprontaCrittograficaDelDocumentoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.IndiceAllegatiType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ModalitaDiFormazioneType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.NoProtocolloType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.PAIType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ProdottoSoftwareType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.ProtocolloType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.RuoloType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.SoggettiType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoAggregazioneType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoRegistroType;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoSoggetto1Type;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
 import static it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils.buildIdFascicolo;
@@ -30,9 +39,14 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+import org.apache.tika.detect.zip.IPADetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,16 +95,22 @@ public class MetadatiBuilder {
         }
     }
 
-    public void build() throws VersatorePluginException {
+    public void build() throws VersatorePluginException, Exception {
         //prendo i parametri
         String tipoDocumento = doc.getTipologia().toString();
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(tipoDocumento);
+        //dati amministrazione
+        String denominazioneAmministrazione = (String) parametriVersamento.get("denominazioneAmministrazione");
+        String codiceIpa = (String) parametriVersamento.get("codiceIpa");
+        String codiceAOO = (String) parametriVersamento.get("codiceAOO");
+        String denominazioneAOO = (String) parametriVersamento.get("denominazioneAOO");
+        String mailAmministrazione = (String) parametriVersamento.get("mailAmministrazione");
         //creo l'intestazione del documento principale
-        intestazione.setIdFile(documentoPrincipale.getIdFile().toString());
+        intestazione.setIdFile("idDoc" + doc.getId() + "_idArchivio" + archivio.getId() + "_" + documentoPrincipale.getNomeFile());
         intestazione.setNomeFile(documentoPrincipale.getNomeFile());
         intestazione.setPrincipale(true);
         //creo il profilo
-        //TODO devo inserire i metadati specifici?
+        //TODO devo inserire i metadati specifici? al momento no
         //creo i metadati agid creando il Documento Amministrativo Informatico e settandone i campi
         DocumentoAmministrativoInformaticoType documentoAmministrativoInformatico = new DocumentoAmministrativoInformaticoType();
         IdDocType idDocPrimario = new IdDocType();
@@ -100,8 +120,10 @@ public class MetadatiBuilder {
         //algoritmo del documento principale
         improntaCrittograficaDelDocumento.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
         idDocPrimario.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
-        //TODO identificativo cosa prendo?
-        //TODO e segnatura?
+        //come identificativo prendo l'id dell'allegato
+        idDocPrimario.setIdentificativo(documentoPrincipale.getIdFile().toString());
+        idDocPrimario.setSegnatura("Fare riferimento all'allegato segnatura.xml");
+
         //identificativo del documento
         documentoAmministrativoInformatico.setIdDoc(idDocPrimario);
         //modalità di formazione
@@ -110,9 +132,11 @@ public class MetadatiBuilder {
         //Prendo il registro ufficiale e attivo del documento
         List<RegistroDoc> registroDocList = doc.getRegistroDocList();
         Registro registro = null;
+        RegistroDoc registroDocDocumentoPrincipale = null;
         for (RegistroDoc registroDoc : registroDocList) {
             if (registroDoc.getIdRegistro().getAttivo() && registroDoc.getIdRegistro().getUfficiale()) {
                 registro = registroDoc.getIdRegistro();
+                registroDocDocumentoPrincipale = registroDoc;
                 break;
             }
         }
@@ -153,9 +177,49 @@ public class MetadatiBuilder {
                 throw new VersatorePluginException("Tipologia di flusso assente o non prevista per il documento con id " + doc.getId());
         }
         datiDiRegistrazione.setTipologiaDiFlusso(tipologiaDiFlussoType);
-        //TODO tipo registro
+        //tipo registro
+        TipoRegistroType tipoRegistro = new TipoRegistroType();
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
+            ProtocolloType protocolloType = new ProtocolloType();
+            protocolloType.setTipoRegistro("ProtocolloOrdinario\\ProtocolloEmergenza");
+            protocolloType.setDataProtocollazioneDocumento(toXMLGregorianCalendar(registroDocDocumentoPrincipale.getDataRegistrazione()));
+            protocolloType.setNumeroProtocolloDocumento(registroDocDocumentoPrincipale.getNumero().toString());
+            protocolloType.setCodiceRegistro(registro.getCodice().toString());
+            tipoRegistro.setProtocolloOrdinarioProtocolloEmergenza(protocolloType);
+        } else {
+            NoProtocolloType noProtocolloType = new NoProtocolloType();
+            noProtocolloType.setTipoRegistro("Repertorio\\Registro");
+            noProtocolloType.setDataRegistrazioneDocumento(toXMLGregorianCalendar(registroDocDocumentoPrincipale.getDataRegistrazione()));
+            noProtocolloType.setNumeroRegistrazioneDocumento(registroDocDocumentoPrincipale.getNumero().toString());
+            noProtocolloType.setCodiceRegistro(registro.getCodice().toString());
+            tipoRegistro.setRepertorioRegistro(noProtocolloType);
+        }
+        datiDiRegistrazione.setTipoRegistro(tipoRegistro);
         documentoAmministrativoInformatico.setDatiDiRegistrazione(datiDiRegistrazione);
-        //TODO soggetti
+        //soggetti
+        SoggettiType soggetti = new SoggettiType();
+        //amministrazione
+        RuoloType ruoloAmministrazione = new RuoloType();
+        TipoSoggetto1Type tipoAmministrazione = new TipoSoggetto1Type();
+        PAIType paiAmministrazione = new PAIType();
+        CodiceIPAType ipaammAmministrazione = new CodiceIPAType();
+        ipaammAmministrazione.setDenominazione(denominazioneAmministrazione);
+        ipaammAmministrazione.setCodiceIPA(codiceIpa);
+        paiAmministrazione.setIPAAmm(ipaammAmministrazione);
+        CodiceIPAType ipaaooAmministrazione = new CodiceIPAType();
+        ipaaooAmministrazione.setDenominazione(denominazioneAOO);
+        ipaaooAmministrazione.setCodiceIPA(codiceAOO);
+        paiAmministrazione.setIPAAOO(ipaaooAmministrazione);
+        paiAmministrazione.getIndirizziDigitaliDiRiferimento().add(mailAmministrazione);
+        tipoAmministrazione.setTipoRuolo("Amministrazione Che Effettua La Registrazione");
+        tipoAmministrazione.setPAI(paiAmministrazione);
+        ruoloAmministrazione.setAmministrazioneCheEffettuaLaRegistrazione(tipoAmministrazione);
+        soggetti.getRuolo().add(ruoloAmministrazione);
+        //TODO assegnatari per ora non mandati
+        //destinatari
+
+        documentoAmministrativoInformatico.setSoggetti(soggetti);
+
         ChiaveDescrittivaType chiaveDescrittiva = new ChiaveDescrittivaType();
         //oggetto
         chiaveDescrittiva.setOggetto(doc.getOggetto());
@@ -185,7 +249,14 @@ public class MetadatiBuilder {
         documentoAmministrativoInformatico.setClassificazione(classificazione);
         //riservato
         documentoAmministrativoInformatico.setRiservato(doc.getVisibilita().equals(Doc.VisibilitaDoc.RISERVATO));
-        //TODO formato
+        //formato
+        IdentificativoDelFormatoType identificativoDelFormato = new IdentificativoDelFormatoType();
+        identificativoDelFormato.setFormato(documentoPrincipale.getFormato());
+        ProdottoSoftwareType prodottoSoftware = new ProdottoSoftwareType();
+        prodottoSoftware.setNomeProdotto((String) parametriVersamento.get("descrizioneSoftware"));
+        prodottoSoftware.setProduttore((String) parametriVersamento.get("produttore"));
+        identificativoDelFormato.setProdottoSoftware(prodottoSoftware);
+        documentoAmministrativoInformatico.setIdentificativoDelFormato(identificativoDelFormato);
         VerificaType verifica = new VerificaType();
         //firmato digitalmente
         if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)) {
@@ -212,7 +283,6 @@ public class MetadatiBuilder {
         documentoAmministrativoInformatico.setIdIdentificativoDocumentoPrimario(idDocPrimario);
         //nome del documento principale
         documentoAmministrativoInformatico.setNomeDelDocumento(documentoPrincipale.getNomeFile());
-        //TODO versione del documento?
         //tempo di conservazione
         Integer tempoDiConservazione = 9999;
         if (archivio.getAnniTenuta() != 999) {
@@ -238,6 +308,17 @@ public class MetadatiBuilder {
             }
         }
         return (numero + "/" + archivio.getAnno() + " [id_" + archivio.getId() + "]");
+    }
+
+    /**
+    metodo per la conversione delle date nell'xml
+    @param zdt
+    @return
+    @throws Exception
+     */
+    public static XMLGregorianCalendar toXMLGregorianCalendar(ZonedDateTime zdt) throws Exception {
+        GregorianCalendar gregorianCalendar = GregorianCalendar.from(zdt);
+        return DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
     }
 
     @Override
