@@ -123,7 +123,11 @@ public class MetadatiBuilder {
         idDocPrimario.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
         //come identificativo prendo l'id dell'allegato
         idDocPrimario.setIdentificativo(documentoPrincipale.getIdFile().toString());
-        idDocPrimario.setSegnatura("Fare riferimento all'allegato segnatura.xml");
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO) || doc.getTipologia().equals(Doc.TipologiaDoc.DOCUMENT_UTENTE)) {
+            idDocPrimario.setSegnatura("Segnatura non presente");
+        } else {
+            idDocPrimario.setSegnatura("Fare riferimento all'allegato segnatura.xml");
+        }
 
         //identificativo del documento
         documentoAmministrativoInformatico.setIdDoc(idDocPrimario);
