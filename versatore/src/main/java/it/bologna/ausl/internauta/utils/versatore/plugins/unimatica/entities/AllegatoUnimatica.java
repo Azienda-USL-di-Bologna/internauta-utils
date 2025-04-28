@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
+package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities;
 
 import java.nio.charset.StandardCharsets;
 

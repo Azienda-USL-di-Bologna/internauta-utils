@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
@@ -10,13 +11,10 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExce
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
-import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.SdicoResponse;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatiBuilderUnimatica;
-import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.AllegatoUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.AllegatoUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.IndiceJsonBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
-import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -33,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -61,6 +61,10 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(UnimaticaVersatoreService.class);
     private static final String UNIMATICA_VERSATORE_SERVICE = "UnimaticaVersatoreService";
+    private static final String OK = "OK";
+    private static final String CANCELLATO = "CANCELLATO";
+    private static final String ERRORE_PLUG_IN = "ERRORE_PLUG_IN";
+    private static final String ERRORE_PLUG_IN_RITENTABILE = "ERRORE_PLUG_IN_RITENTABILE";
 
     private String unimaticaServizioVersamentoURI;
 
@@ -80,8 +84,79 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
     public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
         //Reperisoco i risultati del versamento
-        //TODO continuo con mappa allegati
-        //       mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, null);
+        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation);
+        //TODO vedere se usare oggetto
+        Map<String, Object> response = (Map<String, Object>) mappaResultAndAllegati.get("response");
+        String responseJson = (String) mappaResultAndAllegati.get("responseJson");
+        String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
+        List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
+
+        //Imposto i dati del DocInformation con i risultati
+        versamentoDocInformation.setMetadatiVersati(xmlVersato);
+        versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
+        if (response != null) {
+            switch (response.getResponseCode()) {
+                case CANCELLATO: {
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ANNULLATO);
+                    versamentoDocInformation.setRapporto(response.getErrorMessage());
+                    log.warn("Il versamento del documento " + versamentoDocInformation.getIdDoc() + " è stato annullato, in quanto: " + response.getErrorMessage());
+                    break;
+                }
+                case OK: {
+                    versamentoDocInformation.setRapporto(responseJson);
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                        versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
+                    }
+                    break;
+                }
+                case ERRORE_PLUG_IN_RITENTABILE:
+                case ERRORE_PLUG_IN: {
+                    Versamento.StatoVersamento statoVersamento = response.getResponseCode().equals(ERRORE_PLUG_IN)
+                        ? Versamento.StatoVersamento.ERRORE
+                        : Versamento.StatoVersamento.ERRORE_RITENTABILE;
+                    versamentoDocInformation.setRapporto(responseJson);
+                    versamentoDocInformation.setCodiceErrore(response.getResponseCode());
+                    versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(statoVersamento);
+                    if (versamentiAllegatiInformationList != null) {
+                        for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                            versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
+                        }
+                    }
+                    log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + response.getErrorMessage());
+                    break;
+                }
+                default: {
+                    versamentoDocInformation.setRapporto(responseJson);
+                    if (StringUtils.hasText(response.getResponseCode())) {
+                        versamentoDocInformation.setCodiceErrore(response.getResponseCode());
+                    } else {
+                        versamentoDocInformation.setCodiceErrore(ERRORE_PLUG_IN);
+                    }
+                    if (StringUtils.hasText(response.getErrorMessage())) {
+                        versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
+                    } else {
+                        versamentoDocInformation.setDescrizioneErrore("Errore non definito");
+                    }
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    if (versamentiAllegatiInformationList != null) {
+                        for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                            versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                        }
+                    }
+                    log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + versamentoDocInformation.getDescrizioneErrore());
+                    break;
+                }
+            }
+            versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInformationList);
+        } else {
+            versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
+            versamentoDocInformation.setCodiceErrore("SERVIZIO");
+        }
 
         return versamentoDocInformation;
     }
@@ -102,6 +177,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         Integer idDoc = versamentoDocInformation.getIdDoc();
         Map<String, Object> risultatoEVersamentiAllegati = new HashMap<>();
         Map<String, Object> parametriVersamento = versamentoDocInformation.getParams();
+        Map<String, Object> response = new HashMap<>();
         try {
             Doc doc = entityManager.find(Doc.class, idDoc);
             try {
@@ -245,25 +321,23 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         log.info("Body: " + resBodyString);
                         risultatoEVersamentiAllegati.put("responseJson", resBodyString);
                         //ObjectMapper objectMapper = new ObjectMapper();
-                        /*try {
-                            //TODO response unimatica
-                            //response = objectMapper.readValue(resBodyString, SdicoResponse.class);
+                        try {
+                            response = objectMapper.readValue(resBodyString, Map.class);
 
                         } catch (JsonProcessingException ex) {
-                            log.error("Errore nel parsing della response arrivata da SDICO", ex);
-                        }*/
+                            log.error("Errore nel parsing della response arrivata da Unimatica", ex);
+                        }
                     } else {
                         log.error("ERROR: message = " + resp.message());
                         String resBodyString = resp.body().string();
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
-                        //TODO response unimatica
-                        /*response.setErrorMessage(resp.toString());
+                        response.setErrorMessage(resp.toString());
                         if (resp.code() == 500) {
                             response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                         } else {
                             response.setResponseCode(ERRORE_PLUG_IN);
-                        }*/
+                        }
                     }
                     resp.close(); // chiudo la response
                 } catch (Throwable ex) {

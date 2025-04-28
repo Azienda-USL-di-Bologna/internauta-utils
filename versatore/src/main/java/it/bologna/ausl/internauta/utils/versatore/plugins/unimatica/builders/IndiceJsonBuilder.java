@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
 
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.AllegatoUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
