@@ -18,6 +18,16 @@ import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.service.ConversionServices;
+import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.QStruttura;
+import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
+import it.bologna.ausl.model.entities.baborg.StoricoRelazione;
+import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.baborg.Utente;
+import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
@@ -30,6 +40,10 @@ import jakarta.transaction.Transactional;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -209,4 +223,96 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
     }
+
+    @RequestMapping(value = "/unifica", method = RequestMethod.POST)
+    public void unifica(
+        @RequestParam(required = true) Integer idStrutturaSorgente,
+        @RequestParam(required = true) Integer idStrutturaDestinazione,
+        @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
+    ) throws RibaltoneHttpException {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QStruttura qStruttura = QStruttura.struttura;
+        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+        QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
+        AfferenzaStruttura idAfferenzaStruttura = queryFactory
+            .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
+        Struttura sorgente = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaSorgente)).fetchOne();
+        Struttura destinazione = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaDestinazione)).fetchOne();
+        StrutturaUnificata unificazione = queryFactory
+            .select(qStrutturaUnificata)
+            .from(qStrutturaUnificata)
+            .where(
+                qStrutturaUnificata.idStrutturaSorgente.id.eq(sorgente.getId())
+                    .and(qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+            ).fetchOne();
+        if (unificazione == null) {
+            throw new RibaltoneHttpException("unificazione gia presente");
+        }
+        switch (tipoUnificazione) {
+            case FUSIONE:
+
+                break;
+
+            case REPLICA:
+                //prendo la sorgente e la replico come figlia della destinazione
+                //creo la struttura
+                Struttura nuovaStruttura = new Struttura();
+                nuovaStruttura.setAttiva(Boolean.TRUE);
+                nuovaStruttura.setDataAttivazione(ZonedDateTime.now());
+                nuovaStruttura.setIdAzienda(destinazione.getIdAzienda());
+                nuovaStruttura.setNome(sorgente.getNome());
+                nuovaStruttura.setIdStrutturaPadre(destinazione);
+                nuovaStruttura.setIdStrutturaReplicata(sorgente);
+                nuovaStruttura.setUfficio(sorgente.getUfficio());
+                //creo lo storico relazione
+                StoricoRelazione sr = new StoricoRelazione();
+                sr.setAttivaDal(ZonedDateTime.now());
+                sr.setIdStrutturaPadre(destinazione);
+                sr.setIdStrutturaFiglia(nuovaStruttura);
+
+                //creo l'unificazione
+                unificazione = new StrutturaUnificata();
+                unificazione.setDataAttivazione(ZonedDateTime.now());
+                unificazione.setDataInserimentoRiga(ZonedDateTime.now());
+                unificazione.setIdStrutturaSorgente(sorgente);
+                unificazione.setIdStrutturaDestinazione(nuovaStruttura);
+                unificazione.setTipoOperazione(tipoUnificazione);
+                //creo gli utenti struttura
+                List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList();
+                List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
+                for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
+                    Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
+                    Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
+                    Utente utente;
+                    //prendo l'utente attivandolo nel caso sia spento
+                    if (userOpt.isPresent()) {
+                        utente = userOpt.get();
+                        utente.setAttivo(Boolean.TRUE);
+                    } else {
+                        utente = new Utente();
+                        utente.setAttivo(Boolean.TRUE);
+                        utente.setIdAzienda(destinazione.getIdAzienda());
+                        utente.setIdPersona(idPersona);
+                        utente.setUsername(idPersona.getUtenteList().get(0).getUsername());
+                    }
+                    //creazione degli utenti struttura veri e propri
+                    UtenteStruttura us = new UtenteStruttura();
+                    us.setAttivo(Boolean.TRUE);
+                    us.setAttivoDal(ZonedDateTime.now());
+                    us.setBitRuoli(utenteStruttura.getBitRuoli());
+                    us.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                    us.setIdUtente(utente);
+                    us.setResponsabile(utenteStruttura.getResponsabile());
+                    nuoviUtentiStruttura.add(us);
+                }
+                //set degli utenti struttura
+                nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
+                //salvataggio di tutto sul db
+                entityManager.persist(unificazione);
+                break;
+            default:
+                throw new AssertionError();
+        }
+    }
+
 }
