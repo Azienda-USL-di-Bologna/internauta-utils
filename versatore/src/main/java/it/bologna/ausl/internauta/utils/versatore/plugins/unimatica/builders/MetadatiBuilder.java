@@ -123,6 +123,8 @@ public class MetadatiBuilder {
         idDocPrimario.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
         //come identificativo prendo l'id dell'allegato
         idDocPrimario.setIdentificativo(documentoPrincipale.getIdFile().toString());
+        //segnatura
+        //rgpico e documenti gedi non hanno segnatura
         if (doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO) || doc.getTipologia().equals(Doc.TipologiaDoc.DOCUMENT_UTENTE)) {
             idDocPrimario.setSegnatura("Segnatura non presente");
         } else {

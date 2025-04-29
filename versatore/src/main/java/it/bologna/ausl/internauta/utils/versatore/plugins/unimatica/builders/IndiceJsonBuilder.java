@@ -43,8 +43,7 @@ public class IndiceJsonBuilder {
         Map<String, Object> jsonMap = new HashMap<>();
         Map<String, Object> profilo = new HashMap<>();
         //tenant
-        //TODO de hardcodare
-        String tenant = "testTenant";
+        String tenant = (String) parametriVersamento.get("tenant");
         profilo.put("tenant", tenant);
         //classe documentale
         //Prendo il registro ufficiale e attivo del documento
