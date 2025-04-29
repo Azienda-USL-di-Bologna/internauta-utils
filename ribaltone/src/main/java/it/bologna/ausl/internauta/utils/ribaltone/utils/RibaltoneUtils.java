@@ -6,11 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
+import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,5 +45,22 @@ public class RibaltoneUtils {
             indexToImport.put(String.valueOf(fn.apply(datiRibaltoneInterface)), i);
         }
         return indexToImport;
+    }
+    
+    public static List<UtenteStruttura> differenza(List<UtenteStruttura> list1, List<UtenteStruttura> list2) {
+        List<UtenteStruttura> result = new ArrayList<>();
+        for (UtenteStruttura u1 : list1) {
+            boolean trovato = false;
+            for (UtenteStruttura u2 : list2) {
+                if (u1.getIdUtente().getIdPersona().getId().equals(u2.getIdUtente().getIdPersona().getId())) {
+                    trovato = true;
+                    break;
+                }
+            }
+            if (!trovato) {
+                result.add(u1);
+            }
+        }
+        return result;
     }
 }
