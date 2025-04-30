@@ -54,6 +54,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.ConversionService;
 
 /**
@@ -63,6 +65,8 @@ import org.springframework.core.convert.ConversionService;
 @RestController
 @RequestMapping(value = "${ribaltone.mapping.url.root}")
 public class RibaltoneRestController implements ControllerHandledExceptions {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RibaltoneRestController.class);
 
     @Autowired
     private RibaltoneTotaleManager ribaltoneTotaleManager;
@@ -122,8 +126,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      */
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
-            @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) ConfigRibaltoneView idConfig
+        @RequestParam(required = true) String codiceAzienda,
+        @RequestParam(required = true) ConfigRibaltoneView idConfig
     ) throws RibaltoneHttpException {
         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, idConfig);
 
@@ -132,10 +136,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
     public void importaCSV(
-            @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
-            @RequestParam(required = true, name = "csv") MultipartFile csv,
-            @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
-            @RequestParam(required = true, name = "separatore") String separatore
+        @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
+        @RequestParam(required = true, name = "csv") MultipartFile csv,
+        @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
+        @RequestParam(required = true, name = "separatore") String separatore
     ) throws RibaltoneHttpException {
         File csvFile = null;
 
@@ -143,19 +147,19 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         switch (tipologia) {
             case APPARTENENTE:
                 jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
-                        QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
+                    QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
             case STRUTTURA:
                 jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
-                        QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
+                    QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
             case ANAGRAFICA:
                 jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
-                        QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
+                    QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
             case TRASFORMAZIONE:
                 jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
-                        QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
+                    QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
             default:
                 throw new AssertionError();
@@ -191,9 +195,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      */
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
-            @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) ConfigRibaltoneView idConfig,
-            @RequestParam(required = true) UserReport.UserReportType typeUserReport
+        @RequestParam(required = true) String codiceAzienda,
+        @RequestParam(required = true) ConfigRibaltoneView idConfig,
+        @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, idConfig, typeUserReport), HttpStatus.OK);
 
@@ -208,49 +212,50 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
-            @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) String idConfig
+        @RequestParam(required = true) String codiceAzienda,
+        @RequestParam(required = true) String idConfig
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
         return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfig), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
     public void ribaltaDeleteCache(
-            @RequestParam(required = true) String codiceAzienda,
-            @RequestParam(required = true) String idConfiguration
+        @RequestParam(required = true) String codiceAzienda,
+        @RequestParam(required = true) String idConfiguration
     ) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
     }
 
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/unifica", method = RequestMethod.POST)
     public void unifica(
-            @RequestParam(required = true) Integer idStrutturaSorgente,
-            @RequestParam(required = true) Integer idStrutturaDestinazione,
-            @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
+        @RequestParam(required = true) Integer idStrutturaSorgente,
+        @RequestParam(required = true) Integer idStrutturaDestinazione,
+        @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
     ) throws RibaltoneHttpException {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QStruttura qStruttura = QStruttura.struttura;
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
         AfferenzaStruttura idAfferenzaStruttura = queryFactory
-                .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
+            .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
         Struttura sorgente = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaSorgente)).fetchOne();
         Struttura destinazione = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaDestinazione)).fetchOne();
-        
-        if (sorgente == null || destinazione ==null){
+
+        if (sorgente == null || destinazione == null) {
             throw new RibaltoneHttpException("struttura sorgente o stuttura destinazione non presenti impossibile unificare");
         }
-        
+
         StrutturaUnificata unificazione = queryFactory
-                .select(qStrutturaUnificata)
-                .from(qStrutturaUnificata)
-                .where(
-                        qStrutturaUnificata.idStrutturaSorgente.id.eq(sorgente.getId())
-                                .and(qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
-                ).fetchOne();
-        
+            .select(qStrutturaUnificata)
+            .from(qStrutturaUnificata)
+            .where(
+                qStrutturaUnificata.idStrutturaSorgente.id.eq(sorgente.getId())
+                    .and(qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+            ).fetchOne();
+
         if (unificazione != null) {
             throw new RibaltoneHttpException("unificazione gia presente");
         }
@@ -263,12 +268,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 unificazione.setIdStrutturaSorgente(sorgente);
                 unificazione.setIdStrutturaDestinazione(destinazione);
                 unificazione.setTipoOperazione(tipoUnificazione);
+                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
 
-                List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList();
-                List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList();
+                List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
+                List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                 List<UtenteStruttura> usDaAggiungereADestinazione = RibaltoneUtils.differenza(sorgenteUtenteStrutturaList, destinazioneUtenteStrutturaList);
                 List<UtenteStruttura> usDaAggiungereASorgente = RibaltoneUtils.differenza(destinazioneUtenteStrutturaList, sorgenteUtenteStrutturaList);
-                
+
                 for (UtenteStruttura daAggiungereASorgente : usDaAggiungereASorgente) {
                     Optional<Utente> userOpt = daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(sorgente.getIdAzienda().getId())).findFirst();
                     if (userOpt.isPresent()) {
@@ -277,7 +283,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     } else {
                         utente = new Utente();
                         utente.setAttivo(Boolean.TRUE);
-                        utente.setIdAzienda(destinazione.getIdAzienda());
+                        utente.setIdAzienda(sorgente.getIdAzienda());
                         utente.setIdPersona(daAggiungereASorgente.getIdUtente().getIdPersona());
                         utente.setUsername(daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
                     }
@@ -287,11 +293,15 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
                     utenteStruttura.setIdStruttura(sorgente);
                     utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    utenteStruttura.setResponsabile(daAggiungereASorgente.getResponsabile());
+                    boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
+                    utenteStruttura.setResponsabile(responsabile);
                     utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
+                    utenteStruttura.setIdUtente(utente);
+                    LOGGER.info(utente.getIdPersona().getDescrizione());
+                    LOGGER.info(utente.getIdAzienda().getId().toString());
                     entityManager.persist(utenteStruttura);
                 }
-                
+
                 for (UtenteStruttura daAggiungereADestinazione : usDaAggiungereADestinazione) {
                     Optional<Utente> userOpt = daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
                     if (userOpt.isPresent()) {
@@ -303,19 +313,24 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         utente.setIdAzienda(destinazione.getIdAzienda());
                         utente.setIdPersona(daAggiungereADestinazione.getIdUtente().getIdPersona());
                         utente.setUsername(daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
+
                     }
+                    boolean responsabile = daAggiungereADestinazione.getResponsabile() == null ? false : daAggiungereADestinazione.getResponsabile();
                     UtenteStruttura utenteStruttura = new UtenteStruttura();
                     utenteStruttura.setAttivo(Boolean.TRUE);
                     utenteStruttura.setAttivoDal(ZonedDateTime.now());
                     utenteStruttura.setAttributi(daAggiungereADestinazione.getAttributi());
-                    utenteStruttura.setIdStruttura(sorgente);
+                    utenteStruttura.setIdStruttura(destinazione);
                     utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    utenteStruttura.setResponsabile(daAggiungereADestinazione.getResponsabile());
+                    utenteStruttura.setResponsabile(responsabile);
                     utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
-                    entityManager.persist(utenteStruttura);
+                    utenteStruttura.setIdUtente(utente);
+                    LOGGER.info(utente.getIdPersona().getDescrizione());
+                    LOGGER.info(utente.getIdAzienda().getId().toString());
+                    LOGGER.info(destinazione.getIdAzienda().getId().toString());
                 }
+                entityManager.persist(unificazione);
                 break;
-
 
             case REPLICA:
                 //prendo la sorgente e la replico come figlia della destinazione
@@ -341,13 +356,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 unificazione.setIdStrutturaSorgente(sorgente);
                 unificazione.setIdStrutturaDestinazione(nuovaStruttura);
                 unificazione.setTipoOperazione(tipoUnificazione);
+                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
                 //creo gli utenti struttura
                 List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList();
                 List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
                 for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
                     Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
                     Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
-                    
+
                     //prendo l'utente attivandolo nel caso sia spento
                     if (userOpt.isPresent()) {
                         utente = userOpt.get();
@@ -377,6 +393,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             default:
                 throw new AssertionError();
         }
+
     }
 
 }
