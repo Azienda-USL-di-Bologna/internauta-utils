@@ -41,6 +41,26 @@ public class RibaltoneDataConfiguration {
     @Column(name = "cacheConfig", columnDefinition = "jsonb")
     HashMap<String, Object> cacheConfig;
 
+    /**
+     * Chiavi delle spechiviche che contengono dati sensibili. TO_DO: scegliere quali siano effettivamente
+     */
+    public enum SpecificheSensibiliKeys {
+        classz,
+        connessione,
+        codiciEntiValidi,
+        personeDaSpegnere,
+        queryRecuperoDati,
+        personeNonSpegnibili,
+        progressivo_ultima_trasformazione
+    }
+
+    /**
+     * Chiavi delle spechiviche che non contengono dati sensibili. TO_DO: scegliere quali siano effettivamente
+     */
+    public enum SpecificheNonSensibiliKeys {
+        codiciEntiValidi,
+    }
+
     public RibaltoneDataConfiguration() {
     }
 
