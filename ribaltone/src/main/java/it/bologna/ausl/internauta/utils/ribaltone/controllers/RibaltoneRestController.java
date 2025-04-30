@@ -8,10 +8,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICA;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.APPARTENENTE;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.STRUTTURA;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONE;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
@@ -55,6 +51,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.core.convert.ConversionService;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.APPARTENENTI;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.STRUTTURE;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONI;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICA;
 
 /**
  *
@@ -131,21 +131,26 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
-    public void importaCSV(
+    public boolean importaCSV(
             @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
             @RequestParam(required = true, name = "csv") MultipartFile csv,
             @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
             @RequestParam(required = true, name = "separatore") String separatore
     ) throws RibaltoneHttpException {
+       
+        TipologiaCsv tipologiaCsv = null;
+        if (tipologia != null) {
+             tipologiaCsv = TipologiaCsv.valueOf(tipologia);
+        }
         File csvFile = null;
 
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        switch (tipologia) {
-            case APPARTENENTE:
+        switch (tipologiaCsv) {
+            case APPARTENENTI:
                 jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
                         QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case STRUTTURA:
+            case STRUTTURE:
                 jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
                         QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
@@ -153,7 +158,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
                         QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case TRASFORMAZIONE:
+            case TRASFORMAZIONI:
                 jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
                         QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
@@ -170,7 +175,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 }
             }
             CsvImportManager csvImportManager = new CsvImportManager(objectMapper, entityManager, conversionService);
-            csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
+            csvImportManager.csvImportAndValidate(separatore, csvFile, tipologiaCsv, codiceAzienda);
 
         } catch (Exception ex) {
             throw new RibaltoneHttpException("errore nell'importazione", ex);
