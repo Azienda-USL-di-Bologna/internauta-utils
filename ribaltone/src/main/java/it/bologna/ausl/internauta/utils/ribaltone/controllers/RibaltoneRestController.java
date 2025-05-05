@@ -53,7 +53,6 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.ConversionService;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICA;
 
 /**
  *
@@ -325,6 +324,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     LOGGER.info(utente.getIdPersona().getDescrizione());
                     LOGGER.info(utente.getIdAzienda().getId().toString());
                     LOGGER.info(destinazione.getIdAzienda().getId().toString());
+                    entityManager.persist(utenteStruttura);
                 }
                 entityManager.persist(unificazione);
                 break;
@@ -340,6 +340,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 nuovaStruttura.setIdStrutturaPadre(destinazione);
                 nuovaStruttura.setIdStrutturaReplicata(sorgente);
                 nuovaStruttura.setUfficio(sorgente.getUfficio());
+                nuovaStruttura.setSpettrale(sorgente.getSpettrale());
+                nuovaStruttura.setUsaSegreteriaBucataPadre(sorgente.getUsaSegreteriaBucataPadre());
                 //creo lo storico relazione
                 StoricoRelazione sr = new StoricoRelazione();
                 sr.setAttivaDal(ZonedDateTime.now());
@@ -355,7 +357,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 unificazione.setTipoOperazione(tipoUnificazione);
                 unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
                 //creo gli utenti struttura
-                List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList();
+                List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                 List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
                 for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
                     Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
@@ -375,6 +377,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     //creazione degli utenti struttura veri e propri
                     UtenteStruttura us = new UtenteStruttura();
                     us.setAttivo(Boolean.TRUE);
+                    us.setIdStruttura(nuovaStruttura);
                     us.setAttivoDal(ZonedDateTime.now());
                     us.setBitRuoli(utenteStruttura.getBitRuoli());
                     us.setIdAfferenzaStruttura(idAfferenzaStruttura);
@@ -382,10 +385,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     us.setResponsabile(utenteStruttura.getResponsabile());
                     nuoviUtentiStruttura.add(us);
                 }
-                //set degli utenti struttura
-                nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
                 //salvataggio di tutto sul db
+                //prima l'unificazione altrimenti il trigger di spargi_afferenza_da_sottoresponsabile_unificato mi da errore
                 entityManager.persist(unificazione);
+
+                //set degli utenti struttura e salvataggio per evitare confitto con spargi_afferenza_da_sottoresponsabile_unificato
+                entityManager.persist(sr);
+                nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
+                entityManager.persist(nuovaStruttura);
                 break;
             default:
                 throw new AssertionError();
