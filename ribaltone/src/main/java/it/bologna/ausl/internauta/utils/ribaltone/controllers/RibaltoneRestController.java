@@ -50,10 +50,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.ConversionService;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.APPARTENENTI;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.STRUTTURE;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONI;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICA;
 
 /**
@@ -63,6 +62,8 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneI
 @RestController
 @RequestMapping(value = "${ribaltone.mapping.url.root}")
 public class RibaltoneRestController implements ControllerHandledExceptions {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RibaltoneRestController.class);
 
     @Autowired
     private RibaltoneTotaleManager ribaltoneTotaleManager;
@@ -137,7 +138,6 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
         @RequestParam(required = true, name = "separatore") String separatore
     ) throws RibaltoneHttpException {
-
         File csvFile = null;
 
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
@@ -146,7 +146,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
                     QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case STRUTTURE:
+            case STRUTTURA:
                 jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
                     QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
@@ -154,7 +154,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
                     QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case TRASFORMAZIONI:
+            case TRASFORMAZIONE:
                 jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
                     QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
@@ -225,6 +225,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         ribaltoneCache.cleanCache();
     }
 
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/unifica", method = RequestMethod.POST)
     public void unifica(
         @RequestParam(required = true) Integer idStrutturaSorgente,
@@ -264,9 +265,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 unificazione.setIdStrutturaSorgente(sorgente);
                 unificazione.setIdStrutturaDestinazione(destinazione);
                 unificazione.setTipoOperazione(tipoUnificazione);
+                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
 
-                List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList();
-                List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList();
+                List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
+                List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                 List<UtenteStruttura> usDaAggiungereADestinazione = RibaltoneUtils.differenza(sorgenteUtenteStrutturaList, destinazioneUtenteStrutturaList);
                 List<UtenteStruttura> usDaAggiungereASorgente = RibaltoneUtils.differenza(destinazioneUtenteStrutturaList, sorgenteUtenteStrutturaList);
 
@@ -278,7 +280,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     } else {
                         utente = new Utente();
                         utente.setAttivo(Boolean.TRUE);
-                        utente.setIdAzienda(destinazione.getIdAzienda());
+                        utente.setIdAzienda(sorgente.getIdAzienda());
                         utente.setIdPersona(daAggiungereASorgente.getIdUtente().getIdPersona());
                         utente.setUsername(daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
                     }
@@ -288,8 +290,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
                     utenteStruttura.setIdStruttura(sorgente);
                     utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    utenteStruttura.setResponsabile(daAggiungereASorgente.getResponsabile());
+                    boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
+                    utenteStruttura.setResponsabile(responsabile);
                     utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
+                    utenteStruttura.setIdUtente(utente);
+                    LOGGER.info(utente.getIdPersona().getDescrizione());
+                    LOGGER.info(utente.getIdAzienda().getId().toString());
                     entityManager.persist(utenteStruttura);
                 }
 
@@ -304,17 +310,23 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         utente.setIdAzienda(destinazione.getIdAzienda());
                         utente.setIdPersona(daAggiungereADestinazione.getIdUtente().getIdPersona());
                         utente.setUsername(daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
+
                     }
+                    boolean responsabile = daAggiungereADestinazione.getResponsabile() == null ? false : daAggiungereADestinazione.getResponsabile();
                     UtenteStruttura utenteStruttura = new UtenteStruttura();
                     utenteStruttura.setAttivo(Boolean.TRUE);
                     utenteStruttura.setAttivoDal(ZonedDateTime.now());
                     utenteStruttura.setAttributi(daAggiungereADestinazione.getAttributi());
-                    utenteStruttura.setIdStruttura(sorgente);
+                    utenteStruttura.setIdStruttura(destinazione);
                     utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    utenteStruttura.setResponsabile(daAggiungereADestinazione.getResponsabile());
+                    utenteStruttura.setResponsabile(responsabile);
                     utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
-                    entityManager.persist(utenteStruttura);
+                    utenteStruttura.setIdUtente(utente);
+                    LOGGER.info(utente.getIdPersona().getDescrizione());
+                    LOGGER.info(utente.getIdAzienda().getId().toString());
+                    LOGGER.info(destinazione.getIdAzienda().getId().toString());
                 }
+                entityManager.persist(unificazione);
                 break;
 
             case REPLICA:
@@ -341,6 +353,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 unificazione.setIdStrutturaSorgente(sorgente);
                 unificazione.setIdStrutturaDestinazione(nuovaStruttura);
                 unificazione.setTipoOperazione(tipoUnificazione);
+                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
                 //creo gli utenti struttura
                 List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList();
                 List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
@@ -377,6 +390,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             default:
                 throw new AssertionError();
         }
+
     }
 
 }
