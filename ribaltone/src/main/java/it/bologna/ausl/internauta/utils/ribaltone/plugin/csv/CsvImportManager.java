@@ -118,7 +118,7 @@ public class CsvImportManager {
                         csvDaImportareStruttura.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareStruttura);
                     }
-                    case ANAGRAFICA -> {
+                    case ANAGRAFICHE -> {
                         CSVDaImportareAnagrafica csvDaImportareAnagrafica = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateAnagrafica(csvRowMap);
                         csvDaImportareAnagrafica.setErrore(errore);

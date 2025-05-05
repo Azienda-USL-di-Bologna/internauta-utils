@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package it.bologna.ausl.model.entities.ribaltonedati.projections;
 
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
@@ -15,7 +11,7 @@ import org.springframework.data.rest.core.config.Projection;
  *
  * @author tommaso
  */
-@Projection(name = "CustomRibaltoneDataConfigurationWithoutDatiSensibili", types = {RibaltoneDataConfiguration.class })
+@Projection(name = "CustomRibaltoneDataConfigurationWithoutDatiSensibili", types = {RibaltoneDataConfiguration.class})
 public interface CustomRibaltoneDataConfigurationWithoutDatiSensibili extends RibaltoneDataConfigurationWithPlainFields {
 
     @Override

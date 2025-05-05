@@ -42,7 +42,7 @@ public interface ColonneImportazioneCSVRibaltone extends KeyValueEnum<List<Strin
                 return ColonneAppartenente.class;
             case STRUTTURE:
                 return ColonneStruttura.class;
-            case ANAGRAFICA:
+            case ANAGRAFICHE:
                 return ColonneAnagrafica.class;
             case TRASFORMAZIONI:
                 return ColonneTrasformazione.class;

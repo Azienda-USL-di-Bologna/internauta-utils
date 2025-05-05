@@ -142,19 +142,19 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
         switch (tipologia) {
-            case APPARTENENTE:
+            case APPARTENENTI:
                 jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
                     QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case STRUTTURA:
+            case STRUTTURE:
                 jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
                     QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case ANAGRAFICA:
+            case ANAGRAFICHE:
                 jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
                     QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
                 break;
-            case TRASFORMAZIONE:
+            case TRASFORMAZIONI:
                 jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
                     QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
                 break;

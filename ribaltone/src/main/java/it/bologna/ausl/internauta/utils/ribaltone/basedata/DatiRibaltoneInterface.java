@@ -13,7 +13,7 @@ import it.bologna.ausl.model.entities.tip.ImportazioneOggetto;
 public interface DatiRibaltoneInterface {
 
     public static enum TipologiaCsv {
-        ANAGRAFICA,
+        ANAGRAFICHE,
         APPARTENENTI,
         STRUTTURE,
         TRASFORMAZIONI
@@ -22,7 +22,7 @@ public interface DatiRibaltoneInterface {
     public static <T extends DatiRibaltoneInterface> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {
         T res = null;
         switch (tipologia) {
-            case ANAGRAFICA:
+            case ANAGRAFICHE:
                 res = (T) new CSVDaImportareAnagrafica();
                 break;
             case APPARTENENTI:

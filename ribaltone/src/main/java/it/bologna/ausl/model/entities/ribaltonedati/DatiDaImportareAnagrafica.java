@@ -208,7 +208,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
 
     @Override
     public TipologiaCsv getTipo() {
-        return TipologiaCsv.ANAGRAFICA;
+        return TipologiaCsv.ANAGRAFICHE;
     }
 
     @Override
