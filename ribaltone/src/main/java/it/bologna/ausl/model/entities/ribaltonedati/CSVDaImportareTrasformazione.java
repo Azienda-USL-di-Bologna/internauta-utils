@@ -216,7 +216,7 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
 
     @Override
     public TipologiaCsv getTipo() {
-        return TipologiaCsv.TRASFORMAZIONE;
+        return TipologiaCsv.TRASFORMAZIONI;
     }
 
     @Override

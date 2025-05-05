@@ -102,7 +102,7 @@ public class CsvImportManager {
             for (CSVRecord csvRecord : csvParser) {
                 Map<String, String> csvRowMap = buildCsvRowMap(csvParser, csvRecord);
                 switch (tipologia) {
-                    case APPARTENENTE -> {
+                    case APPARTENENTI -> {
                         CSVDaImportareAppartenente csvDaImportareAppartenente = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateAppartenente(csvRowMap);
                         csvDaImportareAppartenente.setErrore(errore);
@@ -110,7 +110,7 @@ public class CsvImportManager {
                         csvDaImportareAppartenente.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareAppartenente);
                     }
-                    case STRUTTURA -> {
+                    case STRUTTURE -> {
                         CSVDaImportareStruttura csvDaImportareStruttura = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateStruttura(csvRowMap);
                         csvDaImportareStruttura.setErrore(errore);
@@ -126,7 +126,7 @@ public class CsvImportManager {
                         csvDaImportareAnagrafica.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareAnagrafica);
                     }
-                    case TRASFORMAZIONE -> {
+                    case TRASFORMAZIONI -> {
                         CSVDaImportareTrasformazione csvDaImportareTrasformazione = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateTrasformazione(csvRowMap);
                         csvDaImportareTrasformazione.setErrore(errore);

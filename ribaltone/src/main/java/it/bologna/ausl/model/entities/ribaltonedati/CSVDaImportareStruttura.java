@@ -169,7 +169,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
     @Override
     public TipologiaCsv getTipo() {
-        return TipologiaCsv.STRUTTURA;
+        return TipologiaCsv.STRUTTURE;
     }
 
     @Override

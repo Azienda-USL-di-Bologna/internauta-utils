@@ -220,7 +220,7 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
 
     @Override
     public TipologiaCsv getTipo() {
-        return TipologiaCsv.APPARTENENTE;
+        return TipologiaCsv.APPARTENENTI;
     }
 
     @Override

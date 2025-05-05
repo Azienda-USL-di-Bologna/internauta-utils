@@ -14,9 +14,9 @@ public interface DatiRibaltoneInterface {
 
     public static enum TipologiaCsv {
         ANAGRAFICA,
-        APPARTENENTE,
-        STRUTTURA,
-        TRASFORMAZIONE
+        APPARTENENTI,
+        STRUTTURE,
+        TRASFORMAZIONI
     }
 
     public static <T extends DatiRibaltoneInterface> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {
@@ -25,13 +25,13 @@ public interface DatiRibaltoneInterface {
             case ANAGRAFICA:
                 res = (T) new CSVDaImportareAnagrafica();
                 break;
-            case APPARTENENTE:
+            case APPARTENENTI:
                 res = (T) new CSVDaImportareAppartenente();
                 break;
-            case STRUTTURA:
+            case STRUTTURE:
                 res = (T) new CSVDaImportareStruttura();
                 break;
-            case TRASFORMAZIONE:
+            case TRASFORMAZIONI:
                 res = (T) new CSVDaImportareTrasformazione();
                 break;
         }

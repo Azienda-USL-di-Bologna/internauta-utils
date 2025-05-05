@@ -195,7 +195,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Override
     public TipologiaCsv getTipo() {
-        return TipologiaCsv.STRUTTURA;
+        return TipologiaCsv.STRUTTURE;
     }
 
     @Override

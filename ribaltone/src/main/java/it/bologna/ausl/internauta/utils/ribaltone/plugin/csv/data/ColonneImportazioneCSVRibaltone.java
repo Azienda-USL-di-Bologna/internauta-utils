@@ -38,13 +38,13 @@ public interface ColonneImportazioneCSVRibaltone extends KeyValueEnum<List<Strin
      */
     public static Class<? extends ColonneImportazioneCSVRibaltone> getColumnsEnum(TipologiaCsv tipologia) {
         switch (tipologia) {
-            case APPARTENENTE:
+            case APPARTENENTI:
                 return ColonneAppartenente.class;
-            case STRUTTURA:
+            case STRUTTURE:
                 return ColonneStruttura.class;
             case ANAGRAFICA:
                 return ColonneAnagrafica.class;
-            case TRASFORMAZIONE:
+            case TRASFORMAZIONI:
                 return ColonneTrasformazione.class;
             default:
                 throw new AssertionError(String.format("tipologia %s non valida", tipologia));
