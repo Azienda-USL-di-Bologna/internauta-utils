@@ -12,7 +12,6 @@ import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Struttura;
-import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import jakarta.persistence.EntityManager;
@@ -20,8 +19,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -54,14 +51,14 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             case INSERT: {
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 OperationsUtils.inserisciStruttura(
-                        em,
-                        queryFactory,
-                        entitaDaInserire.getIdAzienda(),
-                        entitaDaInserire.getIdCasella(),
-                        entitaDaInserire.getDescrizione(),
-                        entitaDaInserire.getIdPadre(),
-                        qStruttura,
-                        struttureDaAggiornareConPadreNonAncoraInserito
+                    em,
+                    queryFactory,
+                    entitaDaInserire.getIdAzienda(),
+                    entitaDaInserire.getIdCasella(),
+                    entitaDaInserire.getDescrizione(),
+                    entitaDaInserire.getIdPadre(),
+                    qStruttura,
+                    struttureDaAggiornareConPadreNonAncoraInserito
                 );
             }
 
@@ -69,8 +66,8 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             break;
 
             case CHIUSURA: {
-                //non serve spegnere i permessi veicolati qui perche tanto gli utenti 
-                //che facevano parte della struttura chiusa o non potranno entrare o 
+                //non serve spegnere i permessi veicolati qui perche tanto gli utenti
+                //che facevano parte della struttura chiusa o non potranno entrare o
                 //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
                 Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
@@ -89,25 +86,25 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
                 Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                        entitaDaCambio.getIdCasella(),
-                        entitaDaCambio.getIdAzienda(),
-                        queryFactory,
-                        qStruttura,
-                        qStoricoRelazione,
-                        qStrutturaUnificata,
-                        false);
+                    entitaDaCambio.getIdCasella(),
+                    entitaDaCambio.getIdAzienda(),
+                    queryFactory,
+                    qStruttura,
+                    qStoricoRelazione,
+                    qStrutturaUnificata,
+                    false);
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
                 Struttura strutturaAppenaInserita = OperationsUtils.inserisciStruttura(
-                        em,
-                        queryFactory,
-                        entitaDaCambio.getIdAzienda(),
-                        entitaDaCambio.getIdCasella(),
-                        entitaDaCambio.getDescrizione(),
-                        entitaDaCambio.getIdPadre(),
-                        qStruttura,
-                        struttureDaAggiornareConPadreNonAncoraInserito
+                    em,
+                    queryFactory,
+                    entitaDaCambio.getIdAzienda(),
+                    entitaDaCambio.getIdCasella(),
+                    entitaDaCambio.getDescrizione(),
+                    entitaDaCambio.getIdPadre(),
+                    qStruttura,
+                    struttureDaAggiornareConPadreNonAncoraInserito
                 );
                 //aggiustare unificazione
 //                OperationsUtils.aggiustaUnificazioni(
