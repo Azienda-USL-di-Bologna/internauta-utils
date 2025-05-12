@@ -81,7 +81,9 @@ public class RibaltoneManagerUtils {
 
     private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         SourceDataManager sourceDataManager;
-        Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select * from baborg.aziende where codice = :codice", Azienda.class).setParameter("codice", codiceAzienda.substring(0, 3)).getSingleResult();
+        Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
+                .setParameter("codice", codiceAzienda.substring(0, 3))
+                .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
