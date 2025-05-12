@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
 import it.bologna.ausl.blackbox.PermissionManager;
@@ -17,42 +13,39 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class RepositoryFactory {
+
     @Autowired
     private DatiImportatiTrasformazioneRepository datiImportatiTrasformazioneRepository;
-    
+
     @Autowired
     private DatiImportatiStrutturaRepository datiImportatiStrutturaRepository;
-    
+
     @Autowired
     private DatiImportatiAppartenenteRepository datiImportatiAppartenenteRepository;
-    
+
     @Autowired
     private DatiImportatiAnagraficaRepository datiImportatiAnagraficaRepository;
-    
+
     @Autowired
     private DatiDaImportareTrasformazioneRepository datiDaImportareTrasformazioneRepository;
-    
+
     @Autowired
     private DatiDaImportareStrutturaRepository datiDaImportareStrutturaRepository;
-    
+
     @Autowired
     private DatiDaImportareAppartenenteRepository datiDaImportareAppartenenteRepository;
-    
+
     @Autowired
     private DatiDaImportareAnagraficaRepository datiDaImportareAnagraficaRepository;
-    
+
     @PersistenceContext
     private EntityManager entityManager;
     //TODO : DA SCOMMENTARE
 //    @Autowired
     private PermissionManager permissionManager;
-    
-    
 
     public RepositoryFactory() {
     }
-    
-    
 
     public DatiImportatiTrasformazioneRepository getDatiImportatiTrasformazioneRepository() {
         return datiImportatiTrasformazioneRepository;
@@ -101,7 +94,5 @@ public class RepositoryFactory {
     public void setPermissionManager(PermissionManager permissionManager) {
         this.permissionManager = permissionManager;
     }
-    
-    
-    
+
 }

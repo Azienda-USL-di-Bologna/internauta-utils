@@ -3,17 +3,25 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CHIUSURA;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.INSERT;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
+import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
+import it.bologna.ausl.model.entities.rubrica.Contatto;
+import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -106,19 +114,68 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     qStruttura,
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
-                //aggiustare unificazione
-//                OperationsUtils.aggiustaUnificazioni(
-//                        entitaDaCambio.getIdCasella(),
-//                        strutturaAppenaInserita,
-//                        em,
-//                        queryFactory,
-//                        qStrutturaUnificata);
-                //spostaStrutture
-                OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAppenaInserita.getId(), operazione, strutturaAppenaInserita.getDataAttivazione().toString());
 
-                //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
+                //spostaStrutture ma va fatto dopo
+                //OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAppenaInserita.getId(), operazione, strutturaAppenaInserita.getDataAttivazione().toString());
                 break;
             default:
+                throw new AssertionError();
+        }
+    }
+
+    /**
+     *
+     * @param repositoryFactory
+     * @throws RibaltoneHttpException
+     */
+    //nel caso di una rinomina e cambio padre della struttura l'idCasella non cambia quindi
+    // le operazione non sono insert o chiusura le faccio nelle trasformazioni
+    //in caso di rinomina andrò a cercare il contatto lo andrò a updatare con nuovo nome e nuovo puntamento
+    //in caso di un cambio padre della struttura il nome resta il medesimo quindi solo nuovo puntamento
+    //in caso di confluenza devo togliere dai gruppi il vecchio contatto e mettere quello della struttura conlfuita
+    public void menageContattoStruttura(RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+        QStruttura qStruttura = QStruttura.struttura;
+        EntityManager em = getEntityManager();
+        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+        QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
+        switch (getAzione()) {
+            //va inserito il contatto
+            case INSERT -> {
+                DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
+                Struttura s = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()).and(qStruttura.idAzienda.id.eq(entitaDaInserire.getIdAzienda())).and(qStruttura.attiva)).fetchOne();
+                if (s != null && s.getIdContatto() == null) {
+                    QPersona qPersona = QPersona.persona;
+                    Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
+                    Integer[] idAziende = new Integer[0];
+                    idAziende[0] = s.getIdAzienda().getId();
+                    Contatto buildContattoAndDettaglio = s.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
+                    s.setIdContatto(buildContattoAndDettaglio);
+                    em.persist(s);
+                }
+            }
+            //va eliminato il contatto, ma non so ancora se sia dovuto ad una confluenza o meno quindi lo setto solo come da eliminare
+            // puliro questa cosa durante la managecontatto delle trasformazioni
+            case CHIUSURA -> {
+                DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
+                Struttura s = queryFactory.select(qStruttura).from(qStruttura)
+                    .where(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
+                        .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                        .and(qStruttura.attiva)).fetchOne();
+                if (s != null) {
+                    Contatto idContatto = s.getIdContatto();
+                    idContatto.setEliminato(true);
+                    s.setIdContatto(idContatto);
+                    em.persist(s);
+                }
+            }
+            // va modificato il nome e descrizione del contatto della struttura e dei dettagli degli us
+            case RINOMINA -> {
+
+            }
+            //non devo fare nulla
+            case CAMBIO_PADRE -> {
+            }
+            default ->
                 throw new AssertionError();
         }
     }

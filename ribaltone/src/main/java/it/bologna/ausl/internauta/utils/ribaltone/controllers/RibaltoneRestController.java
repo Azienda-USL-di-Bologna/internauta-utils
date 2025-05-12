@@ -124,9 +124,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) ConfigRibaltoneView idConfig
+        @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException {
-        ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, idConfig);
+        ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
 
     }
 

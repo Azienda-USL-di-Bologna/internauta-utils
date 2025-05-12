@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
@@ -20,12 +21,15 @@ import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.rubrica.QContatto;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +49,8 @@ public class Operations implements Serializable {
     private List<OperationTrasformazione> listOfOperationTrasformazioni;
     private Object workToDo;
 
-    public Operations(List<OperationStruttura> listOfOperationStruttura,
+    public Operations(
+        List<OperationStruttura> listOfOperationStruttura,
         List<OperationAppartenente> listOfOperationAppartenenti,
         List<OperationAnagrafica> listOfOperationAnagrafiche,
         List<OperationTrasformazione> listOfOperationTrasformazioni) {
@@ -63,20 +68,23 @@ public class Operations implements Serializable {
     public void execute(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
+            operation.menageContattoStruttura(repositoryFactory);
         }
         OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
-        for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
+        for (OperationAppartenente operation : listOfOperationAppartenenti) {
             operation.esegui(workToDo, repositoryFactory);
+            operation.menageContattoAppartenente(repositoryFactory);
         }
         workToDo = null;
-        for (OperationAppartenente operation : listOfOperationAppartenenti) {
+        for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
             operation.esegui(workToDo, repositoryFactory);
         }
         risistemaAfferenze();
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
             operation.esegui(workToDo, repositoryFactory);
+            operation.menageContatto(repositoryFactory);
         }
         finalOperations(repositoryFactory, codiceAzienda);
     }
@@ -114,7 +122,7 @@ public class Operations implements Serializable {
             } else {
                 //aggiorno il dato e lo salvo
                 contattoDellaStruttuta.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
-                DettaglioContatto dettaglioPrincipale = contattoDellaStruttuta.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale() && !dc.getEliminato()).toList().getFirst();
+                DettaglioContatto dettaglioPrincipale = contattoDellaStruttuta.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale() && !dc.getEliminato()).toList().get(0);
                 if (dettaglioPrincipale != null) {
                     dettaglioPrincipale.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
                     dettaglioPrincipale.setIdContatto(contattoDellaStruttuta);

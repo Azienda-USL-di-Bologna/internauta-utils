@@ -18,7 +18,8 @@ public abstract class Operation<T extends DatiRibaltoneInterface> {
         CHIUSURA,
         CAMBIO_PADRE,
         RINOMINA,
-        UNIFICAZIONE;
+        UNIFICAZIONE,
+        CONFLUENZA;
     }
 
     private Azione azione;

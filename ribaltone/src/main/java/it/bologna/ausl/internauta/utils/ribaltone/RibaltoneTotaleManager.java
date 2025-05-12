@@ -87,10 +87,10 @@ public class RibaltoneTotaleManager {
     public Object ribaltaWithUserReportAndCacheOperation(String codiceAzienda, ConfigRibaltoneView configRibaltoneView, UserReport.UserReportType typeUserReport) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteDefault());
         SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validateSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
 
         OperationsManager operationsManager = new OperationsManager(
-            validateSourceData,
+            validatedSourceData,
             codiceAzienda,
             configRibaltoneView.getTolleranzaAppartenenti(),
             configRibaltoneView.getTolleranzaStrutture(),

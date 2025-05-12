@@ -31,33 +31,32 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * @author Top
  */
 public class RibaltoneCacheRedis extends RibaltoneCache {
-    
+
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final Integer timeToExpire;
     private final String key;
     private final EntityManager entityManager;
-    
+
     public RibaltoneCacheRedis(ObjectMapper objectMapper, Map<String, Object> cacheConfig, EntityManager entityManager) {
         this.objectMapper = objectMapper;
         redisTemplate = this.buildRedisTemplate(cacheConfig);
         this.timeToExpire = Integer.valueOf(cacheConfig.get("cacheTime").toString());
-        this.key = "RIBALTONE_" + cacheConfig.get("codiceAzienda").toString(); 
+        this.key = "RIBALTONE_" + cacheConfig.get("codiceAzienda").toString();
         this.entityManager = entityManager;
     }
-    
+
     @Override
     public void dump(Operations operations) throws RibaltoneHttpException {
-        
+
         try {
             String jsonOperation = objectMapper.writeValueAsString(operations);
             this.saveData(key, jsonOperation);
         } catch (JsonProcessingException ex) {
-             throw new RibaltoneHttpException("Errore nella serializzazione JSON", ex);
+            throw new RibaltoneHttpException("Errore nella serializzazione JSON", ex);
         }
     }
 
-    
     @Override
     public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException {
         List<OperationStruttura> listOfOperationStrutture = new ArrayList();
@@ -68,37 +67,33 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         Map<String, List<Map<String, Object>>> data = this.getData(key);
 
         for (String key : data.keySet()) {
-//            List<Map<String, Object>> op = objectMapper.readValue(data.get(key).toString(), 
+//            List<Map<String, Object>> op = objectMapper.readValue(data.get(key).toString(),
 //                    new TypeReference<List<Map<String,Object>>>(){}
 //            );
             for (Map<String, Object> operationDaRedis : data.get(key)) {
-//                
+//
                 Map<String, Object> entitaCoinvoltaMap = (Map<String, Object>) operationDaRedis.get("entitaCoinvolta");
                 String entitaName = (String) entitaCoinvoltaMap.get("classe");
                 Class<DatiRibaltoneInterface> c = (Class<DatiRibaltoneInterface>) Class.forName(entitaName);
                 DatiRibaltoneInterface entitaCoinvolta = this.objectMapper.convertValue(entitaCoinvoltaMap, c);
 
                 switch (operationDaRedis.get("tipo").toString()) {
-                    case "Anagrafica":
+                    case "Anagrafica" ->
                         listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                        break;
-                    case "Appartenente":
-                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                        break;
-                    case "Struttura":
+                    case "Appartenente" -> {
+                        List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
+                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit));
+                    }
+                    case "Struttura" ->
                         listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                        break;
-                    case "Trasformazione":
+                    case "Trasformazione" ->
                         listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                        break;
                 }
-            }      
+            }
         }
 //
         return new Operations(listOfOperationStrutture, listOfOperationAppartenenti, listOfOperationAnagrafiche, listOfOperationTrasformazioni);
     }
-
-    
 
     private RedisTemplate<String, Object> buildRedisTemplate(Map<String, Object> cacheConfig) {
         if (cacheConfig == null) {
@@ -110,7 +105,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             RedisStandaloneConfiguration redisStandaloneConfig = new RedisStandaloneConfiguration(cacheConfig.get("host").toString(), Integer.parseInt(cacheConfig.get("port").toString()));
             redisStandaloneConfig.setDatabase((int) cacheConfig.get("db"));
             Object passwordOBJ = cacheConfig.get("password");
-            if (passwordOBJ != null && !passwordOBJ.toString().equals("") ) {
+            if (passwordOBJ != null && !passwordOBJ.toString().equals("")) {
                 redisStandaloneConfig.setPassword(RedisPassword.of(passwordOBJ.toString()));
             }
 
@@ -124,23 +119,24 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             redisTemp.setKeySerializer(new StringRedisSerializer());
             redisTemp.setValueSerializer(new GenericJackson2JsonRedisSerializer());
             redisTemp.afterPropertiesSet();
-            return redisTemp; 
+            return redisTemp;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
-    
+
     public void saveData(String key, String value) {
         redisTemplate.opsForValue().set(key, value, this.timeToExpire, TimeUnit.MINUTES);
     }
 
-    public  Map<String, List<Map<String, Object>>> getData(String key) throws RibaltoneHttpException, JsonProcessingException {
-       
-        Map<String, List<Map<String, Object>>> op = objectMapper.readValue((String) redisTemplate.opsForValue().get(key), 
-                new TypeReference<Map<String, List<Map<String, Object>>>>(){}
+    public Map<String, List<Map<String, Object>>> getData(String key) throws RibaltoneHttpException, JsonProcessingException {
+
+        Map<String, List<Map<String, Object>>> op = objectMapper.readValue((String) redisTemplate.opsForValue().get(key),
+            new TypeReference<Map<String, List<Map<String, Object>>>>() {
+        }
         );
-        if (op == null || op.isEmpty()){
+        if (op == null || op.isEmpty()) {
             throw new RibaltoneHttpException("errore nel reperire le operations dalla cache");
         }
         return op;
@@ -150,5 +146,5 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     public void cleanCache() {
         Set<String> keys = redisTemplate.keys(key + "*");
         redisTemplate.delete(keys);
-    }    
+    }
 }

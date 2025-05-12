@@ -82,8 +82,8 @@ public class RibaltoneManagerUtils {
     private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         SourceDataManager sourceDataManager;
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-                .setParameter("codice", codiceAzienda.substring(0, 3))
-                .getSingleResult();
+            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
@@ -116,7 +116,7 @@ public class RibaltoneManagerUtils {
                 if (idAzienda == null) {
                     throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
                 } else {
-                    sourceDataManager = new CSVDataManager(csvSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
+                    sourceDataManager = new CSVDataManager(csvSpecificData, objectMapper, codiceAzienda, idAzienda.getId(), repositoryFactory.getEntityManager());
                     List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
                     List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
                     List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
