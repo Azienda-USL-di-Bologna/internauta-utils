@@ -53,6 +53,7 @@ import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  *
@@ -183,43 +184,43 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     /**
      *
+     * @param configRibaltoneView
      * @param codiceAzienda
-     * @param idConfig
      * @param typeUserReport
      * @return
      * @throws RibaltoneHttpException
      */
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
+        @RequestBody ConfigRibaltoneView configRibaltoneView,
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) ConfigRibaltoneView idConfig,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
-        return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, idConfig, typeUserReport), HttpStatus.OK);
+        return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport), HttpStatus.OK);
 
     }
 
     /**
      *
      * @param codiceAzienda
-     * @param idConfig
+     * @param idConfigRibaltoneView
      * @throws RibaltoneHttpException
      * @throws java.lang.ClassNotFoundException
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idConfig
+        @RequestParam(required = true) String idConfigRibaltoneView
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfig), HttpStatus.OK);
+        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfigRibaltoneView), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
     public void ribaltaDeleteCache(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idConfiguration
+        @RequestParam(required = true) String idConfigRibaltoneView
     ) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfigRibaltoneView);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
     }
