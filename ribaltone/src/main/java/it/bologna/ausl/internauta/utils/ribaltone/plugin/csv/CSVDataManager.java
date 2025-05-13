@@ -1,21 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.csv;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
-import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.slf4j.Logger;
