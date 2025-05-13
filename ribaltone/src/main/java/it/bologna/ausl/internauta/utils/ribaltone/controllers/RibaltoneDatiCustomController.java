@@ -53,7 +53,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         List<ParametroAziende> par = parametriReader.getParameters(ParametriAziendeReader.ParametriAzienda.ribaltoneConf.toString(), idAziende);
         Map<String, Object> map = parametriReader.getValue(par.get(0), new TypeReference<Map<String, Object>>() {
         });
-        map.put(ConfigRibaltoneView.ConfigKeys.fonteDefault.toString(), configRibaltoneViewDaSalvareObject.getFonteDefault());
+        map.put(ConfigRibaltoneView.ConfigKeys.fonteSelezionata.toString(), configRibaltoneViewDaSalvareObject.getFonteSelezionata());
         map.put(ConfigRibaltoneView.ConfigKeys.fonti.toString(), configRibaltoneViewDaSalvareObject.getFonti());
         map.put(ConfigRibaltoneView.ConfigKeys.attivo.toString(), configRibaltoneViewDaSalvareObject.isAttivo());
         map.put(ConfigRibaltoneView.ConfigKeys.mailDaNotificare.toString(), configRibaltoneViewDaSalvareObject.getMailDaNotificare());
@@ -70,7 +70,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         }
 
         //salvo la seconda parte che va su tabella ribaltone.configuration, ovvero i codici enti che vanno inseriti all'interno del json contenuto in 'specifiche'
-        RibaltoneDataConfiguration r = ribaltoneDataConfigurationRepository.getReferenceById(configRibaltoneViewDaSalvareObject.getFonteDefault().toString());
+        RibaltoneDataConfiguration r = ribaltoneDataConfigurationRepository.getReferenceById(configRibaltoneViewDaSalvareObject.getFonteSelezionata().toString());
         HashMap<String, Object> specifiche = (HashMap<String, Object>) r.getSpecifiche();
         specifiche.put(SpecificheNonSensibiliKeys.codiciEntiValidi.toString(), configRibaltoneViewDaSalvareObject.getCodiciEntiValidi());
         try {

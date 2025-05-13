@@ -78,7 +78,7 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
         }
-        finalOperations(repositoryFactory, codiceAzienda);
+//        finalOperations(repositoryFactory, codiceAzienda);
     }
 
     /**
