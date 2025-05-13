@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
@@ -21,15 +20,10 @@ import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.rubrica.QContatto;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.io.Serializable;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +34,8 @@ import java.util.Map;
  */
 public class Operations implements Serializable {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+//    @PersistenceContext
+//    private EntityManager entityManager;
 
     private List<OperationStruttura> listOfOperationStruttura;
     private List<OperationAppartenente> listOfOperationAppartenenti;
@@ -80,13 +74,13 @@ public class Operations implements Serializable {
         for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
             operation.esegui(workToDo, repositoryFactory);
         }
-        risistemaAfferenze();
+        risistemaAfferenze(repositoryFactory);
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
         }
-        finalOperations(repositoryFactory, codiceAzienda);
+//        finalOperations(repositoryFactory, codiceAzienda);
     }
 
     /**
@@ -98,7 +92,7 @@ public class Operations implements Serializable {
      */
     private void finalOperations(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
         //1) generazione e manutenzione dei contatti
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QPersona qPersona = QPersona.persona;
         Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
         QContatto qContatto = QContatto.contatto;
@@ -118,7 +112,7 @@ public class Operations implements Serializable {
                 Integer[] idAziende = new Integer[0];
                 idAziende[0] = struttura.getIdAzienda().getId();
                 contattoDellaStruttuta = struttura.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
-                entityManager.persist(contattoDellaStruttuta);
+                repositoryFactory.getEntityManager().persist(contattoDellaStruttuta);
             } else {
                 //aggiorno il dato e lo salvo
                 contattoDellaStruttuta.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
@@ -127,7 +121,7 @@ public class Operations implements Serializable {
                     dettaglioPrincipale.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
                     dettaglioPrincipale.setIdContatto(contattoDellaStruttuta);
                 }
-                entityManager.persist(dettaglioPrincipale);
+                repositoryFactory.getEntityManager().persist(dettaglioPrincipale);
             }
         }
         //contatti utenteStruttura
@@ -184,13 +178,13 @@ public class Operations implements Serializable {
      * un'afferenza diretta per utente mette tutte quelle di troppo come
      * funzionali. (ritorna gli utenti struttura cambiati)
      */
-    private void risistemaAfferenze() {
+    private void risistemaAfferenze(RepositoryFactory repositoryFactory) {
         //faccio la query di select
         //count e poi vedo che fare
         QUtenteStruttura us = QUtenteStruttura.utenteStruttura;
         QUtente u = QUtente.utente;
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Integer idAfferenzaStruttura = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
             .select(us.idUtente.id)

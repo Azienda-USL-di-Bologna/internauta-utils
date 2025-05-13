@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
@@ -24,6 +25,7 @@ public abstract class Operation<T extends DatiRibaltoneInterface> {
 
     private Azione azione;
     private T entitaCoinvolta;
+    @JsonIgnore
     private EntityManager entityManager;
 
     public Operation(Azione azione, T entitaCoinvolta, EntityManager entityManager) {
