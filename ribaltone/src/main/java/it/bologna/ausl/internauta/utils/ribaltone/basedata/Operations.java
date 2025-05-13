@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
@@ -36,8 +37,8 @@ import java.util.Map;
  */
 public class Operations implements Serializable {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+//    @PersistenceContext
+//    private EntityManager entityManager;
 
     private List<OperationStruttura> listOfOperationStruttura;
     private List<OperationAppartenente> listOfOperationAppartenenti;
@@ -73,12 +74,12 @@ public class Operations implements Serializable {
         for (OperationAppartenente operation : listOfOperationAppartenenti) {
             operation.esegui(workToDo, repositoryFactory);
         }
-        risistemaAfferenze();
+        risistemaAfferenze(repositoryFactory);
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
             operation.esegui(workToDo, repositoryFactory);
         }
-        finalOperations(repositoryFactory, codiceAzienda);
+//        finalOperations(repositoryFactory, codiceAzienda);
     }
 
     /**
@@ -88,45 +89,45 @@ public class Operations implements Serializable {
      * @param repositoryFactory
      * @throws RibaltoneHttpException
      */
-    private void finalOperations(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
-        //1) generazione e manutenzione dei contatti
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QPersona qPersona = QPersona.persona;
-        Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
-        QContatto qContatto = QContatto.contatto;
-        //contatti struttura
-        QStruttura qStruttura = QStruttura.struttura;
-
-        List<Tuple> strutturaContatto = queryFactory
-            .select(qStruttura, qContatto)
-            .from(qStruttura)
-            .leftJoin(qContatto).on(qContatto.idEsterno.eq(qStruttura.id.toString()))
-            .where(qStruttura.attiva.and(qStruttura.idAzienda.codice.eq(codiceAzienda))).fetch();
-        for (Tuple tuple : strutturaContatto) {
-            Struttura struttura = tuple.get(0, Struttura.class);
-            Contatto contattoDellaStruttuta = tuple.get(1, Contatto.class);
-            if (contattoDellaStruttuta == null) {
-                //creo contatto della struttura col suo dettaglio e lo salvo
-                Integer[] idAziende = new Integer[0];
-                idAziende[0] = struttura.getIdAzienda().getId();
-                contattoDellaStruttuta = struttura.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
-                entityManager.persist(contattoDellaStruttuta);
-            } else {
-                //aggiorno il dato e lo salvo
-                contattoDellaStruttuta.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
-                DettaglioContatto dettaglioPrincipale = contattoDellaStruttuta.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale() && !dc.getEliminato()).toList().getFirst();
-                if (dettaglioPrincipale != null) {
-                    dettaglioPrincipale.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
-                    dettaglioPrincipale.setIdContatto(contattoDellaStruttuta);
-                }
-                entityManager.persist(dettaglioPrincipale);
-            }
-        }
-        //contatti utenteStruttura
-
-        //elimino tutti i contatti eliminati logicamente di tipo organigramma
-        //se ne trovo alcuni che sono ancora dentro ai gruppi li segnalo
-    }
+//    private void finalOperations(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
+//        //1) generazione e manutenzione dei contatti
+//        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+//        QPersona qPersona = QPersona.persona;
+//        Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
+//        QContatto qContatto = QContatto.contatto;
+//        //contatti struttura
+//        QStruttura qStruttura = QStruttura.struttura;
+//
+//        List<Tuple> strutturaContatto = queryFactory
+//            .select(qStruttura, qContatto)
+//            .from(qStruttura)
+//            .leftJoin(qContatto).on(qContatto.idEsterno.eq(qStruttura.id.toString()))
+//            .where(qStruttura.attiva.and(qStruttura.idAzienda.codice.eq(codiceAzienda))).fetch();
+//        for (Tuple tuple : strutturaContatto) {
+//            Struttura struttura = tuple.get(0, Struttura.class);
+//            Contatto contattoDellaStruttuta = tuple.get(1, Contatto.class);
+//            if (contattoDellaStruttuta == null) {
+//                //creo contatto della struttura col suo dettaglio e lo salvo
+//                Integer[] idAziende = new Integer[0];
+//                idAziende[0] = struttura.getIdAzienda().getId();
+//                contattoDellaStruttuta = struttura.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
+//                entityManager.persist(contattoDellaStruttuta);
+//            } else {
+//                //aggiorno il dato e lo salvo
+//                contattoDellaStruttuta.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
+//                DettaglioContatto dettaglioPrincipale = contattoDellaStruttuta.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale() && !dc.getEliminato()).toList().get(0);
+//                if (dettaglioPrincipale != null) {
+//                    dettaglioPrincipale.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
+//                    dettaglioPrincipale.setIdContatto(contattoDellaStruttuta);
+//                }
+//                entityManager.persist(dettaglioPrincipale);
+//            }
+//        }
+//        //contatti utenteStruttura
+//
+//        //elimino tutti i contatti eliminati logicamente di tipo organigramma
+//        //se ne trovo alcuni che sono ancora dentro ai gruppi li segnalo
+//    }
 
     public UserReportManager generateUserReport(UserReportType userReportType) {
 
@@ -176,13 +177,13 @@ public class Operations implements Serializable {
      * un'afferenza diretta per utente mette tutte quelle di troppo come
      * funzionali. (ritorna gli utenti struttura cambiati)
      */
-    private void risistemaAfferenze() {
+    private void risistemaAfferenze(RepositoryFactory repositoryFactory) {
         //faccio la query di select
         //count e poi vedo che fare
         QUtenteStruttura us = QUtenteStruttura.utenteStruttura;
         QUtente u = QUtente.utente;
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Integer idAfferenzaStruttura = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
             .select(us.idUtente.id)

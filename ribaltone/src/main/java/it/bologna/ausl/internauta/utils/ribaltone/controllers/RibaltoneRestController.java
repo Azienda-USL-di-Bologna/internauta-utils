@@ -185,6 +185,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     /**
      *
      * @param configRibaltoneView
+     * @param idSelectedConfiguration
      * @param codiceAzienda
      * @param typeUserReport
      * @return
@@ -197,30 +198,29 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport), HttpStatus.OK);
-
     }
 
     /**
      *
      * @param codiceAzienda
-     * @param idConfigRibaltoneView
+     * @param idSelectedConfiguration
      * @throws RibaltoneHttpException
      * @throws java.lang.ClassNotFoundException
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idConfigRibaltoneView
+        @RequestParam(required = true) String idSelectedConfiguration
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idConfigRibaltoneView), HttpStatus.OK);
+        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
     public void ribaltaDeleteCache(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idConfigRibaltoneView
+        @RequestParam(required = true) String idSelectedConfiguration
     ) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfigRibaltoneView);
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idSelectedConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
     }
