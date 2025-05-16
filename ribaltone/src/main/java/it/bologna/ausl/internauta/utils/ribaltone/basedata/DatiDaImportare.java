@@ -86,8 +86,8 @@ public class DatiDaImportare {
         if (!validatorStrutture.getDatiInvalidi().isEmpty()){
             //posso non controllare altro questi sono errori che bloccano il ribaltone
         }else {
-            indexStrutture = RibaltoneUtils.generateIndex(struttureValideDaImportare,DatiDaImportareStruttura::getKey);
-            ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare,indexStrutture, indexTrasformazioni, progressivoTrasformazione);
+            Map<String, Integer> indexStrutture2 = RibaltoneUtils.generateIndex(struttureValideDaImportare,DatiDaImportareStruttura::getKey);
+            ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare,indexStrutture2, indexTrasformazioni, progressivoTrasformazione);
             //mi serve l'index delle strurrue per il controllo sulle trasformazioni
             List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate(repositoryFactory);
             progressivoTrasformazione = validatorTrasformazioni.getProgressivoTrasformazione();

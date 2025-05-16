@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -175,25 +171,23 @@ public class GruSpecificData extends SpecificData {
         }
         
         public Sql2o getConnection() {
-        HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setDriverClassName(this.getDriver());
-        if (StringUtils.hasText(this.getUrl()) && StringUtils.hasText(this.getPort())) {
-            hikariConfig.setJdbcUrl(((String) this.getUrl()).replaceAll("(jdbc:oracle:thin:@)(.+):(\\d+)\\/(.+)",
-                    String.format("$1%s:%s/$4", this.getUrl(), this.getPort())));
-           
-        } else {
-            hikariConfig.setJdbcUrl((String) this.getUrl());
+            HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setDriverClassName(this.getDriver());
+            if (StringUtils.hasText(this.getUrl()) && StringUtils.hasText(this.getPort())) {
+                hikariConfig.setJdbcUrl(((String) this.getUrl()).replaceAll("(jdbc:oracle:thin:@)(.+):(\\d+)\\/(.+)",
+                        String.format("$1%s:%s/$4", this.getUrl(), this.getPort())));
+
+            } else {
+                hikariConfig.setJdbcUrl((String) this.getUrl());
+            }
+            hikariConfig.setUsername((String) this.getUsername());
+            hikariConfig.setPassword((String) this.getPassword());
+            hikariConfig.setMinimumIdle(Integer.parseInt(this.getSql2oMinIdleSize()));
+            hikariConfig.setMaximumPoolSize(Integer.parseInt(this.getSql2oMaxPoolSize()));
+            hikariConfig.setConnectionTimeout(Integer.parseInt(this.getSql2oConnectionTimeout()));
+            HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
+            return new Sql2o(hikariDataSource);
         }
-        hikariConfig.setUsername((String) this.getUsername());
-        hikariConfig.setPassword((String) this.getPassword());
-        hikariConfig.setMinimumIdle(Integer.parseInt(this.getSql2oMinIdleSize()));
-        hikariConfig.setMaximumPoolSize(Integer.parseInt(this.getSql2oMaxPoolSize()));
-        hikariConfig.setConnectionTimeout(Integer.parseInt(this.getSql2oConnectionTimeout()));
-        HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
-        return new Sql2o(hikariDataSource);
-    }
 
-    }
-
-    
+    }    
 }

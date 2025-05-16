@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.EntityPathBase;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
@@ -31,6 +32,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
+import it.nextsw.common.controller.exceptions.NotFoundResourceException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -54,6 +56,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.RequestBody;
+import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
+import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
 
 /**
  *
@@ -76,6 +80,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Autowired
     private ConversionService conversionService;
+    
+    @Autowired
+    private AuthenticatedSessionDataBuilder authenticatedSessionDataBuilder;
 
 //    @RequestMapping(value = "/cleanSourceData", method = RequestMethod.GET)
 //    public DatiDaImportare cleanSourceData(
@@ -126,6 +133,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException {
+        
         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
 
     }
@@ -398,7 +406,25 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             default:
                 throw new AssertionError();
         }
-
+    }
+    
+    private Persona getRealPerson() throws NotFoundResourceException, BlackBoxPermissionException {
+        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+        Persona person;
+        if (authenticatedUserProperties.getRealPerson() != null) {
+            LOGGER.info("si real user");
+            person = authenticatedUserProperties.getRealPerson();
+        } else {
+            LOGGER.info("no real user");
+            person = authenticatedUserProperties.getPerson();
+        }
+        LOGGER.info(String.format("person: %s", person.getId()));
+        
+        Optional<Persona> personaOp = this.personaRepository.findById(person.getId());
+        if (!personaOp.isPresent()) {
+            throw new NotFoundResourceException("persona non trovata");
+        }
+        return personaOp.get();
     }
 
 }

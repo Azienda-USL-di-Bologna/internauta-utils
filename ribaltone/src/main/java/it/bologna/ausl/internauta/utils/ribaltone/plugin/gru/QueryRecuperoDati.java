@@ -21,6 +21,15 @@ public class QueryRecuperoDati {
         this.anagrafiche = anagrafiche;
         this.progressivoUltimaTrasformazione = progressivoUltimaTrasformazione;
     }
+    
+    public QueryRecuperoDati(String appartenenti, String strutture, String responsabili, String trasformazioni, String anagrafiche) {
+        this.appartenenti = appartenenti;
+        this.strutture = strutture;
+        this.responsabili = responsabili;
+        this.trasformazioni = trasformazioni;
+        this.anagrafiche = anagrafiche;
+       
+    }
 
     public QueryRecuperoDati() {
     }
