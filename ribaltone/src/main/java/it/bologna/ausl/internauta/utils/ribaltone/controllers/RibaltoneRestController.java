@@ -36,6 +36,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -118,7 +119,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     /**
      *
      * @param codiceAzienda
-     * @param idConfig
+     * @param configRibaltoneView
      * @throws RibaltoneHttpException
      */
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
@@ -142,23 +143,19 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
         switch (tipologia) {
-            case APPARTENENTI:
+            case APPARTENENTI ->
                 jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
                     QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
-                break;
-            case STRUTTURE:
+            case STRUTTURE ->
                 jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
                     QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
-                break;
-            case ANAGRAFICHE:
+            case ANAGRAFICHE ->
                 jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
                     QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
-                break;
-            case TRASFORMAZIONI:
+            case TRASFORMAZIONI ->
                 jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
                     QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
-                break;
-            default:
+            default ->
                 throw new AssertionError();
         }
         try {
@@ -173,7 +170,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             CsvImportManager csvImportManager = new CsvImportManager(objectMapper, entityManager, conversionService);
             csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
 
-        } catch (Exception ex) {
+        } catch (RibaltoneHttpException | IOException ex) {
             throw new RibaltoneHttpException("errore nell'importazione", ex);
         } finally {
             if (csvFile != null) {
@@ -185,7 +182,6 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     /**
      *
      * @param configRibaltoneView
-     * @param idSelectedConfiguration
      * @param codiceAzienda
      * @param typeUserReport
      * @return
@@ -204,8 +200,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      *
      * @param codiceAzienda
      * @param idSelectedConfiguration
+     * @return
      * @throws RibaltoneHttpException
      * @throws java.lang.ClassNotFoundException
+     * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
@@ -258,7 +256,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         }
         Utente utente;
         switch (tipoUnificazione) {
-            case FUSIONE:
+            case FUSIONE -> {
                 unificazione = new StrutturaUnificata();
                 unificazione.setDataAttivazione(ZonedDateTime.now());
                 unificazione.setDataInserimentoRiga(ZonedDateTime.now());
@@ -328,9 +326,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     entityManager.persist(utenteStruttura);
                 }
                 entityManager.persist(unificazione);
-                break;
+            }
 
-            case REPLICA:
+            case REPLICA -> {
                 //prendo la sorgente e la replico come figlia della destinazione
                 //creo la struttura
                 Struttura nuovaStruttura = new Struttura();
@@ -394,8 +392,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 entityManager.persist(sr);
                 nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
                 entityManager.persist(nuovaStruttura);
-                break;
-            default:
+            }
+            default ->
                 throw new AssertionError();
         }
 
