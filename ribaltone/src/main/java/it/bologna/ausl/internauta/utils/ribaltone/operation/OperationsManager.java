@@ -80,7 +80,7 @@ public class OperationsManager {
     public Operations buildOperations() throws RibaltoneHttpException {
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStruttureETrasformazione = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
         List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildOperationsStruttureETrasformazione.get("strutture");
-        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati);
+        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare());
         List<OperationAnagrafica> operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
         List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
         operationsTraformazioni.addAll((Collection<? extends OperationTrasformazione>) buildOperationsStruttureETrasformazione.get("trasformazioni"));
@@ -147,9 +147,13 @@ public class OperationsManager {
         return mapToReturn;
     }
 
-    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, Map<String, Integer> indexAppartenentiImportati) {
+    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, Map<String, Integer> indexAppartenentiImportati, List<DatiImportatiStruttura> struttureImportateList, List<DatiDaImportareStruttura> struttureDaImportareList) {
         List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
         //prendo in considerazione tutte le modifiche e gli inserimenti dei nuovi utenti
+        Map<String, Integer> index2StruttureImportate = RibaltoneUtils.generateIndex(struttureImportateList, DatiImportatiStruttura::getIdCasella);
+
+        Map<String, Integer> index2StruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportareList, DatiDaImportareStruttura::getIdCasella);
+
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
             Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
             Operation.Azione azione = Operation.Azione.INSERT;
@@ -206,13 +210,14 @@ public class OperationsManager {
                 }
             }
             if (salva) {
-                if (azione == Operation.Azione.INSERT) {
-                    this.utentiStrutturaChiusi--;
-                }
+
                 if (azione.equals(Operation.Azione.EDIT)) {
-                    operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString));
+                    DatiImportatiStruttura struttura = struttureImportateList.get(index2StruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                    operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, struttura.getDescrizione()));
                 } else {
-                    operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), null));
+                    this.utentiStrutturaChiusi--;
+                    DatiDaImportareStruttura struttura = struttureDaImportareList.get(index2StruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                    operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), null, struttura.getDescrizione()));
                 }
             }
         }
@@ -220,7 +225,8 @@ public class OperationsManager {
         Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
-                operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), null));
+                DatiImportatiStruttura struttura = struttureImportateList.get(index2StruttureImportate.get(appartenenteImportato.getIdCasella().toString()));
+                operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), null, struttura.getDescrizione()));
                 this.utentiStrutturaChiusi++;
             }
         }

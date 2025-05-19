@@ -59,6 +59,10 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.RequestBody;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
+import it.bologna.ausl.model.entities.baborg.QPersona;
+import it.bologna.ausl.model.entities.baborg.QRuolo;
+import it.bologna.ausl.model.entities.baborg.Ruolo;
+import it.bologna.ausl.model.entities.baborg.projections.generated.RuoloWithPlainFields;
 
 /**
  *
@@ -81,7 +85,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Autowired
     private ConversionService conversionService;
-    
+
     @Autowired
     private AuthenticatedSessionDataBuilder authenticatedSessionDataBuilder;
 
@@ -134,9 +138,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException {
-        
         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
-
     }
 
     @Transactional(rollbackOn = Throwable.class)
@@ -201,7 +203,17 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
-        return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport), HttpStatus.OK);
+
+        if (possoLanciareRibaltone()) {
+
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata().toString());
+            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+            ribaltoneCache.cleanCache();
+            return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport), HttpStatus.OK);
+        } else {
+            return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
+        }
+
     }
 
     /**
@@ -218,7 +230,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) String idSelectedConfiguration
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration), HttpStatus.OK);
+
+        if (possoLanciareRibaltone()) {
+            return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration), HttpStatus.OK);
+        } else {
+            return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
+        }
     }
 
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
@@ -238,191 +255,228 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) Integer idStrutturaDestinazione,
         @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
     ) throws RibaltoneHttpException {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QStruttura qStruttura = QStruttura.struttura;
-        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
-        QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
-        AfferenzaStruttura idAfferenzaStruttura = queryFactory
-            .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
-        Struttura sorgente = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaSorgente)).fetchOne();
-        Struttura destinazione = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaDestinazione)).fetchOne();
+        if (possoLanciareRibaltone()) {
+            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            QStruttura qStruttura = QStruttura.struttura;
+            QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+            QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
+            AfferenzaStruttura idAfferenzaStruttura = queryFactory
+                .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
+            Struttura sorgente = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaSorgente)).fetchOne();
+            Struttura destinazione = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(idStrutturaDestinazione)).fetchOne();
 
-        if (sorgente == null || destinazione == null) {
-            throw new RibaltoneHttpException("struttura sorgente o stuttura destinazione non presenti impossibile unificare");
-        }
-
-        StrutturaUnificata unificazione = queryFactory
-            .select(qStrutturaUnificata)
-            .from(qStrutturaUnificata)
-            .where(
-                qStrutturaUnificata.idStrutturaSorgente.id.eq(sorgente.getId())
-                    .and(qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
-            ).fetchOne();
-
-        if (unificazione != null) {
-            throw new RibaltoneHttpException("unificazione gia presente");
-        }
-        Utente utente;
-        switch (tipoUnificazione) {
-            case FUSIONE -> {
-                unificazione = new StrutturaUnificata();
-                unificazione.setDataAttivazione(ZonedDateTime.now());
-                unificazione.setDataInserimentoRiga(ZonedDateTime.now());
-                unificazione.setIdStrutturaSorgente(sorgente);
-                unificazione.setIdStrutturaDestinazione(destinazione);
-                unificazione.setTipoOperazione(tipoUnificazione);
-                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
-
-                List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
-                List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
-                List<UtenteStruttura> usDaAggiungereADestinazione = RibaltoneUtils.differenza(sorgenteUtenteStrutturaList, destinazioneUtenteStrutturaList);
-                List<UtenteStruttura> usDaAggiungereASorgente = RibaltoneUtils.differenza(destinazioneUtenteStrutturaList, sorgenteUtenteStrutturaList);
-
-                for (UtenteStruttura daAggiungereASorgente : usDaAggiungereASorgente) {
-                    Optional<Utente> userOpt = daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(sorgente.getIdAzienda().getId())).findFirst();
-                    if (userOpt.isPresent()) {
-                        utente = userOpt.get();
-                        utente.setAttivo(Boolean.TRUE);
-                    } else {
-                        utente = new Utente();
-                        utente.setAttivo(Boolean.TRUE);
-                        utente.setIdAzienda(sorgente.getIdAzienda());
-                        utente.setIdPersona(daAggiungereASorgente.getIdUtente().getIdPersona());
-                        utente.setUsername(daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
-                    }
-                    UtenteStruttura utenteStruttura = new UtenteStruttura();
-                    utenteStruttura.setAttivo(Boolean.TRUE);
-                    utenteStruttura.setAttivoDal(ZonedDateTime.now());
-                    utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
-                    utenteStruttura.setIdStruttura(sorgente);
-                    utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
-                    utenteStruttura.setResponsabile(responsabile);
-                    utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
-                    utenteStruttura.setIdUtente(utente);
-                    LOGGER.info(utente.getIdPersona().getDescrizione());
-                    LOGGER.info(utente.getIdAzienda().getId().toString());
-                    entityManager.persist(utenteStruttura);
-                }
-
-                for (UtenteStruttura daAggiungereADestinazione : usDaAggiungereADestinazione) {
-                    Optional<Utente> userOpt = daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
-                    if (userOpt.isPresent()) {
-                        utente = userOpt.get();
-                        utente.setAttivo(Boolean.TRUE);
-                    } else {
-                        utente = new Utente();
-                        utente.setAttivo(Boolean.TRUE);
-                        utente.setIdAzienda(destinazione.getIdAzienda());
-                        utente.setIdPersona(daAggiungereADestinazione.getIdUtente().getIdPersona());
-                        utente.setUsername(daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
-
-                    }
-                    boolean responsabile = daAggiungereADestinazione.getResponsabile() == null ? false : daAggiungereADestinazione.getResponsabile();
-                    UtenteStruttura utenteStruttura = new UtenteStruttura();
-                    utenteStruttura.setAttivo(Boolean.TRUE);
-                    utenteStruttura.setAttivoDal(ZonedDateTime.now());
-                    utenteStruttura.setAttributi(daAggiungereADestinazione.getAttributi());
-                    utenteStruttura.setIdStruttura(destinazione);
-                    utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    utenteStruttura.setResponsabile(responsabile);
-                    utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
-                    utenteStruttura.setIdUtente(utente);
-                    LOGGER.info(utente.getIdPersona().getDescrizione());
-                    LOGGER.info(utente.getIdAzienda().getId().toString());
-                    LOGGER.info(destinazione.getIdAzienda().getId().toString());
-                    entityManager.persist(utenteStruttura);
-                }
-                entityManager.persist(unificazione);
+            if (sorgente == null || destinazione == null) {
+                throw new RibaltoneHttpException("struttura sorgente o stuttura destinazione non presenti impossibile unificare");
             }
 
-            case REPLICA -> {
-                //prendo la sorgente e la replico come figlia della destinazione
-                //creo la struttura
-                Struttura nuovaStruttura = new Struttura();
-                nuovaStruttura.setAttiva(Boolean.TRUE);
-                nuovaStruttura.setDataAttivazione(ZonedDateTime.now());
-                nuovaStruttura.setIdAzienda(destinazione.getIdAzienda());
-                nuovaStruttura.setNome(sorgente.getNome());
-                nuovaStruttura.setIdStrutturaPadre(destinazione);
-                nuovaStruttura.setIdStrutturaReplicata(sorgente);
-                nuovaStruttura.setUfficio(sorgente.getUfficio());
-                nuovaStruttura.setSpettrale(sorgente.getSpettrale());
-                nuovaStruttura.setUsaSegreteriaBucataPadre(sorgente.getUsaSegreteriaBucataPadre());
-                //creo lo storico relazione
-                StoricoRelazione sr = new StoricoRelazione();
-                sr.setAttivaDal(ZonedDateTime.now());
-                sr.setIdStrutturaPadre(destinazione);
-                sr.setIdStrutturaFiglia(nuovaStruttura);
+            StrutturaUnificata unificazione = queryFactory
+                .select(qStrutturaUnificata)
+                .from(qStrutturaUnificata)
+                .where(
+                    qStrutturaUnificata.idStrutturaSorgente.id.eq(sorgente.getId())
+                        .and(qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+                ).fetchOne();
 
-                //creo l'unificazione
-                unificazione = new StrutturaUnificata();
-                unificazione.setDataAttivazione(ZonedDateTime.now());
-                unificazione.setDataInserimentoRiga(ZonedDateTime.now());
-                unificazione.setIdStrutturaSorgente(sorgente);
-                unificazione.setIdStrutturaDestinazione(nuovaStruttura);
-                unificazione.setTipoOperazione(tipoUnificazione);
-                unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
-                //creo gli utenti struttura
-                List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
-                List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
-                for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
-                    Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
-                    Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
-
-                    //prendo l'utente attivandolo nel caso sia spento
-                    if (userOpt.isPresent()) {
-                        utente = userOpt.get();
-                        utente.setAttivo(Boolean.TRUE);
-                    } else {
-                        utente = new Utente();
-                        utente.setAttivo(Boolean.TRUE);
-                        utente.setIdAzienda(destinazione.getIdAzienda());
-                        utente.setIdPersona(idPersona);
-                        utente.setUsername(idPersona.getUtenteList().get(0).getUsername());
-                    }
-                    //creazione degli utenti struttura veri e propri
-                    UtenteStruttura us = new UtenteStruttura();
-                    us.setAttivo(Boolean.TRUE);
-                    us.setIdStruttura(nuovaStruttura);
-                    us.setAttivoDal(ZonedDateTime.now());
-                    us.setBitRuoli(utenteStruttura.getBitRuoli());
-                    us.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                    us.setIdUtente(utente);
-                    us.setResponsabile(utenteStruttura.getResponsabile());
-                    nuoviUtentiStruttura.add(us);
-                }
-                //salvataggio di tutto sul db
-                //prima l'unificazione altrimenti il trigger di spargi_afferenza_da_sottoresponsabile_unificato mi da errore
-                entityManager.persist(unificazione);
-
-                //set degli utenti struttura e salvataggio per evitare confitto con spargi_afferenza_da_sottoresponsabile_unificato
-                entityManager.persist(sr);
-                nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
-                entityManager.persist(nuovaStruttura);
+            if (unificazione != null) {
+                throw new RibaltoneHttpException("unificazione gia presente");
             }
-            default ->
-                throw new AssertionError();
+            Utente utente;
+            switch (tipoUnificazione) {
+                case FUSIONE -> {
+                    unificazione = new StrutturaUnificata();
+                    unificazione.setDataAttivazione(ZonedDateTime.now());
+                    unificazione.setDataInserimentoRiga(ZonedDateTime.now());
+                    unificazione.setIdStrutturaSorgente(sorgente);
+                    unificazione.setIdStrutturaDestinazione(destinazione);
+                    unificazione.setTipoOperazione(tipoUnificazione);
+                    unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
+
+                    List<UtenteStruttura> sorgenteUtenteStrutturaList = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
+                    List<UtenteStruttura> destinazioneUtenteStrutturaList = destinazione.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
+                    List<UtenteStruttura> usDaAggiungereADestinazione = RibaltoneUtils.differenza(sorgenteUtenteStrutturaList, destinazioneUtenteStrutturaList);
+                    List<UtenteStruttura> usDaAggiungereASorgente = RibaltoneUtils.differenza(destinazioneUtenteStrutturaList, sorgenteUtenteStrutturaList);
+
+                    for (UtenteStruttura daAggiungereASorgente : usDaAggiungereASorgente) {
+                        Optional<Utente> userOpt = daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(sorgente.getIdAzienda().getId())).findFirst();
+                        if (userOpt.isPresent()) {
+                            utente = userOpt.get();
+                            utente.setAttivo(Boolean.TRUE);
+                        } else {
+                            utente = new Utente();
+                            utente.setAttivo(Boolean.TRUE);
+                            utente.setIdAzienda(sorgente.getIdAzienda());
+                            utente.setIdPersona(daAggiungereASorgente.getIdUtente().getIdPersona());
+                            utente.setUsername(daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
+                        }
+                        UtenteStruttura utenteStruttura = new UtenteStruttura();
+                        utenteStruttura.setAttivo(Boolean.TRUE);
+                        utenteStruttura.setAttivoDal(ZonedDateTime.now());
+                        utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
+                        utenteStruttura.setIdStruttura(sorgente);
+                        utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                        boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
+                        utenteStruttura.setResponsabile(responsabile);
+                        utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
+                        utenteStruttura.setIdUtente(utente);
+                        LOGGER.info(utente.getIdPersona().getDescrizione());
+                        LOGGER.info(utente.getIdAzienda().getId().toString());
+                        entityManager.persist(utenteStruttura);
+                    }
+
+                    for (UtenteStruttura daAggiungereADestinazione : usDaAggiungereADestinazione) {
+                        Optional<Utente> userOpt = daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
+                        if (userOpt.isPresent()) {
+                            utente = userOpt.get();
+                            utente.setAttivo(Boolean.TRUE);
+                        } else {
+                            utente = new Utente();
+                            utente.setAttivo(Boolean.TRUE);
+                            utente.setIdAzienda(destinazione.getIdAzienda());
+                            utente.setIdPersona(daAggiungereADestinazione.getIdUtente().getIdPersona());
+                            utente.setUsername(daAggiungereADestinazione.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
+
+                        }
+                        boolean responsabile = daAggiungereADestinazione.getResponsabile() == null ? false : daAggiungereADestinazione.getResponsabile();
+                        UtenteStruttura utenteStruttura = new UtenteStruttura();
+                        utenteStruttura.setAttivo(Boolean.TRUE);
+                        utenteStruttura.setAttivoDal(ZonedDateTime.now());
+                        utenteStruttura.setAttributi(daAggiungereADestinazione.getAttributi());
+                        utenteStruttura.setIdStruttura(destinazione);
+                        utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                        utenteStruttura.setResponsabile(responsabile);
+                        utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
+                        utenteStruttura.setIdUtente(utente);
+                        LOGGER.info(utente.getIdPersona().getDescrizione());
+                        LOGGER.info(utente.getIdAzienda().getId().toString());
+                        LOGGER.info(destinazione.getIdAzienda().getId().toString());
+                        entityManager.persist(utenteStruttura);
+                    }
+                    entityManager.persist(unificazione);
+                }
+
+                case REPLICA -> {
+                    //prendo la sorgente e la replico come figlia della destinazione
+                    //creo la struttura
+                    Struttura nuovaStruttura = new Struttura();
+                    nuovaStruttura.setAttiva(Boolean.TRUE);
+                    nuovaStruttura.setDataAttivazione(ZonedDateTime.now());
+                    nuovaStruttura.setIdAzienda(destinazione.getIdAzienda());
+                    nuovaStruttura.setNome(sorgente.getNome());
+                    nuovaStruttura.setIdStrutturaPadre(destinazione);
+                    nuovaStruttura.setIdStrutturaReplicata(sorgente);
+                    nuovaStruttura.setUfficio(sorgente.getUfficio());
+                    nuovaStruttura.setSpettrale(sorgente.getSpettrale());
+                    nuovaStruttura.setUsaSegreteriaBucataPadre(sorgente.getUsaSegreteriaBucataPadre());
+                    //creo lo storico relazione
+                    StoricoRelazione sr = new StoricoRelazione();
+                    sr.setAttivaDal(ZonedDateTime.now());
+                    sr.setIdStrutturaPadre(destinazione);
+                    sr.setIdStrutturaFiglia(nuovaStruttura);
+
+                    //creo l'unificazione
+                    unificazione = new StrutturaUnificata();
+                    unificazione.setDataAttivazione(ZonedDateTime.now());
+                    unificazione.setDataInserimentoRiga(ZonedDateTime.now());
+                    unificazione.setIdStrutturaSorgente(sorgente);
+                    unificazione.setIdStrutturaDestinazione(nuovaStruttura);
+                    unificazione.setTipoOperazione(tipoUnificazione);
+                    unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
+                    //creo gli utenti struttura
+                    List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
+                    List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
+                    for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
+                        Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
+                        Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
+
+                        //prendo l'utente attivandolo nel caso sia spento
+                        if (userOpt.isPresent()) {
+                            utente = userOpt.get();
+                            utente.setAttivo(Boolean.TRUE);
+                        } else {
+                            utente = new Utente();
+                            utente.setAttivo(Boolean.TRUE);
+                            utente.setIdAzienda(destinazione.getIdAzienda());
+                            utente.setIdPersona(idPersona);
+                            utente.setUsername(idPersona.getUtenteList().get(0).getUsername());
+                        }
+                        //creazione degli utenti struttura veri e propri
+                        UtenteStruttura us = new UtenteStruttura();
+                        us.setAttivo(Boolean.TRUE);
+                        us.setIdStruttura(nuovaStruttura);
+                        us.setAttivoDal(ZonedDateTime.now());
+                        us.setBitRuoli(utenteStruttura.getBitRuoli());
+                        us.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                        us.setIdUtente(utente);
+                        us.setResponsabile(utenteStruttura.getResponsabile());
+                        nuoviUtentiStruttura.add(us);
+                    }
+                    //salvataggio di tutto sul db
+                    //prima l'unificazione altrimenti il trigger di spargi_afferenza_da_sottoresponsabile_unificato mi da errore
+                    entityManager.persist(unificazione);
+
+                    //set degli utenti struttura e salvataggio per evitare confitto con spargi_afferenza_da_sottoresponsabile_unificato
+                    entityManager.persist(sr);
+                    nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
+                    entityManager.persist(nuovaStruttura);
+                }
+                default ->
+                    throw new AssertionError();
+            }
+        } else {
+            throw new RibaltoneHttpException("Non posso lanciare l'unificazione perche non ne ho il permesso");
         }
     }
-    
-    private Persona getRealPerson() throws NotFoundResourceException, BlackBoxPermissionException {
+
+//    private Persona getRealPerson(JPAQueryFactory queryFactory) throws NotFoundResourceException, BlackBoxPermissionException {
+//        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+//        Persona person;
+//        QPersona qPersona = QPersona.persona;
+//        if (authenticatedUserProperties.getRealPerson() != null) {
+//            LOGGER.info("si real user");
+//            person = authenticatedUserProperties.getRealPerson();
+//        } else {
+//            LOGGER.info("no real user");
+//            person = authenticatedUserProperties.getPerson();
+//        }
+//        LOGGER.info(String.format("person: %s", person.getId()));
+//
+//        Persona persona = queryFactory
+//            .select(qPersona)
+//            .from(qPersona)
+//            .where(qPersona.id.eq(person.getId()))
+//            .fetchFirst();
+//        if (persona == null) {
+//            throw new NotFoundResourceException("persona non trovata");
+//        }
+//        return persona;
+//    }
+    private boolean possoLanciareRibaltone() {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QRuolo qRuolo = QRuolo.ruolo;
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
-        Persona person;
-        if (authenticatedUserProperties.getRealPerson() != null) {
-            LOGGER.info("si real user");
-            person = authenticatedUserProperties.getRealPerson();
-        } else {
-            LOGGER.info("no real user");
-            person = authenticatedUserProperties.getPerson();
+        Utente realUser = authenticatedUserProperties.getRealUser();
+        Persona realPerson = authenticatedUserProperties.getRealPerson();
+        Utente user = authenticatedUserProperties.getUser();
+        Persona person = authenticatedUserProperties.getPerson();
+        Integer bitRuoliPersona = realPerson != null ? realPerson.getBitRuoli() : person.getBitRuoli();
+        Integer bitRuoliUtente = realUser != null ? realUser.getBitRuoli() : user.getBitRuoli();
+
+        List<Ruolo> ruoli = queryFactory.select(qRuolo).from(qRuolo).where(
+            qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CA.toString()).or(
+                qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CI.toString())).or(
+                qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.SD.toString()))
+        ).fetch();
+
+        Boolean lanciaRibaltone = false;
+        for (Ruolo ruolo : ruoli) {
+            if (((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.CA) && (bitRuoliUtente & ruolo.getMascheraBit()) == ruolo.getMascheraBit()))
+                || ((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.CI) || ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.SD))
+                && (bitRuoliPersona & ruolo.getMascheraBit()) == ruolo.getMascheraBit())) {
+                lanciaRibaltone = true;
+                break;
+            }
         }
-        LOGGER.info(String.format("person: %s", person.getId()));
-        
-        Optional<Persona> personaOp = this.personaRepository.findById(person.getId());
-        if (!personaOp.isPresent()) {
-            throw new NotFoundResourceException("persona non trovata");
-        }
-        return personaOp.get();
+        return lanciaRibaltone;
     }
 
 }

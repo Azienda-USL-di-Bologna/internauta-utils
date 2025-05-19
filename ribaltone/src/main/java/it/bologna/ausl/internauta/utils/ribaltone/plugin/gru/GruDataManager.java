@@ -52,7 +52,7 @@ public class GruDataManager extends SourceDataManager {
 
         try (Connection connessione = sql2oConnecion.open()) {
             //preparo i dati da inserire nelle query appartenenti e responsabili
-            //CODICI ENTI VALIDI 
+            //CODICI ENTI VALIDI
             String codiceEnteStr;
             if (gruSpecificData.getCodiciEntiValidi() != null && !gruSpecificData.getCodiciEntiValidi().isEmpty()) {
                 String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
@@ -65,7 +65,7 @@ public class GruDataManager extends SourceDataManager {
             String queryAppartenentiStr = getGruSpecificData().getQueryRecuperoDati().getQueryAppartenenti();
             queryAppartenentiStr = queryAppartenentiStr.replaceAll(":codici_enti_validi", codiceEnteStr);
             // commentato perche per ora non serve ma non si sa mai
-//            // PERSONE NON SPEGNIBILI 
+//            // PERSONE NON SPEGNIBILI
 //            if (gruSpecificData.getPersoneNonSpegnibili() != null && !gruSpecificData.getPersoneNonSpegnibili().isEmpty()) {
 //                String personeNonSpegnibiliStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getPersoneNonSpegnibili());
 //                String codiciFiscaliValidi = " or u.CODICE_FISCALE IN (" + personeNonSpegnibiliStr + ") ";
@@ -85,21 +85,21 @@ public class GruDataManager extends SourceDataManager {
             LOG.info("----------queryAppartenentiStr------------\n" + queryAppartenentiStr);
 
             List<Appartenente> appartenentiOracle = connessione
-                    .createQuery(queryAppartenentiStr)
-                    .setAutoDeriveColumnNames(true)
-                    .setCaseSensitive(false)
-                    .executeAndFetch(Appartenente.class);
+                .createQuery(queryAppartenentiStr)
+                .setAutoDeriveColumnNames(true)
+                .setCaseSensitive(false)
+                .executeAndFetch(Appartenente.class);
 
             // prendo i responsabili per settare gli utenti responsabili come responsabili e creare le eventuali afferenze mancanti
             String queryResponsabiliStr = getGruSpecificData().getQueryRecuperoDati().getQueryResponsabili()
-                    .replaceAll(":codici_enti_validi", codiceEnteStr);
+                .replaceAll(":codici_enti_validi", codiceEnteStr);
 
             LOG.info("----------queryResponsabiliStr------------\n" + queryResponsabiliStr);
 
             List<Responsabile> responsabiliOracle = connessione.createQuery(queryResponsabiliStr)
-                    .setAutoDeriveColumnNames(true)
-                    .setCaseSensitive(false)
-                    .executeAndFetch(Responsabile.class);
+                .setAutoDeriveColumnNames(true)
+                .setCaseSensitive(false)
+                .executeAndFetch(Responsabile.class);
             appartenenti = mergeAccendiSpegniUtentiWithRespo(appartenentiOracle, responsabiliOracle, getGruSpecificData().getPersoneNonSpegnibili(), getGruSpecificData().getPersoneDaSpegnere());
 
         } catch (Exception e) {
@@ -116,14 +116,15 @@ public class GruDataManager extends SourceDataManager {
         LOG.info("----------queryStruttureStr------------\n" + getGruSpecificData().getQueryRecuperoDati().getQueryStrutture().replaceAll(":codice_azienda", codiceAzienda));
         try (Connection con = sql2oConnecion.open()) {
             List<Struttura> struttureOracle = con.createQuery(getGruSpecificData().getQueryRecuperoDati().getQueryStrutture())
-                    .addParameter("codice_azienda", this.codiceAzienda)
-                    .setAutoDeriveColumnNames(true)
-                    .setCaseSensitive(false)
-                    .executeAndFetch(Struttura.class);
+                .addParameter("codice_azienda", this.codiceAzienda)
+                .setAutoDeriveColumnNames(true)
+                .setCaseSensitive(false)
+                .executeAndFetch(Struttura.class);
             struttureOracle.forEach(struttura -> fonteIntermediaStrutture.add(struttura.toFonteIntermedia(codiceAzienda, idAzienda)));
+
             return fonteIntermediaStrutture;
         } catch (Exception e) {
-            throw new RuntimeException("Errore durante il recupero degli appartenenti.", e);
+            throw new RuntimeException("Errore durante il recupero delle strutture.", e);
         }
     }
 
@@ -133,11 +134,11 @@ public class GruDataManager extends SourceDataManager {
         List<DatiDaImportareTrasformazione> fonteIntermediaTrasformazioni = new ArrayList<>();
         try (Connection con = sql2oConnecion.open()) {
             List<Trasformazione> trasformazioniOracle = con.createQuery(getGruSpecificData().getQueryRecuperoDati().getQueryTrasformazioni())
-                    .addParameter("codice_azienda", this.codiceAzienda)
-                    .addParameter("progressivo_ultima_trasformazione", getGruSpecificData().getQueryRecuperoDati().getProgressivoUltimaTrasformazione())
-                    .setAutoDeriveColumnNames(true)
-                    .setCaseSensitive(false)
-                    .executeAndFetch(Trasformazione.class);
+                .addParameter("codice_azienda", this.codiceAzienda)
+                .addParameter("progressivo_ultima_trasformazione", getGruSpecificData().getQueryRecuperoDati().getProgressivoUltimaTrasformazione())
+                .setAutoDeriveColumnNames(true)
+                .setCaseSensitive(false)
+                .executeAndFetch(Trasformazione.class);
             trasformazioniOracle.forEach(traformazione -> fonteIntermediaTrasformazioni.add(traformazione.toFonteIntermedia(codiceAzienda, idAzienda)));
             return fonteIntermediaTrasformazioni;
         } catch (Exception e) {
@@ -182,8 +183,8 @@ public class GruDataManager extends SourceDataManager {
             while (!trovato && j < responsabili.size()) {
                 Responsabile responsabile = responsabili.get(j);
                 if (fonteIntermediaAppartenente.getCodiceMatricola().equals(responsabile.getCodiceMatricola())
-                        && fonteIntermediaAppartenente.getIdCasella().equals(responsabile.getIdCasella())
-                        && fonteIntermediaAppartenente.getCodiceEnte().equals(responsabile.getCodiceEnte())) {
+                    && fonteIntermediaAppartenente.getIdCasella().equals(responsabile.getIdCasella())
+                    && fonteIntermediaAppartenente.getCodiceEnte().equals(responsabile.getCodiceEnte())) {
 
                     fonteIntermediaAppartenente.setResponsabile(true);
                     responsabili.remove(j);//
@@ -231,7 +232,7 @@ public class GruDataManager extends SourceDataManager {
         Sql2o sql2oConnecion = getGruSpecificData().getConnessione().getSql2oConnecion();
         List<DatiDaImportareAnagrafica> fonteIntermediaAnagrafiche = new ArrayList<>();
         try (Connection con = sql2oConnecion.open()) {
-            //CODICI ENTI VALIDI 
+            //CODICI ENTI VALIDI
             String codiceEnteStr;
             if (gruSpecificData.getCodiciEntiValidi() != null && !gruSpecificData.getCodiciEntiValidi().isEmpty()) {
                 String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
@@ -240,13 +241,13 @@ public class GruDataManager extends SourceDataManager {
                 codiceEnteStr = "codice_ente LIKE '" + codiceAzienda + "'|| '%' ";
             }
             String queryAnagraficaStr = getGruSpecificData().getQueryRecuperoDati().getQueryAnagrafiche()
-                    .replaceAll(":codici_enti_validi", codiceEnteStr)
-                    .replaceAll(":codice_azienda", codiceAzienda);
+                .replaceAll(":codici_enti_validi", codiceEnteStr)
+                .replaceAll(":codice_azienda", codiceAzienda);
             LOG.info("-----------------queryAnagraficaStr--------" + queryAnagraficaStr);
             List<Anagrafica> anagraficheOracle = con.createQuery(queryAnagraficaStr)
-                    .setAutoDeriveColumnNames(true)
-                    .setCaseSensitive(false)
-                    .executeAndFetch(Anagrafica.class);
+                .setAutoDeriveColumnNames(true)
+                .setCaseSensitive(false)
+                .executeAndFetch(Anagrafica.class);
             anagraficheOracle.forEach(anagrafica -> fonteIntermediaAnagrafiche.add(anagrafica.toFonteIntermedia(codiceAzienda, idAzienda)));
             return fonteIntermediaAnagrafiche;
         }

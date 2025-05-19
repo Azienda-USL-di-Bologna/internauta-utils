@@ -80,7 +80,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                     case "Appartenente" -> {
                         List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
-                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit));
+                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit, operationDaRedis.get("nomeCasella").toString()));
                     }
                     case "Struttura" ->
                         listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));

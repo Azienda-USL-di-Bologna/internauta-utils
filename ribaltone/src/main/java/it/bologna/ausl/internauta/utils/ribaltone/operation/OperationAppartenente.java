@@ -10,9 +10,7 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.EDIT;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.INSERT;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.repository.DatiDaImportareStrutturaRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura.CodiciAfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Azienda;
@@ -30,7 +28,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
@@ -42,11 +39,8 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.data.domain.Sort;
 
 /**
  *
@@ -60,12 +54,18 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
     private final QStruttura qStruttura = QStruttura.struttura;
     private final QAfferenzaStruttura qffAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
 
+    private String nomeCasella;
     private List<String> listOfEdit;
+
+    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit, String nomeCasella) {
+        super(azione, entitaCoinvolta, entityManager);
+        this.listOfEdit = listOfEdit;
+        this.nomeCasella = nomeCasella;
+    }
 
     public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit) {
         super(azione, entitaCoinvolta, entityManager);
         this.listOfEdit = listOfEdit;
-
     }
 
     public List<String> getListOfEdit() {
@@ -74,6 +74,14 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 
     public void setListOfEdit(List<String> listOfEdit) {
         this.listOfEdit = listOfEdit;
+    }
+
+    public String getNomeCasella() {
+        return nomeCasella;
+    }
+
+    public void setNomeCasella(String nomeCasella) {
+        this.nomeCasella = nomeCasella;
     }
 
     @Override

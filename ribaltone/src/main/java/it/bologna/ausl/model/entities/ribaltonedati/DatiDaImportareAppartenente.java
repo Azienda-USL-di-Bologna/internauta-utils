@@ -103,6 +103,7 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     public DatiDaImportareAppartenente() {
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
