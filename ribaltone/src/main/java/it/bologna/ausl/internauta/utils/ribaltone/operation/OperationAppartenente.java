@@ -86,7 +86,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 
     @Override
     public void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         PermissionManager permissionManager = repositoryFactory.getPermissionManager();
         //Utente utente = null;
         List<Utente> utenti = new ArrayList<>();
@@ -168,7 +168,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 //inserire in baborg utenti_struttura se non c'è l'afferenza ricordandosi di una sola afferenza diretta e n funzionali
                                 utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, struttura.getId().equals(strutturaAppartenteOriginale.getId()) ? entitaDaInserire.getTipoAppartenenza() : "U"));
                                 utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
-                                getEntityManager().persist(utenteStruttura);
+                                repositoryFactory.getEntityManager().persist(utenteStruttura);
                                 if (entitaDaInserire.getResponsabile()) {
                                     try {
                                         permissionManager.insertSimplePermission(
@@ -278,7 +278,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 }
                                 utenteStruttura.setIdUtente(utente);
                             }
-                            getEntityManager().persist(utenteStruttura);
+                            repositoryFactory.getEntityManager().persist(utenteStruttura);
                             //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
                             try {
                                 permissionManager.deletePermission(
@@ -326,7 +326,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
                                     utenteStruttura.setIdUtente(utente);
                                     utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getTipoAppartenenza()));
-                                    getEntityManager().persist(utenteStruttura);
+                                    repositoryFactory.getEntityManager().persist(utenteStruttura);
                                     if (entitaDaInserire.getResponsabile()) {
                                         try {
                                             permissionManager.insertSimplePermission(

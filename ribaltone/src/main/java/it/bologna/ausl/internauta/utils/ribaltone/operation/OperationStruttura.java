@@ -45,7 +45,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             workToDo = new HashMap<Integer, List<Integer>>();
         }
         HashMap<Integer, List<Integer>> struttureDaAggiornareConPadreNonAncoraInserito = (HashMap<Integer, List<Integer>>) workToDo;
-        EntityManager em = getEntityManager();
+        EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QStruttura qStruttura = QStruttura.struttura;
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
@@ -133,7 +133,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
     //in caso di confluenza devo togliere dai gruppi il vecchio contatto e mettere quello della struttura conlfuita
     public void menageContattoStruttura(RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         QStruttura qStruttura = QStruttura.struttura;
-        EntityManager em = getEntityManager();
+        EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
         switch (getAzione()) {

@@ -85,9 +85,9 @@ public class RibaltoneTotaleManager {
 //        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
 //    }
     public Object ribaltaWithUserReportAndCacheOperation(
-            String codiceAzienda, 
-            ConfigRibaltoneView configRibaltoneView, 
-            UserReport.UserReportType typeUserReport
+        String codiceAzienda,
+        ConfigRibaltoneView configRibaltoneView,
+        UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);

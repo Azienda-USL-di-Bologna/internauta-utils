@@ -71,6 +71,7 @@ public class Operations implements Serializable {
         workToDo = null;
         for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
             operation.esegui(workToDo, repositoryFactory);
+            operation.menageContattiTrasformati(repositoryFactory);
         }
         risistemaAfferenze(repositoryFactory);
         workToDo = null;
@@ -196,7 +197,7 @@ public class Operations implements Serializable {
             .where(us.attivo.isTrue()
                 .and(us.idUtente.idAzienda.id.eq(2))
                 .and(us.idAfferenzaStruttura.id.eq(1)))
-            .groupBy(us.idUtente)
+            .groupBy(us.idUtente.id)
             .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
             .fetch();
 

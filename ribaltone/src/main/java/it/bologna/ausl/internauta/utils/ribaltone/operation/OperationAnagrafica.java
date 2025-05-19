@@ -39,7 +39,7 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
 
     @Override
     public void esegui(Object workToDo, RepositoryFactory repositoryFactory) {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(getEntityManager());
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         switch (getAzione()) {
 
             case EDIT, INSERT -> {
@@ -66,7 +66,7 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                         // Se non esiste, creiamo un nuovo array con la sola nuova email
                         utente.setEmails(new String[]{nuovaEmail});
                     }
-                    getEntityManager().persist(utente);
+                    repositoryFactory.getEntityManager().persist(utente);
                 }
             }
         }
@@ -74,7 +74,7 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
 
     public void menageContatto(RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //devo creare i dettagli contatti corretti
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QDatiImportatiAnagrafica qDatiImportatiAnagrafica = QDatiImportatiAnagrafica.datiImportatiAnagrafica;
         switch (getAzione()) {

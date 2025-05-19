@@ -46,7 +46,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
 
     @Override
     public void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
-        EntityManager em = getEntityManager();
+        EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QStruttura qStruttura = QStruttura.struttura;
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
@@ -125,10 +125,11 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di confluenza è un nuovo dettaglio e devo cambiarlo anche nei gruppi
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di rinomina è lo stesso ma col nome nuovo (cosi non devo gestire i gruppi)
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di cambio padre è lo stesso non devo fare nulla
+     * @param repositoryFactory
      */
-    public void menageContattiTrasformati() {
+    public void menageContattiTrasformati(RepositoryFactory repositoryFactory) {
         QStruttura qStruttura = QStruttura.struttura;
-        EntityManager em = getEntityManager();
+        EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
         switch (getAzione()) {
