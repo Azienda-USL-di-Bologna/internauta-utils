@@ -54,6 +54,16 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "datain")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datain;
+
+    @Column(name = "datafi")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datafi;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
@@ -84,6 +94,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
         this.idPadre = idPadre;
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -138,6 +149,22 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
     public void setVersion(ZonedDateTime version) {
         this.version = version;
+    }
+
+    public ZonedDateTime getDatain() {
+        return datain;
+    }
+
+    public void setDatain(ZonedDateTime datain) {
+        this.datain = datain;
+    }
+
+    public ZonedDateTime getDatafi() {
+        return datafi;
+    }
+
+    public void setDatafi(ZonedDateTime datafi) {
+        this.datafi = datafi;
     }
 
     @Override

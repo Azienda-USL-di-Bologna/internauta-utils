@@ -49,6 +49,9 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @Column(name = "id_casella")
     private Integer idCasella;
 
+    @Column(name = "codice_ente")
+    private Integer codiceEnte;
+
     @Size(max = 2147483647)
     @Column(name = "tipo_appartenenza")
     private String tipoAppartenenza;
@@ -68,6 +71,24 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
 
     @Column(name = "errore")
     private String errore;
+
+    @Column(name = "datain")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datain;
+
+    @Column(name = "datafi")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datafi;
+
+    public Integer getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(Integer codiceEnte) {
+        this.codiceEnte = codiceEnte;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -170,6 +191,22 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
 
     public void setCodiceAzienda(String codiceAzienda) {
         this.codiceAzienda = codiceAzienda;
+    }
+
+    public ZonedDateTime getDatain() {
+        return datain;
+    }
+
+    public void setDatain(ZonedDateTime datain) {
+        this.datain = datain;
+    }
+
+    public ZonedDateTime getDatafi() {
+        return datafi;
+    }
+
+    public void setDatafi(ZonedDateTime datafi) {
+        this.datafi = datafi;
     }
 
     public Integer getId() {

@@ -12,11 +12,15 @@ public class ColonneImportazioneCSVRibaltoneEnums {
     public static enum ColonneAppartenente implements ColonneImportazioneCSVRibaltone {
         codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola", "codice_matricola")),
         nome(Arrays.asList("nome")),
+        cognome(Arrays.asList("cognome")),
+        codiceEnte(Arrays.asList("codiceEnte", "codice_ente")),
         codiceFiscale(Arrays.asList("codiceFiscale", "codice fiscale", "codice_fiscale")),
         idCasella(Arrays.asList("idCasella", "id casella", "id_casella")),
         tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza")),
         username(Arrays.asList("username")),
         responsabile(Arrays.asList("responsabile")),
+        datain(Arrays.asList("dataIn", "data attivazione", "data inizio")),
+        datafi(Arrays.asList("dataFi", "data cessazione", "data fine")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -47,6 +51,8 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         idPadre(Arrays.asList("idPadre", "id casella padre", "id padre", "id_padre")),
         descrizione(Arrays.asList("descrizione")),
         tipoLegame(Arrays.asList("tipoLegame", "tipo legame", "tipo_legame")),
+        datain(Arrays.asList("dataIn", "data attivazione", "data inizio", "datain")),
+        datafi(Arrays.asList("dataFi", "data cessazione", "data fine", "datafi")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;

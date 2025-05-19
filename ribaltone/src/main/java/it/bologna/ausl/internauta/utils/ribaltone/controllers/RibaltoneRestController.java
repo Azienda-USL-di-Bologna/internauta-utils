@@ -145,7 +145,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
     public void importaCSV(
         @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
-        @RequestParam(required = true, name = "csv") MultipartFile csv,
+        @RequestBody(required = true) MultipartFile csv,
         @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
         @RequestParam(required = true, name = "separatore") String separatore
     ) throws RibaltoneHttpException {
