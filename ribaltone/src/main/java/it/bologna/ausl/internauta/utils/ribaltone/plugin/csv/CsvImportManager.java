@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -104,7 +105,7 @@ public class CsvImportManager {
                 switch (tipologia) {
                     case APPARTENENTI -> {
                         CSVDaImportareAppartenente csvDaImportareAppartenente = buildImportazioneCSVRow(tipologia, csvRowMap);
-                        String errore = validateAppartenente(csvRowMap);
+                        String errore = validateAppartenente(csvDaImportareAppartenente);
                         csvDaImportareAppartenente.setErrore(errore);
                         csvDaImportareAppartenente.setIdAzienda(azienda.getId());
                         csvDaImportareAppartenente.setCodiceAzienda(azienda.getCodice());
@@ -112,7 +113,7 @@ public class CsvImportManager {
                     }
                     case STRUTTURE -> {
                         CSVDaImportareStruttura csvDaImportareStruttura = buildImportazioneCSVRow(tipologia, csvRowMap);
-                        String errore = validateStruttura(csvRowMap);
+                        String errore = validateStruttura(csvDaImportareStruttura);
                         csvDaImportareStruttura.setErrore(errore);
                         csvDaImportareStruttura.setIdAzienda(azienda.getId());
                         csvDaImportareStruttura.setCodiceAzienda(azienda.getCodice());
@@ -120,7 +121,7 @@ public class CsvImportManager {
                     }
                     case ANAGRAFICHE -> {
                         CSVDaImportareAnagrafica csvDaImportareAnagrafica = buildImportazioneCSVRow(tipologia, csvRowMap);
-                        String errore = validateAnagrafica(csvRowMap);
+                        String errore = validateAnagrafica(csvDaImportareAnagrafica);
                         csvDaImportareAnagrafica.setErrore(errore);
                         csvDaImportareAnagrafica.setIdAzienda(azienda.getId());
                         csvDaImportareAnagrafica.setCodiceAzienda(azienda.getCodice());
@@ -128,7 +129,7 @@ public class CsvImportManager {
                     }
                     case TRASFORMAZIONI -> {
                         CSVDaImportareTrasformazione csvDaImportareTrasformazione = buildImportazioneCSVRow(tipologia, csvRowMap);
-                        String errore = validateTrasformazione(csvRowMap);
+                        String errore = validateTrasformazione(csvDaImportareTrasformazione);
                         csvDaImportareTrasformazione.setErrore(errore);
                         csvDaImportareTrasformazione.setIdAzienda(azienda.getId());
                         csvDaImportareTrasformazione.setCodiceAzienda(azienda.getCodice());
@@ -163,89 +164,89 @@ public class CsvImportManager {
         return res;
     }
 
-    private String validateAppartenente(Map<String, String> csvRowMap) {
+    private String validateAppartenente(CSVDaImportareAppartenente csvDaImportareAppartenente) {
         String erroreRiga = "";
-        if (csvRowMap.get("codiceMatricola") == null) {
+        if (!StringUtils.hasText(csvDaImportareAppartenente.getCodiceMatricola())) {
             erroreRiga = erroreRiga + "cordice matricola assente; ";
         }
-        if (csvRowMap.get("nome") == null) {
+        if (!StringUtils.hasText(csvDaImportareAppartenente.getNome())) {
             erroreRiga = erroreRiga + "nome assente; ";
         }
-        if (csvRowMap.get("cognome") == null) {
+        if (!StringUtils.hasText(csvDaImportareAppartenente.getCognome())) {
             erroreRiga = erroreRiga + "cognome assente; ";
         }
-        if (csvRowMap.get("codiceFiscale") == null) {
+        if (!StringUtils.hasText(csvDaImportareAppartenente.getCodiceFiscale())) {
             erroreRiga = erroreRiga + "codice fiscale assente; ";
         }
-        if (csvRowMap.get("idCasella") == null) {
+        if (csvDaImportareAppartenente.getIdCasella() == null) {
             erroreRiga = erroreRiga + "idCasella assente; ";
         }
-        if (csvRowMap.get("datain") == null) {
+        if (csvDaImportareAppartenente.getDatain() == null) {
             erroreRiga = erroreRiga + "data di inizio afferenza assente; ";
         }
-        if (csvRowMap.get("tipoAppartenenza") == null
-            || !csvRowMap.get("tipoAppartenenza").equalsIgnoreCase("T")
-            || !csvRowMap.get("tipoAppartenenza").equalsIgnoreCase("F")) {
-            erroreRiga = erroreRiga + "data di inizio afferenza assente o non accettata; ";
+        if (!StringUtils.hasText(csvDaImportareAppartenente.getTipoAppartenenza())
+            || !(csvDaImportareAppartenente.getTipoAppartenenza().equalsIgnoreCase("T")
+            || csvDaImportareAppartenente.getTipoAppartenenza().equalsIgnoreCase("F"))) {
+            erroreRiga = erroreRiga + "tipologia di inizio afferenza assente o non accettata; ";
         }
         return erroreRiga;
     }
 
-    private String validateStruttura(Map<String, String> csvRowMap) {
+    private String validateStruttura(CSVDaImportareStruttura csvDaImportareStruttura) {
         String erroreRiga = "";
-        if (csvRowMap.get("idCasella") == null) {
+        if (csvDaImportareStruttura.getIdCasella() == null) {
             erroreRiga = erroreRiga + "idCasella assente; ";
         }
-        if (csvRowMap.get("idPadre") == null) {
+        if (csvDaImportareStruttura.getIdPadre() == null) {
             erroreRiga = erroreRiga + "idPadre assente; ";
         }
-        if (csvRowMap.get("descrizione") == null) {
+        if (!StringUtils.hasText(csvDaImportareStruttura.getDescrizione())) {
             erroreRiga = erroreRiga + "nome della struttura assente; ";
         }
-        if (csvRowMap.get("datain") == null) {
+        if (csvDaImportareStruttura.getDatain() == null) {
             erroreRiga = erroreRiga + "data di inizio afferenza assente; ";
         }
         return erroreRiga;
     }
 
-    private String validateAnagrafica(Map<String, String> csvRowMap) {
+    private String validateAnagrafica(CSVDaImportareAnagrafica csvDaImportareAnagrafica) {
         String erroreRiga = "";
-        if (csvRowMap.get("codiceMatricola") == null) {
+        if (csvDaImportareAnagrafica.getCodiceMatricola() == null) {
             erroreRiga = erroreRiga + "codiceMatricola assente; ";
         }
-        if (csvRowMap.get("cognome") == null) {
+        if (!StringUtils.hasText(csvDaImportareAnagrafica.getCognome())) {
             erroreRiga = erroreRiga + "cognome assente; ";
         }
-        if (csvRowMap.get("nome") == null) {
+        if (!StringUtils.hasText(csvDaImportareAnagrafica.getNome())) {
             erroreRiga = erroreRiga + "nome assente; ";
         }
-        if (csvRowMap.get("codiceFiscale") == null) {
+        if (!StringUtils.hasText(csvDaImportareAnagrafica.getCodiceFiscale())) {
             erroreRiga = erroreRiga + "codice fiscale assente; ";
         }
-        if (csvRowMap.get("email") == null) {
+        if (!StringUtils.hasText(csvDaImportareAnagrafica.getEmail())) {
             erroreRiga = erroreRiga + "email assente; ";
         }
         return erroreRiga;
     }
 
-    private String validateTrasformazione(Map<String, String> csvRowMap) {
+    private String validateTrasformazione(CSVDaImportareTrasformazione csvDaImportareTrasformazione) {
         String erroreRiga = "";
-        if (csvRowMap.get("progressivoRiga") == null) {
+        if (csvDaImportareTrasformazione.getProgressivoRiga() == null) {
             erroreRiga = erroreRiga + "progressivoRiga assente; ";
         }
-        if (csvRowMap.get("idCasellaPartenza") == null) {
+        if (csvDaImportareTrasformazione.getIdCasellaPartenza() == null) {
             erroreRiga = erroreRiga + "id Casella di Partenza assente; ";
         }
-        if (csvRowMap.get("idCasellaArrivo") == null) {
+        if (csvDaImportareTrasformazione.getIdCasellaArrivo() == null) {
             erroreRiga = erroreRiga + "idCasellaArrivo assente; ";
         }
-        if (csvRowMap.get("dataTrasformazione") == null) {
+        if (csvDaImportareTrasformazione.getDataTrasformazione() == null) {
             erroreRiga = erroreRiga + "data Trasformazione assente; ";
         }
-        if (csvRowMap.get("motivo") == null || csvRowMap.get("motivo").equalsIgnoreCase("X")) {
+        if (!StringUtils.hasText(csvDaImportareTrasformazione.getMotivo()) || !csvDaImportareTrasformazione.getMotivo().equalsIgnoreCase("X")) {
             erroreRiga = erroreRiga + "motivo assente o diverso da X; ";
         }
-        if (csvRowMap.get("datainPartenza") == null) {
+        if (csvDaImportareTrasformazione.getDatainPartenza() == null) {
             erroreRiga = erroreRiga + "data inizio della casella di partenza assente; ";
         }
 
@@ -274,10 +275,13 @@ public class CsvImportManager {
                 noi lo prendiamo bene lo stesso
                  */
                 if (colonnaEnum != colonnaEnum.getErroriColumn()) {
+                    String value = null;
+                    if (StringUtils.hasText(csvRowMap.get(headerName))) {
+                        value = csvRowMap.get(headerName);
+                    }
+                    Object convertedValue = wrapper.convertIfNecessary(value, wrapper.getPropertyDescriptor(colonnaEnum.toString()).getPropertyType());
 
-                    Object convertIfNecessary = wrapper.convertIfNecessary(csvRowMap.get(headerName), wrapper.getPropertyDescriptor(colonnaEnum.toString()).getPropertyType());
-
-                    wrapper.setPropertyValue(colonnaEnum.toString(), convertIfNecessary);
+                    wrapper.setPropertyValue(colonnaEnum.toString(), convertedValue);
                 }
             } else { // se non lo trovo, stampo un errore e lo ignoro
                 log.error(String.format("header csv %s non previsto dal tracciato, il campo sarà ignorato", headerName));

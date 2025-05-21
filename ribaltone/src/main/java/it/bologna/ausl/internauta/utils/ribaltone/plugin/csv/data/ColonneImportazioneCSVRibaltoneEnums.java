@@ -16,7 +16,7 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         codiceEnte(Arrays.asList("codiceEnte", "codice_ente")),
         codiceFiscale(Arrays.asList("codiceFiscale", "codice fiscale", "codice_fiscale")),
         idCasella(Arrays.asList("idCasella", "id casella", "id_casella")),
-        tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza")),
+        tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza", "TIPO_APPARTENENZA")),
         username(Arrays.asList("username")),
         responsabile(Arrays.asList("responsabile")),
         datain(Arrays.asList("dataIn", "data attivazione", "data inizio")),
