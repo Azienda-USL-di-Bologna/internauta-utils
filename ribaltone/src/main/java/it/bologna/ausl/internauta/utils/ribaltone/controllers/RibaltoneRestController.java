@@ -2,9 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.types.dsl.EntityPathBase;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
@@ -15,7 +13,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.service.ConversionServices;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
@@ -32,7 +29,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
-import it.nextsw.common.controller.exceptions.NotFoundResourceException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -59,10 +55,10 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.RequestBody;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
-import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QRuolo;
 import it.bologna.ausl.model.entities.baborg.Ruolo;
-import it.bologna.ausl.model.entities.baborg.projections.generated.RuoloWithPlainFields;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -133,12 +129,20 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @param configRibaltoneView
      * @throws RibaltoneHttpException
      */
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException {
-        ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
+        if (!isRibaltoneInCorso()) {
+            AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+            Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+            ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
+            ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata().toString(), realUser, configRibaltoneView.getNote(), null, "ribalta");
+        } else {
+            throw new RibaltoneHttpException("non puoi lanicare il ribaltone perche è gia in corso");
+        }
     }
 
     @Transactional(rollbackOn = Throwable.class)
@@ -197,19 +201,29 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @return
      * @throws RibaltoneHttpException
      */
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
         @RequestBody ConfigRibaltoneView configRibaltoneView,
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
+        if (hoPermessoPerLanciareRibaltone()) {
+            if (!isRibaltoneInCorso()) {
+                AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+                Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
 
-        if (possoLanciareRibaltone()) {
-
-            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata().toString());
-            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-            ribaltoneCache.cleanCache();
-            return new ResponseEntity(ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport), HttpStatus.OK);
+                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata().toString());
+                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+                ribaltoneCache.cleanCache();
+                Map<String, Object> infoRibaltone = new HashMap<>();
+                infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata().toString(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
+                infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
+                return new ResponseEntity(infoRibaltone, HttpStatus.OK);
+            } else {
+                return new ResponseEntity("non puoi lanicare il ribaltone perche è gia in corso", HttpStatus.IM_USED);
+            }
         } else {
             return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
         }
@@ -220,32 +234,44 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      *
      * @param codiceAzienda
      * @param idSelectedConfiguration
+     * @param idRibaltTree
      * @return
      * @throws RibaltoneHttpException
      * @throws java.lang.ClassNotFoundException
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idSelectedConfiguration
+        @RequestParam(required = true) String idSelectedConfiguration,
+        @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
 
-        if (possoLanciareRibaltone()) {
-            return new ResponseEntity(ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration), HttpStatus.OK);
+        if (hoPermessoPerLanciareRibaltone()) {
+            AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+            Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+            ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
+            ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
+            return new ResponseEntity("tutto ok", HttpStatus.OK);
         } else {
             return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
         }
     }
 
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
     public void ribaltaDeleteCache(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idSelectedConfiguration
+        @RequestParam(required = true) String idSelectedConfiguration,
+        @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idSelectedConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         ribaltoneCache.cleanCache();
+        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+        Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache");
     }
 
     @Transactional(rollbackOn = Throwable.class)
@@ -255,7 +281,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) Integer idStrutturaDestinazione,
         @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
     ) throws RibaltoneHttpException {
-        if (possoLanciareRibaltone()) {
+        if (hoPermessoPerLanciareRibaltone()) {
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             QStruttura qStruttura = QStruttura.struttura;
             QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
@@ -427,30 +453,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         }
     }
 
-//    private Persona getRealPerson(JPAQueryFactory queryFactory) throws NotFoundResourceException, BlackBoxPermissionException {
-//        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
-//        Persona person;
-//        QPersona qPersona = QPersona.persona;
-//        if (authenticatedUserProperties.getRealPerson() != null) {
-//            LOGGER.info("si real user");
-//            person = authenticatedUserProperties.getRealPerson();
-//        } else {
-//            LOGGER.info("no real user");
-//            person = authenticatedUserProperties.getPerson();
-//        }
-//        LOGGER.info(String.format("person: %s", person.getId()));
-//
-//        Persona persona = queryFactory
-//            .select(qPersona)
-//            .from(qPersona)
-//            .where(qPersona.id.eq(person.getId()))
-//            .fetchFirst();
-//        if (persona == null) {
-//            throw new NotFoundResourceException("persona non trovata");
-//        }
-//        return persona;
-//    }
-    private boolean possoLanciareRibaltone() {
+    private boolean hoPermessoPerLanciareRibaltone() {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QRuolo qRuolo = QRuolo.ruolo;
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
@@ -477,6 +480,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             }
         }
         return lanciaRibaltone;
+    }
+
+    public Boolean isRibaltoneInCorso() {
+        return false;
     }
 
 }

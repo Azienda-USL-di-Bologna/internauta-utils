@@ -55,7 +55,7 @@ public class CSVDataManager extends SourceDataManager {
     @Override
     public List<DatiDaImportareStruttura> getStrutture() {
         List<DatiDaImportareStruttura> resultList = entityManager.createNativeQuery(
-            csvSpecificData.getQueryRecuperoDati().getQueryAppartenenti(), DatiDaImportareStruttura.class)
+            csvSpecificData.getQueryRecuperoDati().getQueryStrutture(), DatiDaImportareStruttura.class)
             .setParameter(1, idAzienda.toString()).getResultList();
         return resultList;
     }
@@ -63,7 +63,7 @@ public class CSVDataManager extends SourceDataManager {
     @Override
     public List<DatiDaImportareTrasformazione> getTrasformazioni() {
         List<DatiDaImportareTrasformazione> resultList = entityManager.createNativeQuery(
-            csvSpecificData.getQueryRecuperoDati().getQueryAppartenenti(), DatiDaImportareTrasformazione.class)
+            csvSpecificData.getQueryRecuperoDati().getQueryTrasformazioni(), DatiDaImportareTrasformazione.class)
             .setParameter(1, idAzienda.toString()).getResultList();
         return resultList;
     }
@@ -71,7 +71,7 @@ public class CSVDataManager extends SourceDataManager {
     @Override
     public List<DatiDaImportareAnagrafica> getAnagrafica() {
         List<DatiDaImportareAnagrafica> resultList = entityManager.createNativeQuery(
-            csvSpecificData.getQueryRecuperoDati().getQueryAppartenenti(), DatiDaImportareAnagrafica.class)
+            csvSpecificData.getQueryRecuperoDati().getQueryAnagrafiche(), DatiDaImportareAnagrafica.class)
             .setParameter(1, idAzienda.toString()).getResultList();
         return resultList;
     }

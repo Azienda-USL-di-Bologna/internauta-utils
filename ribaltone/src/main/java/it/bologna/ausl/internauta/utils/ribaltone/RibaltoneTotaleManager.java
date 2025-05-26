@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
@@ -13,8 +14,11 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
+import it.bologna.ausl.model.entities.ribaltoneutils.QRibaltoneDaLanciare;
+import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,6 +123,47 @@ public class RibaltoneTotaleManager {
         Operations buildOperations = operationsCacheManager.restore();
         buildOperations.execute(repositoryFactory, codiceAzienda);
         return buildOperations;
+    }
+
+    public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {
+
+        RibaltoneDaLanciare ribaltoneDaLanciare = null;
+        switch (from) {
+            case "ribalta" -> {
+                ribaltoneDaLanciare = new RibaltoneDaLanciare();
+                ribaltoneDaLanciare.setStato("DA_LANCIARE");
+                ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
+                ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
+                ribaltoneDaLanciare.setIdUtente(utente);
+                ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
+                ribaltoneDaLanciare.setNote(note);
+                ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
+            }
+            case "ribaltaPostUserReport" -> {
+                ribaltoneDaLanciare = entityManager.find(RibaltoneDaLanciare.class, idRibaltTree);
+                ribaltoneDaLanciare.setStato("DA_LANCIARE");
+            }
+            case "ribaltaAndGetUserReport" -> {
+                ribaltoneDaLanciare = new RibaltoneDaLanciare();
+                ribaltoneDaLanciare.setStato("LANCIATO");
+                ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
+                ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
+                ribaltoneDaLanciare.setIdUtente(utente);
+                ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
+                ribaltoneDaLanciare.setNote(note);
+                ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
+            }
+            case "ribaltaDeleteCache" -> {
+                ribaltoneDaLanciare = entityManager.find(RibaltoneDaLanciare.class, idRibaltTree);
+                ribaltoneDaLanciare.setStato("ANNULLATO");
+            }
+            default -> {
+                throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");
+            }
+        }
+
+        entityManager.persist(ribaltoneDaLanciare);
+        return ribaltoneDaLanciare.getId();
     }
 
 }
