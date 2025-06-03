@@ -1731,8 +1731,7 @@ public class MinIOWrapper {
     }
 
     /**
-     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino
-     * alla data passata
+     * Torna l'elenco dei file cancellati logicamente per l'azienda passata fino alla data passata
      *
      * @param codiceAzienda se "null" torna quelli di tutte le aziende
      * @param lessThan se null, torna tutti i file eliminati, altrimenti torna
