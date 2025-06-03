@@ -430,7 +430,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         us.setAttivo(Boolean.TRUE);
                         us.setIdStruttura(nuovaStruttura);
                         us.setAttivoDal(ZonedDateTime.now());
-                        us.setBitRuoli(utenteStruttura.getBitRuoli());
+//                        us.setBitRuoli(utenteStruttura.getBitRuoli());
                         us.setIdAfferenzaStruttura(idAfferenzaStruttura);
                         us.setIdUtente(utente);
                         us.setResponsabile(utenteStruttura.getResponsabile());
