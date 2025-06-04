@@ -437,7 +437,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         us.setAttivo(Boolean.TRUE);
                         us.setIdStruttura(nuovaStruttura);
                         us.setAttivoDal(ZonedDateTime.now());
-                        us.setBitRuoli(utenteStruttura.getBitRuoli());
+//                        us.setBitRuoli(utenteStruttura.getBitRuoli());
                         us.setIdAfferenzaStruttura(idAfferenzaStruttura);
                         us.setIdUtente(utente);
                         us.setResponsabile(utenteStruttura.getResponsabile());
@@ -473,14 +473,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
         List<Ruolo> ruoli = queryFactory.select(qRuolo).from(qRuolo).where(
             qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CA.toString()).or(
-                qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CI.toString())).or(
                 qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.SD.toString()))
         ).fetch();
 
         Boolean lanciaRibaltone = false;
         for (Ruolo ruolo : ruoli) {
             if (((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.CA) && (bitRuoliUtente & ruolo.getMascheraBit()) == ruolo.getMascheraBit()))
-                || ((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.CI) || ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.SD))
+                || ((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.SD))
                 && (bitRuoliPersona & ruolo.getMascheraBit()) == ruolo.getMascheraBit())) {
                 lanciaRibaltone = true;
                 break;
