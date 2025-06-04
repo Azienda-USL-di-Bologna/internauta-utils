@@ -25,6 +25,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,6 +41,7 @@ import java.util.Map;
  */
 public class OperationsManager {
 
+    private static final Logger log = LoggerFactory.getLogger(OperationsManager.class);
     private DatiDaImportare datiDaImportare;
     private List<DatiImportatiAnagrafica> anagraficheImportate;
     private List<DatiImportatiAppartenente> appartenentiImportati;
@@ -87,7 +91,12 @@ public class OperationsManager {
         return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni);
     }
 
-    private Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStrutture(List<DatiDaImportareStruttura> struttureDaImportare, List<DatiImportatiStruttura> struttureImportate, Map<String, Integer> indexStruttureImportate, Map<String, Integer> indexIdCasellaPartenzaTrasformazioni) throws RibaltoneHttpException {
+    private Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStrutture(
+        List<DatiDaImportareStruttura> struttureDaImportare,
+        List<DatiImportatiStruttura> struttureImportate,
+        Map<String, Integer> indexStruttureImportate,
+        Map<String, Integer> indexIdCasellaPartenzaTrasformazioni
+    ) throws RibaltoneHttpException {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
         List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> mapToReturn = new HashMap<>();
@@ -99,6 +108,7 @@ public class OperationsManager {
         this.struttureChiuse = 0;
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
             Integer posizione = indexStruttureImportate.get(daImportareStruttura.getKey());
+
             if (posizione != null) {
                 DatiDaImportareTrasformazione trasf = new DatiDaImportareTrasformazione();
                 trasf.setCodiceAzienda(daImportareStruttura.getCodiceAzienda());
@@ -113,7 +123,7 @@ public class OperationsManager {
                 trasf.setIdCasellaPartenza(daImportareStruttura.getIdCasella());
                 trasf.setDataoraOper(ZonedDateTime.now());
 
-                if (!struttureImportate.get(posizione).getIdPadre().equals(daImportareStruttura.getIdPadre())) {
+                if (struttureImportate.get(posizione).getIdPadre() != null && !struttureImportate.get(posizione).getIdPadre().equals(daImportareStruttura.getIdPadre())) {
                     //cambio di padre
                     operationStrutturaList.add(new OperationStruttura(Operation.Azione.CAMBIO_PADRE, daImportareStruttura, repositoryFactory.getEntityManager()));
                     trasf.setMotivo("T");
@@ -126,6 +136,7 @@ public class OperationsManager {
                 } else {
                     //non è successo nulla è come era prima
                 }
+
             } else {
                 //allora è una nuova
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura, repositoryFactory.getEntityManager()));
@@ -141,96 +152,90 @@ public class OperationsManager {
                 this.struttureChiuse++;
             }
         }
+
         mapToReturn.put("strutture", operationStrutturaList);
         mapToReturn.put("trasformazioni", operationTrasformazioneList);
 
         return mapToReturn;
     }
 
-    private List<OperationAppartenente> buildOperationsAppartenenti(List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiImportatiAppartenente> appartenentiImportati, Map<String, Integer> indexAppartenentiImportati, List<DatiImportatiStruttura> struttureImportateList, List<DatiDaImportareStruttura> struttureDaImportareList) {
+    private List<OperationAppartenente> buildOperationsAppartenenti(
+        List<DatiDaImportareAppartenente> appartenentiDaImportare,
+        List<DatiImportatiAppartenente> appartenentiImportati,
+        Map<String, Integer> indexAppartenentiImportati,
+        List<DatiImportatiStruttura> struttureImportateList,
+        List<DatiDaImportareStruttura> struttureDaImportareList
+    ) {
         List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
         //prendo in considerazione tutte le modifiche e gli inserimenti dei nuovi utenti
-        Map<String, Integer> index2StruttureImportate = RibaltoneUtils.generateIndex(struttureImportateList, DatiImportatiStruttura::getIdCasella);
+        Map<String, Integer> indexIdCasellaStruttureImportate = RibaltoneUtils.generateIndex(struttureImportateList, DatiImportatiStruttura::getIdCasella);
 
-        Map<String, Integer> index2StruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportareList, DatiDaImportareStruttura::getIdCasella);
+        Map<String, Integer> indexIdCasellaStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportareList, DatiDaImportareStruttura::getIdCasella);
 
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
             Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
             Operation.Azione azione = Operation.Azione.INSERT;
-            Boolean salva = true;
             List<String> editString = new ArrayList();
             if (posizione != null) {
                 if (!appartenentiImportati.get(posizione).getResponsabile().equals(datiDaImportareAppartenente.getResponsabile())) {
                     editString.add("responsabile");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
                 if (!appartenentiImportati.get(posizione).getCognome().equals(datiDaImportareAppartenente.getCognome())) {
                     editString.add("cognome");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
                 if (!appartenentiImportati.get(posizione).getNome().equals(datiDaImportareAppartenente.getNome())) {
                     editString.add("nome");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
                 if (!appartenentiImportati.get(posizione).getTipoAppartenenza().equals(datiDaImportareAppartenente.getTipoAppartenenza())) {
                     editString.add("afferenza");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
                 if (!appartenentiImportati.get(posizione).getCodiceMatricola().equals(datiDaImportareAppartenente.getCodiceMatricola())) {
                     editString.add("codice_matricola");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
-                if (!appartenentiImportati.get(posizione).getDataAssunzione().equals(datiDaImportareAppartenente.getDataAssunzione())) {
+                if (appartenentiImportati.get(posizione).getDataAssunzione() != null && !appartenentiImportati.get(posizione).getDataAssunzione().equals(datiDaImportareAppartenente.getDataAssunzione())) {
                     editString.add("dataAssunzione");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
-                if (!appartenentiImportati.get(posizione).getDataDimissione().equals(datiDaImportareAppartenente.getDataDimissione())) {
+                if (appartenentiImportati.get(posizione).getDataDimissione() != null && !appartenentiImportati.get(posizione).getDataDimissione().equals(datiDaImportareAppartenente.getDataDimissione())) {
                     editString.add("dataDimissione");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
-                if (!appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
+                if (appartenentiImportati.get(posizione).getUsername() != null && !appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
                     editString.add("username");
                     azione = Operation.Azione.EDIT;
-                } else {
-                    salva = false;
                 }
-            }
-            if (salva) {
-
                 if (azione.equals(Operation.Azione.EDIT)) {
-                    DatiImportatiStruttura struttura = struttureImportateList.get(index2StruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                    DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
                     operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, struttura.getDescrizione()));
-                } else {
-                    this.utentiStrutturaChiusi--;
-                    DatiDaImportareStruttura struttura = struttureDaImportareList.get(index2StruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
-                    operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), null, struttura.getDescrizione()));
                 }
+            } else {
+//             se posizione è null allora non ho una riga tra le importate che mi rappresenta l'appartenente'
+                DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                String descrizione;
+                if (struttura == null) {
+                    DatiDaImportareStruttura strutturaDaImportare = struttureDaImportareList.get(indexIdCasellaStruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                    descrizione = strutturaDaImportare.getDescrizione();
+                } else {
+                    descrizione = struttura.getDescrizione();
+                }
+                operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, descrizione));
+                this.utentiStrutturaChiusi--;
             }
         }
         //ora pensiamo a tutte le chiusure
         Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
-            if (!indexDaImportare.containsKey(appartenenteImportato.getKey())) {
-                DatiImportatiStruttura struttura = struttureImportateList.get(index2StruttureImportate.get(appartenenteImportato.getIdCasella().toString()));
+            if (indexDaImportare != null && !indexDaImportare.isEmpty() && !indexDaImportare.containsKey(appartenenteImportato.getKey())) {
+                DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(appartenenteImportato.getIdCasella().toString()));
                 operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), null, struttura.getDescrizione()));
                 this.utentiStrutturaChiusi++;
             }
         }
-
         return operationAppartenentiList;
     }
 

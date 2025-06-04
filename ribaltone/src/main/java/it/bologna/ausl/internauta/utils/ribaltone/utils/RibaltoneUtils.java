@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
@@ -16,6 +17,8 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -23,11 +26,13 @@ import java.util.function.Supplier;
  */
 public class RibaltoneUtils {
 
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneUtils.class);
+
     public static String formatStringsWithCommasAndQuotes(List<String> strings) {
         // Utilizza Stream per unire le stringhe con le virgole
         return strings.stream()
-                .map(s -> "'" + s + "'") // Aggiunge gli apici singoli
-                .collect(Collectors.joining(", ")); // Intervalla con le virgole
+            .map(s -> "'" + s + "'") // Aggiunge gli apici singoli
+            .collect(Collectors.joining(", ")); // Intervalla con le virgole
     }
 
 //    public static Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare) {
@@ -42,11 +47,16 @@ public class RibaltoneUtils {
         Map<String, Integer> indexToImport = new HashMap<>();
         for (int i = 0; i < datiDaImportare.size(); i++) {
             T datiRibaltoneInterface = (T) datiDaImportare.get(i);
-            indexToImport.put(String.valueOf(fn.apply(datiRibaltoneInterface)), i);
+            try {
+                indexToImport.put(String.valueOf(fn.apply(datiRibaltoneInterface)), i);
+            } catch (Exception e) {
+                log.error("errore durante la generazione dell'indice", e);
+                log.error(datiRibaltoneInterface.toString());
+            }
         }
         return indexToImport;
     }
-    
+
     public static List<UtenteStruttura> differenza(List<UtenteStruttura> list1, List<UtenteStruttura> list2) {
         List<UtenteStruttura> result = new ArrayList<>();
         for (UtenteStruttura u1 : list1) {

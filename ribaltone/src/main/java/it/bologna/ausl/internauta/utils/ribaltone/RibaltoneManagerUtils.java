@@ -12,6 +12,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
@@ -27,12 +28,16 @@ import jakarta.persistence.EntityManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class RibaltoneManagerUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneManagerUtils.class);
 
     public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
@@ -108,7 +113,7 @@ public class RibaltoneManagerUtils {
                     List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
                     List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
 
-                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
+                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione(), repositoryFactory);
                     return datiDaImportare;
                 }
             }
@@ -122,7 +127,7 @@ public class RibaltoneManagerUtils {
                     List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
                     List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
                     List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
-                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, csvSpecificData.getProgressivo_ultima_trasformazione(), repositoryFactory);
+                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, csvSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione(), repositoryFactory);
                     return datiDaImportare;
                 }
             }

@@ -54,6 +54,9 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "codice_ente")
+    private String codiceEnte;
+
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -202,6 +205,14 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
     @Override
     public String getClasse() {
         return CSVDaImportareStruttura.class.getCanonicalName();
+    }
+
+    public String getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(String codiceEnte) {
+        this.codiceEnte = codiceEnte;
     }
 
 }

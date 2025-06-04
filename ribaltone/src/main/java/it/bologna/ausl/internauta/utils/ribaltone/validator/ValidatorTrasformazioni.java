@@ -41,19 +41,23 @@ public class ValidatorTrasformazioni extends AbstractValidator {
         List<DatiDaImportareTrasformazione> trasformazioniNonValide = new ArrayList<DatiDaImportareTrasformazione>();
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : datiDaImportareTrasformazioni) {
             boolean trasformazioneValida = true;
-            if (datiDaImportareTrasformazione.getProgressivoRiga() == null || datiDaImportareTrasformazione.getProgressivoRiga() <= progressivoTrasformazione) {
-                if (!StringUtils.hasText(datiDaImportareTrasformazione.getMotivo())) {
-                    trasformazioneValida = false;
-                    //non puo essere black
-                } else {
-                    if (datiDaImportareTrasformazione.getMotivo().equalsIgnoreCase("X")) {
-                        if (indexStrutture.containsKey(datiDaImportareTrasformazione.getIdCasellaPartenza().toString())) {
-                            trasformazioneValida = false;
-                        }
-                        if (!indexStrutture.containsKey(datiDaImportareTrasformazione.getIdCasellaArrivo().toString()) //la casella di arrivo deve essere valida
+            if (datiDaImportareTrasformazione == null) {
+                trasformazioneValida = false;
+            } else {
+                if (datiDaImportareTrasformazione.getProgressivoRiga() == null || datiDaImportareTrasformazione.getProgressivoRiga() <= progressivoTrasformazione) {
+                    if (!StringUtils.hasText(datiDaImportareTrasformazione.getMotivo())) {
+                        trasformazioneValida = false;
+                        //non puo essere black
+                    } else {
+                        if (datiDaImportareTrasformazione.getMotivo().equalsIgnoreCase("X")) {
+                            if (indexStrutture.containsKey(datiDaImportareTrasformazione.getIdCasellaPartenza().toString())) {
+                                trasformazioneValida = false;
+                            }
+                            if (!indexStrutture.containsKey(datiDaImportareTrasformazione.getIdCasellaArrivo().toString()) //la casella di arrivo deve essere valida
                                 ) {
-                            //confluenza non valida perche o sulla radice o in nessuna casella valida
-                            trasformazioneValida = false;
+                                //confluenza non valida perche o sulla radice o in nessuna casella valida
+                                trasformazioneValida = false;
+                            }
                         }
                     }
                 }

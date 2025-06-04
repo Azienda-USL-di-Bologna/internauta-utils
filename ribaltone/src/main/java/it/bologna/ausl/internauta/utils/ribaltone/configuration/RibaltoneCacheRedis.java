@@ -12,12 +12,15 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -30,6 +33,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * @author Top
  */
 public class RibaltoneCacheRedis extends RibaltoneCache {
+
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneCacheRedis.class);
 
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -64,7 +69,9 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         List<OperationTrasformazione> listOfOperationTrasformazioni = new ArrayList();
 
         Map<String, List<Map<String, Object>>> data = this.getData(key);
-
+        if (data == null) {
+            return null;
+        }
         for (String key : data.keySet()) {
 //            List<Map<String, Object>> op = objectMapper.readValue(data.get(key).toString(),
 //                    new TypeReference<List<Map<String,Object>>>(){}
@@ -131,6 +138,9 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
     public Map<String, List<Map<String, Object>>> getData(String key) throws RibaltoneHttpException, JsonProcessingException {
 
+        if (redisTemplate.opsForValue().get(key) == null) {
+            return null;
+        }
         Map<String, List<Map<String, Object>>> op = objectMapper.readValue((String) redisTemplate.opsForValue().get(key),
             new TypeReference<Map<String, List<Map<String, Object>>>>() {
         }

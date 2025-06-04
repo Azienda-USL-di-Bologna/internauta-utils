@@ -258,7 +258,7 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
 
     @Override
     public String getKey() {
-        return codiceFiscale + "_" + idCasella;
+        return codiceFiscale + "_" + idCasella + "_" + idAzienda;
     }
 
     @Override

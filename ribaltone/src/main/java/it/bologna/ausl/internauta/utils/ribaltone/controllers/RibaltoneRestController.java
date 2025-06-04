@@ -55,6 +55,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.RequestBody;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.model.entities.baborg.QRuolo;
 import it.bologna.ausl.model.entities.baborg.Ruolo;
 import java.util.HashMap;
@@ -207,7 +208,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestBody ConfigRibaltoneView configRibaltoneView,
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
-    ) throws RibaltoneHttpException {
+    ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
         if (hoPermessoPerLanciareRibaltone()) {
             if (!isRibaltoneInCorso()) {
                 AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
@@ -215,9 +216,15 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                 RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata().toString());
                 RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-                ribaltoneCache.cleanCache();
+
+//                ribaltoneCache.cleanCache();
                 Map<String, Object> infoRibaltone = new HashMap<>();
-                infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                Operations restore = ribaltoneCache.restore();
+                if (restore != null) {
+                    infoRibaltone.put("operations", restore);
+                } else {
+                    infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                }
                 Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata().toString(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
                 infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
                 return new ResponseEntity(infoRibaltone, HttpStatus.OK);

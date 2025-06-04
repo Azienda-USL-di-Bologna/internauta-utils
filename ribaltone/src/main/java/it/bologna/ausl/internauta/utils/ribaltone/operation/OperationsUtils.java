@@ -31,12 +31,16 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import it.bologna.ausl.model.entities.baborg.AttributiStruttura;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class OperationsUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(OperationsUtils.class);
 
     /**
      *
@@ -73,7 +77,8 @@ public class OperationsUtils {
                 idCasellaPadre,
                 Boolean.FALSE,
                 null,
-                azienda
+                azienda,
+                false
             );
 
             //da trovare il padre se non c'è devo segnarmela e poi sistemarla
@@ -473,7 +478,8 @@ public class OperationsUtils {
                                 strutturaPadreDiStrutturaDaReplicare.getIdCasella(),
                                 s.getUfficio(),
                                 attributiStruttura,
-                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda());
+                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda(),
+                                false);
                             strReplicata.setIdStrutturaReplicata(s);
                             StoricoRelazione storicoRelazione = new StoricoRelazione();
                             storicoRelazione.setAttivaDal(ZonedDateTime.now());

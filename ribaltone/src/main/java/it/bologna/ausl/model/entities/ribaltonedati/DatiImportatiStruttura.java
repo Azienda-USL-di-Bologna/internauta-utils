@@ -191,7 +191,8 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
 
     @Override
     public String getKey() {
-        return idCasella.toString() + " " + descrizione;
+        return idCasella.toString();
+//        return idCasella.toString() + " " + descrizione;
     }
 
     @Override

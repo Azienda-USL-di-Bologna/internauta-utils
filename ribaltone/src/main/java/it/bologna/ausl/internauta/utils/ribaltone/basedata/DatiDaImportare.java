@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAnagrafiche;
@@ -14,12 +15,16 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class DatiDaImportare {
+
+    private static final Logger log = LoggerFactory.getLogger(DatiDaImportare.class);
 
     private List<DatiDaImportareAnagrafica> anagraficheDaImportare;
     private List<DatiDaImportareStruttura> struttureDaImportare;
@@ -81,37 +86,33 @@ public class DatiDaImportare {
     public DatiDaImportare validate() throws RibaltoneHttpException {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;
-        
+
         List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate(repositoryFactory);
-        if (!validatorStrutture.getDatiInvalidi().isEmpty()){
+        if (!validatorStrutture.getDatiInvalidi().isEmpty()) {
             //posso non controllare altro questi sono errori che bloccano il ribaltone
-        }else {
-            Map<String, Integer> indexStrutture2 = RibaltoneUtils.generateIndex(struttureValideDaImportare,DatiDaImportareStruttura::getKey);
-            ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare,indexStrutture2, indexTrasformazioni, progressivoTrasformazione);
+        } else {
+            Map<String, Integer> indexStrutture2 = RibaltoneUtils.generateIndex(struttureValideDaImportare, DatiDaImportareStruttura::getKey);
+            ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare, indexStrutture2, indexTrasformazioni, progressivoTrasformazione);
             //mi serve l'index delle strurrue per il controllo sulle trasformazioni
             List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate(repositoryFactory);
             progressivoTrasformazione = validatorTrasformazioni.getProgressivoTrasformazione();
-            if (!validatorTrasformazioni.getDatiInvalidi().isEmpty()){
+            if (!validatorTrasformazioni.getDatiInvalidi().isEmpty()) {
                 //posso non controllare altro perche ci sono problemi con le trasformazioni fornite
-            }else {
+            } else {
                 ValidatorAppartenenti validatorAppartenenti = new ValidatorAppartenenti(appartenentiDaImportare, indexStrutture, indexAppartenenti);
                 List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(repositoryFactory);
-                
+
                 List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(repositoryFactory);
                 datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, repositoryFactory);
-            
+
             }
-            
-            
+
         }
         return datiDaImportareValidati;
     }
-    
-    
 
 //    public UserReport getUserReport() {
 //        DatiDaImportareValidated datiDaImportareChecked = new DatiDaImportareValidated(anagraficheDaImportare, appartenentiDaImportare, struttureDaImportare, trasformazioniDaImportare);
 //        return datiDaImportareChecked.getUserReport();
 //    }
-
 }

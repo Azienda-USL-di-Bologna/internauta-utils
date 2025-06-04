@@ -6,7 +6,9 @@
 package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -41,7 +43,7 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "progressivo_riga")
+    @Column(name = "progressivo_riga", nullable = true)
     private Integer progressivoRiga;
 
     @Column(name = "id_casella_partenza")
@@ -210,7 +212,10 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
 
     @Override
     public String getKey() {
-        return progressivoRiga.toString();
+        if (progressivoRiga != null) {
+            return progressivoRiga.toString();
+        }
+        return null;
     }
 
     @Override

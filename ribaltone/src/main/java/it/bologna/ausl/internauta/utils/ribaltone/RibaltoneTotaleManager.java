@@ -11,9 +11,12 @@ import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
@@ -21,6 +24,8 @@ import it.bologna.ausl.model.entities.ribaltoneutils.QRibaltoneDaLanciare;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +35,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class RibaltoneTotaleManager {
+
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneTotaleManager.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -126,7 +133,9 @@ public class RibaltoneTotaleManager {
     }
 
     public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {
-
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QAzienda qAzienda = QAzienda.azienda;
+        Azienda idAzienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
         RibaltoneDaLanciare ribaltoneDaLanciare = null;
         switch (from) {
             case "ribalta" -> {
@@ -137,6 +146,7 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setIdUtente(utente);
                 ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
                 ribaltoneDaLanciare.setNote(note);
+                ribaltoneDaLanciare.setIdAzienda(idAzienda);
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
             }
             case "ribaltaPostUserReport" -> {
@@ -151,6 +161,7 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setIdUtente(utente);
                 ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
                 ribaltoneDaLanciare.setNote(note);
+                ribaltoneDaLanciare.setIdAzienda(idAzienda);
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
             }
             case "ribaltaDeleteCache" -> {

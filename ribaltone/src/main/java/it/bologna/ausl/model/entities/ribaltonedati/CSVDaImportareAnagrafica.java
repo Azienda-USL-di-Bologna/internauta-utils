@@ -66,6 +66,9 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "codice_ente")
+    private String codiceEnte;
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
 
@@ -215,6 +218,14 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
     @Override
     public Integer getIdAzienda() {
         return this.idAzienda;
+    }
+
+    public String getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(String codiceEnte) {
+        this.codiceEnte = codiceEnte;
     }
 
 }

@@ -3,7 +3,6 @@ package it.bologna.ausl.internauta.utils.ribaltone.plugin.csv;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
-import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -45,7 +44,7 @@ public class CSVDataManager extends SourceDataManager {
     public List<DatiDaImportareAppartenente> getAppartenenti() {
 
         List<DatiDaImportareAppartenente> resultList = entityManager.createNativeQuery(
-            csvSpecificData.getQueryRecuperoDati().getQueryAppartenenti(), CSVDaImportareAppartenente.class)
+            csvSpecificData.getQueryRecuperoDati().getQueryAppartenenti(), DatiDaImportareAppartenente.class)
             .setParameter(1, idAzienda.toString()).getResultList();
 
         //select(qCSVDaImportareAppartenente).from(qCSVDaImportareAppartenente).where(qCSVDaImportareAppartenente.idAzienda.eq(this.idAzienda)).fetch();

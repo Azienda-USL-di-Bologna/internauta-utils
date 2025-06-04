@@ -62,6 +62,9 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
     @Column(name = "motivo")
     private String motivo;
 
+    @Column(name = "codice_ente")
+    private String codiceEnte;
+
     @Column(name = "datain_partenza")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -169,6 +172,14 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(String codiceEnte) {
+        this.codiceEnte = codiceEnte;
     }
 
     public ZonedDateTime getVersion() {

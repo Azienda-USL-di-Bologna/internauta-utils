@@ -82,13 +82,15 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime datafi;
 
-    public Integer getCodiceEnte() {
-        return codiceEnte;
-    }
+    @Column(name = "data_assunzione")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime dataAssunzione;
 
-    public void setCodiceEnte(Integer codiceEnte) {
-        this.codiceEnte = codiceEnte;
-    }
+    @Column(name = "data_dimissione")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime dataDimissione;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -105,6 +107,7 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
 
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -225,6 +228,14 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         this.version = version;
     }
 
+    public Integer getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(Integer codiceEnte) {
+        this.codiceEnte = codiceEnte;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -263,6 +274,22 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @Override
     public String getClasse() {
         return CSVDaImportareAppartenente.class.getCanonicalName();
+    }
+
+    public ZonedDateTime getDataAssunzione() {
+        return dataAssunzione;
+    }
+
+    public void setDataAssunzione(ZonedDateTime dataAssunzione) {
+        this.dataAssunzione = dataAssunzione;
+    }
+
+    public ZonedDateTime getDataDimissione() {
+        return dataDimissione;
+    }
+
+    public void setDataDimissione(ZonedDateTime dataDimissione) {
+        this.dataDimissione = dataDimissione;
     }
 
 }

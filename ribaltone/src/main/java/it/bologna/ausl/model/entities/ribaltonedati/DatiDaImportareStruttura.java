@@ -190,7 +190,8 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Override
     public String getKey() {
-        return idCasella.toString() + " " + descrizione;
+//        return idCasella.toString() + " " + descrizione; commento questo perche altrimenti non capisco le rinomine
+        return idCasella.toString();
     }
 
     @Override
