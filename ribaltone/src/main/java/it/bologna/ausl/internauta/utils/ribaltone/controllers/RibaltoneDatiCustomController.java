@@ -2,25 +2,42 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Path;
+import static com.querydsl.core.types.Projections.tuple;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
+import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration.SpecificheNonSensibiliKeys;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
 import org.springframework.beans.factory.annotation.Autowired;
+import static org.springframework.data.redis.connection.ReactiveZSetCommands.ZAddCommand.tuple;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -31,7 +48,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "${ribaltonedati.mapping.url.root}")
 public class RibaltoneDatiCustomController implements ControllerHandledExceptions {
 
-    private static final Logger log = LoggerFactory.getLogger(RibaltoneDatiCustomController.class);
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
+    private RibaltoneUtils ribaltoneUtils;
+
     @Autowired
     private ParametriAziendeWriter parametriWriter;
 
@@ -40,6 +62,110 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @Autowired
     private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+
+    @Autowired
+
+    @RequestMapping(value = "downloadCSVFileFromIdAzienda", method = RequestMethod.GET)
+    public void downloadCSVFileFromIdAzienda(
+        @RequestParam("idAzienda") Integer idAzienda,
+        @RequestParam("tipo") String tipo,
+        HttpServletResponse response,
+        HttpServletRequest request) {
+        File buildCSV = null;
+        
+
+        //SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, data_assunzione, data_dimissione, id_azienda FROM gru.mdr_appartenenti WHERE id_azienda = ?1
+        QDatiImportatiAnagrafica qDatiImportatiAnagrafica = QDatiImportatiAnagrafica.datiImportatiAnagrafica;
+        QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
+        QDatiImportatiStruttura qDatiImportatiStruttura = QDatiImportatiStruttura.datiImportatiStruttura;
+        QDatiImportatiTrasformazione qDatiImportatiTrasformazione = QDatiImportatiTrasformazione.datiImportatiTrasformazione;
+
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        List<Expression<?>> expressions = new ArrayList<>();
+        List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
+        List<Map<String, Object>> list = new ArrayList<>();
+
+        switch (tipo) {
+            case "APPARTENENTI":
+                expressions = List.of(qDatiImportatiAppartenente.codiceEnte,
+                    qDatiImportatiAppartenente.codiceMatricola,
+                    qDatiImportatiAppartenente.cognome,
+                    qDatiImportatiAppartenente.nome,
+                    qDatiImportatiAppartenente.codiceFiscale,
+                    qDatiImportatiAppartenente.idCasella,
+                    qDatiImportatiAppartenente.datain,
+                    qDatiImportatiAppartenente.datafi,
+                    qDatiImportatiAppartenente.tipoAppartenenza,
+                    qDatiImportatiAppartenente.responsabile);
+
+                selectRigheByIdAzienda = queryFactory
+                    .select(expressions.toArray(new Expression[0]))
+                    .from(qDatiImportatiAppartenente)
+                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
+
+                break;
+
+            case "STRUTTURE":
+                expressions = List.of(qDatiImportatiStruttura.codiceEnte,
+                    qDatiImportatiStruttura.descrizione,
+                    qDatiImportatiStruttura.tipoLegame,
+                    qDatiImportatiStruttura.codiceEnte,
+                    qDatiImportatiStruttura.idPadre,
+                    qDatiImportatiStruttura.idCasella,
+                    qDatiImportatiStruttura.datain,
+                    qDatiImportatiStruttura.datafi
+                );
+
+                selectRigheByIdAzienda = queryFactory
+                    .select(expressions.toArray(new Expression[0]))
+                    .from(qDatiImportatiAppartenente)
+                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
+                break;
+
+            case "TRASFORMAZIONI":
+                expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
+                    qDatiImportatiTrasformazione.idCasellaPartenza,
+                    qDatiImportatiTrasformazione.idCasellaArrivo,
+                    qDatiImportatiTrasformazione.codiceEnte,
+                    qDatiImportatiTrasformazione.dataTrasformazione,
+                    qDatiImportatiTrasformazione.motivo,
+                    qDatiImportatiTrasformazione.datainPartenza,
+                    qDatiImportatiTrasformazione.dataoraOper
+                );
+
+                selectRigheByIdAzienda = queryFactory
+                    .select(expressions.toArray(new Expression[0]))
+                    .from(qDatiImportatiTrasformazione)
+                    .where(qDatiImportatiTrasformazione.idAzienda.eq(idAzienda)).fetch();
+                break;
+
+            case "ANAGRAFICHE":
+                expressions = List.of(qDatiImportatiAnagrafica.codiceEnte,
+                    qDatiImportatiAnagrafica.codiceMatricola,
+                    qDatiImportatiAnagrafica.cognome,
+                    qDatiImportatiAnagrafica.nome,
+                    qDatiImportatiAnagrafica.codiceFiscale,
+                    qDatiImportatiAnagrafica.email
+                );
+
+                selectRigheByIdAzienda = queryFactory
+                    .select(expressions.toArray(new Expression[0]))
+                    .from(qDatiImportatiAnagrafica)
+                    .where(qDatiImportatiAnagrafica.idAzienda.eq(idAzienda)).fetch();
+                break;
+        }
+
+        list = ribaltoneUtils.getMapListFromTupleList(selectRigheByIdAzienda, expressions);
+        buildCSV = ribaltoneUtils.buildCSV(list, tipo);
+
+        if (buildCSV != null) {
+            try {
+                StreamUtils.copy(new FileInputStream(buildCSV), response.getOutputStream());
+            } catch (IOException ex) {
+                java.util.logging.Logger.getLogger(RibaltoneDatiCustomController.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
 
     /*
      *Servlet che si occupa di salvare i dati di configuraione del ribaltone smistando i dati su più entità: parametroAziende e ribaltoneDataConfiguration

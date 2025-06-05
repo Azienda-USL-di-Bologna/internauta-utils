@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.utils;
 
-import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.Path;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashMap;
 import java.util.List;
@@ -37,29 +34,9 @@ import org.supercsv.io.CsvMapWriter;
  *
  * @author Top
  */
-public class RibaltoneUtils {
+public class ExportDatiManager {
 
-    private static final Logger log = LoggerFactory.getLogger(RibaltoneUtils.class);
-
-    
-    public List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
-                       List<Map<String, Object>> list = new ArrayList<>();
-
-                for (Tuple tupla : listaTuple) {
-                    Map<String, Object> map = new HashMap<>();
-                    for (Expression<?> expr : exp) {
-                        String key;
-                        if (expr instanceof Path<?>) {
-                            key = ((Path<?>) expr).getMetadata().getName();
-                        } else {
-                            key = expr.toString(); // fallback se non è un Path
-                        }
-                        map.put(key, tupla.get(expr));
-                        list.add(map);
-                    }
-                }
-        return list;
-    }
+    private static final Logger log = LoggerFactory.getLogger(ExportDatiManager.class);
 
     public File buildCSV(List<Map<String, Object>> elementi, String tipo) {
         log.info("sto generando il csv del tipo" + tipo);
@@ -125,7 +102,6 @@ public class RibaltoneUtils {
         return csvFile;
 
     }
-
     /**
      * Sets up the processors used for APPARTENENTI, RESPONSABILI, STRUTTURA,
      * TRASFORMAZIONI. There are 4 tables. Empty columns are read as null (hence
@@ -212,7 +188,7 @@ public class RibaltoneUtils {
         }
         return cellProcessor;
     }
-
+    
     private static String[] headersGenerator(String tipo) {
         log.info("sto generando l'header del tipo" + tipo);
         String[] headers = null;
@@ -245,44 +221,5 @@ public class RibaltoneUtils {
         return headers;
     }
 
-    public static String formatStringsWithCommasAndQuotes(List<String> strings) {
-        // Utilizza Stream per unire le stringhe con le virgole
-        return strings.stream()
-            .map(s -> "'" + s + "'") // Aggiunge gli apici singoli
-            .collect(Collectors.joining(", ")); // Intervalla con le virgole
-    }
-
-//    public static Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare) {
-//        Map<String, Integer> indexToImport = new HashMap<>();
-//
-//        for (int i = 0; i < datiDaImportare.size(); i++) {
-//            indexToImport.put(datiDaImportare.get(i).getKey(), i);
-//        }
-//        return indexToImport;
-//    }
-    public static <T extends DatiRibaltoneInterface> Map<String, Integer> generateIndex(List<? extends DatiRibaltoneInterface> datiDaImportare, Function<T, Object> fn) {
-        Map<String, Integer> indexToImport = new HashMap<>();
-        for (int i = 0; i < datiDaImportare.size(); i++) {
-            T datiRibaltoneInterface = (T) datiDaImportare.get(i);
-            indexToImport.put(String.valueOf(fn.apply(datiRibaltoneInterface)), i);
-        }
-        return indexToImport;
-    }
-
-    public static List<UtenteStruttura> differenza(List<UtenteStruttura> list1, List<UtenteStruttura> list2) {
-        List<UtenteStruttura> result = new ArrayList<>();
-        for (UtenteStruttura u1 : list1) {
-            boolean trovato = false;
-            for (UtenteStruttura u2 : list2) {
-                if (u1.getIdUtente().getIdPersona().getId().equals(u2.getIdUtente().getIdPersona().getId())) {
-                    trovato = true;
-                    break;
-                }
-            }
-            if (!trovato) {
-                result.add(u1);
-            }
-        }
-        return result;
-    }
+   
 }
