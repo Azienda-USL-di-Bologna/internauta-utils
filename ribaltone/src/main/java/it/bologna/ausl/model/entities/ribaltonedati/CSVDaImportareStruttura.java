@@ -215,4 +215,19 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
         this.codiceEnte = codiceEnte;
     }
 
+    public DatiImportatiStruttura buildDatiImportatiStruttura() {
+        DatiImportatiStruttura output = new DatiImportatiStruttura();
+
+        output.setIdCasella(this.idCasella);
+        output.setIdPadre(this.idPadre);
+        output.setDescrizione(this.descrizione);
+        output.setDatain(this.datain);
+        output.setDatafi(this.datafi);
+        output.setTipoLegame(this.tipoLegame);
+        output.setCodiceEnte(this.codiceEnte);
+        output.setCodiceAzienda(this.codiceAzienda);
+        output.setIdAzienda(this.idAzienda);
+
+        return output;
+    }
 }

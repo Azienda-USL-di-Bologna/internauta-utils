@@ -292,4 +292,24 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         this.dataDimissione = dataDimissione;
     }
 
+    public DatiImportatiAppartenente buildDatiImportatiAppartenente() {
+        DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
+        datiImportatiAppartenente.setCodiceAzienda(this.codiceAzienda);
+        datiImportatiAppartenente.setCodiceEnte(this.codiceAzienda.concat("01"));
+        datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
+        datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
+        datiImportatiAppartenente.setCognome(this.cognome);
+        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setUsername(this.username);
+        datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
+        datiImportatiAppartenente.setIdCasella(this.idCasella);
+        datiImportatiAppartenente.setIdAzienda(this.idAzienda);
+        datiImportatiAppartenente.setResponsabile(this.responsabile);
+        datiImportatiAppartenente.setDatain(this.datain);
+        datiImportatiAppartenente.setDatafi(this.datafi);
+        datiImportatiAppartenente.setDataAssunzione(this.dataAssunzione);
+        datiImportatiAppartenente.setDataDimissione(this.dataDimissione);
+        return datiImportatiAppartenente;
+    }
+
 }

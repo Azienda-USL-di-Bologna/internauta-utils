@@ -40,8 +40,8 @@ public class RepositoryFactory {
 
     @PersistenceContext
     private EntityManager entityManager;
-    //TODO : DA SCOMMENTARE
-//    @Autowired
+
+    @Autowired
     private PermissionManager permissionManager;
 
     public RepositoryFactory() {

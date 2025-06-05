@@ -171,9 +171,10 @@ public class OperationsManager {
         Map<String, Integer> indexIdCasellaStruttureImportate = RibaltoneUtils.generateIndex(struttureImportateList, DatiImportatiStruttura::getIdCasella);
 
         Map<String, Integer> indexIdCasellaStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportareList, DatiDaImportareStruttura::getIdCasella);
-
+        Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
             Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
+            log.info("sto controllando le operation per " + datiDaImportareAppartenente.getCodiceFiscale() + " su casella " + datiDaImportareAppartenente.getIdCasella());
             Operation.Azione azione = Operation.Azione.INSERT;
             List<String> editString = new ArrayList();
             if (posizione != null) {
@@ -228,7 +229,7 @@ public class OperationsManager {
             }
         }
         //ora pensiamo a tutte le chiusure
-        Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
+
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (indexDaImportare != null && !indexDaImportare.isEmpty() && !indexDaImportare.containsKey(appartenenteImportato.getKey())) {
                 DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(appartenenteImportato.getIdCasella().toString()));

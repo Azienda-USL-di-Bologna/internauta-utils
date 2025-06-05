@@ -11,7 +11,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
@@ -19,8 +18,11 @@ import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
-import it.bologna.ausl.model.entities.ribaltoneutils.QRibaltoneDaLanciare;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -58,6 +60,7 @@ public class RibaltoneTotaleManager {
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
         buildOperations.execute(repositoryFactory, codiceAzienda);
+        fromSouceToDatiImportati(validateSourceData, repositoryFactory);
     }
 
 //    private void ribaltaTutto(DatiDaImportare datiDaImportareValidated, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture) {
@@ -115,7 +118,6 @@ public class RibaltoneTotaleManager {
         operationsManager.isQuantitaDatiOk();
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-
         operationsCacheManager.dump(buildOperations);
 //        UserReportManager userReportManager = buildOperations.generateUserReport(typeUserReport);
 //        return userReportManager.get();
@@ -129,6 +131,8 @@ public class RibaltoneTotaleManager {
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildOperations = operationsCacheManager.restore();
         buildOperations.execute(repositoryFactory, codiceAzienda);
+        DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        fromSouceToDatiImportati(validatedSourceData, repositoryFactory);
         return buildOperations;
     }
 
@@ -175,6 +179,27 @@ public class RibaltoneTotaleManager {
 
         entityManager.persist(ribaltoneDaLanciare);
         return ribaltoneDaLanciare.getId();
+    }
+
+    public void fromSouceToDatiImportati(DatiDaImportare validateSourceData, RepositoryFactory repositoryFactory) {
+        //salvo le anagrafiche
+        repositoryFactory.getDatiImportatiAnagraficaRepository().deleteAll();
+        for (DatiDaImportareAnagrafica anagraficadaimportare : validateSourceData.getAnagraficheDaImportare()) {
+            repositoryFactory.getEntityManager().persist(anagraficadaimportare.buildDatiImportatiAnagrafica());
+        }
+        repositoryFactory.getDatiImportatiAppartenenteRepository().deleteAll();
+        for (DatiDaImportareAppartenente appartenente : validateSourceData.getAppartenentiDaImportare()) {
+            repositoryFactory.getEntityManager().persist(appartenente.buildDatiImportatiAppartenente());
+        }
+        repositoryFactory.getDatiImportatiStrutturaRepository().deleteAll();
+        for (DatiDaImportareStruttura struttura : validateSourceData.getStruttureDaImportare()) {
+            repositoryFactory.getEntityManager().persist(struttura.buildDatiImportatiStruttura());
+        }
+        repositoryFactory.getDatiImportatiTrasformazioneRepository().deleteAll();
+        for (DatiDaImportareTrasformazione trasformazione : validateSourceData.getTrasformazioniDaImportare()) {
+            repositoryFactory.getEntityManager().persist(trasformazione.buildDatiImportatiTrasformazione());
+        }
+
     }
 
 }

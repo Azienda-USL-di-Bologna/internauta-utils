@@ -239,8 +239,8 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     null,
                                     null,
                                     null,
-                                    null,
-                                    null,
+                                    BlackBoxConstants.Ambito.GEDI.toString(),
+                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
                                     "ribaltone",
                                     struttura);
                                 //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
@@ -251,8 +251,8 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     null,
                                     null,
                                     null,
-                                    null,
-                                    null,
+                                    BlackBoxConstants.Ambito.GEDI.toString(),
+                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
                                     "ribaltone",
                                     struttura);
                             } catch (BlackBoxPermissionException ex) {
@@ -301,15 +301,22 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                             repositoryFactory.getEntityManager().persist(utenteStruttura);
                             //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
                             try {
-                                permissionManager.deletePermission(
-                                    utente,
-                                    struttura,
-                                    null,
-                                    "ribaltone",
-                                    Boolean.FALSE,
-                                    Boolean.FALSE,
-                                    null,
-                                    null);
+                                String[] ambitiDaSpegnere = {
+                                    BlackBoxConstants.Ambito.PICO.toString(),
+                                    BlackBoxConstants.Ambito.DELI.toString(),
+                                    BlackBoxConstants.Ambito.DETE.toString()};
+                                for (String ambitoDaSpegnere : ambitiDaSpegnere) {
+
+                                    permissionManager.deletePermission(
+                                        utente,
+                                        struttura,
+                                        null,
+                                        "ribaltone",
+                                        Boolean.FALSE,
+                                        Boolean.FALSE,
+                                        ambitoDaSpegnere,
+                                        BlackBoxConstants.Tipo.FLUSSO.toString());
+                                }
                             } catch (BlackBoxPermissionException ex) {
                                 throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                             }
@@ -404,10 +411,17 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             log.info("utente cf: " + utente.getIdPersona().getCodiceFiscale());
             log.info("utente id: " + utente.getId());
             log.info("struttura id_casella: " + struttura.getIdCasella());
+            Utente userPerQuery = utente;
+            if (!utente.getIdAzienda().getId().equals(struttura.getIdAzienda().getId())) {
+                List<Utente> utentiDiAziendaDiStruttura = utente.getIdPersona().getUtenteList().stream().filter(u -> (u.getIdAzienda().getId().equals(struttura.getIdAzienda().getId()) && u.getAttivo())).toList();
+                if (utentiDiAziendaDiStruttura != null && !utentiDiAziendaDiStruttura.isEmpty()) {
+                    userPerQuery = utentiDiAziendaDiStruttura.get(0);
+                }
+            }
             return queryFactory
                 .select(qUtenteStruttura)
                 .from(qUtenteStruttura)
-                .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
+                .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
                     .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
                 .fetchFirst();
         } else {
@@ -519,9 +533,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                             if (!utentiList.isEmpty()) {
                                 Utente utente = repositoryFactory.getEntityManager().find(Utente.class, utentiList.get(0).getId());
                                 if (trasformazioniInerenti.isEmpty()) {
-                                    List<UtenteStruttura> usList1 = utente.getUtenteStrutturaList().stream().filter(us -> us.getIdStruttura().getId().equals(strutturaAttiva.getId())).toList();
+//                                    List<UtenteStruttura> usList1 = utente.getUtenteStrutturaList().stream().filter(us -> us.getIdStruttura().getId().equals(strutturaAttiva.getId())).toList();
                                     List<UtenteStruttura> usList = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idUtente.id.eq(utente.getId()).and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId()))).fetch();
-                                    if (!utente.getUtenteStrutturaList().isEmpty()) {
+                                    if (!usList.isEmpty()) {
                                         UtenteStruttura utenteStruttura = usList.get(0);
                                         DettaglioContatto dc = new DettaglioContatto();
                                         dc.setIdContatto(c);
@@ -584,7 +598,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 qUtenteStruttura.attivo.not().and(
                                     qUtenteStruttura.idStruttura.idCasella.eq(entitaDaChiudere.getIdCasella()).and(
                                         qUtenteStruttura.idUtente.idPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale())))).orderBy(qUtenteStruttura.attivoAl.desc()).limit(1).fetchOne();
-                            if (usVecchio != null) {
+                            if (usVecchio != null && usVecchio.getIdDettaglioContatto() != null) {
                                 DettaglioContatto idDettaglioContatto = usVecchio.getIdDettaglioContatto();
                                 idDettaglioContatto.setEliminato(Boolean.TRUE);
                                 entityManager.persist(idDettaglioContatto);
