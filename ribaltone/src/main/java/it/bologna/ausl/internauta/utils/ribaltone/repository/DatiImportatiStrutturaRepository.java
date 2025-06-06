@@ -7,6 +7,7 @@ import it.nextsw.common.data.annotations.NextSdrRepository;
 import it.nextsw.common.repositories.NextSdrQueryDslRepository;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.stereotype.Component;
@@ -25,5 +26,22 @@ public interface DatiImportatiStrutturaRepository extends
     NextSdrQueryDslRepository<DatiImportatiStruttura, Integer, QDatiImportatiStruttura> {
 
     public List<DatiImportatiStruttura> findByCodiceAzienda(String codiceAzienda);
+
+    @Query(value = "INSERT INTO ribaltone_dati.dati_importati_strutture "
+        + "(id_casella, id_padre, descrizione, datain, datafi, tipo_legame, codice_ente, codice_azienda,id_azienda) "
+        + "SELECT id_casella, id_padre, descrizione,datafi, datain, tipo_legame,  codice_ente, codice_azienda, id_azienda "
+        + "FROM ribaltone_dati.csv_da_importare_strutture "
+        + "WHERE codice_azienda=?1 AND (datafi IS NULL OR datafi > now()) AND datain < now()", nativeQuery = true)
+    public void fromCSVDaImportareToDatiImportati(String codiceAzienda);
+
+    @Query(value = "INSERT INTO ribaltone_dati.dati_importati_strutture "
+        + "(id_casella, id_padre, descrizione, datain, datafi, tipo_legame, codice_ente, codice_azienda,id_azienda) "
+        + "SELECT id_casella, id_padre, descrizione,datafi, datain, tipo_legame,  codice_ente, codice_azienda, id_azienda "
+        + "FROM ribaltone_dati.dati_da_importare_strutture "
+        + "WHERE codice_azienda=?1 AND (datafi IS NULL OR datafi > now()) AND datain < now()", nativeQuery = true)
+    public void fromDatiDaImportareToDatiImportati(String codiceAzienda);
+
+    @Query(value = "DELETE FROM ribaltone_dati.dati_importati_strutture WHERE codice_azienda = ?1", nativeQuery = true)
+    public void deleteAllByCodiceAzienda(String codiceAzienda);
 
 }
