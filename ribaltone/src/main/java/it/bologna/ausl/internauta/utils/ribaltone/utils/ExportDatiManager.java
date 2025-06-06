@@ -1,5 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.utils;
 
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Path;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +41,26 @@ public class ExportDatiManager {
 
     private static final Logger log = LoggerFactory.getLogger(ExportDatiManager.class);
 
-    public File buildCSV(List<Map<String, Object>> elementi, String tipo) {
+    public static List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
+                       List<Map<String, Object>> list = new ArrayList<>();
+
+                for (Tuple tupla : listaTuple) {
+                    Map<String, Object> map = new HashMap<>();
+                    for (Expression<?> expr : exp) {
+                        String key;
+                        if (expr instanceof Path<?>) {
+                            key = ((Path<?>) expr).getMetadata().getName();
+                        } else {
+                            key = expr.toString(); // fallback se non è un Path
+                        }
+                        map.put(key, tupla.get(expr));
+                        list.add(map);
+                    }
+                }
+        return list;
+    }
+    
+    public static File buildCSV(List<Map<String, Object>> elementi, String tipo) {
         log.info("sto generando il csv del tipo" + tipo);
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
