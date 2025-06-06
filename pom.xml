@@ -46,6 +46,7 @@
         <module>flying-saucer-core</module>
         <module>flying-saucer-pdf</module>
         <module>PDFToolkit</module>
+        <module>ribaltone</module>
     </modules>
     <profiles>
         <profile>
