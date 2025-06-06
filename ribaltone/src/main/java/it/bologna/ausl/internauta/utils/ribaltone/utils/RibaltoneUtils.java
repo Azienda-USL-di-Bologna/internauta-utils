@@ -42,89 +42,89 @@ public class RibaltoneUtils {
     private static final Logger log = LoggerFactory.getLogger(RibaltoneUtils.class);
 
     
-    public List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
-                       List<Map<String, Object>> list = new ArrayList<>();
-
-                for (Tuple tupla : listaTuple) {
-                    Map<String, Object> map = new HashMap<>();
-                    for (Expression<?> expr : exp) {
-                        String key;
-                        if (expr instanceof Path<?>) {
-                            key = ((Path<?>) expr).getMetadata().getName();
-                        } else {
-                            key = expr.toString(); // fallback se non è un Path
-                        }
-                        map.put(key, tupla.get(expr));
-                        list.add(map);
-                    }
-                }
-        return list;
-    }
-
-    public File buildCSV(List<Map<String, Object>> elementi, String tipo) {
-        log.info("sto generando il csv del tipo" + tipo);
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
-        String nameCsv = sdf.format(timestamp) + "_" + tipo + ".csv";
-        File csvFile = new File(System.getProperty("java.io.tmpdir" + "/csv/"), nameCsv);
-        csvFile.deleteOnExit();
-        CsvPreference SEMICOLON_DELIMITED = new CsvPreference.Builder('"', ';', "\r\n").build();
-        Map<String, Object> row = new HashMap<>();
-
-        try (CsvMapWriter mapWriter = new CsvMapWriter(new FileWriter(csvFile), SEMICOLON_DELIMITED)) {
-            String[] headersTipo = headersGenerator(tipo);
-            CellProcessor[] processorsTipo = getProcessors(tipo);
-            mapWriter.writeHeader(headersTipo);
-            for (Map<String, Object> elemento : elementi) {
-                row.putAll(elemento);
-                if (elemento.get("datain") != null && !elemento.get("datain").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datain").getClass())) {
-                        row.put("datain", Timestamp.from((Instant) elemento.get("datain")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("datafi") != null && !elemento.get("datafi").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datafi").getClass())) {
-                        row.put("datafi", Timestamp.from((Instant) elemento.get("datafi")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("data_assunzione") != null && !elemento.get("data_assunzione").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("data_assunzione").getClass())) {
-                        row.put("data_assunzione", Timestamp.from((Instant) elemento.get("data_assunzione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("data_dimissione") != null && !elemento.get("data_dimissione").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("data_dimissione").getClass())) {
-                        row.put("data_dimissione", Timestamp.from((Instant) elemento.get("data_dimissione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("data_trasformazione") != null && !elemento.get("data_trasformazione").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("data_trasformazione").getClass())) {
-                        row.put("data_trasformazione", Timestamp.from((Instant) elemento.get("data_trasformazione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("datain_partenza") != null && !elemento.get("datain_partenza").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datain_partenza").getClass())) {
-                        row.put("datain_partenza", Timestamp.from((Instant) elemento.get("datain_partenza")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("dataora_oper") != null && !elemento.get("dataora_oper").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("dataora_oper").getClass())) {
-                        row.put("dataora_oper", Timestamp.from((Instant) elemento.get("dataora_oper")).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
-                    }
-                }
-
-                mapWriter.write(row, headersTipo, processorsTipo);
-                row.clear();
-            }
-
-        } catch (Exception e) {
-            log.error("ho fallito miseramente", e);
-            System.out.println("e" + e);
-            return null;
-        }
-        return csvFile;
-
-    }
+//    public List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
+//                       List<Map<String, Object>> list = new ArrayList<>();
+//
+//                for (Tuple tupla : listaTuple) {
+//                    Map<String, Object> map = new HashMap<>();
+//                    for (Expression<?> expr : exp) {
+//                        String key;
+//                        if (expr instanceof Path<?>) {
+//                            key = ((Path<?>) expr).getMetadata().getName();
+//                        } else {
+//                            key = expr.toString(); // fallback se non è un Path
+//                        }
+//                        map.put(key, tupla.get(expr));
+//                        list.add(map);
+//                    }
+//                }
+//        return list;
+//    }
+//
+//    public File buildCSV(List<Map<String, Object>> elementi, String tipo) {
+//        log.info("sto generando il csv del tipo" + tipo);
+//        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
+//        String nameCsv = sdf.format(timestamp) + "_" + tipo + ".csv";
+//        File csvFile = new File(System.getProperty("java.io.tmpdir" + "/csv/"), nameCsv);
+//        csvFile.deleteOnExit();
+//        CsvPreference SEMICOLON_DELIMITED = new CsvPreference.Builder('"', ';', "\r\n").build();
+//        Map<String, Object> row = new HashMap<>();
+//
+//        try (CsvMapWriter mapWriter = new CsvMapWriter(new FileWriter(csvFile), SEMICOLON_DELIMITED)) {
+//            String[] headersTipo = headersGenerator(tipo);
+//            CellProcessor[] processorsTipo = getProcessors(tipo);
+//            mapWriter.writeHeader(headersTipo);
+//            for (Map<String, Object> elemento : elementi) {
+//                row.putAll(elemento);
+//                if (elemento.get("datain") != null && !elemento.get("datain").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("datain").getClass())) {
+//                        row.put("datain", Timestamp.from((Instant) elemento.get("datain")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("datafi") != null && !elemento.get("datafi").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("datafi").getClass())) {
+//                        row.put("datafi", Timestamp.from((Instant) elemento.get("datafi")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("data_assunzione") != null && !elemento.get("data_assunzione").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("data_assunzione").getClass())) {
+//                        row.put("data_assunzione", Timestamp.from((Instant) elemento.get("data_assunzione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("data_dimissione") != null && !elemento.get("data_dimissione").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("data_dimissione").getClass())) {
+//                        row.put("data_dimissione", Timestamp.from((Instant) elemento.get("data_dimissione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("data_trasformazione") != null && !elemento.get("data_trasformazione").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("data_trasformazione").getClass())) {
+//                        row.put("data_trasformazione", Timestamp.from((Instant) elemento.get("data_trasformazione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("datain_partenza") != null && !elemento.get("datain_partenza").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("datain_partenza").getClass())) {
+//                        row.put("datain_partenza", Timestamp.from((Instant) elemento.get("datain_partenza")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+//                    }
+//                }
+//                if (elemento.get("dataora_oper") != null && !elemento.get("dataora_oper").toString().trim().equals("")) {
+//                    if (Instant.class.isAssignableFrom(elemento.get("dataora_oper").getClass())) {
+//                        row.put("dataora_oper", Timestamp.from((Instant) elemento.get("dataora_oper")).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+//                    }
+//                }
+//
+//                mapWriter.write(row, headersTipo, processorsTipo);
+//                row.clear();
+//            }
+//
+//        } catch (Exception e) {
+//            log.error("ho fallito miseramente", e);
+//            System.out.println("e" + e);
+//            return null;
+//        }
+//        return csvFile;
+//
+//    }
 
     /**
      * Sets up the processors used for APPARTENENTI, RESPONSABILI, STRUTTURA,

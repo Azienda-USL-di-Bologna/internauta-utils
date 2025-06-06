@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReade
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
+import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
@@ -52,9 +53,6 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
     private EntityManager entityManager;
 
     @Autowired
-    private RibaltoneUtils ribaltoneUtils;
-
-    @Autowired
     private ParametriAziendeWriter parametriWriter;
 
     @Autowired
@@ -62,8 +60,6 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @Autowired
     private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
-
-    @Autowired
 
     @RequestMapping(value = "downloadCSVFileFromIdAzienda", method = RequestMethod.GET)
     public void downloadCSVFileFromIdAzienda(
@@ -155,8 +151,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 break;
         }
 
-        list = ribaltoneUtils.getMapListFromTupleList(selectRigheByIdAzienda, expressions);
-        buildCSV = ribaltoneUtils.buildCSV(list, tipo);
+        list = ExportDatiManager.getMapListFromTupleList(selectRigheByIdAzienda, expressions);
+        buildCSV = ExportDatiManager.buildCSV(list, tipo);
 
         if (buildCSV != null) {
             try {
