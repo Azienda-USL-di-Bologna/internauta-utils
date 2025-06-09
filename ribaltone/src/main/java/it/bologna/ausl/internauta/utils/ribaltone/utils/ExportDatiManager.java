@@ -1,34 +1,15 @@
 package it.bologna.ausl.internauta.utils.ribaltone.utils;
 
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.Path;
-
-import static com.querydsl.core.types.Projections.map;
-
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
-import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.Struttura;
-import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import java.io.File;
 import java.io.FileWriter;
-import static java.lang.Math.log;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -47,7 +28,7 @@ public class ExportDatiManager {
 
     private static final Logger log = LoggerFactory.getLogger(ExportDatiManager.class);
 
-    public static File buildCSV(List<Tuple> listaTuple, RibaltoneUtils.TipologiaDatiRibaltone tipo) {
+    public static File buildCSV(List<Tuple> listaTuple, DatiRibaltoneInterface.TipologiaCsv tipo) {
         log.info("sto generando il csv del tipo" + tipo);
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
@@ -121,7 +102,7 @@ public class ExportDatiManager {
      *
      * @return the cell processors
      */
-    private static CellProcessor[] getProcessors(RibaltoneUtils.TipologiaDatiRibaltone tipo) {
+    private static CellProcessor[] getProcessors(DatiRibaltoneInterface.TipologiaCsv tipo) {
         CellProcessor[] cellProcessor = null;
         log.info("sto generando i processor del tipo" + tipo);
         switch (tipo) {
@@ -188,7 +169,7 @@ public class ExportDatiManager {
         return cellProcessor;
     }
 
-    private static String[] headersGenerator(RibaltoneUtils.TipologiaDatiRibaltone tipo) {
+    private static String[] headersGenerator(DatiRibaltoneInterface.TipologiaCsv tipo) {
         log.info("sto generando l'header del tipo" + tipo);
         String[] headers = null;
         switch (tipo) {

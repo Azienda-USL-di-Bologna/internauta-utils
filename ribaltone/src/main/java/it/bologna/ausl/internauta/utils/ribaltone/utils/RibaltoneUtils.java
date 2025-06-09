@@ -1,38 +1,18 @@
 package it.bologna.ausl.internauta.utils.ribaltone.utils;
 
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.Path;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
-import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
-import java.io.File;
-import java.io.FileWriter;
-import static java.lang.Math.log;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.supercsv.cellprocessor.Optional;
 import org.supercsv.cellprocessor.ift.CellProcessor;
-import org.supercsv.prefs.CsvPreference;
-import org.supercsv.io.CsvMapWriter;
 
 /**
  *
@@ -301,20 +281,5 @@ public class RibaltoneUtils {
         return result;
     }
 
-    public enum TipologiaDatiRibaltone {
-        ANAGRAFICHE("ANAGRAFICHE"),
-        APPARTENENTI("APPARTENENTI"),
-        TRASFORMAZIONI("TRASFORMAZIONI"),
-        STRUTTURE("STRUTTURE");
-
-        private final String val;
-
-        private TipologiaDatiRibaltone(String value) {
-            this.val = value;
-        }
-
-        private String getValue() {
-            return val;
-        }
-    }
+    
 }
