@@ -79,7 +79,6 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         List<Expression<?>> expressions = new ArrayList<>();
         List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
-        List<Map<String, Object>> list = new ArrayList<>();
 
         switch (tipo) {
             case APPARTENENTI:
@@ -153,7 +152,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         }
 
 
-        buildCSV = ExportDatiManager.buildCSV(list, tipo);
+        buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
 
         if (buildCSV != null) {
             try {

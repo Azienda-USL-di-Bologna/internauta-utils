@@ -47,7 +47,7 @@ public class ExportDatiManager {
 
     private static final Logger log = LoggerFactory.getLogger(ExportDatiManager.class);
 
-    public File buildCSV(List<Tuple> listaTuple, RibaltoneUtils.TipologiaDatiRibaltone tipo) {
+    public static File buildCSV(List<Tuple> listaTuple, RibaltoneUtils.TipologiaDatiRibaltone tipo) {
         log.info("sto generando il csv del tipo" + tipo);
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
