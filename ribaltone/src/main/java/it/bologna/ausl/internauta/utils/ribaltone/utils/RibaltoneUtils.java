@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.supercsv.cellprocessor.Optional;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.prefs.CsvPreference;
@@ -41,7 +42,6 @@ public class RibaltoneUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneUtils.class);
 
-    
 //    public List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
 //                       List<Map<String, Object>> list = new ArrayList<>();
 //
@@ -125,7 +125,6 @@ public class RibaltoneUtils {
 //        return csvFile;
 //
 //    }
-
     /**
      * Sets up the processors used for APPARTENENTI, RESPONSABILI, STRUTTURA,
      * TRASFORMAZIONI. There are 4 tables. Empty columns are read as null (hence
@@ -245,6 +244,22 @@ public class RibaltoneUtils {
         return headers;
     }
 
+    public static List<Map<String, Object>> getMapListFromTupleList(String[] headers, List<Tuple> listaTuple) {
+        List<Map<String, Object>> list = new ArrayList<>();
+
+        for (Tuple tupla : listaTuple) {
+            Map<String, Object> map = new HashMap<>();
+
+            Integer i = 0;
+            for (String header : headers) {
+                map.put(header, tupla.get(i, Object.class));
+                i++;
+                list.add(map);
+            }
+        }
+        return list;
+    }
+
     public static String formatStringsWithCommasAndQuotes(List<String> strings) {
         // Utilizza Stream per unire le stringhe con le virgole
         return strings.stream()
@@ -284,5 +299,22 @@ public class RibaltoneUtils {
             }
         }
         return result;
+    }
+
+    public enum TipologiaDatiRibaltone {
+        ANAGRAFICHE("ANAGRAFICHE"),
+        APPARTENENTI("APPARTENENTI"),
+        TRASFORMAZIONI("TRASFORMAZIONI"),
+        STRUTTURE("STRUTTURE");
+
+        private final String val;
+
+        private TipologiaDatiRibaltone(String value) {
+            this.val = value;
+        }
+
+        private String getValue() {
+            return val;
+        }
     }
 }

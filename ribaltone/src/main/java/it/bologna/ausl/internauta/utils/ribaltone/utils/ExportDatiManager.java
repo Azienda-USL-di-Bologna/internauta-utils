@@ -3,6 +3,9 @@ package it.bologna.ausl.internauta.utils.ribaltone.utils;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
+
+import static com.querydsl.core.types.Projections.map;
+
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.HashMap;
 import java.util.List;
@@ -28,39 +31,23 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.supercsv.cellprocessor.Optional;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.prefs.CsvPreference;
 import org.supercsv.io.CsvMapWriter;
+import java.util.Map;
 
 /**
  *
  * @author Top
  */
+@Component
 public class ExportDatiManager {
 
     private static final Logger log = LoggerFactory.getLogger(ExportDatiManager.class);
 
-    public static List<Map<String, Object>> getMapListFromTupleList(List<Tuple> listaTuple, List<Expression<?>> exp) {
-                       List<Map<String, Object>> list = new ArrayList<>();
-
-                for (Tuple tupla : listaTuple) {
-                    Map<String, Object> map = new HashMap<>();
-                    for (Expression<?> expr : exp) {
-                        String key;
-                        if (expr instanceof Path<?>) {
-                            key = ((Path<?>) expr).getMetadata().getName();
-                        } else {
-                            key = expr.toString(); // fallback se non è un Path
-                        }
-                        map.put(key, tupla.get(expr));
-                        list.add(map);
-                    }
-                }
-        return list;
-    }
-    
-    public static File buildCSV(List<Map<String, Object>> elementi, String tipo) {
+    public File buildCSV(List<Tuple> listaTuple, RibaltoneUtils.TipologiaDatiRibaltone tipo) {
         log.info("sto generando il csv del tipo" + tipo);
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
@@ -71,9 +58,11 @@ public class ExportDatiManager {
         Map<String, Object> row = new HashMap<>();
 
         try (CsvMapWriter mapWriter = new CsvMapWriter(new FileWriter(csvFile), SEMICOLON_DELIMITED)) {
-            String[] headersTipo = headersGenerator(tipo);
+            String[] headers = headersGenerator(tipo);
+            List<Map<String, Object>> elementi = RibaltoneUtils.getMapListFromTupleList(headers, listaTuple);
+
             CellProcessor[] processorsTipo = getProcessors(tipo);
-            mapWriter.writeHeader(headersTipo);
+            mapWriter.writeHeader(headers);
             for (Map<String, Object> elemento : elementi) {
                 row.putAll(elemento);
                 if (elemento.get("datain") != null && !elemento.get("datain").toString().trim().equals("")) {
@@ -112,7 +101,7 @@ public class ExportDatiManager {
                     }
                 }
 
-                mapWriter.write(row, headersTipo, processorsTipo);
+                mapWriter.write(row, headers, processorsTipo);
                 row.clear();
             }
 
@@ -124,6 +113,7 @@ public class ExportDatiManager {
         return csvFile;
 
     }
+
     /**
      * Sets up the processors used for APPARTENENTI, RESPONSABILI, STRUTTURA,
      * TRASFORMAZIONI. There are 4 tables. Empty columns are read as null (hence
@@ -131,11 +121,11 @@ public class ExportDatiManager {
      *
      * @return the cell processors
      */
-    private static CellProcessor[] getProcessors(String tipo) {
+    private static CellProcessor[] getProcessors(RibaltoneUtils.TipologiaDatiRibaltone tipo) {
         CellProcessor[] cellProcessor = null;
         log.info("sto generando i processor del tipo" + tipo);
         switch (tipo) {
-            case "APPARTENENTI":
+            case APPARTENENTI -> {
                 final CellProcessor[] processorsAPPARTENENTI = new CellProcessor[]{
                     // new NotNull(new StrRegEx(codiceEnteRegex, new ParseInt())), // codice_ente
                     new Optional(), // codice_ente
@@ -152,20 +142,9 @@ public class ExportDatiManager {
                     new Optional() // data_adimissione
                 };
                 cellProcessor = processorsAPPARTENENTI;
-                break;
-            case "RESPONSABILI":
-                final CellProcessor[] processorsRESPONSABILI = new CellProcessor[]{
-                    // new NotNull(new StrRegEx(codiceEnteRegex, new ParseInt())), // codice_ente
-                    new Optional(), // codice_ente
-                    new Optional(), // codice_matricola bloccante
-                    new Optional(), // id_casella bloccante
-                    new Optional(), // datain bloccante
-                    new Optional(), // datafi
-                    new Optional() // tipo bloccante
-                };
-                cellProcessor = processorsRESPONSABILI;
-                break;
-            case "TRASFORMAZIONI":
+            }
+            
+            case TRASFORMAZIONI -> {
                 CellProcessor[] processorsTRASFORMAZIONI = new CellProcessor[]{
                     new Optional(), // progressivo_riga
                     new Optional(), // id_casella_partenza
@@ -177,9 +156,9 @@ public class ExportDatiManager {
                     new Optional() // codice_ente
                 };
                 cellProcessor = processorsTRASFORMAZIONI;
-                break;
+            }
 
-            case "STRUTTURA":
+            case STRUTTURE -> {
                 final CellProcessor[] processorsSTRUTTURA = new CellProcessor[]{
                     new Optional(), // id_casella
                     new Optional(), // id_padre
@@ -191,8 +170,8 @@ public class ExportDatiManager {
                     new Optional() // codice_ente
                 };
                 cellProcessor = processorsSTRUTTURA;
-                break;
-            case "ANAGRAFICA":
+            }
+            case ANAGRAFICHE -> {
                 final CellProcessor[] processorsANAGRAFICA = new CellProcessor[]{
                     // new NotNull(new StrRegEx(codiceEnteRegex, new ParseInt())), // codice_ente
                     new Optional(), // codice_ente
@@ -203,45 +182,36 @@ public class ExportDatiManager {
                     new Optional(), // EMAIL bloccante
                 };
                 cellProcessor = processorsANAGRAFICA;
-                break;
-            default:
-                System.out.println("non dovrebbe essere altro tipo di tabella");
-                break;
+            }
+            default -> System.out.println("non dovrebbe essere altro tipo di tabella");
         }
         return cellProcessor;
     }
-    
-    private static String[] headersGenerator(String tipo) {
+
+    private static String[] headersGenerator(RibaltoneUtils.TipologiaDatiRibaltone tipo) {
         log.info("sto generando l'header del tipo" + tipo);
         String[] headers = null;
         switch (tipo) {
-            case "APPARTENENTI":
+            case APPARTENENTI ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
                     "nome", "codice_fiscale", "id_casella", "datain", "datafi", "tipo_appartenenza",
                     "username", "data_assunzione", "data_dimissione"};
-                break;
-            case "RESPONSABILI":
-                headers = new String[]{"codice_ente", "codice_matricola",
-                    "id_casella", "datain", "datafi", "tipo"};
-                break;
-            case "STRUTTURA":
+
+            case STRUTTURE ->
                 headers = new String[]{"id_casella", "id_padre", "descrizione",
                     "datain", "datafi", "tipo_legame", "codice_ente"};
-                break;
-            case "TRASFORMAZIONI":
+            case TRASFORMAZIONI ->
                 headers = new String[]{"progressivo_riga", "id_casella_partenza", "id_casella_arrivo", "data_trasformazione",
                     "motivo", "datain_partenza", "dataora_oper", "codice_ente"};
-                break;
-            case "ANAGRAFICA":
+            case ANAGRAFICHE ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
                     "nome", "codice_fiscale", "email"};
-                break;
-            default:
-                System.out.println("non dovrebbe essere");
-                break;
+            default ->
+                System.out.println("Il tipo non corrisponde a nessuno di quelli possibili");
         }
         return headers;
     }
 
-   
+  
+
 }

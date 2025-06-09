@@ -77,8 +77,7 @@ public class OperationsUtils {
                 idCasellaPadre,
                 Boolean.FALSE,
                 null,
-                azienda,
-                false
+                azienda
             );
 
             //da trovare il padre se non c'è devo segnarmela e poi sistemarla
@@ -478,8 +477,8 @@ public class OperationsUtils {
                                 strutturaPadreDiStrutturaDaReplicare.getIdCasella(),
                                 s.getUfficio(),
                                 attributiStruttura,
-                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda(),
-                                false);
+                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda()
+                      );
                             strReplicata.setIdStrutturaReplicata(s);
                             StoricoRelazione storicoRelazione = new StoricoRelazione();
                             storicoRelazione.setAttivaDal(ZonedDateTime.now());
