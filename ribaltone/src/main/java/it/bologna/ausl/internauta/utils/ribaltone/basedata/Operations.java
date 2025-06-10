@@ -28,12 +28,16 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class Operations implements Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(Operations.class);
 
     private List<OperationStruttura> listOfOperationStruttura;
     private List<OperationAppartenente> listOfOperationAppartenenti;

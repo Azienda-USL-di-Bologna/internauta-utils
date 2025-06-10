@@ -1,23 +1,23 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
-import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
-import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAnagrafiche;
-import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAppartenenti;
-import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorStrutture;
-import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorTrasformazioni;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class DatiImportati {
+
+    private static final Logger log = LoggerFactory.getLogger(DatiImportati.class);
 
     private List<DatiImportatiAnagrafica> anagraficheImportati;
     private List<DatiImportatiStruttura> struttureImportati;

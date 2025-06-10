@@ -82,13 +82,15 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime datafi;
 
-    public Integer getCodiceEnte() {
-        return codiceEnte;
-    }
+    @Column(name = "data_assunzione")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime dataAssunzione;
 
-    public void setCodiceEnte(Integer codiceEnte) {
-        this.codiceEnte = codiceEnte;
-    }
+    @Column(name = "data_dimissione")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime dataDimissione;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -105,6 +107,7 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
 
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -225,6 +228,14 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         this.version = version;
     }
 
+    public Integer getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(Integer codiceEnte) {
+        this.codiceEnte = codiceEnte;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -263,6 +274,42 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
     @Override
     public String getClasse() {
         return CSVDaImportareAppartenente.class.getCanonicalName();
+    }
+
+    public ZonedDateTime getDataAssunzione() {
+        return dataAssunzione;
+    }
+
+    public void setDataAssunzione(ZonedDateTime dataAssunzione) {
+        this.dataAssunzione = dataAssunzione;
+    }
+
+    public ZonedDateTime getDataDimissione() {
+        return dataDimissione;
+    }
+
+    public void setDataDimissione(ZonedDateTime dataDimissione) {
+        this.dataDimissione = dataDimissione;
+    }
+
+    public DatiImportatiAppartenente buildDatiImportatiAppartenente() {
+        DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
+        datiImportatiAppartenente.setCodiceAzienda(this.codiceAzienda);
+        datiImportatiAppartenente.setCodiceEnte(this.codiceAzienda.concat("01"));
+        datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
+        datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
+        datiImportatiAppartenente.setCognome(this.cognome);
+        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setUsername(this.username);
+        datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
+        datiImportatiAppartenente.setIdCasella(this.idCasella);
+        datiImportatiAppartenente.setIdAzienda(this.idAzienda);
+        datiImportatiAppartenente.setResponsabile(this.responsabile);
+        datiImportatiAppartenente.setDatain(this.datain);
+        datiImportatiAppartenente.setDatafi(this.datafi);
+        datiImportatiAppartenente.setDataAssunzione(this.dataAssunzione);
+        datiImportatiAppartenente.setDataDimissione(this.dataDimissione);
+        return datiImportatiAppartenente;
     }
 
 }

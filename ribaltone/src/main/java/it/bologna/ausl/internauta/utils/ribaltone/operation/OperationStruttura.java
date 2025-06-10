@@ -25,12 +25,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class OperationStruttura extends Operation<DatiRibaltoneInterface> implements Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(OperationStruttura.class);
 
     public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
         super(azione, entitaCoinvolta, entityManager);

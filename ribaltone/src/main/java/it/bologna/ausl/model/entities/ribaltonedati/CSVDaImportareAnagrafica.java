@@ -66,6 +66,9 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "codice_ente")
+    private String codiceEnte;
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
 
@@ -217,4 +220,24 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
         return this.idAzienda;
     }
 
+    public String getCodiceEnte() {
+        return codiceEnte;
+    }
+
+    public void setCodiceEnte(String codiceEnte) {
+        this.codiceEnte = codiceEnte;
+    }
+
+    public DatiImportatiAnagrafica buildDatiImportatiAnagrafica() {
+        DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
+        anagraficaImportata.setCodiceEnte(this.codiceEnte);
+        anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
+        anagraficaImportata.setCognome(this.cognome);
+        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
+        anagraficaImportata.setEmail(this.email);
+        anagraficaImportata.setIdAzienda(this.idAzienda);
+        anagraficaImportata.setCodiceAzienda(this.codiceAzienda);
+        return anagraficaImportata;
+    }
 }

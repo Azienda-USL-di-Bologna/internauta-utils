@@ -190,7 +190,8 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
     @Override
     public String getKey() {
-        return idCasella.toString() + " " + descrizione;
+//        return idCasella.toString() + " " + descrizione; commento questo perche altrimenti non capisco le rinomine
+        return idCasella.toString();
     }
 
     @Override
@@ -203,4 +204,19 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         return DatiDaImportareStruttura.class.getCanonicalName();
     }
 
+    public DatiImportatiStruttura buildDatiImportatiStruttura() {
+        DatiImportatiStruttura output = new DatiImportatiStruttura();
+
+        output.setIdCasella(this.idCasella);
+        output.setIdPadre(this.idPadre);
+        output.setDescrizione(this.descrizione);
+        output.setDatain(this.datain);
+        output.setDatafi(this.datafi);
+        output.setTipoLegame(this.tipoLegame);
+        output.setCodiceEnte(this.codiceEnte);
+        output.setCodiceAzienda(this.codiceAzienda);
+        output.setIdAzienda(this.idAzienda);
+
+        return output;
+    }
 }

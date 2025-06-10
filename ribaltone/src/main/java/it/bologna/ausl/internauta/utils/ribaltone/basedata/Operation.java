@@ -3,8 +3,11 @@ package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -12,6 +15,8 @@ import jakarta.persistence.EntityManager;
  * @param <T>
  */
 public abstract class Operation<T extends DatiRibaltoneInterface> {
+
+    private static final Logger log = LoggerFactory.getLogger(Operation.class);
 
     public static enum Azione {
         INSERT,

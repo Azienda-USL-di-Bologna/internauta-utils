@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.EDIT;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.INSERT;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
@@ -22,6 +23,8 @@ import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -30,6 +33,7 @@ import org.springframework.util.StringUtils;
  */
 public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> implements Serializable {
 
+    private static final Logger log = LoggerFactory.getLogger(OperationAnagrafica.class);
     private final QPersona qPersona = QPersona.persona;
     private final QUtente qUtente = QUtente.utente;
 

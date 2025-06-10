@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.nextsdr.RibaltoneRestControllerEngineImpl;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.model.entities.ribaltonedati.QRibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.nextsw.common.controller.BaseCrudController;
@@ -10,6 +11,8 @@ import it.nextsw.common.controller.exceptions.RestControllerEngineException;
 import it.nextsw.common.interceptors.exceptions.AbortLoadInterceptorException;
 import it.nextsw.common.utils.exceptions.EntityReflectionException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.querydsl.binding.QuerydslPredicate;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "${ribaltonedati.mapping.url.root}")
 public class RibaltoneDatiBaseController extends BaseCrudController {
 
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneDatiBaseController.class);
     @Autowired
     private RibaltoneRestControllerEngineImpl restControllerEngine;
 

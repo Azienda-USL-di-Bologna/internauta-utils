@@ -31,9 +31,6 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
 
     private static final long serialVersionUID = 1L;
 
-    @Column(name = "codice_ente")
-    private String codiceEnte;
-
     @Column(name = "codice_matricola")
     private String codiceMatricola;
 
@@ -52,8 +49,25 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @Column(name = "id_casella")
     private Integer idCasella;
 
+    @Column(name = "codice_ente")
+    private String codiceEnte;
+
+    @Size(max = 2147483647)
+    @Column(name = "tipo_appartenenza")
+    private String tipoAppartenenza;
+
+    @Size(max = 2147483647)
+    @Column(name = "username")
+    private String username;
+
+    @Column(name = "codice_azienda")
+    private String codiceAzienda;
+
     @Column(name = "id_azienda")
     private Integer idAzienda;
+
+    @Column(name = "responsabile")
+    private Boolean responsabile;
 
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -65,14 +79,6 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime datafi;
 
-    @Size(max = 2147483647)
-    @Column(name = "tipo_appartenenza")
-    private String tipoAppartenenza;
-
-    @Size(max = 2147483647)
-    @Column(name = "username")
-    private String username;
-
     @Column(name = "data_assunzione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -82,12 +88,6 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataDimissione;
-
-    @Column(name = "codice_azienda")
-    private String codiceAzienda;
-
-    @Column(name = "responsabile")
-    private Boolean responsabile;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -278,6 +278,26 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @Override
     public String getClasse() {
         return DatiDaImportareAppartenente.class.getCanonicalName();
+    }
+
+    public DatiImportatiAppartenente buildDatiImportatiAppartenente() {
+        DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
+        datiImportatiAppartenente.setCodiceAzienda(this.codiceAzienda);
+        datiImportatiAppartenente.setCodiceEnte(this.codiceEnte);
+        datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
+        datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
+        datiImportatiAppartenente.setCognome(this.cognome);
+        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setUsername(this.username);
+        datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
+        datiImportatiAppartenente.setIdCasella(this.idCasella);
+        datiImportatiAppartenente.setIdAzienda(this.idAzienda);
+        datiImportatiAppartenente.setResponsabile(this.responsabile);
+        datiImportatiAppartenente.setDatain(this.datain);
+        datiImportatiAppartenente.setDatafi(this.datafi);
+        datiImportatiAppartenente.setDataAssunzione(this.dataAssunzione);
+        datiImportatiAppartenente.setDataDimissione(this.dataDimissione);
+        return datiImportatiAppartenente;
     }
 
 }
