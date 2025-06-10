@@ -538,8 +538,15 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     if (!usList.isEmpty()) {
                                         UtenteStruttura utenteStruttura = usList.get(0);
                                         DettaglioContatto dc = new DettaglioContatto();
+
                                         dc.setIdContatto(c);
                                         dc.setDescrizione(strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "] [" + strutturaAttiva.getIdAzienda().getNome() + "]");
+                                        if (c.getId() != null) {
+                                            DettaglioContatto dcOnDb = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(qDettaglioContatto.idContatto.id.eq(c.getId()).and(qDettaglioContatto.descrizione.eq(dc.getDescrizione()))).fetchOne();
+                                            if (dcOnDb != null) {
+                                                dc = dcOnDb;
+                                            }
+                                        }
                                         dc.setUtenteStruttura(utenteStruttura);
                                         dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
                                         dc.setEliminato(false);

@@ -1,11 +1,9 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import static com.fasterxml.jackson.databind.type.LogicalType.Integer;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.*;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
@@ -25,11 +23,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import com.querydsl.jpa.JPQLQuery;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.INSERT;
 import it.bologna.ausl.model.entities.baborg.AttributiStruttura;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +72,8 @@ public class OperationsUtils {
                 idCasellaPadre,
                 Boolean.FALSE,
                 null,
-                azienda
+                azienda,
+                false
             );
 
             //da trovare il padre se non c'è devo segnarmela e poi sistemarla
@@ -477,8 +473,8 @@ public class OperationsUtils {
                                 strutturaPadreDiStrutturaDaReplicare.getIdCasella(),
                                 s.getUfficio(),
                                 attributiStruttura,
-                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda()
-                      );
+                                strutturaPadreDiStrutturaDaReplicare.getIdAzienda(),
+                                false);
                             strReplicata.setIdStrutturaReplicata(s);
                             StoricoRelazione storicoRelazione = new StoricoRelazione();
                             storicoRelazione.setAttivaDal(ZonedDateTime.now());
