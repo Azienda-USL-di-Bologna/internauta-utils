@@ -55,7 +55,8 @@ public class ParametriAziendeReader {
         ribaltoneConf,
         processaDati,
         usaNuovoRibaltoneVeloce,
-        tabRegistrazioniScriptaActive
+        tabRegistrazioniScriptaActive,
+        abilitaGestioneMassivaArchiviPerResponsabiliAndVicari
     }
     
     @Autowired
