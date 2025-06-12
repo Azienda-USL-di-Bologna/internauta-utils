@@ -97,7 +97,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
         Persona persona = null;
         UtenteStruttura utenteStruttura = null;
         List<Integer> idAziendeList = new ArrayList<>();
-        List<Struttura> struttureUnificate = new ArrayList<>();
+        List<Struttura> struttureCoinvoltePerUnificazioneOriginale = new ArrayList<>();
         List<StrutturaUnificata> entitaCoinvoltaUnificazioni = OperationsUtils.entitaCoinvoltaTouchUnificazioni(queryFactory, getEntitaCoinvolta(), qStruttura);
         if (entitaCoinvoltaUnificazioni != null && !entitaCoinvoltaUnificazioni.isEmpty()) {
             idAziendeList = entitaCoinvoltaUnificazioni.stream().flatMap(a -> Stream.of(
@@ -106,7 +106,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             ))
                 .distinct()
                 .collect(Collectors.toList());
-            struttureUnificate = entitaCoinvoltaUnificazioni.stream()
+            struttureCoinvoltePerUnificazioneOriginale = entitaCoinvoltaUnificazioni.stream()
                 .flatMap(a -> Stream.of(
                 a.getIdStrutturaDestinazione(),
                 a.getIdStrutturaSorgente()
@@ -126,7 +126,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                 //faccio fetchFirst perche mi aspetto di trovare una sola persona con quel codice fiscale o di non trovarne affatto
                 strutturaAppartenteOriginale = OperationsUtils.getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
                 if (entitaCoinvoltaUnificazioni == null || entitaCoinvoltaUnificazioni.isEmpty()) {
-                    struttureUnificate.add(strutturaAppartenteOriginale);
+                    struttureCoinvoltePerUnificazioneOriginale.add(strutturaAppartenteOriginale);
                 }
                 persona = getPersona(queryFactory, entitaDaInserire);
                 //inserire in baborg persone se non c'è la persona
@@ -166,7 +166,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     }
                     //ciclo su tutti gli utenti delle strutture delle aziende unificate
                     for (Utente utente : utenti) {
-                        for (Struttura struttura : struttureUnificate) {
+                        for (Struttura struttura : struttureCoinvoltePerUnificazioneOriginale) {
                             //se l'utente è quello della struttura che sto considerando faccio cose altrimenti no
                             if (struttura.getIdAzienda().getId().equals(utente.getIdAzienda().getId())) {
                                 String username = entitaDaInserire.getUsername() != null ? entitaDaInserire.getUsername() : persona.getCodiceFiscale();
@@ -219,14 +219,27 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             case CHIUSURA -> {
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
                 persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale()).and(qPersona.attiva)).fetchFirst();
+                List<UtenteStruttura> utenteStrutturaVeicolatiList = new ArrayList<>();
                 if (persona != null) {
                     utenti = getUtenti(queryFactory, idAziendeList, persona);
                     strutturaAppartenteOriginale = OperationsUtils.getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, entitaDaChiudere.getIdCasella(), entitaDaChiudere.getIdAzienda(), qStruttura);
+//                    strutturaAppartenteOriginale = OperationsUtils.getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+                    if (entitaCoinvoltaUnificazioni == null || entitaCoinvoltaUnificazioni.isEmpty()) {
+                        struttureCoinvoltePerUnificazioneOriginale.add(strutturaAppartenteOriginale);
+                        utenteStrutturaVeicolatiList = getUtentiStruttureVeicolati(queryFactory, strutturaAppartenteOriginale);
+                        if (utenteStrutturaVeicolatiList != null && !utenteStrutturaVeicolatiList.isEmpty()) {
+                            for (UtenteStruttura utenteStrutturaVeicolato : utenteStrutturaVeicolatiList) {
+                                utenteStrutturaVeicolato.setAttivo(Boolean.FALSE);
+                                utenteStrutturaVeicolato.setAttivoAl(ZonedDateTime.now());
+                                repositoryFactory.getEntityManager().persist(utenteStrutturaVeicolato);
+                            }
+                        }
+                    }
                     //chiudere in baborg utenti struttura
                     //chiudere in baborg utenti se non ci sono afferenze attive
                     //chiudere in baborg persone se non ci sono utenti attivi
                     for (Utente utente : utenti) {
-                        for (Struttura struttura : struttureUnificate) {
+                        for (Struttura struttura : struttureCoinvoltePerUnificazioneOriginale) {
                             utenteStruttura = getUtenteStrutturaAttivo(queryFactory, struttura, utente);
                             utenteStruttura.setAttivo(Boolean.FALSE);
                             utenteStruttura.setAttivoAl(ZonedDateTime.now());
@@ -239,7 +252,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     null,
                                     null,
                                     null,
-                                    BlackBoxConstants.Ambito.GEDI.toString(),
+                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
                                     BlackBoxConstants.Tipo.ARCHIVIO.toString(),
                                     "ribaltone",
                                     struttura);
@@ -251,7 +264,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     null,
                                     null,
                                     null,
-                                    BlackBoxConstants.Ambito.GEDI.toString(),
+                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
                                     BlackBoxConstants.Tipo.ARCHIVIO.toString(),
                                     "ribaltone",
                                     struttura);
@@ -311,7 +324,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         utente,
                                         struttura,
                                         null,
-                                        "ribaltone",
+                                        null,
                                         Boolean.FALSE,
                                         Boolean.FALSE,
                                         ambitoDaSpegnere,
@@ -344,7 +357,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     persona.setDescrizione(entitaDaInserire.getCognome() + " " + entitaDaInserire.getNome());
 
                     for (Utente utente : utenti) {
-                        for (Struttura struttura : struttureUnificate) {
+                        for (Struttura struttura : struttureCoinvoltePerUnificazioneOriginale) {
                             if (utente != null && strutturaAppartenteOriginale != null) {
                                 utente.setUsername(entitaDaInserire.getUsername());
                                 utente.setIdPersona(persona);
@@ -656,5 +669,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                 }
             }
         }
+    }
+
+    private List<UtenteStruttura> getUtentiStruttureVeicolati(JPAQueryFactory queryFactory, Struttura strutturaAppartenteOriginale) {
+        return queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idStrutturaVeicolante.id.eq(strutturaAppartenteOriginale.getId()).and(qUtenteStruttura.attivo)).fetch();
     }
 }
