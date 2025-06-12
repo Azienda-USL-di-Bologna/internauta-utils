@@ -52,15 +52,11 @@ public class ParametriAziendeReader {
         loginConfig,
         babelshareConfig,
         oliammConfiguration,
-<<<<<<< HEAD
         tabRegistrazioniScriptaActive,
-        firmaJNJ
-=======
+        firmaJNJ,
         ribaltoneConf,
         processaDati,
-        usaNuovoRibaltoneVeloce,
-        tabRegistrazioniScriptaActive
->>>>>>> sviluppo
+        usaNuovoRibaltoneVeloce
     }
     
     @Autowired
