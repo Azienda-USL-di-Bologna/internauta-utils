@@ -13,6 +13,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazione;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import jakarta.persistence.EntityManager;
@@ -74,6 +75,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         List<OperationAppartenente> listOfOperationAppartenenti = new ArrayList();
         List<OperationAnagrafica> listOfOperationAnagrafiche = new ArrayList();
         List<OperationTrasformazione> listOfOperationTrasformazioni = new ArrayList();
+        List<OperationUnificazione> listOfOperationUnificazione = new ArrayList();
 
         Map<String, List<Map<String, Object>>> data = this.getData(keyRibaltoneDati);
         if (data == null) {
@@ -101,11 +103,13 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                     case "TRASFORMAZIONI" ->
                         listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                    case "UNIFICAZIONI" ->
+                        listOfOperationUnificazione.add(new OperationUnificazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                 }
             }
         }
 //
-        return new Operations(listOfOperationStrutture, listOfOperationAppartenenti, listOfOperationAnagrafiche, listOfOperationTrasformazioni);
+        return new Operations(listOfOperationStrutture, listOfOperationAppartenenti, listOfOperationAnagrafiche, listOfOperationTrasformazioni, listOfOperationUnificazione);
     }
 
     private RedisTemplate<String, Object> buildRedisTemplate(Map<String, Object> cacheConfig) {

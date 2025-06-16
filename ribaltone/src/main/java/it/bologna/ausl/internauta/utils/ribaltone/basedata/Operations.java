@@ -7,6 +7,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
@@ -43,18 +44,21 @@ public class Operations implements Serializable {
     private List<OperationAppartenente> listOfOperationAppartenenti;
     private List<OperationAnagrafica> listOfOperationAnagrafiche;
     private List<OperationTrasformazione> listOfOperationTrasformazioni;
+    private List<OperationUnificazione> listOfOperationUnificazione;
     private Object workToDo;
 
     public Operations(
         List<OperationStruttura> listOfOperationStruttura,
         List<OperationAppartenente> listOfOperationAppartenenti,
         List<OperationAnagrafica> listOfOperationAnagrafiche,
-        List<OperationTrasformazione> listOfOperationTrasformazioni) {
+        List<OperationTrasformazione> listOfOperationTrasformazioni,
+        List<OperationUnificazione> listOfOperationUnificazione) {
 
         this.listOfOperationStruttura = listOfOperationStruttura;
         this.listOfOperationAppartenenti = listOfOperationAppartenenti;
         this.listOfOperationAnagrafiche = listOfOperationAnagrafiche;
         this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
+        this.listOfOperationUnificazione = listOfOperationUnificazione;
     }
 
     public Operations() {

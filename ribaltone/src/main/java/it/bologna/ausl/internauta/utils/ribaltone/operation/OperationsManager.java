@@ -9,7 +9,9 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
+import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
@@ -18,6 +20,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
+import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneEseguita;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -82,13 +85,15 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      */
     public Operations buildOperations() throws RibaltoneHttpException {
-        Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStruttureETrasformazione = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
-        List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildOperationsStruttureETrasformazione.get("strutture");
-        List<OperationAppartenente> operationsAppartenenti = buildOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare());
-        List<OperationAnagrafica> operationsAnagrafiche = buildOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
-        List<OperationTrasformazione> operationsTraformazioni = buildOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
-        operationsTraformazioni.addAll((Collection<? extends OperationTrasformazione>) buildOperationsStruttureETrasformazione.get("trasformazioni"));
-        return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni);
+        Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsStruttureETrasformazione = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
+        List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildedOperationsStruttureETrasformazione.get("strutture");
+        List<OperationUnificazione> operationsUnificazioni = (List<OperationUnificazione>) buildedOperationsStruttureETrasformazione.get("unificazioni");
+        List<OperationAppartenente> operationsAppartenenti = buildedOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare());
+        List<OperationAnagrafica> operationsAnagrafiche = buildedOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
+        List<OperationTrasformazione> operationsTraformazioni = buildedOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
+//        List<OperationUnificazione> operationUnificazione = buildOperationsUnificazioni();
+        operationsTraformazioni.addAll((Collection<? extends OperationTrasformazione>) buildedOperationsStruttureETrasformazione.get("trasformazioni"));
+        return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni, operationsUnificazioni);
     }
 
     private Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStrutture(
@@ -99,10 +104,12 @@ public class OperationsManager {
     ) throws RibaltoneHttpException {
         List<OperationStruttura> operationStrutturaList = new ArrayList<>();
         List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
+        List<OperationUnificazione> operationUnificazioneList = new ArrayList<>();
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> mapToReturn = new HashMap<>();
         EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QStruttura qStruttura = QStruttura.struttura;
+        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare, DatiDaImportareStruttura::getKey);
         //capiamo i cambi di padre
         this.struttureChiuse = 0;
@@ -151,15 +158,37 @@ public class OperationsManager {
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.CHIUSURA, strutturaImportata, repositoryFactory.getEntityManager()));
                 this.struttureChiuse++;
             }
+            //qui ci entro in caso di chiusura di una struttura o perche è stata chiusa
+            //o perche è confluita
+            //quindi verifico se tocca un'unificazione
+            // nel caso lo segnalo
+            if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
+                || indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
+                //query per verificare che la struttura importata che subirà la trasformazione è anche unificata
+                List<StrutturaUnificata> struttureUnificateList = queryFactory
+                    .select(qStrutturaUnificata)
+                    .from(qStruttura)
+                    .join(qStrutturaUnificata)
+                    .on(qStrutturaUnificata.idStrutturaSorgente.id.eq(qStruttura.id)
+                        .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(qStruttura.id))
+                    )
+                    .where(qStruttura.idCasella.eq(strutturaImportata.getIdCasella()).and(qStruttura.attiva)).fetch();
+                if (struttureUnificateList != null && !struttureUnificateList.isEmpty()) {
+                    for (StrutturaUnificata su : struttureUnificateList) {
+                        operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CHIUSURA, UnificazioneEseguita.buildUnificazioneEseguita(su), entityManager));
+                    }
+                }
+            }
         }
 
         mapToReturn.put("strutture", operationStrutturaList);
         mapToReturn.put("trasformazioni", operationTrasformazioneList);
+        mapToReturn.put("unificazioni", operationUnificazioneList);
 
         return mapToReturn;
     }
 
-    private List<OperationAppartenente> buildOperationsAppartenenti(
+    private List<OperationAppartenente> buildedOperationsAppartenenti(
         List<DatiDaImportareAppartenente> appartenentiDaImportare,
         List<DatiImportatiAppartenente> appartenentiImportati,
         Map<String, Integer> indexAppartenentiImportati,
@@ -240,7 +269,7 @@ public class OperationsManager {
         return operationAppartenentiList;
     }
 
-    private List<OperationAnagrafica> buildOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) {
+    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) {
         List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
         for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {
             Operation.Azione azione = Operation.Azione.INSERT;
@@ -263,7 +292,7 @@ public class OperationsManager {
         return operationAnagraficheList;
     }
 
-    private List<OperationTrasformazione> buildOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga) {
+    private List<OperationTrasformazione> buildedOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga) {
         List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
 
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {
