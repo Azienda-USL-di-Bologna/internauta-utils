@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
@@ -13,6 +14,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenent
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,14 +41,19 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final Integer timeToExpire;
-    private final String key;
+    private final String keyRibaltoneDati;
+    private final String keyImportingCSV;
+    private final String keyExecuting;
     private final EntityManager entityManager;
 
     public RibaltoneCacheRedis(ObjectMapper objectMapper, Map<String, Object> cacheConfig, EntityManager entityManager) {
         this.objectMapper = objectMapper;
         redisTemplate = this.buildRedisTemplate(cacheConfig);
         this.timeToExpire = Integer.valueOf(cacheConfig.get("cacheTime").toString());
-        this.key = "RIBALTONE_" + cacheConfig.get("codiceAzienda").toString();
+        this.keyRibaltoneDati = "RIBALTONE_Dati_" + cacheConfig.get("codiceAzienda").toString();
+        this.keyImportingCSV = "RIBALTONE_ImportingCSV_" + cacheConfig.get("codiceAzienda").toString();
+        //vogliamo che vada un solo ribaltone alla volta
+        this.keyExecuting = "RIBALTONE_KeyExecuting";
         this.entityManager = entityManager;
     }
 
@@ -55,7 +62,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
         try {
             String jsonOperation = objectMapper.writeValueAsString(operations);
-            this.saveData(key, jsonOperation);
+            this.saveData(keyRibaltoneDati, jsonOperation);
         } catch (JsonProcessingException ex) {
             throw new RibaltoneHttpException("Errore nella serializzazione JSON", ex);
         }
@@ -68,7 +75,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         List<OperationAnagrafica> listOfOperationAnagrafiche = new ArrayList();
         List<OperationTrasformazione> listOfOperationTrasformazioni = new ArrayList();
 
-        Map<String, List<Map<String, Object>>> data = this.getData(key);
+        Map<String, List<Map<String, Object>>> data = this.getData(keyRibaltoneDati);
         if (data == null) {
             return null;
         }
@@ -152,8 +159,64 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
-    public void cleanCache() {
-        Set<String> keys = redisTemplate.keys(key + "*");
+    public void cleanDataCache() {
+        Set<String> keys = redisTemplate.keys(keyRibaltoneDati + "*");
         redisTemplate.delete(keys);
+    }
+
+    @Override
+    public Boolean isExecuting() {
+        return redisTemplate.hasKey(keyExecuting);
+    }
+
+    @Override
+    public void setExecuting(Boolean executing, Utente user) throws JsonProcessingException {
+        if (executing) {
+            String userStr = objectMapper.writeValueAsString(user);
+            redisTemplate.opsForValue().set(keyExecuting, userStr, 60, TimeUnit.MINUTES);
+        } else {
+            redisTemplate.delete(keyExecuting);
+        }
+    }
+
+    @Override
+    public Boolean isImportingCSV() {
+        return redisTemplate.hasKey(keyImportingCSV);
+    }
+
+    @Override
+    public void setImportingCSV(Boolean executing, Utente user) throws JsonProcessingException {
+        if (executing) {
+            redisTemplate.opsForValue().set(keyImportingCSV, user.getId().toString(), 60, TimeUnit.MINUTES);
+        } else {
+            redisTemplate.delete(keyImportingCSV);
+        }
+    }
+
+    @Override
+    public Integer getIdUserExecuting() throws RibaltoneHttpException, JsonProcessingException {
+        if (redisTemplate.opsForValue().get(keyExecuting) == null) {
+            return null;
+        }
+        Integer idUtente = objectMapper.readValue((String) redisTemplate.opsForValue().get(keyExecuting), new TypeReference<Integer>() {
+        });
+        if (idUtente == null) {
+            throw new RibaltoneHttpException("errore nel reperire le l'utente che ha inizato il ribaltone dalla cache");
+        }
+
+        return idUtente;
+    }
+
+    @Override
+    public Integer getIdUserImportingCSV() throws JsonProcessingException, RibaltoneHttpException {
+        if (redisTemplate.opsForValue().get(keyImportingCSV) == null) {
+            return null;
+        }
+        Integer idUtente = objectMapper.readValue((String) redisTemplate.opsForValue().get(keyImportingCSV), new TypeReference<Integer>() {
+        });
+        if (idUtente == null) {
+            throw new RibaltoneHttpException("errore nel reperire le l'utente che ha inizato il ribaltone dalla cache");
+        }
+        return idUtente;
     }
 }

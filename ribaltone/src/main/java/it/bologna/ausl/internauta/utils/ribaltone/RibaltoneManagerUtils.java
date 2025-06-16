@@ -55,8 +55,6 @@ public class RibaltoneManagerUtils {
         //controllo sul numero minimo di dati
         operationsManager.isQuantitaDatiOk();
         operationsCacheManager.dump(operations);
-        //TODO: fare il test fino al dump
-        //TODO: fare il restore e testare
 
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }
