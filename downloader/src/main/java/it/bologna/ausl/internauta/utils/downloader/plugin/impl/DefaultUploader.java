@@ -20,7 +20,7 @@ public class DefaultUploader extends MinIOUploader {
     
     private static Logger logger = LoggerFactory.getLogger(DefaultUploader.class);
 
-    private final String BUCKET = "uploader";
+    public static final String BUCKET = "uploader";
     
     private final String DEFAULT_PATH = "/uploader";;
     

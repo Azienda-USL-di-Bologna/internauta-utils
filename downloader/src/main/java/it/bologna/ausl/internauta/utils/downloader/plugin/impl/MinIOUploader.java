@@ -77,7 +77,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         
-        // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
+        // se non specifico il bucket allora lo rendo uguale al codiceAzienda
         String bucket;
         if (params.containsKey("bucket")) {
             bucket = (String) params.get("bucket");

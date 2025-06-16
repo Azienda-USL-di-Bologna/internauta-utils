@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 public class MinIODownloader extends DownloaderDownloadPlugin {
     
     private static Logger logger = LoggerFactory.getLogger(MinIODownloader.class);
+    public static final String FILE_ID = "fileId";
 
     public MinIODownloader(Map<String, Object> params, RepositoryManager repositoryManager) {
         super(params, repositoryManager);
@@ -30,7 +31,7 @@ public class MinIODownloader extends DownloaderDownloadPlugin {
     @Override
     public InputStream getFile() throws DownloaderDownloadException {
         
-        String fileId = (String) params.get("fileId");
+        String fileId = (String) params.get(MinIODownloader.FILE_ID);
         
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
