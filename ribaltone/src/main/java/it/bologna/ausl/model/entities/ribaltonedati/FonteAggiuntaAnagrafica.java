@@ -13,12 +13,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -30,11 +27,11 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "fonte_babel_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class FonteBabelAnagrafica implements Serializable {
+public class FonteAggiuntaAnagrafica implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -62,7 +59,7 @@ public class FonteBabelAnagrafica implements Serializable {
 
     @Column(name = "codice_azienda")
     private String codiceAzienda;
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
@@ -74,10 +71,10 @@ public class FonteBabelAnagrafica implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public FonteBabelAnagrafica() {
+    public FonteAggiuntaAnagrafica() {
     }
 
-    public FonteBabelAnagrafica(Integer id) {
+    public FonteAggiuntaAnagrafica(Integer id) {
         this.id = id;
     }
 
@@ -152,7 +149,6 @@ public class FonteBabelAnagrafica implements Serializable {
     public void setVersion(ZonedDateTime version) {
         this.version = version;
     }
-    
 
     @Override
     public int hashCode() {
@@ -164,10 +160,10 @@ public class FonteBabelAnagrafica implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof FonteBabelAnagrafica)) {
+        if (!(object instanceof FonteAggiuntaAnagrafica)) {
             return false;
         }
-        FonteBabelAnagrafica other = (FonteBabelAnagrafica) object;
+        FonteAggiuntaAnagrafica other = (FonteAggiuntaAnagrafica) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }

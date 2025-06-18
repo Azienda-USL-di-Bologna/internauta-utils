@@ -12,15 +12,15 @@ import java.util.List;
  * @author Top
  */
 public abstract class SourceDataManager {
-   
+
     protected ObjectMapper objectMapper;
-    
+
     protected SpecificData specificDataConf;
-    
+
     protected String codiceAzienda;
-    
+
     protected Integer idAzienda;
-    
+
     protected SourceDataManager(SpecificData specificDataConf, ObjectMapper objectMapper, String codiceAzienda, Integer idAzienda) {
         this.specificDataConf = specificDataConf;
         this.objectMapper = objectMapper;
@@ -35,11 +35,13 @@ public abstract class SourceDataManager {
     public void setSpecificDataConf(SpecificData specificDataConf) {
         this.specificDataConf = specificDataConf;
     }
-    
-    public abstract List<DatiDaImportareAppartenente> getAppartenenti();
-    public abstract List<DatiDaImportareStruttura> getStrutture();
-    public abstract List<DatiDaImportareTrasformazione> getTrasformazioni();
-    public abstract List<DatiDaImportareAnagrafica> getAnagrafica();
 
+    public abstract List<DatiDaImportareAppartenente> getAppartenenti();
+
+    public abstract List<DatiDaImportareStruttura> getStrutture();
+
+    public abstract List<DatiDaImportareTrasformazione> getTrasformazioni();
+
+    public abstract List<DatiDaImportareAnagrafica> getAnagrafica();
 
 }

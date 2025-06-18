@@ -8,12 +8,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -25,11 +22,11 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "fonte_babel_strutture", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_strutture", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class FonteBabelStruttura implements Serializable {
+public class FonteAggiuntaStruttura implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -74,7 +71,7 @@ public class FonteBabelStruttura implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public FonteBabelStruttura() {
+    public FonteAggiuntaStruttura() {
     }
 
     public Integer getIdCasella() {
@@ -167,10 +164,10 @@ public class FonteBabelStruttura implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof FonteBabelStruttura)) {
+        if (!(object instanceof FonteAggiuntaStruttura)) {
             return false;
         }
-        FonteBabelStruttura other = (FonteBabelStruttura) object;
+        FonteAggiuntaStruttura other = (FonteAggiuntaStruttura) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
