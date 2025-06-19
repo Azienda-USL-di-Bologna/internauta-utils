@@ -3,10 +3,11 @@ package it.bologna.ausl.internauta.utils.firma.utils;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
+import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaParameterException;
 import it.bologna.ausl.internauta.utils.firma.repositories.ParameterRepository;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.model.entities.firma.Parameter;
+import it.bologna.ausl.model.entities.firma.QParameter;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -32,7 +33,8 @@ public class ConfigParams {
         downloader,
         minIOConfig,
         externalCheckCertificate,
-        externalSignAndCertificateValidator
+        externalSignAndCertificateValidator,
+        firmaJnJRequestParameter
     }
     
     public enum DownloaderParamsKey {
@@ -50,6 +52,10 @@ public class ConfigParams {
         validateCertificateUrl
     }
     
+    public enum FirmaJnJRequestParameterParamsParamsKey {
+        hourBeforeDelete
+    }
+    
     @Autowired
     private ObjectMapper objectMapper;
     
@@ -61,48 +67,41 @@ public class ConfigParams {
     private Map<String, Object> downloaderParams;
     private Map<String, Object> externalCheckCertificateParams;
     private Map<String, Object> externalSignAndCertificateValidatorParams;
+    private Map<String, Object> firmaJnJRequestParameterParams;
        
     /**
      * Questo metodo viene eseguito in fase di boot dell'applicazione.
      * Inizializza il tutto
      * @throws UnknownHostException
      * @throws IOException
-     * @throws FirmaRemotaConfigurationException 
+     * @throws it.bologna.ausl.internauta.utils.firma.exceptions.FirmaParameterException
      */
     @PostConstruct
-    public void init() throws UnknownHostException, IOException, FirmaRemotaConfigurationException {
+    public void init() throws UnknownHostException, IOException, FirmaParameterException {
         
         // lettura dei parametr di MinIO
-        Optional<Parameter> minIOParameterOp = parameterRepository.findById(ParameterIds.minIOConfig.toString());
-        if (!minIOParameterOp.isPresent() || minIOParameterOp.get().getValue().isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.minIOConfig.toString()));
-        }
-        Map<String, Object> minIOConfig = minIOParameterOp.get().getValue();
+        Parameter minIOParameter = getParameter(ParameterIds.minIOConfig);
+        Map<String, Object> minIOConfig = minIOParameter.getValue();
         
         initMinIO(minIOConfig);
         
         // lettura dei parametri del downloader
-        Optional<Parameter> downloaderParameterOp = parameterRepository.findById(ParameterIds.downloader.toString());
-        if (!downloaderParameterOp.isPresent() || downloaderParameterOp.get().getValue().isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.downloader.toString()));
-        }
-        
+        Parameter downloaderParameter = getParameter(ParameterIds.downloader);
+
         // vengono letti i parametri del downloader per tutte le aziende. Si possono ottenere poi quelli per l'azienda desiderata tramite il metodo getDownloaderParams()
-        this.downloaderParams = downloaderParameterOp.get().getValue();
+        this.downloaderParams = downloaderParameter.getValue();
         
         // lettura del parametro externalCheckCertificate
-        Optional<Parameter> externalCheckCertificateOp = parameterRepository.findById(ParameterIds.externalCheckCertificate.toString());
-        if (!externalCheckCertificateOp.isPresent() || externalCheckCertificateOp.get().getValue().isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.externalCheckCertificate.toString()));
-        }
-        this.externalCheckCertificateParams = externalCheckCertificateOp.get().getValue();
+        Parameter externalCheckCertificate = getParameter(ParameterIds.externalCheckCertificate);
+        this.externalCheckCertificateParams = externalCheckCertificate.getValue();
         
         // lettura del parametro del nuovo validatore externalSignAndCertificateValidator
-        Optional<Parameter> externalSignAndCertificateValidatorOp = parameterRepository.findById(ParameterIds.externalSignAndCertificateValidator.toString());
-        if (!externalSignAndCertificateValidatorOp.isPresent() || externalSignAndCertificateValidatorOp.get().getValue().isEmpty()) {
-            throw new FirmaRemotaConfigurationException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", ParameterIds.externalSignAndCertificateValidator.toString()));
-        }
-        this.externalSignAndCertificateValidatorParams = externalSignAndCertificateValidatorOp.get().getValue();
+        Parameter externalSignAndCertificateValidator = getParameter(ParameterIds.externalSignAndCertificateValidator);
+        this.externalSignAndCertificateValidatorParams = externalSignAndCertificateValidator.getValue();
+        
+        // lettura del parametro del nuovo validatore externalSignAndCertificateValidator
+        Parameter firmaJnJRequestParameter = getParameter(ParameterIds.firmaJnJRequestParameter);
+        this.firmaJnJRequestParameterParams = firmaJnJRequestParameter.getValue();
     }
     
     /**
@@ -199,6 +198,10 @@ public class ConfigParams {
                 .replace("{port}", port.toString());
     }
     
+    public Map<String, Object> getFirmaJnJRequestParameter() {
+        return this.firmaJnJRequestParameterParams;
+    }
+    
     /**
      * inizializza la connessione a MinIO
      * @param minIOConfig 
@@ -212,6 +215,15 @@ public class ConfigParams {
         minIOWrapper = new MinIOWrapper(minIODBDriver, minIODBUrl, minIODBUsername, minIODBPassword, maxPoolSize, objectMapper);
     }
 
+    
+    private Parameter getParameter(ParameterIds parameterId) throws FirmaParameterException {
+        Optional<Parameter> paramterOp = parameterRepository.findById(parameterId.toString());
+        if (paramterOp.isPresent() &&  !paramterOp.get().getValue().isEmpty()) {
+            return paramterOp.get();
+        } else {
+            throw new FirmaParameterException(String.format("il parametro %s non è stato trovato nella tabella firma.parameters", parameterId.toString()));
+        }
+    }
     /**
      * Torna l'ogetto per interagire conMinIO
      * @return l'ogetto per interagire conMinIO
