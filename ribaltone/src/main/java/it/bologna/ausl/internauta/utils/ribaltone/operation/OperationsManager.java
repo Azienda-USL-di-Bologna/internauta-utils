@@ -90,8 +90,10 @@ public class OperationsManager {
         List<OperationUnificazione> operationsUnificazioni = (List<OperationUnificazione>) buildedOperationsStruttureETrasformazione.get("unificazioni");
         List<OperationAppartenente> operationsAppartenenti = buildedOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare());
         List<OperationAnagrafica> operationsAnagrafiche = buildedOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
-        List<OperationTrasformazione> operationsTraformazioni = buildedOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
-//        List<OperationUnificazione> operationUnificazione = buildOperationsUnificazioni();
+        Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsTrasformazioniUnificazioni = buildedOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
+        List<OperationTrasformazione> operationsTraformazioni = (List<OperationTrasformazione>) buildedOperationsTrasformazioniUnificazioni.get("trasformazioni");
+        List<OperationUnificazione> unificazioniToccateDaTrasformazioni = (List<OperationUnificazione>) buildedOperationsTrasformazioniUnificazioni.get("unificazioni");
+        operationsUnificazioni.addAll(unificazioniToccateDaTrasformazioni);
         operationsTraformazioni.addAll((Collection<? extends OperationTrasformazione>) buildedOperationsStruttureETrasformazione.get("trasformazioni"));
         return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni, operationsUnificazioni);
     }
@@ -157,14 +159,7 @@ public class OperationsManager {
                 && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.CHIUSURA, strutturaImportata, repositoryFactory.getEntityManager()));
                 this.struttureChiuse++;
-            }
-            //qui ci entro in caso di chiusura di una struttura o perche è stata chiusa
-            //o perche è confluita
-            //quindi verifico se tocca un'unificazione
-            // nel caso lo segnalo
-            if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
-                || indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
-                //query per verificare che la struttura importata che subirà la trasformazione è anche unificata
+                //sto chiudendo una struttura unificata?
                 List<StrutturaUnificata> struttureUnificateList = queryFactory
                     .select(qStrutturaUnificata)
                     .from(qStruttura)
@@ -179,6 +174,10 @@ public class OperationsManager {
                     }
                 }
             }
+            //qui ci entro in caso di chiusura di una struttura o perche è stata chiusa
+            //o perche è confluita
+            //quindi verifico se tocca un'unificazione
+            // nel caso lo segnalo
         }
 
         mapToReturn.put("strutture", operationStrutturaList);
@@ -292,15 +291,36 @@ public class OperationsManager {
         return operationAnagraficheList;
     }
 
-    private List<OperationTrasformazione> buildedOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga) {
+    private Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsTrasformazioni(List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer ultimoProgressivoRiga) {
         List<OperationTrasformazione> operationTrasformazioneList = new ArrayList<>();
-
+        List<OperationUnificazione> operationUnificazioneList = new ArrayList<>();
+        Map<String, List<? extends Operation<DatiRibaltoneInterface>>> mapToReturn = new HashMap<>();
+        EntityManager entityManager = repositoryFactory.getEntityManager();
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QStruttura qStruttura = QStruttura.struttura;
+        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {
             if (datiDaImportareTrasformazione.getProgressivoRiga() > ultimoProgressivoRiga) {
                 operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.CONFLUENZA, datiDaImportareTrasformazione, repositoryFactory.getEntityManager()));
+                List<StrutturaUnificata> struttureUnificateList = queryFactory
+                    .select(qStrutturaUnificata)
+                    .from(qStruttura)
+                    .join(qStrutturaUnificata)
+                    .on(qStrutturaUnificata.idStrutturaSorgente.id.eq(qStruttura.id)
+                        .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(qStruttura.id))
+                    )
+                    .where(qStruttura.idCasella.eq(datiDaImportareTrasformazione.getIdCasellaPartenza()).and(qStruttura.attiva)).fetch();
+                if (struttureUnificateList != null && !struttureUnificateList.isEmpty()) {
+                    for (StrutturaUnificata su : struttureUnificateList) {
+                        operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CHIUSURA, UnificazioneEseguita.buildUnificazioneEseguita(su), entityManager));
+                    }
+                }
             }
         }
-        return operationTrasformazioneList;
+        mapToReturn.put("trasformazioni", operationTrasformazioneList);
+        mapToReturn.put("unificazioni", operationUnificazioneList);
+
+        return mapToReturn;
     }
 
     public boolean isQuantitaDatiOk() throws RibaltoneHttpException {

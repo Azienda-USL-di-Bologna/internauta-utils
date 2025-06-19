@@ -42,9 +42,6 @@ public class RibaltoneTotaleManager {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneTotaleManager.class);
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     @Autowired
     private RibaltoneConfiguration ribaltoneConfiguration;
 
@@ -55,7 +52,7 @@ public class RibaltoneTotaleManager {
     private RepositoryFactory repositoryFactory;
 
     public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
         DatiDaImportare validateSourceData = RibaltoneManagerUtils.getAndValidateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
         OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
@@ -105,7 +102,7 @@ public class RibaltoneTotaleManager {
         ConfigRibaltoneView configRibaltoneView,
         UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
         DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
 
@@ -118,7 +115,7 @@ public class RibaltoneTotaleManager {
 
         Operations buildOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+        RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         operationsCacheManager.dump(buildOperations);
 //        UserReportManager userReportManager = buildOperations.generateUserReport(typeUserReport);
@@ -127,8 +124,8 @@ public class RibaltoneTotaleManager {
     }
 
     public Operations ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idConfiguration);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idConfiguration);
+        RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildOperations = operationsCacheManager.restore();
         buildOperations.execute(repositoryFactory, codiceAzienda);
@@ -137,7 +134,7 @@ public class RibaltoneTotaleManager {
     }
 
     public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QAzienda qAzienda = QAzienda.azienda;
         Azienda idAzienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
         RibaltoneDaLanciare ribaltoneDaLanciare = null;
@@ -154,7 +151,7 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
             }
             case "ribaltaPostUserReport" -> {
-                ribaltoneDaLanciare = entityManager.find(RibaltoneDaLanciare.class, idRibaltTree);
+                ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("DA_LANCIARE");
             }
             case "ribaltaAndGetUserReport" -> {
@@ -169,14 +166,14 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
             }
             case "ribaltaDeleteCache" -> {
-                ribaltoneDaLanciare = entityManager.find(RibaltoneDaLanciare.class, idRibaltTree);
+                ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("ANNULLATO");
             }
             default -> {
                 throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");
             }
         }
-        entityManager.persist(ribaltoneDaLanciare);
+        repositoryFactory.getEntityManager().persist(ribaltoneDaLanciare);
         return ribaltoneDaLanciare.getId();
     }
 
