@@ -100,6 +100,9 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
+    @Column(name = "errore")
+    private String errore;
+
     public DatiDaImportareAppartenente() {
     }
 
@@ -280,7 +283,15 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         return DatiDaImportareAppartenente.class.getCanonicalName();
     }
 
-    public DatiImportatiAppartenente buildDatiImportatiAppartenente() {
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
+    public DatiImportatiAppartenente buildDatiImportati() {
         DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
         datiImportatiAppartenente.setCodiceAzienda(this.codiceAzienda);
         datiImportatiAppartenente.setCodiceEnte(this.codiceEnte);

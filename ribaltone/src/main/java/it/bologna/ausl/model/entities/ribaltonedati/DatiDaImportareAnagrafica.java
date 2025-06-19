@@ -69,6 +69,9 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "errore")
+    private String errore;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
@@ -175,6 +178,14 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         this.passwordHash = passwordHash;
     }
 
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -216,7 +227,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         return DatiDaImportareAnagrafica.class.getCanonicalName();
     }
 
-    public DatiImportatiAnagrafica buildDatiImportatiAnagrafica() {
+    public DatiImportatiAnagrafica buildDatiImportati() {
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);

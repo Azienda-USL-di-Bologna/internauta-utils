@@ -257,7 +257,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
         return "it.bologna.ausl.internauta.model.entities.FonteBabelAppartenente[ id=" + id + " ]";
     }
 
-    public DatiDaImportareAppartenente buildDatidaImportareAppartenente() {
+    public DatiDaImportareAppartenente buildDatidaImportare() {
         DatiDaImportareAppartenente datiDaImportareAppartenente = new DatiDaImportareAppartenente();
 
         datiDaImportareAppartenente.setCodiceAzienda(codiceAzienda);

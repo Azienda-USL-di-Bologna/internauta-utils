@@ -11,6 +11,8 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.FonteAggiuntaAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.FonteAggiuntaAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.QFonteAggiuntaAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QFonteAggiuntaAppartenente;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
@@ -49,7 +51,7 @@ public class FonteAggiuntaDataManager extends SourceDataManager {
             ).fetch();
         List<DatiDaImportareAppartenente> datiDaImportareAppartenenteList = new ArrayList<>();
         for (FonteAggiuntaAppartenente fonteAggiuntaAppartenente : fonteAggiuntaAppartenenteList) {
-            datiDaImportareAppartenenteList.add(fonteAggiuntaAppartenente.buildDatidaImportareAppartenente());
+            datiDaImportareAppartenenteList.add(fonteAggiuntaAppartenente.buildDatidaImportare());
         }
         return datiDaImportareAppartenenteList;
     }
@@ -66,7 +68,18 @@ public class FonteAggiuntaDataManager extends SourceDataManager {
 
     @Override
     public List<DatiDaImportareAnagrafica> getAnagrafica() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        QFonteAggiuntaAnagrafica qFonteAggiuntaAnagrafica = QFonteAggiuntaAnagrafica.fonteAggiuntaAnagrafica;
+        List<FonteAggiuntaAnagrafica> fonteAggiuntaAnagraficaList = queryFactory
+            .select(qFonteAggiuntaAnagrafica)
+            .from(qFonteAggiuntaAnagrafica)
+            .where(
+                qFonteAggiuntaAnagrafica.codiceAzienda.eq(codiceAzienda)).fetch();
+        List<DatiDaImportareAnagrafica> datiDaImportareAnagraficaList = new ArrayList<>();
+        for (FonteAggiuntaAnagrafica fonteAggiuntaAnagrafica : fonteAggiuntaAnagraficaList) {
+            datiDaImportareAnagraficaList.add(fonteAggiuntaAnagrafica.buildDatidaImportare(idAzienda));
+        }
+        return datiDaImportareAnagraficaList;
     }
 
 }

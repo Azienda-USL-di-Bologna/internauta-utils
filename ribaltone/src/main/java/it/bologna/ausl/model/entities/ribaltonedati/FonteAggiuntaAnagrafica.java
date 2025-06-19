@@ -172,7 +172,21 @@ public class FonteAggiuntaAnagrafica implements Serializable {
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.FonteBabelAnagrafica[ id=" + id + " ]";
+        return "it.bologna.ausl.model.entities.FonteAggiuntaAnagrafica[ id=" + id + " ]";
+    }
+
+    public DatiDaImportareAnagrafica buildDatidaImportare(Integer idAzienda) {
+        DatiDaImportareAnagrafica datiDaImportareAnagrafica = new DatiDaImportareAnagrafica();
+        datiDaImportareAnagrafica.setCodiceAzienda(codiceAzienda);
+        datiDaImportareAnagrafica.setCodiceEnte(codiceEnte);
+        datiDaImportareAnagrafica.setCodiceFiscale(codiceFiscale);
+        datiDaImportareAnagrafica.setCodiceMatricola(codiceMatricola);
+        datiDaImportareAnagrafica.setCognome(cognome);
+        datiDaImportareAnagrafica.setEmail(email);
+        datiDaImportareAnagrafica.setNome(nome);
+        datiDaImportareAnagrafica.setIdAzienda(idAzienda);
+        datiDaImportareAnagrafica.setPasswordHash(null);
+        return datiDaImportareAnagrafica;
     }
 
 }
