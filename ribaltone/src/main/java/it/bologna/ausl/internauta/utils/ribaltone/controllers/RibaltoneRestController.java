@@ -246,15 +246,16 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
         if (hoPermessoPerLanciareRibaltone()) {
-            if (!isRibaltoneInCorso(configRibaltoneView.getFonteSelezionata())) {
+            if (!isRibaltoneInCorso(configRibaltoneView.getFonteSelezionata()) && !isImportazioneCSVInCorso(configRibaltoneView.getFonteSelezionata())) {
                 AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
                 Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
                 realUser = entityManager.find(Utente.class, realUser.getId());
-                try {
-                    setRibaltoneInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
+                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata());
+                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
 
-                    RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata());
-                    RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+                try {
+                    setImportazioneCSVInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
+                    setRibaltoneInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
 
 //                ribaltoneCache.cleanCache();
                     Map<String, Object> infoRibaltone = new HashMap<>();
@@ -268,8 +269,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
                     return new ResponseEntity(infoRibaltone, HttpStatus.OK);
                 } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
-                    setRibaltoneInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
-                    throw ex;
+                    setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
+                    return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+                } finally {
+                    ribaltoneCache.setImportingCSV(Boolean.FALSE, realUser);
                 }
             } else {
                 RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata());

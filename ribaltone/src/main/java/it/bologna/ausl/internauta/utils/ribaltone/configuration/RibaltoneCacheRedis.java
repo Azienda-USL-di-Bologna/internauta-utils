@@ -199,15 +199,19 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
     @Override
     public Integer getIdUserExecuting() throws RibaltoneHttpException, JsonProcessingException {
-        if (redisTemplate.opsForValue().get(keyExecuting) == null) {
-            return null;
+        Integer idUtente = null;
+        try {
+            if (redisTemplate.opsForValue().get(keyExecuting) == null) {
+                return null;
+            }
+            idUtente = objectMapper.readValue((String) redisTemplate.opsForValue().get(keyExecuting), new TypeReference<Integer>() {
+            });
+            if (idUtente == null) {
+                throw new RibaltoneHttpException("errore nel reperire le l'utente che ha inizato il ribaltone dalla cache");
+            }
+        } catch (JsonProcessingException | RibaltoneHttpException ex) {
+            log.error("errore nel reperire l'utente dalla cache", ex);
         }
-        Integer idUtente = objectMapper.readValue((String) redisTemplate.opsForValue().get(keyExecuting), new TypeReference<Integer>() {
-        });
-        if (idUtente == null) {
-            throw new RibaltoneHttpException("errore nel reperire le l'utente che ha inizato il ribaltone dalla cache");
-        }
-
         return idUtente;
     }
 

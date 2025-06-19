@@ -44,7 +44,7 @@ public class Operations implements Serializable {
     private List<OperationAppartenente> listOfOperationAppartenenti;
     private List<OperationAnagrafica> listOfOperationAnagrafiche;
     private List<OperationTrasformazione> listOfOperationTrasformazioni;
-    private List<OperationUnificazione> listOfOperationUnificazione;
+    private List<OperationUnificazione> listOfOperationUnificazioni;
     private Object workToDo;
 
     public Operations(
@@ -52,13 +52,13 @@ public class Operations implements Serializable {
         List<OperationAppartenente> listOfOperationAppartenenti,
         List<OperationAnagrafica> listOfOperationAnagrafiche,
         List<OperationTrasformazione> listOfOperationTrasformazioni,
-        List<OperationUnificazione> listOfOperationUnificazione) {
+        List<OperationUnificazione> listOfOperationUnificazioni) {
 
         this.listOfOperationStruttura = listOfOperationStruttura;
         this.listOfOperationAppartenenti = listOfOperationAppartenenti;
         this.listOfOperationAnagrafiche = listOfOperationAnagrafiche;
         this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
-        this.listOfOperationUnificazione = listOfOperationUnificazione;
+        this.listOfOperationUnificazioni = listOfOperationUnificazioni;
     }
 
     public Operations() {
