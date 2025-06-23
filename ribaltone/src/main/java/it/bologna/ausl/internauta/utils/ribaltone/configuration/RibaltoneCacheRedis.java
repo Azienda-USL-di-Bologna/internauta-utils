@@ -176,7 +176,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     @Override
     public void setExecuting(Boolean executing, Utente user) throws JsonProcessingException {
         if (executing) {
-            String userStr = objectMapper.writeValueAsString(user);
+            String userStr = objectMapper.writeValueAsString(user.getId());
             redisTemplate.opsForValue().set(keyExecuting, userStr, 60, TimeUnit.MINUTES);
         } else {
             redisTemplate.delete(keyExecuting);
@@ -204,12 +204,14 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             if (redisTemplate.opsForValue().get(keyExecuting) == null) {
                 return null;
             }
-            idUtente = objectMapper.readValue((String) redisTemplate.opsForValue().get(keyExecuting), new TypeReference<Integer>() {
-            });
+            Object idUtenteObj = redisTemplate.opsForValue().get(keyExecuting);
+            idUtente = Integer.valueOf(idUtenteObj.toString());
+//                objectMapper.readValue(redisTemplate.opsForValue().get(keyExecuting), new TypeReference<Integer>() {
+//            });
             if (idUtente == null) {
                 throw new RibaltoneHttpException("errore nel reperire le l'utente che ha inizato il ribaltone dalla cache");
             }
-        } catch (JsonProcessingException | RibaltoneHttpException ex) {
+        } catch (RibaltoneHttpException ex) {
             log.error("errore nel reperire l'utente dalla cache", ex);
         }
         return idUtente;

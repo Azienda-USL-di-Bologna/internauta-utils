@@ -163,7 +163,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         }
     }
 
-    @Transactional(rollbackOn = Throwable.class)
+//    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
     public Object importaCSV(
         @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
@@ -278,52 +278,73 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @throws java.lang.ClassNotFoundException
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    @Transactional(rollbackOn = Throwable.class)
+//    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
         @RequestBody ConfigRibaltoneView configRibaltoneView,
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        if (hoPermessoPerLanciareRibaltone()) {
-            if (!isRibaltoneInCorso(configRibaltoneView.getFonteSelezionata()) && !isImportazioneCSVInCorso(configRibaltoneView.getFonteSelezionata())) {
-                AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
-                Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
-                realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
-                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), configRibaltoneView.getFonteSelezionata());
-                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        String fonteSelezionata = configRibaltoneView.getFonteSelezionata();
+        EntityManager em = repositoryFactory.getEntityManager();
 
-                try {
-                    setImportazioneCSVInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
-                    setRibaltoneInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
+        ResponseEntity response = transactionTemplate.execute(action -> {
+            if (hoPermessoPerLanciareRibaltone()) {
+                if (!isRibaltoneInCorso(fonteSelezionata) && !isImportazioneCSVInCorso(fonteSelezionata)) {
+                    AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+                    Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+                    realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+                    RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(em, fonteSelezionata);
+                    RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+
+                    try {
+                        setImportazioneCSVInCorso(fonteSelezionata, realUser);
+                        setRibaltoneInCorso(fonteSelezionata, realUser);
 
 //                ribaltoneCache.cleanCache();
-                    Map<String, Object> infoRibaltone = new HashMap<>();
-                    Operations restore = ribaltoneCache.restore();
-                    if (restore != null) {
-                        infoRibaltone.put("operations", restore);
-                    } else {
-                        infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                        Map<String, Object> infoRibaltone = new HashMap<>();
+                        Operations restore = ribaltoneCache.restore();
+                        if (restore != null) {
+                            infoRibaltone.put("operations", restore);
+                        } else {
+                            infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                        }
+                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
+                        infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
+                        return new ResponseEntity(infoRibaltone, HttpStatus.OK);
+                    } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
+                        try {
+                            setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
+                        } catch (JsonProcessingException e) {
+                            LOGGER.error("non ho settato il ribaltone finito", e);
+                            //throw new RibaltoneHttpException();
+                        }
+                        return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+                    } finally {
+                        try {
+                            ribaltoneCache.setImportingCSV(Boolean.FALSE, realUser);
+                        } catch (JsonProcessingException e) {
+                            LOGGER.error("non ho settato l'importazione csv come finita", e);
+                            //throw new RibaltoneHttpException("", e);
+                            return new ResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
                     }
-                    //Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
-                    //infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
-                    return new ResponseEntity(infoRibaltone, HttpStatus.OK);
-                } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
-                    setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
-                    return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
-                } finally {
-                    ribaltoneCache.setImportingCSV(Boolean.FALSE, realUser);
+                } else {
+                    RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), configRibaltoneView.getFonteSelezionata());
+                    RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+                    try {
+                        Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserExecuting());
+                        return new ResponseEntity(user, HttpStatus.IM_USED);
+                    } catch (JsonProcessingException e) {
+                        return new ResponseEntity(null, HttpStatus.IM_USED);
+                    }
                 }
             } else {
-                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), configRibaltoneView.getFonteSelezionata());
-                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
-                Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserExecuting());
-                return new ResponseEntity(user, HttpStatus.IM_USED);
+                return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
             }
-        } else {
-            return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
-        }
-
+        });
+        return response;
     }
 
     /**
