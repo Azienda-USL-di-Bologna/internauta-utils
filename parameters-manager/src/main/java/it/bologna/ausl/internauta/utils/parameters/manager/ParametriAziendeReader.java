@@ -56,7 +56,8 @@ public class ParametriAziendeReader {
         ribaltoneConf,
         processaDati,
         usaNuovoRibaltoneVeloce,
-        abilitaGestioneMassivaArchiviPerResponsabiliAndVicari
+        abilitaGestioneMassivaArchiviPerResponsabiliAndVicari,
+        maxSchedePerFiltriEdiEfiWithAutoMode
     }
     
     @Autowired
