@@ -24,9 +24,11 @@ import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 
 /**
  * Controller che implementa le API per la validazione dei file firmati
@@ -185,5 +187,50 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
             return ResponseEntity.internalServerError().body(ex.getMessage());
         }
         return null;
+    }
+    
+    @RequestMapping(value = "/getSignsReportFromRepo", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSignsReportFromRepo( 
+            @RequestParam(value = "fileRepoFileId", required = false) String fileRepoFileId, 
+            @RequestParam(value = "fileRepoMongoUuid", required = false) String fileRepoMongoUuid, 
+            //@RequestParam(value = "validationDate", required = false) String validationDate,
+            @RequestParam(value = "validationDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime validationDate,
+            HttpServletRequest request) {
+        log.info("charset: " + System.getProperty("file.encoding"));
+        List<Map<String, Object>> signsReport;
+        if (!StringUtils.hasText(fileRepoFileId) && !StringUtils.hasText(fileRepoMongoUuid)) {
+            String error = "è necessario almeno uno tra fileRepoFileId e fileRepoMongoUuid";
+            log.error(error);
+            return ResponseEntity.badRequest().body(error);
+        } else if (StringUtils.hasText(fileRepoFileId) && StringUtils.hasText(fileRepoMongoUuid)) {
+            String message = "Sono stati passati sia fileRepoFileId, che fileRepoMongoUuid, verrà usato fileRepoFileId";
+            log.warn(message);
+        }
+        
+        MinIOWrapper minIOWrapper = configParams.getMinIOWrapper();
+        try (InputStream fileIs = StringUtils.hasText(fileRepoFileId)? minIOWrapper.getByFileId(fileRepoFileId): minIOWrapper.getByUuid(fileRepoMongoUuid)) {
+            if (fileIs != null) {
+                byte[] file = IOUtils.toByteArray(fileIs);
+                signsReport = dSSValidatorManager.getSignsReport(request, validationDate, file);
+            } else {
+                String error = "il file non è stato trovato nel repository";
+                log.error(error);
+                return ResponseEntity.internalServerError().body(error);
+            }
+        } catch (DssResponseException ex) {
+            return ResponseEntity.internalServerError().body(ex.getMessage());
+        } catch (IOException ex) {
+            String error = "errore nella chiamata al validatore DSS";
+            log.error(error, ex);
+            return ResponseEntity.internalServerError().body(error);
+        } catch (MinIOWrapperException ex) {
+            String error = "errore nel reperimento del file dal repository";
+            log.error(error, ex);
+            return ResponseEntity.internalServerError().body(error);
+        } catch (NoSignException ex) {
+            return ResponseEntity.noContent().build();
+        }
+        log.info(signsReport.toString());
+        return ResponseEntity.ok(signsReport);
     }
 }
