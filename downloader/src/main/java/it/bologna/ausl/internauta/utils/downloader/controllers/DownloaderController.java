@@ -120,7 +120,7 @@ public class DownloaderController {
             
             // reperisco il nome del file
             String fileName;
-            if (contextClaim.containsKey("fileName")) {
+            if (contextClaim.containsKey("fileName") && StringUtils.hasText((String) contextClaim.get("fileName"))) {
                 fileName = (String) contextClaim.get("fileName");
             } else {
                 fileName = file.getOriginalFilename();
