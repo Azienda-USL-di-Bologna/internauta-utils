@@ -64,6 +64,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import java.util.HashMap;
 import java.util.Map;
+import org.hibernate.StaleObjectStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.TransactionDefinition;
 
@@ -285,7 +286,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         String fonteSelezionata = configRibaltoneView.getFonteSelezionata();
         EntityManager em = repositoryFactory.getEntityManager();
 
@@ -308,12 +309,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         if (restore != null) {
                             infoRibaltone.put("operations", restore);
                         } else {
+
                             infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
                         }
                         Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
                         infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
                         return new ResponseEntity(infoRibaltone, HttpStatus.OK);
-                    } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
+                    } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException | StaleObjectStateException ex) {
                         try {
                             setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
                         } catch (JsonProcessingException e) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
+import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.unisciListeUnichePerCodiceFiscaleIdCasella;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.cache.OperationsCacheManager;
@@ -12,6 +13,12 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.FonteAggiuntaDataManager;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
@@ -28,10 +35,16 @@ import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -50,6 +63,9 @@ public class RibaltoneTotaleManager {
 
     @Autowired
     private RepositoryFactory repositoryFactory;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
@@ -97,30 +113,37 @@ public class RibaltoneTotaleManager {
 //    private void spegniPermessiStruttureChiuse(Operations struttureCheckedData) {
 //        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
 //    }
-    public Object ribaltaWithUserReportAndCacheOperation(
+    public Operations ribaltaWithUserReportAndCacheOperation(
         String codiceAzienda,
         ConfigRibaltoneView configRibaltoneView,
         UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
-//        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        return transactionTemplate.execute(action -> {
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
+            //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
+            //        DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
 
-        OperationsManager operationsManager = new OperationsManager(
-            validatedSourceData,
-            codiceAzienda,
-            configRibaltoneView.getTolleranzaAppartenenti(),
-            configRibaltoneView.getTolleranzaStrutture(),
-            repositoryFactory);
+            DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+            DatiDaImportare datiDaImportareValidated = sourceData.validate();
 
-        Operations buildOperations = operationsManager.buildOperations();
-        operationsManager.isQuantitaDatiOk();
-        RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
-        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-        operationsCacheManager.dump(buildOperations);
-//        UserReportManager userReportManager = buildOperations.generateUserReport(typeUserReport);
-//        return userReportManager.get();
-        return buildOperations;
+            OperationsManager operationsManager = new OperationsManager(
+                datiDaImportareValidated,
+                codiceAzienda,
+                configRibaltoneView.getTolleranzaAppartenenti(),
+                configRibaltoneView.getTolleranzaStrutture(),
+                repositoryFactory);
+
+            Operations buildOperations = operationsManager.buildOperations();
+            operationsManager.isQuantitaDatiOk();
+            RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+            OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
+            operationsCacheManager.dump(buildOperations);
+            //        UserReportManager userReportManager = buildOperations.generateUserReport(typeUserReport);
+            //        return userReportManager.get();
+            return buildOperations;
+        });
+
     }
 
     public Operations ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
@@ -202,6 +225,88 @@ public class RibaltoneTotaleManager {
             default ->
                 throw new AssertionError();
         }
+    }
+
+    private DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+        SourceDataManager sourceDataManager;
+        List<DatiDaImportareAppartenente> appartenenti;
+        List<DatiDaImportareAnagrafica> anagrafiche;
+        List<DatiDaImportareStruttura> strutture;
+        List<DatiDaImportareTrasformazione> trasformazioni;
+        Integer progressivoUltimaTrasformazione;
+        // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
+        Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
+            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .getSingleResult();
+        switch (ribaltoneConf.getFonte()) {
+            case "GRU" -> {
+                GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
+
+                if (idAzienda == null) {
+                    throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
+                } else {
+                    sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
+                    appartenenti = sourceDataManager.getAppartenenti();
+                    anagrafiche = sourceDataManager.getAnagrafica();
+                    strutture = sourceDataManager.getStrutture();
+                    trasformazioni = sourceDataManager.getTrasformazioni();
+                    progressivoUltimaTrasformazione = gruSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione();
+
+                }
+            }
+            case "CSV" -> {
+                CSVSpecificData csvSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), CSVSpecificData.class);
+                if (idAzienda == null) {
+                    throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
+                } else {
+                    sourceDataManager = new CSVDataManager(csvSpecificData, objectMapper, codiceAzienda, idAzienda.getId(), repositoryFactory.getEntityManager());
+                    appartenenti = sourceDataManager.getAppartenenti();
+                    anagrafiche = sourceDataManager.getAnagrafica();
+                    strutture = sourceDataManager.getStrutture();
+                    trasformazioni = sourceDataManager.getTrasformazioni();
+                    progressivoUltimaTrasformazione = csvSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione();
+                }
+            }
+
+            case "ASTRA" ->
+                throw new RibaltoneHttpException("astra non ancora implementato");
+            default ->
+                throw new AssertionError();
+        }
+        FonteAggiuntaDataManager fonteAggiuntaDataManager = new FonteAggiuntaDataManager(null, objectMapper, codiceAzienda, null, repositoryFactory.getEntityManager());
+        List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti = fonteAggiuntaDataManager.getAppartenenti();
+        List<DatiDaImportareAnagrafica> fonteAggiuntaAnagrafica = fonteAggiuntaDataManager.getAnagrafica();
+        //List<DatiDaImportareStruttura> fonteAggiuntaStrutture = fonteAggiuntaDataManager.getStrutture();
+        //List<DatiDaImportareTrasformazione> fonteAggiuntaTrasformazioni = fonteAggiuntaDataManager.getTrasformazioni();
+        appartenenti = unisciListeUnichePerCodiceFiscaleIdCasella(appartenenti, fonteAggiuntaAppartenenti);
+        anagrafiche = mergeAnagraficheListsOverrideOnCodiceFiscale(anagrafiche, fonteAggiuntaAnagrafica);
+        //strutture = mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(strutture, fonteAggiuntaStrutture);
+        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory);
+        return datiDaImportare;
+    }
+
+    private static List<DatiDaImportareAnagrafica> mergeAnagraficheListsOverrideOnCodiceFiscale(
+        List<DatiDaImportareAnagrafica> lista1,
+        List<DatiDaImportareAnagrafica> lista2) {
+
+        Map<String, DatiDaImportareAnagrafica> mappaPerCodiceFiscale = new HashMap<>();
+
+        // Prima lista: inserisce gli elementi nella mappa
+        for (DatiDaImportareAnagrafica item : lista1) {
+            if (item.getCodiceFiscale() != null) {
+                mappaPerCodiceFiscale.put(item.getCodiceFiscale(), item);
+            }
+        }
+
+        // Seconda lista: inserisce (sovrascrive) gli elementi nella mappa
+        for (DatiDaImportareAnagrafica item : lista2) {
+            if (item.getCodiceFiscale() != null) {
+                mappaPerCodiceFiscale.put(item.getCodiceFiscale(), item); // sovrascrive se esiste
+            }
+        }
+
+        // Ritorna una nuova lista con i valori uniti
+        return new ArrayList<>(mappaPerCodiceFiscale.values());
     }
 
 }

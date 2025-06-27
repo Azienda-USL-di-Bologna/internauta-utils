@@ -240,4 +240,17 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
         anagraficaImportata.setCodiceAzienda(this.codiceAzienda);
         return anagraficaImportata;
     }
+
+    public DatiDaImportareAnagrafica buildDatiDaImportareAnagrafica() {
+        DatiDaImportareAnagrafica anagraficaImportata = new DatiDaImportareAnagrafica();
+        anagraficaImportata.setCodiceEnte(this.codiceEnte);
+        anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
+        anagraficaImportata.setCognome(this.cognome);
+        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
+        anagraficaImportata.setEmail(this.email);
+        anagraficaImportata.setIdAzienda(this.idAzienda);
+        anagraficaImportata.setCodiceAzienda(this.codiceAzienda);
+        return anagraficaImportata;
+    }
 }

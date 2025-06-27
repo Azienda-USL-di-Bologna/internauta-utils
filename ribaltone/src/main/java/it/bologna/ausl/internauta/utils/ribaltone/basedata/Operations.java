@@ -87,6 +87,7 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
         }
+        listOfOperationUnificazioni = null;
 //        finalOperations(repositoryFactory, codiceAzienda);
     }
 
@@ -183,6 +184,14 @@ public class Operations implements Serializable {
 
     public void setListOfOperationTrasformazioni(List<OperationTrasformazione> listOfOperationTrasformazioni) {
         this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
+    }
+
+    public List<OperationUnificazione> getListOfOperationUnificazioni() {
+        return listOfOperationUnificazioni;
+    }
+
+    public void setListOfOperationUnificazioni(List<OperationUnificazione> listOfOperationUnificazioni) {
+        this.listOfOperationUnificazioni = listOfOperationUnificazioni;
     }
 
     /**

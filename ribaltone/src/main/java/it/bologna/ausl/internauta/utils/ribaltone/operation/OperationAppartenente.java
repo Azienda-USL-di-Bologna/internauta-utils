@@ -241,41 +241,23 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     for (Utente utente : utenti) {
                         for (Struttura struttura : struttureCoinvoltePerUnificazioneOriginale) {
                             utenteStruttura = getUtenteStrutturaAttivo(queryFactory, struttura, utente);
-                            utenteStruttura.setAttivo(Boolean.FALSE);
-                            utenteStruttura.setAttivoAl(ZonedDateTime.now());
-                            //spengni tutti i permessi veicolati
-                            try {
-                                permissionManager.deletePermission(
-                                    persona,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                                    "ribaltone",
-                                    struttura);
-                                //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
-                                permissionManager.deletePermission(
-                                    utente,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                                    "ribaltone",
-                                    struttura);
-                            } catch (BlackBoxPermissionException ex) {
-                                throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                            }
-                            if (!utenteHasOtherStrutture(queryFactory, strutturaAppartenteOriginale, utente)) {
-                                utente.setAttivo(false);
-                                utente.setDataSpegnimento(ZonedDateTime.now());
-                                //spegnere tutti i permessi utente
+                            if (utenteStruttura != null) {
+                                utenteStruttura.setAttivo(Boolean.FALSE);
+                                utenteStruttura.setAttivoAl(ZonedDateTime.now());
+                                //spengni tutti i permessi veicolati
                                 try {
+                                    permissionManager.deletePermission(
+                                        persona,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                                        BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                                        "ribaltone",
+                                        struttura);
+                                    //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
                                     permissionManager.deletePermission(
                                         utente,
                                         null,
@@ -283,35 +265,61 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         null,
                                         null,
                                         null,
-                                        null,
-                                        null,
-                                        "ribaltone");
+                                        BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                                        BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                                        "ribaltone",
+                                        struttura);
                                 } catch (BlackBoxPermissionException ex) {
                                     throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                                 }
-                                if (!personaHasOtherUtenti(queryFactory, persona)) {
-                                    persona.setAttiva(Boolean.FALSE);
-                                    persona.setDataSpegnimento(ZonedDateTime.now());
-                                    utente.setIdPersona(persona);
-                                    //spegni tutti i permessi persona
+                                if (!utenteHasOtherStrutture(queryFactory, strutturaAppartenteOriginale, utente)) {
+                                    utente.setAttivo(false);
+                                    utente.setDataSpegnimento(ZonedDateTime.now());
+                                    //spegnere tutti i permessi utente
                                     try {
-                                        permissionManager.deletePermission(
-                                            persona,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            null,
-                                            "ribaltone");
+                                        String[] ambitiDaSpegnere = {
+                                            BlackBoxConstants.Ambito.PICO.toString(),
+                                            BlackBoxConstants.Ambito.DELI.toString(),
+                                            BlackBoxConstants.Ambito.DETE.toString()};
+                                        for (String ambitoDaSpegnere : ambitiDaSpegnere) {
+
+                                            permissionManager.deletePermission(
+                                                utente,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                ambitoDaSpegnere,
+                                                BlackBoxConstants.Tipo.FLUSSO.toString());
+                                        }
                                     } catch (BlackBoxPermissionException ex) {
                                         throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                                     }
+                                    if (!personaHasOtherUtenti(queryFactory, persona)) {
+                                        persona.setAttiva(Boolean.FALSE);
+                                        persona.setDataSpegnimento(ZonedDateTime.now());
+                                        utente.setIdPersona(persona);
+                                        //spegni tutti i permessi persona
+                                        try {
+                                            permissionManager.deletePermission(
+                                                persona,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                                                BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                                                "ribaltone");
+                                        } catch (BlackBoxPermissionException ex) {
+                                            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+                                        }
+                                    }
+                                    utenteStruttura.setIdUtente(utente);
                                 }
-                                utenteStruttura.setIdUtente(utente);
+                                repositoryFactory.getEntityManager().persist(utenteStruttura);
                             }
-                            repositoryFactory.getEntityManager().persist(utenteStruttura);
                             //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
                             try {
                                 String[] ambitiDaSpegnere = {
@@ -359,7 +367,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     for (Utente utente : utenti) {
                         for (Struttura struttura : struttureCoinvoltePerUnificazioneOriginale) {
                             if (utente != null && strutturaAppartenteOriginale != null) {
-                                utente.setUsername(entitaDaInserire.getUsername());
+                                utente.setUsername(entitaDaInserire.getUsername() == null ? entitaDaInserire.getCodiceFiscale() : entitaDaInserire.getUsername());
                                 utente.setIdPersona(persona);
                                 utenteStruttura = getUtenteStrutturaAttivo(queryFactory, struttura, utente);
                                 if (utenteStruttura != null) {
@@ -641,29 +649,40 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())).fetchFirst();
                         Contatto idContatto = persona.getIdContatto();
+                        if (idContatto != null) {
 
-                        for (String edit : listOfEdit) {
-                            switch (edit) {
-                                case "cognome" -> {
-                                    idContatto.setCognome(entitaDaInserire.getCognome());
-                                }
-                                case "nome" -> {
-                                    idContatto.setNome(entitaDaInserire.getNome());
-                                }
-                                case "afferenza" -> {
-                                    List<DettaglioContatto> dcList = idContatto.getDettaglioContattoList().stream().filter(
-                                        dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getIdStruttura().getIdCasella().equals(entitaDaInserire.getIdCasella())
-                                    ).toList();
-                                    if (!dcList.isEmpty()) {
-                                        DettaglioContatto dc = dcList.get(0);
-                                        dc.setPrincipale(entitaDaInserire.getTipoAppartenenza().equalsIgnoreCase("T"));
-                                        entityManager.persist(dc);
+                            log.info("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa " + entitaDaInserire.getCodiceFiscale());
+                            for (String edit : listOfEdit) {
+                                switch (edit) {
+                                    case "cognome" -> {
+                                        idContatto.setCognome(entitaDaInserire.getCognome());
+                                    }
+                                    case "nome" -> {
+                                        idContatto.setNome(entitaDaInserire.getNome());
+                                    }
+                                    case "afferenza" -> {
+                                        List<DettaglioContatto> dcList = idContatto.getDettaglioContattoList().stream().filter(
+                                            dc -> dc.getIdContattoEsterno() != null
+                                            && dc.getIdContattoEsterno().getIdStruttura() != null
+                                            && dc.getIdContattoEsterno().getIdStruttura().getIdCasella() != null
+                                            && dc.getIdContattoEsterno().getIdStruttura().getIdCasella().equals(entitaDaInserire.getIdCasella())
+                                        ).toList();
+                                        if (!dcList.isEmpty()) {
+                                            DettaglioContatto dc = dcList.get(0);
+                                            dc.setPrincipale(entitaDaInserire.getTipoAppartenenza().equalsIgnoreCase("T"));
+                                            entityManager.persist(dc);
+                                        }
+                                    }
+                                    case "responsabile" -> {
+
+                                    }
+                                    default -> {
+                                        log.info(edit);
+                                        throw new AssertionError();
                                     }
                                 }
-                                default ->
-                                    throw new AssertionError();
+                                entityManager.persist(idContatto);
                             }
-                            entityManager.persist(idContatto);
                         }
                     }
                 }
