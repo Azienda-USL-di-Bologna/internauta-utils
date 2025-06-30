@@ -29,7 +29,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
  * @author Top
  */
 @Entity
-@Table(name = "csv_da_importare_anagrafiche", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate

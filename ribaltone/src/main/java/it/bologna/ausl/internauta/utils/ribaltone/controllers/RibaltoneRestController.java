@@ -322,6 +322,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             LOGGER.error("non ho settato il ribaltone finito", e);
                             //throw new RibaltoneHttpException();
                         }
+                        LOGGER.info("setto la connessione come rollbackonly", ex);
+                        action.setRollbackOnly();
                         return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
                     } finally {
                         try {
@@ -329,6 +331,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         } catch (JsonProcessingException e) {
                             LOGGER.error("non ho settato l'importazione csv come finita", e);
                             //throw new RibaltoneHttpException("", e);
+                            action.setRollbackOnly();
                             return new ResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -343,6 +346,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     }
                 }
             } else {
+
                 return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
             }
         });
@@ -377,11 +381,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                 RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
                 ribaltoneCache.cleanDataCache();
+                setRibaltoneFinito(idSelectedConfiguration);
                 return new ResponseEntity("tutto ok", HttpStatus.OK);
             } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
-                throw ex;
-            } finally {
                 setRibaltoneInCorso(idSelectedConfiguration, realUser);
+                throw ex;
             }
         } else {
             return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);

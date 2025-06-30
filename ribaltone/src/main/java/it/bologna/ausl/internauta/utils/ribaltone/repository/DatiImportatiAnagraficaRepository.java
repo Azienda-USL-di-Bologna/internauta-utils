@@ -35,9 +35,17 @@ public interface DatiImportatiAnagraficaRepository extends QuerydslPredicateExec
     @Query(value = "INSERT INTO ribaltone_dati.dati_importati_anagrafica "
         + "(codice_ente, codice_matricola, cognome, nome, codice_fiscale, email, codice_azienda, password_hash, id_azienda) "
         + "SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, email, codice_azienda,password_hash, id_azienda "
-        + "FROM ribaltone_dati.dati_da_importare_anagrafiche "
+        + "FROM ribaltone_dati.dati_da_importare_anagrafica "
         + "WHERE codice_azienda = ?1", nativeQuery = true)
     public void fromDatiDaImportareToDatiImportati(String codiceAzienda);
+
+    @Modifying
+    @Query(value = "INSERT INTO ribaltone_dati.dati_importati_anagrafica "
+        + "(codice_ente, codice_matricola, cognome, nome, codice_fiscale, email, codice_azienda, password_hash, id_azienda) "
+        + "SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, email, codice_azienda,password_hash, id_azienda "
+        + "FROM ribaltone_dati.fonte_aggiunta_anagrafica "
+        + "WHERE codice_azienda = ?1", nativeQuery = true)
+    public void fromFonteAggiuntaToDatiImportati(String codiceAzienda);
 
     @Modifying
     @Query(value = "DELETE FROM ribaltone_dati.dati_importati_anagrafica WHERE codice_azienda = ?1", nativeQuery = true)
