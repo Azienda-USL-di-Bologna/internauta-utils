@@ -201,7 +201,7 @@ public class RibaltoneTotaleManager {
     }
 
     public void fromSourceToDatiImportati(String fonte, RepositoryFactory repositoryFactory, String codiceAzienda) {
-
+        //Queste funzioni sui repository le ho scritte cosi per una questione di performance
         repositoryFactory.getDatiImportatiAnagraficaRepository().deleteAllByCodiceAzienda(codiceAzienda);
         repositoryFactory.getDatiImportatiAppartenenteRepository().deleteAllByCodiceAzienda(codiceAzienda);
         repositoryFactory.getDatiImportatiStrutturaRepository().deleteAllByCodiceAzienda(codiceAzienda);
@@ -225,6 +225,11 @@ public class RibaltoneTotaleManager {
             default ->
                 throw new AssertionError();
         }
+        repositoryFactory.getDatiImportatiAnagraficaRepository().fromFonteAggiuntaToDatiImportati(codiceAzienda);
+        repositoryFactory.getDatiImportatiAppartenenteRepository().fromFonteAggiuntaToDatiImportati(codiceAzienda);
+        repositoryFactory.getDatiImportatiStrutturaRepository().fromFonteAggiuntaToDatiImportati(codiceAzienda);
+        repositoryFactory.getDatiImportatiTrasformazioneRepository().fromFonteAggiuntaToDatiImportati(codiceAzienda);
+
     }
 
     private DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
@@ -273,7 +278,7 @@ public class RibaltoneTotaleManager {
             default ->
                 throw new AssertionError();
         }
-        FonteAggiuntaDataManager fonteAggiuntaDataManager = new FonteAggiuntaDataManager(null, objectMapper, codiceAzienda, null, repositoryFactory.getEntityManager());
+        FonteAggiuntaDataManager fonteAggiuntaDataManager = new FonteAggiuntaDataManager(null, objectMapper, codiceAzienda, idAzienda.getId(), repositoryFactory.getEntityManager());
         List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti = fonteAggiuntaDataManager.getAppartenenti();
         List<DatiDaImportareAnagrafica> fonteAggiuntaAnagrafica = fonteAggiuntaDataManager.getAnagrafica();
         //List<DatiDaImportareStruttura> fonteAggiuntaStrutture = fonteAggiuntaDataManager.getStrutture();

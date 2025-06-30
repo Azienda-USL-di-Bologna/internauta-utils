@@ -56,6 +56,9 @@ public class FonteAggiuntaAppartenente implements Serializable {
     @Column(name = "id_casella")
     private Integer idCasella;
 
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
+
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -100,6 +103,14 @@ public class FonteAggiuntaAppartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
+
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
 
     public FonteAggiuntaAppartenente() {
     }
@@ -269,7 +280,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setDataDimissione(dataDimissione);
         datiDaImportareAppartenente.setDatain(datain);
         datiDaImportareAppartenente.setDatafi(datafi);
-        datiDaImportareAppartenente.setIdAzienda(idCasella);
+        datiDaImportareAppartenente.setIdAzienda(idAzienda);
         datiDaImportareAppartenente.setIdCasella(idCasella);
         datiDaImportareAppartenente.setNome(nome);
         datiDaImportareAppartenente.setResponsabile(responsabile);
