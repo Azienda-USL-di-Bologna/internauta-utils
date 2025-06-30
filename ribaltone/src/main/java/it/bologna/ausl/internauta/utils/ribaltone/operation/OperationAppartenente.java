@@ -570,6 +570,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         }
                                         dc.setUtenteStruttura(utenteStruttura);
                                         dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
+                                        dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
                                         dc.setEliminato(false);
                                         entityManager.persist(dc);
                                     }
