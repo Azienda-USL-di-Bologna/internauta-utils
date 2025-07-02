@@ -27,6 +27,8 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import it.bologna.ausl.model.entities.baborg.AttributiStruttura;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneEseguita;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,7 +534,7 @@ public class OperationsUtils {
                 if (strutturaVecchiaDaScollegare != null) {
                     List<Struttura> struttureAntenateAttiveONo = getStruttureAntenateAttiveONo(entityManager, entitaDaInserire.getIdCasella(), Boolean.TRUE, strutturaVecchiaDaScollegare.getIdAzienda().getId());
 
-                    List<StrutturaUnificata> unificazioniDaValutare = queryFactory
+                    List<StrutturaUnificata> replicheDaValutare = queryFactory
                         .select(qStrutturaUnificata)
                         .from(qStrutturaUnificata)
                         .where(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now())
@@ -541,14 +543,21 @@ public class OperationsUtils {
                                     .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
                             .and(qStrutturaUnificata.idStrutturaSorgente.in(struttureAntenateAttiveONo))
                         ).fetch();
-                    for (StrutturaUnificata strutturaUnificata : unificazioniDaValutare) {
-                        if (strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella())) {
+                    boolean accendiNuovaUnificazione = false;
+                    for (StrutturaUnificata replica : replicheDaValutare) {
+                        if (replica.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella())) {
                             //spegno questa e ne faccio una nuova per avere lo storico
+                            replica.setDataDisattivazione(ZonedDateTime.now());
+                            entityManager.persist(replica);
+                            accendiNuovaUnificazione = true;
+                            
+                        }else{
+                        //è un mio antenato a essere replicato quindi non devo fare nulla
                         }
                     }
 
                     for (Struttura idStrutturaDestinazioneVecchia : struttureReplicheCoinvolteNellaRinomina) {
-
+                        
                         idStrutturaDestinazioneVecchia.setAttiva(false);
                         idStrutturaDestinazioneVecchia.setDataCessazione(ZonedDateTime.now());
                         entityManager.persist(idStrutturaDestinazioneVecchia);
@@ -567,6 +576,22 @@ public class OperationsUtils {
                             idStrutturaDestinazioneVecchia.getIdAzienda(),
                             idStrutturaDestinazioneVecchia.getSpettrale()
                         );
+                        
+                        if (accendiNuovaUnificazione){
+                            List<StrutturaUnificata> replicheCorrelate = replicheDaValutare.stream().filter(u -> Objects.equals(u.getIdStrutturaDestinazione().getId(), idStrutturaDestinazioneVecchia.getId())).toList();
+                            
+                            for (StrutturaUnificata strutturaUnificata : replicheCorrelate) {
+                                StrutturaUnificata nuovaUnificazione = new StrutturaUnificata();
+                                nuovaUnificazione.setIdStrutturaDestinazione(idStrutturaDestinazioneNuova);
+                                nuovaUnificazione.setIdStrutturaSorgente(strutturaNuovaDaCollegare);
+                                nuovaUnificazione.setTipoOperazione(strutturaUnificata.getTipoOperazione());
+                                nuovaUnificazione.setDataAttivazione(ZonedDateTime.now());
+                                nuovaUnificazione.setDataInserimentoRiga(ZonedDateTime.now());
+                                nuovaUnificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
+                                entityManager.persist(nuovaUnificazione);
+                            }
+                        }
+                        
                         entityManager.persist(idStrutturaDestinazioneNuova);
                         //Gestisco lo storicoRelazione
                         gestisciStoricoRelazione(queryFactory, entityManager, idStrutturaDestinazioneNuova, idStrutturaDestinazioneVecchia);
@@ -579,71 +604,75 @@ public class OperationsUtils {
             } else {
                 //nessuno è replicato
             }
+            
+            //prendiamo in considerazione le fusioni non devo fare nulla perche 
+            //ogni azienda ha nel proprio organigramma il nome di una struttura fusa
+            //se lo gestiscono da organigramma 
 
-            //prendiamo in considerazione le fusioni
-            //o sto cambiando padre /rinominando ad una fusione che continua a esistere
-            // oppure ho finito
-            List<StrutturaUnificata> fusioniCoinvolte = queryFactory
-                .select(qStrutturaUnificata)
-                .from(qStrutturaUnificata)
-                .where(
-                    (qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
-                        .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE))
-                        .and(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(entitaDaInserire.getIdCasella()).or(
-                            qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(entitaDaInserire.getIdCasella()))))
-                .fetch();
-
-            if (!fusioniCoinvolte.isEmpty()) {
-                // devo fare qualcosa
-
-            } else {
-                //basta ho finito per questa struttura
-            }
-
-            QStruttura strutturaSub = new QStruttura("strutturaSub");
-            List<Struttura> struttureAntenate = queryFactory
-                .select(qStruttura)
-                .from(qStruttura)
-                .where(
-                    qStruttura.attiva
-                        .and(qStruttura.idStrutturaReplicata.id.in(
-                            JPAExpressions
-                                .select(strutturaSub.id)
-                                .from(strutturaSub)
-                                .where(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
-                        ))).fetch();
-            for (Struttura strutturaReplica : struttureRepliche) {
-                //la spengo poi creo la nuova
-                strutturaReplica.setAttiva(false);
-                strutturaReplica.setDataCessazione(ZonedDateTime.now());
-            }
-
+//            List<StrutturaUnificata> fusioniCoinvolte = queryFactory
+//                .select(qStrutturaUnificata)
+//                .from(qStrutturaUnificata)
+//                .where(
+//                    (qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+//                        .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE))
+//                        .and(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(entitaDaInserire.getIdCasella()).or(
+//                            qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(entitaDaInserire.getIdCasella()))))
+//                .fetch();
+//
+//            if (!fusioniCoinvolte.isEmpty()) {
+//                // devo fare qualcosa
+//                for (StrutturaUnificata unificazioneFusione : fusioniCoinvolte) {
+//                    
+//                }
+//
+//            } else {
+//                //basta ho finito per questa struttura
+//            }
+//
 //            QStruttura strutturaSub = new QStruttura("strutturaSub");
-            //caso fusione
-            List<StrutturaUnificata> fusioniCoinvolte = queryFactory
-                .select(qStrutturaUnificata)
-                .from(qStruttura)
-                .join(qStrutturaUnificata).on(qStruttura.id.eq(qStrutturaUnificata.idStrutturaSorgente.id))
-                .where((qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
-                    .and(
-                        qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)
-                    )
-                    .and(
-                        qStrutturaUnificata.idStrutturaSorgente.id.eq(
-                            JPAExpressions.select(strutturaSub.id).from(strutturaSub)
-                                .where(strutturaSub.attiva.eq(false)
-                                    .and(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
-                                    .and(strutturaSub.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
-                                )
-                        ).or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(
-                            JPAExpressions.select(strutturaSub.id).from(strutturaSub)
-                                .where(strutturaSub.attiva.eq(false)
-                                    .and(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
-                                    .and(strutturaSub.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
-                                )
-                        ))
-                    )
-                ).fetch();
+//            List<Struttura> struttureAntenate = queryFactory
+//                .select(qStruttura)
+//                .from(qStruttura)
+//                .where(
+//                    qStruttura.attiva
+//                        .and(qStruttura.idStrutturaReplicata.id.in(
+//                            JPAExpressions
+//                                .select(strutturaSub.id)
+//                                .from(strutturaSub)
+//                                .where(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
+//                        ))).fetch();
+//            for (Struttura strutturaReplica : struttureRepliche) {
+//                //la spengo poi creo la nuova
+//                strutturaReplica.setAttiva(false);
+//                strutturaReplica.setDataCessazione(ZonedDateTime.now());
+//            }
+//
+////            QStruttura strutturaSub = new QStruttura("strutturaSub");
+//            //caso fusione
+//            List<StrutturaUnificata> fusioniCoinvolte = queryFactory
+//                .select(qStrutturaUnificata)
+//                .from(qStruttura)
+//                .join(qStrutturaUnificata).on(qStruttura.id.eq(qStrutturaUnificata.idStrutturaSorgente.id))
+//                .where((qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+//                    .and(
+//                        qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)
+//                    )
+//                    .and(
+//                        qStrutturaUnificata.idStrutturaSorgente.id.eq(
+//                            JPAExpressions.select(strutturaSub.id).from(strutturaSub)
+//                                .where(strutturaSub.attiva.eq(false)
+//                                    .and(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
+//                                    .and(strutturaSub.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
+//                                )
+//                        ).or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(
+//                            JPAExpressions.select(strutturaSub.id).from(strutturaSub)
+//                                .where(strutturaSub.attiva.eq(false)
+//                                    .and(strutturaSub.idCasella.eq(entitaDaInserire.getIdCasella()))
+//                                    .and(strutturaSub.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
+//                                )
+//                        ))
+//                    )
+//                ).fetch();
         }
     }
 
