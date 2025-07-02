@@ -212,6 +212,9 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
             if (fileIs != null) {
                 byte[] file = IOUtils.toByteArray(fileIs);
                 signsReport = dSSValidatorManager.getSignsReport(request, validationDate, file);
+                if (signsReport == null) {
+                    throw new NoSignException("eccezione lanciata nel caso il validatore non ha riconosciuto il formato del file, probabilmente non è fiomato");
+                }
             } else {
                 String error = "il file non è stato trovato nel repository";
                 log.error(error);

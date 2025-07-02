@@ -84,7 +84,7 @@ public class DSSValidatorManager {
         log.info(String.format("scheme: %s, hostname: %s, port: %s", scheme, hostname, port));
         
         String url = configParams.getExternalSignAndCertificateValidator(paramKey, scheme, hostname, port);
-        
+//        url = "http://localhost:10008/dss-validator-api/validator/validateDocument";
         log.info(String.format("url: %s", url));
         
         OkHttpClient client = firmaHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
