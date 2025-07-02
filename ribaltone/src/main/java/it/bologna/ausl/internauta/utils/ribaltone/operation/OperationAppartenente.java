@@ -636,6 +636,13 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     gc.setEliminatoDa("ribaltone");
                                     entityManager.persist(gc);
                                 }
+                                Contatto idContatto = idDettaglioContatto.getIdContatto();
+                                if (idContatto.getDettaglioContattoList() == null
+                                    || idContatto.getDettaglioContattoList().isEmpty()
+                                    || idContatto.getDettaglioContattoList().stream().filter(dc -> dc.getEliminato() == false).toList().isEmpty()) {
+                                    idContatto.setEliminato(Boolean.TRUE);
+                                    entityManager.persist(idContatto);
+                                }
                             }
                         } else {
                             //ci penso nelle trasformazioni

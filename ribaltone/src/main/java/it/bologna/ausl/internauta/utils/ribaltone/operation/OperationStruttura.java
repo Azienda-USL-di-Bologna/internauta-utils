@@ -148,7 +148,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 if (s != null && s.getIdContatto() == null) {
                     QPersona qPersona = QPersona.persona;
                     Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
-                    Integer[] idAziende = new Integer[0];
+                    Integer[] idAziende = new Integer[1];
                     idAziende[0] = s.getIdAzienda().getId();
                     Contatto buildContattoAndDettaglio = s.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
                     s.setIdContatto(buildContattoAndDettaglio);

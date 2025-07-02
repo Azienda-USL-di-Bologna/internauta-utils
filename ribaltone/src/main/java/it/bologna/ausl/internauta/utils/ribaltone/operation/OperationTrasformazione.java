@@ -70,7 +70,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     .select(qStruttura)
                     .from(qStruttura)
                     .where(qStruttura.attiva.and(
-                        qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()).and(
+                        qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
                             qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaArrivo())))
                     ).fetch();
                 if (struttureArrivo == null || struttureArrivo.isEmpty() || struttureArrivo.size() > 1) {
@@ -95,7 +95,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 List<Struttura> struttureCoinvolteInTrasformazione = queryFactory
                     .select(qStruttura)
                     .from(qStruttura)
-                    .where(qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()).and(
+                    .where(qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
                         qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza()))
                     ).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 if (struttureCoinvolteInTrasformazione != null
@@ -146,12 +146,12 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
 
                 Struttura strutturaPartenza = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.id.eq(trasformazione.getIdAzienda())))
+                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda())))
                     .orderBy(qStruttura.dataAttivazione.desc()).fetchOne();
 
                 Struttura strutturaDestinazione = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaArrivo())
-                        .and(qStruttura.idAzienda.id.eq(trasformazione.getIdAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetchOne();
+                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetchOne();
                 if (strutturaPartenza != null && strutturaDestinazione != null) {
                     List<GruppiContatti> gruppiDelContattoDaRimuovoreList = strutturaPartenza.getIdContatto().getGruppiDelContattoList();
                     //vado nei gruppi e sostituisco il contatto della struttura vecchia con quello nuovo
@@ -216,7 +216,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 DatiDaImportareTrasformazione entitaRinominata = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.id.eq(entitaRinominata.getIdAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                        .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null) {
@@ -240,7 +240,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 DatiDaImportareTrasformazione entitaRinominata = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.id.eq(entitaRinominata.getIdAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                        .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null && struttureCoinvolte.size() == 2) {
