@@ -230,4 +230,20 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
         return output;
     }
+
+    public DatiDaImportareStruttura buildDatiDaImportareStruttura() {
+        DatiDaImportareStruttura output = new DatiDaImportareStruttura();
+
+        output.setIdCasella(this.idCasella);
+        output.setIdPadre(this.idPadre);
+        output.setDescrizione(this.descrizione);
+        output.setDatain(this.datain);
+        output.setDatafi(this.datafi);
+        output.setTipoLegame(this.tipoLegame);
+        output.setCodiceEnte(this.codiceEnte);
+        output.setCodiceAzienda(this.codiceAzienda);
+        output.setIdAzienda(this.idAzienda);
+
+        return output;
+    }
 }

@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.validator.ValidatorAnagrafiche;
@@ -12,7 +11,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -35,7 +33,7 @@ public class DatiDaImportare {
     protected Map<String, Integer> indexAppartenenti;
     protected Map<String, Integer> indexAnagrafiche;
     private Integer progressivoTrasformazione;
-    private RepositoryFactory repositoryFactory;
+    private final RepositoryFactory repositoryFactory;
 
     public DatiDaImportare(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiDaImportareStruttura> struttureDaImportare, List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer progressivoTrasformazione, RepositoryFactory repositoryFactory) {
         this.anagraficheDaImportare = anagraficheDaImportare;
@@ -87,23 +85,23 @@ public class DatiDaImportare {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;
 
-        List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate(repositoryFactory);
+        List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate(this.repositoryFactory);
         if (!validatorStrutture.getDatiInvalidi().isEmpty()) {
             //posso non controllare altro questi sono errori che bloccano il ribaltone
         } else {
             Map<String, Integer> indexStrutture2 = RibaltoneUtils.generateIndex(struttureValideDaImportare, DatiDaImportareStruttura::getKey);
             ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare, indexStrutture2, indexTrasformazioni, progressivoTrasformazione);
             //mi serve l'index delle strurrue per il controllo sulle trasformazioni
-            List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate(repositoryFactory);
+            List<DatiDaImportareTrasformazione> trasformazioniValideDaImportare = validatorTrasformazioni.validate(this.repositoryFactory);
             progressivoTrasformazione = validatorTrasformazioni.getProgressivoTrasformazione();
             if (!validatorTrasformazioni.getDatiInvalidi().isEmpty()) {
                 //posso non controllare altro perche ci sono problemi con le trasformazioni fornite
             } else {
                 ValidatorAppartenenti validatorAppartenenti = new ValidatorAppartenenti(appartenentiDaImportare, indexStrutture, indexAppartenenti);
-                List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(repositoryFactory);
+                List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(this.repositoryFactory);
 
-                List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(repositoryFactory);
-                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, repositoryFactory);
+                List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(this.repositoryFactory);
+                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, this.repositoryFactory);
 
             }
 

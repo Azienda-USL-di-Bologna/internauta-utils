@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.nextsdr.RibaltoneRestControllerEngineImpl;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
+import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QRibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.nextsw.common.controller.BaseCrudController;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 
 /**
  *
@@ -54,4 +56,16 @@ public class RibaltoneDatiBaseController extends BaseCrudController {
         return ResponseEntity.ok(resource);
     }
 
+    @RequestMapping(value = {"importazioniorganigramma", "importazioniorganigramma/{id}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> importazioniorganigramma(
+        @QuerydslPredicate(root = ImportazioniOrganigramma.class) Predicate predicate,
+        Pageable pageable,
+        @RequestParam(required = false) String projection,
+        @PathVariable(required = false) Integer id,
+        HttpServletRequest request,
+        @RequestParam(required = false, name = "$additionalData") String additionalData) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, EntityReflectionException, RestControllerEngineException, AbortLoadInterceptorException {
+
+        Object resource = restControllerEngine.getResources(request, id, projection, predicate, pageable, additionalData, QImportazioniOrganigramma.importazioniOrganigramma, ImportazioniOrganigramma.class);
+        return ResponseEntity.ok(resource);
+    }
 }

@@ -6,7 +6,6 @@
 package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
@@ -22,18 +21,17 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 
 /**
  *
  * @author Top
  */
 @Entity
-@Table(name = "dati_da_importare_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInterface {
+public class FonteAggiuntaAnagrafica implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -59,18 +57,8 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Column(name = "email")
     private String email;
 
-    @Column(name = "id_azienda")
-    private Integer idAzienda;
-
-    @Size(max = 2147483647)
-    @Column(name = "password_hash")
-    private String passwordHash;
-
     @Column(name = "codice_azienda")
     private String codiceAzienda;
-
-    @Column(name = "errore")
-    private String errore;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,10 +71,10 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public DatiDaImportareAnagrafica() {
+    public FonteAggiuntaAnagrafica() {
     }
 
-    public DatiDaImportareAnagrafica(Integer id) {
+    public FonteAggiuntaAnagrafica(Integer id) {
         this.id = id;
     }
 
@@ -112,14 +100,6 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
 
     public void setCognome(String cognome) {
         this.cognome = cognome;
-    }
-
-    public Integer getIdAzienda() {
-        return idAzienda;
-    }
-
-    public void setIdAzienda(Integer idAzienda) {
-        this.idAzienda = idAzienda;
     }
 
     public String getNome() {
@@ -170,22 +150,6 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         this.version = version;
     }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public String getErrore() {
-        return errore;
-    }
-
-    public void setErrore(String errore) {
-        this.errore = errore;
-    }
-
     @Override
     public int hashCode() {
         int hash = 0;
@@ -196,10 +160,10 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof DatiDaImportareAnagrafica)) {
+        if (!(object instanceof FonteAggiuntaAnagrafica)) {
             return false;
         }
-        DatiDaImportareAnagrafica other = (DatiDaImportareAnagrafica) object;
+        FonteAggiuntaAnagrafica other = (FonteAggiuntaAnagrafica) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
@@ -208,36 +172,21 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.DatiDaImportareAnagrafica[ id=" + id + " ]";
+        return "it.bologna.ausl.model.entities.FonteAggiuntaAnagrafica[ id=" + id + " ]";
     }
 
-    @JsonIgnore
-    @Override
-    public String getKey() {
-        return this.codiceFiscale;
-    }
-
-    @Override
-    public TipologiaCsv getTipo() {
-        return TipologiaCsv.ANAGRAFICHE;
-    }
-
-    @Override
-    public String getClasse() {
-        return DatiDaImportareAnagrafica.class.getCanonicalName();
-    }
-
-    public DatiImportatiAnagrafica buildDatiImportati() {
-        DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
-        anagraficaImportata.setCodiceEnte(this.codiceEnte);
-        anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
-        anagraficaImportata.setCognome(this.cognome);
-        anagraficaImportata.setNome(this.nome);
-        anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
-        anagraficaImportata.setEmail(this.email);
-        anagraficaImportata.setIdAzienda(this.idAzienda);
-        anagraficaImportata.setCodiceAzienda(this.codiceAzienda);
-        return anagraficaImportata;
+    public DatiDaImportareAnagrafica buildDatidaImportare(Integer idAzienda) {
+        DatiDaImportareAnagrafica datiDaImportareAnagrafica = new DatiDaImportareAnagrafica();
+        datiDaImportareAnagrafica.setCodiceAzienda(codiceAzienda);
+        datiDaImportareAnagrafica.setCodiceEnte(codiceEnte);
+        datiDaImportareAnagrafica.setCodiceFiscale(codiceFiscale);
+        datiDaImportareAnagrafica.setCodiceMatricola(codiceMatricola);
+        datiDaImportareAnagrafica.setCognome(cognome);
+        datiDaImportareAnagrafica.setEmail(email);
+        datiDaImportareAnagrafica.setNome(nome);
+        datiDaImportareAnagrafica.setIdAzienda(idAzienda);
+        datiDaImportareAnagrafica.setPasswordHash(null);
+        return datiDaImportareAnagrafica;
     }
 
 }

@@ -75,6 +75,9 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
+    @Column(name = "errore")
+    private String errore;
+
     public DatiDaImportareStruttura() {
     }
 
@@ -204,7 +207,15 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         return DatiDaImportareStruttura.class.getCanonicalName();
     }
 
-    public DatiImportatiStruttura buildDatiImportatiStruttura() {
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
+    public DatiImportatiStruttura buildDatiImportati() {
         DatiImportatiStruttura output = new DatiImportatiStruttura();
 
         output.setIdCasella(this.idCasella);

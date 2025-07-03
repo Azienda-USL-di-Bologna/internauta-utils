@@ -31,31 +31,37 @@ public class ValidatorAppartenenti extends AbstractValidator {
         List<DatiDaImportareAppartenente> appartenentiNonValidi = new ArrayList<DatiDaImportareAppartenente>();
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : datiDaImportareAppartenenti) {
             boolean isValido = true;
+            String motivoInvalidita = "";
             if (!StringUtils.hasText(datiDaImportareAppartenente.getCodiceAzienda())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca codice azienda; ";
             }
             if (!StringUtils.hasText(datiDaImportareAppartenente.getCodiceEnte())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca codice ente; ";
             }
             if (!StringUtils.hasText(datiDaImportareAppartenente.getCodiceFiscale())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca codice fiscale; ";
             }
             if (!StringUtils.hasText(datiDaImportareAppartenente.getCodiceMatricola())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca matricola; ";
             }
             if (!StringUtils.hasText(datiDaImportareAppartenente.getCognome())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca il cognome; ";
             }
             if (!StringUtils.hasText(datiDaImportareAppartenente.getNome())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "manca il nome; ";
             }
             if (datiDaImportareAppartenente.getIdCasella() == null
-                    || !indexStrutture.containsKey(datiDaImportareAppartenente.getIdCasella().toString())
-                ) {
+                || !indexStrutture.containsKey(datiDaImportareAppartenente.getIdCasella().toString())) {
                 isValido = false;
+                motivoInvalidita = motivoInvalidita + "id casella dell'utente non trovato o inesistente; ";
             }
-
-
+            datiDaImportareAppartenente.setErrore(motivoInvalidita);
             if (isValido) {
                 datiDaImportareAppartenentiValidi.add(datiDaImportareAppartenente);
             } else {

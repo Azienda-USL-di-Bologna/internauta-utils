@@ -85,6 +85,9 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
+    @Column(name = "errore")
+    private String errore;
+
     public DatiDaImportareTrasformazione() {
     }
 
@@ -228,7 +231,15 @@ public class DatiDaImportareTrasformazione implements Serializable, DatiRibalton
         return DatiDaImportareTrasformazione.class.getCanonicalName();
     }
 
-    public DatiImportatiTrasformazione buildDatiImportatiTrasformazione() {
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
+    public DatiImportatiTrasformazione buildDatiImportati() {
         DatiImportatiTrasformazione output = new DatiImportatiTrasformazione();
 
         output.setProgressivoRiga(this.progressivoRiga);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +15,10 @@ import java.util.Map;
  *
  * @author gdm
  */
-public class SignParams {
+public class SignParams implements Serializable {
     
     public static enum CertificateStatus {GOOD, UNKNOWN, REVOKED, EXPIRED, NOT_YET_VALID};
+    public static enum ParamsEncoding {URL, BASE64, NONE}
     
     private String serverUrl;
     private String signSessionId;

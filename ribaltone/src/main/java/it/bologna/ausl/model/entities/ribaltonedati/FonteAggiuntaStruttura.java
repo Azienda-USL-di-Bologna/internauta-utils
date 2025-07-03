@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.model.entities.ribaltonedati;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -13,12 +8,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -30,39 +22,44 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "fonte_babel_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_strutture", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class FonteBabelAnagrafica implements Serializable {
+public class FonteAggiuntaStruttura implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    @Column(name = "id_casella")
+    private Integer idCasella;
+
+    @Column(name = "id_padre")
+    private Integer idPadre;
+
+    @Size(max = 2147483647)
+    @Column(name = "descrizione")
+    private String descrizione;
+
+    @Column(name = "datain")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datain;
+
+    @Column(name = "datafi")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime datafi;
+
+    @Size(max = 2147483647)
+    @Column(name = "tipo_legame")
+    private String tipoLegame;
 
     @Column(name = "codice_ente")
     private String codiceEnte;
 
-    @Column(name = "codice_matricola")
-    private String codiceMatricola;
-
-    @Size(max = 2147483647)
-    @Column(name = "cognome")
-    private String cognome;
-
-    @Size(max = 2147483647)
-    @Column(name = "nome")
-    private String nome;
-
-    @Size(max = 2147483647)
-    @Column(name = "codice_fiscale")
-    private String codiceFiscale;
-
-    @Size(max = 2147483647)
-    @Column(name = "email")
-    private String email;
-
     @Column(name = "codice_azienda")
     private String codiceAzienda;
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic(optional = false)
@@ -74,11 +71,55 @@ public class FonteBabelAnagrafica implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public FonteBabelAnagrafica() {
+    public FonteAggiuntaStruttura() {
     }
 
-    public FonteBabelAnagrafica(Integer id) {
-        this.id = id;
+    public Integer getIdCasella() {
+        return idCasella;
+    }
+
+    public void setIdCasella(Integer idCasella) {
+        this.idCasella = idCasella;
+    }
+
+    public Integer getIdPadre() {
+        return idPadre;
+    }
+
+    public void setIdPadre(Integer idPadre) {
+        this.idPadre = idPadre;
+    }
+
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+
+    public ZonedDateTime getDatain() {
+        return datain;
+    }
+
+    public void setDatain(ZonedDateTime datain) {
+        this.datain = datain;
+    }
+
+    public ZonedDateTime getDatafi() {
+        return datafi;
+    }
+
+    public void setDatafi(ZonedDateTime datafi) {
+        this.datafi = datafi;
+    }
+
+    public String getTipoLegame() {
+        return tipoLegame;
+    }
+
+    public void setTipoLegame(String tipoLegame) {
+        this.tipoLegame = tipoLegame;
     }
 
     public String getCodiceEnte() {
@@ -87,46 +128,6 @@ public class FonteBabelAnagrafica implements Serializable {
 
     public void setCodiceEnte(String codiceEnte) {
         this.codiceEnte = codiceEnte;
-    }
-
-    public String getCodiceMatricola() {
-        return codiceMatricola;
-    }
-
-    public void setCodiceMatricola(String codiceMatricola) {
-        this.codiceMatricola = codiceMatricola;
-    }
-
-    public String getCognome() {
-        return cognome;
-    }
-
-    public void setCognome(String cognome) {
-        this.cognome = cognome;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public String getCodiceFiscale() {
-        return codiceFiscale;
-    }
-
-    public void setCodiceFiscale(String codiceFiscale) {
-        this.codiceFiscale = codiceFiscale;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getCodiceAzienda() {
@@ -152,7 +153,6 @@ public class FonteBabelAnagrafica implements Serializable {
     public void setVersion(ZonedDateTime version) {
         this.version = version;
     }
-    
 
     @Override
     public int hashCode() {
@@ -164,19 +164,16 @@ public class FonteBabelAnagrafica implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof FonteBabelAnagrafica)) {
+        if (!(object instanceof FonteAggiuntaStruttura)) {
             return false;
         }
-        FonteBabelAnagrafica other = (FonteBabelAnagrafica) object;
-        if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
-            return false;
-        }
-        return true;
+        FonteAggiuntaStruttura other = (FonteAggiuntaStruttura) object;
+        return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
     @Override
     public String toString() {
-        return "it.bologna.ausl.model.entities.FonteBabelAnagrafica[ id=" + id + " ]";
+        return "it.bologna.ausl.internauta.model.entities.FonteBabelStruttura[ id=" + id + " ]";
     }
 
 }

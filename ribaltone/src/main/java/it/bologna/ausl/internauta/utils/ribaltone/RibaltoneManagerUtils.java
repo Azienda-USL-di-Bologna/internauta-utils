@@ -15,6 +15,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruSpecificData;
+import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.FonteAggiuntaDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.Azienda;
@@ -25,6 +26,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +57,6 @@ public class RibaltoneManagerUtils {
         //controllo sul numero minimo di dati
         operationsManager.isQuantitaDatiOk();
         operationsCacheManager.dump(operations);
-        //TODO: fare il test fino al dump
-        //TODO: fare il restore e testare
 
         return operations.generateUserReport(UserReport.UserReportType.HTML);
     }
@@ -86,6 +86,11 @@ public class RibaltoneManagerUtils {
 
     private static DatiDaImportare getSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         SourceDataManager sourceDataManager;
+        List<DatiDaImportareAppartenente> appartenenti;
+        List<DatiDaImportareAnagrafica> anagrafiche;
+        List<DatiDaImportareStruttura> strutture;
+        List<DatiDaImportareTrasformazione> trasformazioni;
+        Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
             .setParameter("codice", codiceAzienda.substring(0, 3))
@@ -93,28 +98,17 @@ public class RibaltoneManagerUtils {
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
-                //capire cosa succede e perche sono costretto a fare questa cosa abberrante
-//                Map<String, String> queryRecuperoDati = objectMapper
-//                    .convertValue(ribaltoneConf.getSpecifiche().get("queryRecuperoDati"), new TypeReference<Map<String, String>>() {
-//                    });
-//                gruSpecificData.getQueryRecuperoDati().setQueryAnagrafiche(queryRecuperoDati.get("anagrafiche"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryResponsabili(queryRecuperoDati.get("responsabili"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryAppartenenti(queryRecuperoDati.get("appartenenti"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryStrutture(queryRecuperoDati.get("strutture"));
-//                gruSpecificData.getQueryRecuperoDati().setQueryTrasformazioni(queryRecuperoDati.get("trasformazioni"));
-                //fine aberrazione
 
                 if (idAzienda == null) {
                     throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
                 } else {
                     sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
-                    List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
-                    List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
-                    List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
-                    List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
+                    appartenenti = sourceDataManager.getAppartenenti();
+                    anagrafiche = sourceDataManager.getAnagrafica();
+                    strutture = sourceDataManager.getStrutture();
+                    trasformazioni = sourceDataManager.getTrasformazioni();
+                    progressivoUltimaTrasformazione = gruSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione();
 
-                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, gruSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione(), repositoryFactory);
-                    return datiDaImportare;
                 }
             }
             case "CSV" -> {
@@ -123,12 +117,11 @@ public class RibaltoneManagerUtils {
                     throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
                 } else {
                     sourceDataManager = new CSVDataManager(csvSpecificData, objectMapper, codiceAzienda, idAzienda.getId(), repositoryFactory.getEntityManager());
-                    List<DatiDaImportareAppartenente> appartenenti = sourceDataManager.getAppartenenti();
-                    List<DatiDaImportareAnagrafica> anagrafiche = sourceDataManager.getAnagrafica();
-                    List<DatiDaImportareStruttura> strutture = sourceDataManager.getStrutture();
-                    List<DatiDaImportareTrasformazione> trasformazioni = sourceDataManager.getTrasformazioni();
-                    DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, csvSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione(), repositoryFactory);
-                    return datiDaImportare;
+                    appartenenti = sourceDataManager.getAppartenenti();
+                    anagrafiche = sourceDataManager.getAnagrafica();
+                    strutture = sourceDataManager.getStrutture();
+                    trasformazioni = sourceDataManager.getTrasformazioni();
+                    progressivoUltimaTrasformazione = csvSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione();
                 }
             }
 
@@ -137,69 +130,108 @@ public class RibaltoneManagerUtils {
             default ->
                 throw new AssertionError();
         }
+        FonteAggiuntaDataManager fonteAggiuntaDataManager = new FonteAggiuntaDataManager(null, objectMapper, codiceAzienda, null, repositoryFactory.getEntityManager());
+        List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti = fonteAggiuntaDataManager.getAppartenenti();
+        List<DatiDaImportareAnagrafica> fonteAggiuntaAnagrafica = fonteAggiuntaDataManager.getAnagrafica();
+        //List<DatiDaImportareStruttura> fonteAggiuntaStrutture = fonteAggiuntaDataManager.getStrutture();
+        //List<DatiDaImportareTrasformazione> fonteAggiuntaTrasformazioni = fonteAggiuntaDataManager.getTrasformazioni();
+        appartenenti = unisciListeUnichePerCodiceFiscaleIdCasella(appartenenti, fonteAggiuntaAppartenenti);
+        anagrafiche = mergeAnagraficheListsOverrideOnCodiceFiscale(anagrafiche, fonteAggiuntaAnagrafica);
+        //strutture = mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(strutture, fonteAggiuntaStrutture);
+        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory);
+        return datiDaImportare;
     }
 
-    public static void accendiSottoResponsabili(Operations operationAppartenenti) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public static List<DatiDaImportareAppartenente> unisciListeUnichePerCodiceFiscaleIdCasella(
+        List<DatiDaImportareAppartenente> lista1,
+        List<DatiDaImportareAppartenente> lista2) {
+
+        // Mappa con chiave composta: codiceFiscale_idCasella
+        Map<String, DatiDaImportareAppartenente> mappa = new HashMap<>();
+
+        // Aggiungiamo prima tutti gli elementi della lista1
+        for (DatiDaImportareAppartenente item : lista1) {
+            mappa.putIfAbsent(item.getKey(), item);  // non sovrascrive se già presente
+        }
+
+        // Aggiungiamo (sovrascrivendo) gli elementi della lista2
+        for (DatiDaImportareAppartenente item : lista2) {
+            mappa.put(item.getKey(), item);  // sovrascrive
+
+        }
+
+        return new ArrayList<>(mappa.values());
     }
 
-    public static void ribaltaAppartenenti(Operations appartenentiChekedData, Operations anagraficheCheckedData) {
-        accendiPersoneNuove(appartenentiChekedData, anagraficheCheckedData);
-        accendiUtentiNuovi(appartenentiChekedData, anagraficheCheckedData);
-        accendiUtentiStruttura(appartenentiChekedData);
-        accendiPermessiUtenti(appartenentiChekedData);
-        spegniUtentiStruttura(appartenentiChekedData);
-        spegniPermessiVeicolati(appartenentiChekedData);
-        spegniUtentiSenzaAfferenza();
-        spegniPermessiUtentiMorti();
-        spegniPersoneSenzaUtenti();
-        spegniPermessiPersoneMorte();
+    private static List<DatiDaImportareAnagrafica> mergeAnagraficheListsOverrideOnCodiceFiscale(
+        List<DatiDaImportareAnagrafica> lista1,
+        List<DatiDaImportareAnagrafica> lista2) {
+
+        Map<String, DatiDaImportareAnagrafica> mappaPerCodiceFiscale = new HashMap<>();
+
+        // Prima lista: inserisce gli elementi nella mappa
+        for (DatiDaImportareAnagrafica item : lista1) {
+            if (item.getCodiceFiscale() != null) {
+                mappaPerCodiceFiscale.put(item.getCodiceFiscale(), item);
+            }
+        }
+
+        // Seconda lista: inserisce (sovrascrive) gli elementi nella mappa
+        for (DatiDaImportareAnagrafica item : lista2) {
+            if (item.getCodiceFiscale() != null) {
+                mappaPerCodiceFiscale.put(item.getCodiceFiscale(), item); // sovrascrive se esiste
+            }
+        }
+
+        // Ritorna una nuova lista con i valori uniti
+        return new ArrayList<>(mappaPerCodiceFiscale.values());
     }
 
-    private static void accendiPersoneNuove(Operations appartenentiChekedData, Operations anagraficheCheckedData) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+    public static List<DatiDaImportareStruttura> mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(
+        List<DatiDaImportareStruttura> lista1,
+        List<DatiDaImportareStruttura> lista2) {
 
-    private static void accendiUtentiNuovi(Operations appartenentiChekedData, Operations anagraficheCheckedData) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+        Map<Integer, DatiDaImportareStruttura> mappaPerIdCasella = new HashMap<>();
 
-    private static void accendiUtentiStruttura(Operations appartenentiChekedData) {
-        RibaltoneManagerUtils.accendiSottoResponsabili(appartenentiChekedData);
-        accendiAltriUtenti();
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+        // Inseriamo tutti gli elementi della prima lista
+        for (DatiDaImportareStruttura item : lista1) {
+            if (item.getIdCasella() != null) {
+                mappaPerIdCasella.put(item.getIdCasella(), item);
+            }
+        }
 
-    private static void spegniUtentiStruttura(Operations appartenentiChekedData) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+        // Gestiamo gli elementi della seconda lista
+        for (DatiDaImportareStruttura nuovo : lista2) {
+            Integer idCasella = nuovo.getIdCasella();
+            if (idCasella == null) {
+                continue;
+            }
 
-    private static void spegniPermessiVeicolati(Operations appartenentiChekedData) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+            if (mappaPerIdCasella.containsKey(idCasella)) {
 
-    private static void spegniUtentiSenzaAfferenza() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+                // Costruzione del record unito lo faccio perche magari mi sfugge qualcosa
+                // ma secondo me va preso solo il nuovo
+                DatiDaImportareStruttura unito = new DatiDaImportareStruttura();
+                unito.setIdCasella(idCasella);
+                unito.setIdPadre(nuovo.getIdPadre());
+                unito.setDescrizione(nuovo.getDescrizione());
+                unito.setTipoLegame(nuovo.getTipoLegame());
+                unito.setCodiceEnte(nuovo.getCodiceEnte());
+                unito.setCodiceAzienda(nuovo.getCodiceAzienda());
+                unito.setIdAzienda(nuovo.getIdAzienda());
 
-    private static void spegniPermessiUtentiMorti() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+                // Gestione intervallo temporale
+                unito.setDatain(nuovo.getDatain());
+                unito.setDatafi(nuovo.getDatafi());
 
-    private static void spegniPersoneSenzaUtenti() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+                mappaPerIdCasella.put(idCasella, unito);
+            } else {
+                // Non presente nella prima lista → aggiungilo
+                mappaPerIdCasella.put(idCasella, nuovo);
+            }
+        }
 
-    private static void spegniPermessiPersoneMorte() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    private static void accendiAltriUtenti() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    private static void accendiPermessiUtenti(Operations appartenentiChekedData) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return new ArrayList<>(mappaPerIdCasella.values());
     }
 
 }
