@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.BooleanTemplate;
 import com.querydsl.core.types.dsl.Expressions;
 import it.bologna.ausl.internauta.utils.parameters.manager.repositories.ParametroAziendeRepository;
@@ -52,7 +51,13 @@ public class ParametriAziendeReader {
         loginConfig,
         babelshareConfig,
         oliammConfiguration,
-        tabRegistrazioniScriptaActive
+        tabRegistrazioniScriptaActive,
+        firmaJNJ,
+        ribaltoneConf,
+        processaDati,
+        usaNuovoRibaltoneVeloce,
+        abilitaGestioneMassivaArchiviPerResponsabiliAndVicari,
+        maxSchedePerFiltriEdiEfiWithAutoMode
     }
     
     @Autowired
@@ -82,7 +87,7 @@ public class ParametriAziendeReader {
     }
 
     public List<ParametroAziende> getParameters(String nome, String[] idApplicazioni) {
-        return getParameters(nome, null, idApplicazioni);
+        return getParameters(nome, null, idApplicazioni);        
     }
 /**
  * Metodo che prende in ingresso
