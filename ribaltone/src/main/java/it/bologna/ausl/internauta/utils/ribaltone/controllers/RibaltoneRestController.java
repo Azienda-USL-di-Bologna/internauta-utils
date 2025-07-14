@@ -258,6 +258,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             } catch (RibaltoneHttpException | JsonProcessingException ex) {
                 setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
                 ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
+                LOGGER.error("", ex);
                 return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } else {
