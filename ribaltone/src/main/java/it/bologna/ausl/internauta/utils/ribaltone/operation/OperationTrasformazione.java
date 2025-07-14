@@ -57,9 +57,16 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
             case CONFLUENZA -> {
                 //se si tratta di una confluenza
                 DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
-                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    trasformazioneDaEseguire.getIdCasellaPartenza(),
-                    trasformazioneDaEseguire.getIdAzienda(),
+                Struttura strutturaSorgenteDaChiudere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza())).and(
+                        qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()))
+                    ).fetchOne();
+
+                List<Struttura> struttureChiuse = OperationsUtils.chiudiStruttura(
+                    strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
                     qStoricoRelazione,
@@ -85,6 +92,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     queryFactory,
                     qStrutturaUnificata);
                 //lanciare sposta strutture
+                Struttura strutturaChiusa = struttureChiuse.stream().filter(s -> s.getIdAzienda().getId().equals(trasformazioneDaEseguire.getIdAzienda())).toList().get(0);
                 OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaDestinazione.getId(), "X", strutturaDestinazione.getDataAttivazione().toString());
 
             }
