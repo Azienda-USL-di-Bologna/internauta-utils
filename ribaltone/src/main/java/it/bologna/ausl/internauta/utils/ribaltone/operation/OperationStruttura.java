@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 public class OperationStruttura extends Operation<DatiRibaltoneInterface> implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(OperationStruttura.class);
+    private Struttura strutturaNew;
+    private List<Struttura> struttureOld;
 
     public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
         super(azione, entitaCoinvolta, entityManager);
@@ -60,7 +62,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         switch (getAzione()) {
             case INSERT: {
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
-                OperationsUtils.inserisciStruttura(
+                strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
                     entitaDaInserire.getIdAzienda(),
@@ -84,8 +86,14 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
-                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
-                //ora gestisco il caso in cui chiudo la struttura e tocco un'unificazione
+                Struttura strutturaSorgenteDaChiudere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
+                        qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                    ).fetchOne();
+                struttureOld = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
             }
             break;
 
@@ -95,9 +103,16 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
-                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    entitaDaCambio.getIdCasella(),
-                    entitaDaCambio.getIdAzienda(),
+                Struttura strutturaSorgenteDaChiudere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(entitaDaCambio.getIdCasella())).and(
+                        qStruttura.idAzienda.id.eq(entitaDaCambio.getIdAzienda()))
+                    ).fetchOne();
+
+                struttureOld = OperationsUtils.chiudiStruttura(
+                    strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
                     qStoricoRelazione,
@@ -106,7 +121,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
-                Struttura strutturaAppenaInserita = OperationsUtils.inserisciStruttura(
+                strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
                     entitaDaCambio.getIdAzienda(),
@@ -117,8 +132,9 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
 
-                //spostaStrutture ma va fatto dopo
-                //OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAppenaInserita.getId(), operazione, strutturaAppenaInserita.getDataAttivazione().toString());
+                OperationsUtils.attivaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudere);
+                //OperationsUtils.inserisciStrutturaNewInAziendaUnificata(queryFactory, em, strutturaNew, struttureOld, getAzione());
+                OperationsUtils.spostaStruttura(em, strutturaSorgenteDaChiudere.getId(), strutturaNew.getId(), operazione, strutturaNew.getDataAttivazione().toString());
                 break;
             default:
                 throw new AssertionError();

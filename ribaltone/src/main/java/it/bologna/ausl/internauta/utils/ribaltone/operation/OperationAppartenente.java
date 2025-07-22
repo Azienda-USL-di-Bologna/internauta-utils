@@ -103,19 +103,17 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             idAziendeList = entitaCoinvoltaUnificazioni.stream().flatMap(a -> Stream.of(
                 a.getIdStrutturaDestinazione().getIdAzienda().getId(),
                 a.getIdStrutturaSorgente().getIdAzienda().getId()
-            ))
-                .distinct()
-                .collect(Collectors.toList());
+            )).distinct().collect(Collectors.toList());
+
             struttureCoinvoltePerUnificazioneOriginale = entitaCoinvoltaUnificazioni.stream()
                 .flatMap(a -> Stream.of(
                 a.getIdStrutturaDestinazione(),
                 a.getIdStrutturaSorgente()
-            ))
-                .collect(Collectors.toMap(
-                    struttura -> struttura.getIdAzienda().getId(), // Usa l'ID Azienda come chiave
-                    struttura -> struttura, // Mantieni l'oggetto Struttura
-                    (existing, replacement) -> existing // In caso di duplicati, mantiene il primo
-                )).values().stream().toList();
+            )).collect(Collectors.toMap(
+                struttura -> struttura.getIdAzienda().getId(), // Usa l'ID Azienda come chiave
+                struttura -> struttura, // Mantieni l'oggetto Struttura
+                (existing, replacement) -> existing // In caso di duplicati, mantiene il primo
+            )).values().stream().toList();
         } else {
             idAziendeList.add(getEntitaCoinvolta().getIdAzienda());
         }
@@ -159,9 +157,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 utente.setIdPersona(persona);
                                 repositoryFactory.getEntityManager().persist(utente);
                             }
-
                             utenti.add(utente);
-
                         }
                     }
                     //ciclo su tutti gli utenti delle strutture delle aziende unificate

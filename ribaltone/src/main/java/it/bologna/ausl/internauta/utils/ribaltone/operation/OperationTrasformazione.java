@@ -57,9 +57,16 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
             case CONFLUENZA -> {
                 //se si tratta di una confluenza
                 DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
-                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    trasformazioneDaEseguire.getIdCasellaPartenza(),
-                    trasformazioneDaEseguire.getIdAzienda(),
+                Struttura strutturaSorgenteDaChiudere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza())).and(
+                        qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()))
+                    ).fetchOne();
+
+                List<Struttura> struttureChiuse = OperationsUtils.chiudiStruttura(
+                    strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
                     qStoricoRelazione,
@@ -85,6 +92,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     queryFactory,
                     qStrutturaUnificata);
                 //lanciare sposta strutture
+                Struttura strutturaChiusa = struttureChiuse.stream().filter(s -> s.getIdAzienda().getId().equals(trasformazioneDaEseguire.getIdAzienda())).toList().get(0);
                 OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaDestinazione.getId(), "X", strutturaDestinazione.getDataAttivazione().toString());
 
             }
@@ -126,6 +134,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di confluenza è un nuovo dettaglio e devo cambiarlo anche nei gruppi
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di rinomina è lo stesso ma col nome nuovo (cosi non devo gestire i gruppi)
      * il dettaglio di tipo UTENTE_STRUTTURA nel caso di cambio padre è lo stesso non devo fare nulla
+     *
      * @param repositoryFactory
      */
     public void menageContattiTrasformati(RepositoryFactory repositoryFactory) {
@@ -144,15 +153,17 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 // 3 nei gruppi dove c'era il contatto ormai morto mettere il vivo
                 DatiDaImportareTrasformazione trasformazione = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
 
-                Struttura strutturaPartenza = queryFactory.select(qStruttura).from(qStruttura)
+                List<Struttura> strutturaPartenzaList = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaPartenza())
                         .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda())))
-                    .orderBy(qStruttura.dataAttivazione.desc()).fetchOne();
+                    .orderBy(qStruttura.dataAttivazione.desc()).fetch();
 
-                Struttura strutturaDestinazione = queryFactory.select(qStruttura).from(qStruttura)
+                List<Struttura> strutturaDestinazioneList = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaArrivo())
-                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetchOne();
-                if (strutturaPartenza != null && strutturaDestinazione != null) {
+                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetch();
+                if (strutturaPartenzaList != null && !strutturaPartenzaList.isEmpty() && strutturaDestinazioneList != null && !strutturaDestinazioneList.isEmpty()) {
+                    Struttura strutturaPartenza = strutturaPartenzaList.get(0);
+                    Struttura strutturaDestinazione = strutturaDestinazioneList.get(0);
                     List<GruppiContatti> gruppiDelContattoDaRimuovoreList = strutturaPartenza.getIdContatto().getGruppiDelContattoList();
                     //vado nei gruppi e sostituisco il contatto della struttura vecchia con quello nuovo
                     for (GruppiContatti gruppoConContattoDaRimuovere : gruppiDelContattoDaRimuovoreList) {

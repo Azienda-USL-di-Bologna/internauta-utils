@@ -70,7 +70,7 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
         }
-        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
+//        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
         for (OperationAppartenente operation : listOfOperationAppartenenti) {
             operation.esegui(workToDo, repositoryFactory);
@@ -87,7 +87,12 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
         }
-        listOfOperationUnificazioni = null;
+
+        workToDo = null;
+//        for (OperationUnificazione operation : listOfOperationUnificazioni) {
+//            operation.esegui(workToDo, repositoryFactory);
+//            operation.menageContatto(repositoryFactory);
+//        }
 //        finalOperations(repositoryFactory, codiceAzienda);
     }
 
