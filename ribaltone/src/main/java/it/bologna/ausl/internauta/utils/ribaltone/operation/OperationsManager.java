@@ -115,6 +115,32 @@ public class OperationsManager {
         Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare, DatiDaImportareStruttura::getKey);
         //capiamo i cambi di padre
         this.struttureChiuse = 0;
+        // Mappa: idStrutturaSorgente -> lista di StrutturaUnificata
+        Map<Integer, List<StrutturaUnificata>> mappaUnificazioniPerIdCasellaSorgente = queryFactory
+            .select(qStrutturaUnificata)
+            .from(qStrutturaUnificata)
+            .where(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now())
+                .and(qStrutturaUnificata.dataDisattivazione.isNull()
+                    .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
+                )
+            )
+            .fetch()
+            .stream()
+            .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
+
+        // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
+        Map<Integer, List<StrutturaUnificata>> mappaUnificazioniPerIdCasellaDestinazione = queryFactory
+            .select(qStrutturaUnificata)
+            .from(qStrutturaUnificata)
+            .where(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now())
+                .and(qStrutturaUnificata.dataDisattivazione.isNull()
+                    .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
+                )
+            )
+            .fetch()
+            .stream()
+            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
+
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
             Integer posizione = indexStruttureImportate.get(daImportareStruttura.getKey());
 
@@ -137,11 +163,21 @@ public class OperationsManager {
                     operationStrutturaList.add(new OperationStruttura(Operation.Azione.CAMBIO_PADRE, daImportareStruttura, repositoryFactory.getEntityManager()));
                     trasf.setMotivo("T");
                     operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.CAMBIO_PADRE, trasf, repositoryFactory.getEntityManager()));
+                    //sto trasferendo una struttura unificata?
+                    if (mappaUnificazioniPerIdCasellaSorgente.containsKey(daImportareStruttura.getIdCasella())
+                        || mappaUnificazioniPerIdCasellaDestinazione.containsKey(daImportareStruttura.getIdCasella())) {
+                        operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CAMBIO_PADRE, daImportareStruttura, repositoryFactory.getEntityManager()));
+                    }
                 } else if (!struttureImportate.get(posizione).getDescrizione().equals(daImportareStruttura.getDescrizione())) {
                     //rinomina
                     operationStrutturaList.add(new OperationStruttura(Operation.Azione.RINOMINA, daImportareStruttura, repositoryFactory.getEntityManager()));
                     trasf.setMotivo("R");
                     operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.RINOMINA, trasf, repositoryFactory.getEntityManager()));
+                    //sto rinominando una struttura unificata?
+                    if (mappaUnificazioniPerIdCasellaSorgente.containsKey(daImportareStruttura.getIdCasella())
+                        || mappaUnificazioniPerIdCasellaDestinazione.containsKey(daImportareStruttura.getIdCasella())) {
+                        operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.RINOMINA, daImportareStruttura, repositoryFactory.getEntityManager()));
+                    }
                 } else {
                     //non è successo nulla è come era prima
                 }
@@ -160,24 +196,18 @@ public class OperationsManager {
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.CHIUSURA, strutturaImportata, repositoryFactory.getEntityManager()));
                 this.struttureChiuse++;
                 //sto chiudendo una struttura unificata?
-                List<StrutturaUnificata> struttureUnificateList = queryFactory
-                    .select(qStrutturaUnificata)
-                    .from(qStruttura)
-                    .join(qStrutturaUnificata)
-                    .on(qStrutturaUnificata.idStrutturaSorgente.id.eq(qStruttura.id)
-                        .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(qStruttura.id))
-                    )
-                    .where(qStruttura.idCasella.eq(strutturaImportata.getIdCasella()).and(qStruttura.attiva)).fetch();
-                if (struttureUnificateList != null && !struttureUnificateList.isEmpty()) {
-                    for (StrutturaUnificata su : struttureUnificateList) {
-                        operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CHIUSURA, UnificazioneEseguita.buildUnificazioneEseguita(su), entityManager));
-                    }
+                if (mappaUnificazioniPerIdCasellaSorgente.containsKey(strutturaImportata.getIdCasella())
+                    || mappaUnificazioniPerIdCasellaDestinazione.containsKey(strutturaImportata.getIdCasella())) {
+                    operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CHIUSURA, strutturaImportata, repositoryFactory.getEntityManager()));
                 }
             }
-            //qui ci entro in caso di chiusura di una struttura o perche è stata chiusa
-            //o perche è confluita
-            //quindi verifico se tocca un'unificazione
-            // nel caso lo segnalo
+            if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
+                && indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())
+                && (mappaUnificazioniPerIdCasellaSorgente.containsKey(strutturaImportata.getIdCasella())
+                || mappaUnificazioniPerIdCasellaDestinazione.containsKey(strutturaImportata.getIdCasella()))) {
+                operationUnificazioneList.add(new OperationUnificazione(Operation.Azione.CONFLUENZA, strutturaImportata, repositoryFactory.getEntityManager()));
+            }
+
         }
 
         mapToReturn.put("strutture", operationStrutturaList);

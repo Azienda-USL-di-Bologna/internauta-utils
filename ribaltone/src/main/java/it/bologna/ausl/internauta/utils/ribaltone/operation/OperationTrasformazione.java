@@ -153,15 +153,17 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 // 3 nei gruppi dove c'era il contatto ormai morto mettere il vivo
                 DatiDaImportareTrasformazione trasformazione = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
 
-                Struttura strutturaPartenza = queryFactory.select(qStruttura).from(qStruttura)
+                List<Struttura> strutturaPartenzaList = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaPartenza())
                         .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda())))
-                    .orderBy(qStruttura.dataAttivazione.desc()).fetchOne();
+                    .orderBy(qStruttura.dataAttivazione.desc()).fetch();
 
-                Struttura strutturaDestinazione = queryFactory.select(qStruttura).from(qStruttura)
+                List<Struttura> strutturaDestinazioneList = queryFactory.select(qStruttura).from(qStruttura)
                     .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaArrivo())
-                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetchOne();
-                if (strutturaPartenza != null && strutturaDestinazione != null) {
+                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetch();
+                if (strutturaPartenzaList != null && !strutturaPartenzaList.isEmpty() && strutturaDestinazioneList != null && !strutturaDestinazioneList.isEmpty()) {
+                    Struttura strutturaPartenza = strutturaPartenzaList.get(0);
+                    Struttura strutturaDestinazione = strutturaDestinazioneList.get(0);
                     List<GruppiContatti> gruppiDelContattoDaRimuovoreList = strutturaPartenza.getIdContatto().getGruppiDelContattoList();
                     //vado nei gruppi e sostituisco il contatto della struttura vecchia con quello nuovo
                     for (GruppiContatti gruppoConContattoDaRimuovere : gruppiDelContattoDaRimuovoreList) {
