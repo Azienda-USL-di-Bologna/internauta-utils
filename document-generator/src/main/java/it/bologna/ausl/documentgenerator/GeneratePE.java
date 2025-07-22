@@ -338,7 +338,7 @@ public class GeneratePE {
             }
             Map<String, Object> myResponse = new HashMap();
             try {
-                myResponse = objectMapper.readValue(responseg.body().string(), new TypeReference<Map<String, Object>>() {
+                myResponse = objectMapper.readValue(responseg.body().toString(), new TypeReference<Map<String, Object>>() {
                 });
             } catch (Exception ex) {
                 throw new Http500ResponseException("500", "Errore nel parsing della risposta");
