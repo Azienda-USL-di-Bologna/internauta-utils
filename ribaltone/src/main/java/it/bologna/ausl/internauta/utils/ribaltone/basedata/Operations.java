@@ -89,10 +89,10 @@ public class Operations implements Serializable {
         }
 
         workToDo = null;
-//        for (OperationUnificazione operation : listOfOperationUnificazioni) {
-//            operation.esegui(workToDo, repositoryFactory);
-//            operation.menageContatto(repositoryFactory);
-//        }
+        for (OperationUnificazione operation : listOfOperationUnificazioni) {
+            operation.esegui(workToDo, repositoryFactory);
+            operation.menageContatto(repositoryFactory);
+        }
 //        finalOperations(repositoryFactory, codiceAzienda);
     }
 

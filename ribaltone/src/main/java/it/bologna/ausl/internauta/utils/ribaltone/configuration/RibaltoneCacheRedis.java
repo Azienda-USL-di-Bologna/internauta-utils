@@ -15,6 +15,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazione;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
@@ -104,7 +105,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                     case "TRASFORMAZIONI" ->
                         listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
                     case "UNIFICAZIONI" ->
-                        listOfOperationUnificazione.add(new OperationUnificazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                        listOfOperationUnificazione.add(new OperationUnificazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString())));
                 }
             }
         }
@@ -138,7 +139,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             redisTemp.afterPropertiesSet();
             return redisTemp;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("", e);
             return null;
         }
     }
