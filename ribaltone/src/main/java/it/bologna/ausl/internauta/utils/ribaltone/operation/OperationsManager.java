@@ -295,12 +295,13 @@ public class OperationsManager {
                 }
             } else {
 //             se posizione è null allora non ho una riga tra le importate che mi rappresenta l'appartenente'
-                DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
+
                 String descrizione;
-                if (struttura == null) {
+                if (indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()) == null) {
                     DatiDaImportareStruttura strutturaDaImportare = struttureDaImportareList.get(indexIdCasellaStruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
                     descrizione = strutturaDaImportare.getDescrizione();
                 } else {
+                    DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
                     descrizione = struttura.getDescrizione();
                 }
                 operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, descrizione));
