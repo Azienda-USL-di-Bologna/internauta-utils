@@ -62,6 +62,10 @@ public class OperationsManager {
     Map<String, Integer> indexStruttureImportate;
     Map<String, Integer> indexTrasformazioniImportate;
     private RepositoryFactory repositoryFactory;
+    private Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaSorgente;
+    private Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaDestinazione;
+    private Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaSorgente;
+    private Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaDestinazione;
 
     public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture, RepositoryFactory repositoryFactory) {
         this.datiDaImportare = datiDaImportare;
@@ -88,6 +92,10 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      */
     public Operations buildOperations() throws RibaltoneHttpException {
+        EntityManager entityManager = repositoryFactory.getEntityManager();
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        this.popolaMappeUnificazioni(queryFactory);
+
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsStruttureETrasformazione = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
         List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildedOperationsStruttureETrasformazione.get("strutture");
         List<OperationUnificazione> operationsUnificazioni = (List<OperationUnificazione>) buildedOperationsStruttureETrasformazione.get("unificazioni");
@@ -99,6 +107,35 @@ public class OperationsManager {
 //        operationsUnificazioni.addAll(unificazioniToccateDaTrasformazioni);
         operationsTraformazioni.addAll((Collection<? extends OperationTrasformazione>) buildedOperationsStruttureETrasformazione.get("trasformazioni"));
         return new Operations(operationsStrutture, operationsAppartenenti, operationsAnagrafiche, operationsTraformazioni, operationsUnificazioni);
+    }
+
+    private void popolaMappeUnificazioni(JPAQueryFactory queryFactory) {
+        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+        List<StrutturaUnificata> listaUnificazioni = queryFactory
+            .select(qStrutturaUnificata)
+            .from(qStrutturaUnificata)
+            .where(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now())
+                .and(qStrutturaUnificata.dataDisattivazione.isNull()
+                    .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
+                )
+            )
+            .fetch();
+
+        // Mappa: idStrutturaSorgente -> lista di StrutturaUnificata
+        this.mappaReplichePerIdCasellaSorgente = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
+            .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
+
+        // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
+        this.mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
+            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
+
+        this.mappaFusioniPerIdCasellaSorgente
+            = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+                .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
+
+        // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
+        this.mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
     }
 
     private Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildOperationsStrutture(
@@ -115,36 +152,11 @@ public class OperationsManager {
         EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QStruttura qStruttura = QStruttura.struttura;
-        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+
         Map<String, Integer> indexStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportare, DatiDaImportareStruttura::getKey);
         //capiamo i cambi di padre
         this.struttureChiuse = 0;
-        List<StrutturaUnificata> listaUnificazioni = queryFactory
-            .select(qStrutturaUnificata)
-            .from(qStrutturaUnificata)
-            .where(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now())
-                .and(qStrutturaUnificata.dataDisattivazione.isNull()
-                    .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
-                )
-            )
-            .fetch();
 
-        // Mappa: idStrutturaSorgente -> lista di StrutturaUnificata
-        Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaSorgente
-            = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
-                .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
-
-        // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
-        Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
-            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
-
-        Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaSorgente
-            = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
-                .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
-
-        // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
-        Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
-            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
         Integer totaleStruttureDaImportare = struttureDaImportare.size();
         Integer strutturaNumero = 0;
         for (DatiDaImportareStruttura daImportareStruttura : struttureDaImportare) {
