@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author andrea
+ * @author gdm
  */
 public class SampleTask extends Task {
     private final Logger log = LoggerFactory.getLogger(SampleTask.class);
@@ -24,7 +24,7 @@ public class SampleTask extends Task {
     public Result execute(Bag runningContext, Bag context, Bag params) {
         status = BdmStatus.RUNNING;
         log.info("executing task " + getTaskType() + "...");
-        Boolean ok = true;
+        Boolean ok = false;
         if (params.get("ok") != null) {
             ok = (Boolean) params.get("ok");
         }

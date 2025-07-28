@@ -5,12 +5,14 @@ import it.bologna.ausl.internauta.utils.bdm.core.Step;
 import it.bologna.ausl.internauta.utils.bdm.core.Task;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.workflows.tasks.SampleTask;
+import jakarta.persistence.Embeddable;
 import java.util.Arrays;
 
 /**
  *
  * @author andrea
  */
+//@Embeddable
 public class SampleProcess extends BdmProcess {
 
     @Override

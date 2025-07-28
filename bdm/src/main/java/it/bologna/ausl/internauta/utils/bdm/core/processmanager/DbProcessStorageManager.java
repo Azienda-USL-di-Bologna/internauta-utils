@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.model.entities.bdm.Process;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
@@ -7,12 +9,14 @@ import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
+import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import it.bologna.ausl.model.entities.bdm.QProcess;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.logging.Level;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,9 @@ public class DbProcessStorageManager implements ProcessStorageManager {
     
     @Autowired
     private TransactionTemplate transactionTemplate;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     
     private final QProcess qProcess = QProcess.process;
 
@@ -79,10 +86,17 @@ public class DbProcessStorageManager implements ProcessStorageManager {
                         log.error(error);
                         throw new ConcurrentModificationException(error);
                     } else if (readBdmProcess.getTransactionId().equals(p.getTransactionId())) {
+                        p.setTransactionId(p.getTransactionId() + 1);
+                        log.info("json processo:");
+                        try {
+                            log.info(objectMapper.writeValueAsString(p));
+                        } catch (JsonProcessingException ex) {
+                            log.error("errore json", ex);
+                        }
                         // il processo esiste e transactionId fanno match, devo fare l'update
                         long updatedRows = queryFactory
                             .update(qProcess)
-                            .set(qProcess.jsonProcess, p)
+                            .set(qProcess.jsonProcess, (SampleProcess)p)
                             .set(qProcess.status, statusProcess)
                             .where(qProcess.id.eq(idProcess))
                             .execute();
@@ -99,7 +113,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
                 } else {
                     Process process = new Process();
                     process.setId(idProcess);
-                    process.setJsonProcess(p);
+                    process.setJsonProcess((SampleProcess)p);
                     process.setStatus(statusProcess);
                     try {
                         entityManager.persist(process);
