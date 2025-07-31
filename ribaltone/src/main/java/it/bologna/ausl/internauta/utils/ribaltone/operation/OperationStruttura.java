@@ -36,7 +36,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
 
     private static final Logger log = LoggerFactory.getLogger(OperationStruttura.class);
     private Struttura strutturaNew;
-    private List<Struttura> struttureOld;
+    private Struttura strutturaChiusa;
 
     public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
         super(azione, entitaCoinvolta, entityManager);
@@ -58,7 +58,6 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         List<Integer> idAziendeList = new ArrayList<>();
         List<Struttura> struttureUnificate = new ArrayList<>();
-
         switch (getAzione()) {
             case INSERT: {
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
@@ -93,7 +92,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
                         qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
                     ).fetchOne();
-                struttureOld = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
+                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
             }
             break;
 
@@ -111,7 +110,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura.idAzienda.id.eq(entitaDaCambio.getIdAzienda()))
                     ).fetchOne();
 
-                struttureOld = OperationsUtils.chiudiStruttura(
+                strutturaChiusa = OperationsUtils.chiudiStruttura(
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,

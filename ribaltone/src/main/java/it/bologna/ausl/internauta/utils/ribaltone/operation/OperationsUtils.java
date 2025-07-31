@@ -172,7 +172,7 @@ public class OperationsUtils {
      * @return struttura appena chiusa
      * @throws RibaltoneHttpException
      */
-    public static List<Struttura> chiudiStruttura(Struttura strutturaSorgenteDaChiudere, JPAQueryFactory queryFactory, QStruttura qStruttura, QStoricoRelazione qStoricoRelazione, QStrutturaUnificata qStrutturaUnificata, Boolean spegniUnificazione) throws RibaltoneHttpException {
+    public static Struttura chiudiStruttura(Struttura strutturaSorgenteDaChiudere, JPAQueryFactory queryFactory, QStruttura qStruttura, QStoricoRelazione qStoricoRelazione, QStrutturaUnificata qStrutturaUnificata, Boolean spegniUnificazione) throws RibaltoneHttpException {
 
         //chiudere su baborg strutture
         //chiudere su baborg storico relazione
@@ -182,37 +182,22 @@ public class OperationsUtils {
         } else {
             //chiudere su baborg strutture
 
-            List<Struttura> struttureUnificateDaChiudereList = queryFactory
-                .select(qStruttura)
-                .from(qStruttura)
-                .where(qStruttura.attiva.and(qStruttura.idStrutturaReplicata.id.eq(strutturaSorgenteDaChiudere.getId()))).fetch();
-            struttureUnificateDaChiudereList.add(strutturaSorgenteDaChiudere);
-            long updatedRows = queryFactory
+            queryFactory
                 .update(qStruttura)
                 .set(qStruttura.attiva, false)
                 .set(qStruttura.dataCessazione, ZonedDateTime.now())
-                .where(qStruttura.in(struttureUnificateDaChiudereList)).execute();
+                .where(qStruttura.id.eq(strutturaSorgenteDaChiudere.getId())).execute();
 
             //chiudere su baborg storico relazione
-            for (Struttura strutturaDaChiudere : struttureUnificateDaChiudereList) {
-                queryFactory
-                    .update(qStoricoRelazione)
-                    .set(qStoricoRelazione.attivaAl, ZonedDateTime.now())
-                    .where((qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now()))).and(
-                        qStoricoRelazione.idStrutturaFiglia.id.eq(strutturaDaChiudere.getId())
-                            .or(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaDaChiudere.getId())))
-                    ).execute();
-            }
-            //chiudere su baborg strutture unificate
-            if (spegniUnificazione) {
-                queryFactory.update(qStrutturaUnificata)
-                    .set(qStrutturaUnificata.dataDisattivazione, ZonedDateTime.now())
-                    .where(
-                        qStrutturaUnificata.idStrutturaSorgente.id.eq(strutturaSorgenteDaChiudere.getId())
-                            .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(strutturaSorgenteDaChiudere.getId()))
-                    ).execute();
-            }
-            return struttureUnificateDaChiudereList;
+            queryFactory
+                .update(qStoricoRelazione)
+                .set(qStoricoRelazione.attivaAl, ZonedDateTime.now())
+                .where((qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now()))).and(
+                    qStoricoRelazione.idStrutturaFiglia.id.eq(strutturaSorgenteDaChiudere.getId())
+                        .or(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaSorgenteDaChiudere.getId())))
+                ).execute();
+
+            return queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(strutturaSorgenteDaChiudere.getId())).fetchOne();
         }
     }
 
@@ -391,7 +376,7 @@ public class OperationsUtils {
      * @return lista ordinata per livello di antenati struttura (dalla radice
      *         Direzione Generale fino ad arrivare a idCasella passata)
      */
-    private static List<Struttura> getStruttureAntenateAttiveONo(EntityManager entityManager, Integer idCasella, Boolean attive, Integer idAzienda) {
+    public static List<Struttura> getStruttureAntenateAttiveONo(EntityManager entityManager, Integer idCasella, Boolean attive, Integer idAzienda) {
         return entityManager.createNativeQuery(
             "SELECT * FROM baborg.strutture_antenate_attive_o_no(:idCasella, :attive, :idAzienda)", Struttura.class)
             .setParameter("idCasella", idCasella)

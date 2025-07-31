@@ -88,6 +88,12 @@ public class DatiDaImportare {
         List<DatiDaImportareStruttura> struttureValideDaImportare = validatorStrutture.validate(this.repositoryFactory);
         if (!validatorStrutture.getDatiInvalidi().isEmpty()) {
             //posso non controllare altro questi sono errori che bloccano il ribaltone
+            List<DatiDaImportareStruttura> struttureInValide = (List<DatiDaImportareStruttura>) validatorStrutture.getDatiInvalidi();
+            String errore = "";
+            for (DatiDaImportareStruttura strutturaInvalida : struttureInValide) {
+                errore += strutturaInvalida.getErrore() + " ";
+            }
+            throw new RibaltoneHttpException(errore);
         } else {
             Map<String, Integer> indexStrutture2 = RibaltoneUtils.generateIndex(struttureValideDaImportare, DatiDaImportareStruttura::getKey);
             ValidatorTrasformazioni validatorTrasformazioni = new ValidatorTrasformazioni(trasformazioniDaImportare, indexStrutture2, indexTrasformazioni, progressivoTrasformazione);

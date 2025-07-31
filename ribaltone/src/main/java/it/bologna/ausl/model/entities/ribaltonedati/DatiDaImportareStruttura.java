@@ -17,6 +17,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
 
 /**
  *
@@ -27,7 +28,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface {
+public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface, DatiRibaltoneStrutturaInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -81,6 +82,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     public DatiDaImportareStruttura() {
     }
 
+    @Override
     public Integer getIdCasella() {
         return idCasella;
     }
@@ -97,6 +99,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         this.idPadre = idPadre;
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -229,5 +232,15 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         output.setIdAzienda(this.idAzienda);
 
         return output;
+    }
+
+    @Override
+    public Integer getIdCasellaPadre() {
+        return idPadre;
+    }
+
+    @Override
+    public void setIdCasellaPadre(Integer idCasellaPadre) {
+        this.idPadre = idCasellaPadre;
     }
 }

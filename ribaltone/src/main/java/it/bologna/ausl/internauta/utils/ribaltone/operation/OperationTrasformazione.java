@@ -65,7 +65,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                         qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()))
                     ).fetchOne();
 
-                List<Struttura> struttureChiuse = OperationsUtils.chiudiStruttura(
+                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
@@ -92,7 +92,6 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     queryFactory,
                     qStrutturaUnificata);
                 //lanciare sposta strutture
-                Struttura strutturaChiusa = struttureChiuse.stream().filter(s -> s.getIdAzienda().getId().equals(trasformazioneDaEseguire.getIdAzienda())).toList().get(0);
                 OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaDestinazione.getId(), "X", strutturaDestinazione.getDataAttivazione().toString());
 
             }
