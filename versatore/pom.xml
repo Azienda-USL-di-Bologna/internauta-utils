@@ -73,7 +73,7 @@
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.8.2</version>
+            <version>3.10.3</version>
         </dependency>
         <dependency>
             <groupId>xom</groupId>
@@ -158,7 +158,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20240303</version>
+            <version>20250517</version>
         </dependency>
     </dependencies>
     <build>
@@ -249,7 +249,7 @@
             <plugin>
                 <groupId>org.jvnet.jaxb</groupId>
                 <artifactId>jaxb-maven-plugin</artifactId>
-                <version>4.0.8</version>
+                <version>4.0.9</version>
                 <executions>
                     <execution>
                         <goals>

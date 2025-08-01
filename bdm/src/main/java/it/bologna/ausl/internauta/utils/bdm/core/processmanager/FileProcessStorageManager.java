@@ -25,15 +25,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileProcessStorageManager implements ProcessStorageManager {
 
-    private final String root;
+    private String rootPath;
     private final Logger log = LoggerFactory.getLogger(FileProcessStorageManager.class);
 
     @Autowired
     private ObjectMapper objectMapper;
     
-    public FileProcessStorageManager(String root) {
-        this.root = root;
-        File r = new File(root);
+    public void setRootPath(String rootPath) {
+        this.rootPath = rootPath;
+        File r = new File(rootPath);
         if (!r.exists()) {
             r.mkdirs();
         }
@@ -41,7 +41,7 @@ public class FileProcessStorageManager implements ProcessStorageManager {
 
     @Override
     public BdmProcess loadProcess(String id) throws StorageException {
-        try (FileInputStream in = new FileInputStream(new File(root, id))) {
+        try (FileInputStream in = new FileInputStream(new File(rootPath, id))) {
             return (BdmProcess) Dumpable.load(in, BdmProcess.class, objectMapper);
 
         } catch (Exception ex) {
@@ -54,7 +54,7 @@ public class FileProcessStorageManager implements ProcessStorageManager {
 
     @Override
     public void saveProcess(BdmProcess p) throws StorageException {
-        try (FileInputStream in = new FileInputStream(new File(root, p.getProcessId()))) {
+        try (FileInputStream in = new FileInputStream(new File(rootPath, p.getProcessId()))) {
                 BdmProcess savedProcess = Dumpable.load(in, BdmProcess.class, objectMapper);
                 if (savedProcess.getTransactionId() == null || p.getTransactionId() == null || !savedProcess.getTransactionId().equals(p.getTransactionId())) {
                     throw new ConcurrentModificationException("transactionId doesn't match");
@@ -73,9 +73,9 @@ public class FileProcessStorageManager implements ProcessStorageManager {
             throw new StorageException(error, ex);
         }
         
-        try (FileOutputStream out = new FileOutputStream(new File(root, p.getProcessId()))) {
+        try (FileOutputStream out = new FileOutputStream(new File(rootPath, p.getProcessId()))) {
             
-            try (FileInputStream in = new FileInputStream(new File(root, p.getProcessId()))) {
+            try (FileInputStream in = new FileInputStream(new File(rootPath, p.getProcessId()))) {
                 BdmProcess savedProcess = Dumpable.load(in, BdmProcess.class, objectMapper);
                 if (savedProcess.getTransactionId() == null || p.getTransactionId() == null || !savedProcess.getTransactionId().equals(p.getTransactionId())) {
                     throw new ConcurrentModificationException("transactionId doesn't match");
@@ -98,9 +98,9 @@ public class FileProcessStorageManager implements ProcessStorageManager {
     public void deleteProcess(String id) throws StorageException {
 
         try {
-            Files.delete(Paths.get(root, id));
+            Files.delete(Paths.get(rootPath, id));
         } catch (IOException ex) {
-            String error = String.format("Error deleting file: %s ", Paths.get(root, id).toString());
+            String error = String.format("Error deleting file: %s ", Paths.get(rootPath, id).toString());
             log.error(error, ex);
             throw new StorageException(error, ex);
 

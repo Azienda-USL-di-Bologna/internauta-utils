@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.model.entities.bdm.Process;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
@@ -7,12 +9,15 @@ import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
+import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import it.bologna.ausl.model.entities.bdm.QProcess;
+import it.bologna.ausl.model.entities.bdm.TestJson;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.logging.Level;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +40,9 @@ public class DbProcessStorageManager implements ProcessStorageManager {
     @Autowired
     private TransactionTemplate transactionTemplate;
     
+    @Autowired
+    private ObjectMapper objectMapper;
+    
     private final QProcess qProcess = QProcess.process;
 
     @Override
@@ -43,6 +51,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             return transactionTemplate.execute(a -> {
+//                BdmProcess bdmProcess = null;
                 BdmProcess bdmProcess = queryFactory.select(qProcess.jsonProcess).from(qProcess).where(qProcess.id.eq(id)).fetchOne();
                 if (bdmProcess == null) {
                     String error = String.format("Process with id %s not found", id);
@@ -68,21 +77,31 @@ public class DbProcessStorageManager implements ProcessStorageManager {
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             transactionTemplate.executeWithoutResult(a -> {
+//                BdmProcess readBdmProcess = null;
                 BdmProcess readBdmProcess = 
                     queryFactory.query().setLockMode(LockModeType.PESSIMISTIC_WRITE)
                         .select(qProcess.jsonProcess)
                         .from(qProcess)
                         .where(qProcess.id.eq(idProcess)).fetchOne();
+//                BdmProcess testJson = new SampleProcess();
                 if (readBdmProcess != null) {
                     if (readBdmProcess.getTransactionId() == null || p.getTransactionId() == null) {
                         String error = "one of the transactionId is null";
                         log.error(error);
                         throw new ConcurrentModificationException(error);
                     } else if (readBdmProcess.getTransactionId().equals(p.getTransactionId())) {
+                        p.setTransactionId(p.getTransactionId() + 1);
+                        log.info("json processo:");
+                        try {
+                            log.info(objectMapper.writeValueAsString(p));
+                        } catch (JsonProcessingException ex) {
+                            log.error("errore json", ex);
+                        }
                         // il processo esiste e transactionId fanno match, devo fare l'update
                         long updatedRows = queryFactory
                             .update(qProcess)
                             .set(qProcess.jsonProcess, p)
+//                            .set(qProcess.jsonProcess, testJson)
                             .set(qProcess.status, statusProcess)
                             .where(qProcess.id.eq(idProcess))
                             .execute();
