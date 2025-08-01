@@ -14,10 +14,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 /**
  *
@@ -59,7 +59,7 @@ public class UtilityFunctions {
             } else {
                 userpassword = "restuser";
             }
-            String encodedAuthorization = Base64Coder.encodeString(userpassword);
+            String encodedAuthorization = Base64.getEncoder().encodeToString(userpassword.getBytes());
             connection.setRequestProperty("Authorization", "Basic " + encodedAuthorization);
         }
 
@@ -149,7 +149,7 @@ public class UtilityFunctions {
             } else {
                 userpassword = "restuser";
             }
-            String encodedAuthorization = Base64Coder.encodeString(userpassword);
+            String encodedAuthorization = Base64.getEncoder().encodeToString(userpassword.getBytes());
             connection.setRequestProperty("Authorization", "Basic " + encodedAuthorization);
         }
 

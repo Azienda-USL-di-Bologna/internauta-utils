@@ -2,6 +2,7 @@ package it.bologna.ausl.model.entities.bdm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import jakarta.persistence.Basic;
@@ -42,9 +43,11 @@ public class Process {
     @Column(name = "json_process", columnDefinition = "jsonb")
     @Basic(optional = true)
 //    @Type(JsonBinaryType.class)
-    @Embedded
-    @JdbcTypeCode(SqlTypes.JSON)
-    private SampleProcess jsonProcess;
+//    @Embedded
+//    @JdbcTypeCode(SqlTypes.JSON)
+    @Type(JsonType.class)
+//    private TestJson jsonProcess;
+    private BdmProcess jsonProcess;
     
     @Column(name = "status")
     @Basic(optional = false)
@@ -55,7 +58,7 @@ public class Process {
     public Process() {
     }
 
-    public Process(SampleProcess jsonProcess, BdmProcess.BdmStatus status) {
+    public Process(BdmProcess jsonProcess, BdmProcess.BdmStatus status) {
         this.jsonProcess = jsonProcess;
         this.status = status;
     }
@@ -68,11 +71,11 @@ public class Process {
         this.id = id;
     }
 
-    public SampleProcess getJsonProcess() {
+    public BdmProcess getJsonProcess() {
         return jsonProcess;
     }
 
-    public void setJsonProcess(SampleProcess jsonProcess) {
+    public void setJsonProcess(BdmProcess jsonProcess) {
         this.jsonProcess = jsonProcess;
     }
 

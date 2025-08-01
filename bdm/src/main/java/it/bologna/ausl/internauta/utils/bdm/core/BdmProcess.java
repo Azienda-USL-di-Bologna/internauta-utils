@@ -11,10 +11,12 @@ import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import it.bologna.ausl.internauta.utils.bdm.utilities.StepLog;
 import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
+import it.bologna.ausl.internauta.utils.bdm.workflows.tasks.SampleTask;
 import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +34,7 @@ import java.util.stream.Collectors;
     @JsonSubTypes.Type(value = SampleProcess.class, name = "it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess")
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class BdmProcess implements Dumpable {
+public  class BdmProcess implements Dumpable, Serializable {
 
     public static enum ProcessDirection{BACKWARD, FORWARD};
 
@@ -65,11 +67,30 @@ public abstract class BdmProcess implements Dumpable {
     
     private List<StepLog> stepsLog = new ArrayList<>();
 
-    public abstract void init(Bag parameters);
-
-    public abstract String getProcessType();
+    ///////////////////
+    public void init(Bag parameters) {
+        setContext(parameters);
+        Step s = new Step("SampleStep", "Sample Process", Step.StepLogic.SEQ, Arrays.asList(Step.StepLogic.SEQ, Step.StepLogic.ALL));
+        addStep(s);
+        Task t = new SampleTask();
+        s.addTask(t);
+        addStep(s);
+    }
     
-    public abstract String getProcessVersion();
+     public String getProcessVersion() {
+        return "0.1";
+    }
+
+    public String getProcessType() {
+        return this.getClass().toString();
+    }
+
+    
+//    public abstract void init(Bag parameters);
+//
+//    public abstract String getProcessType();
+//    
+//    public abstract String getProcessVersion();
 
     public Integer getTransactionId() {
         return transactionId;

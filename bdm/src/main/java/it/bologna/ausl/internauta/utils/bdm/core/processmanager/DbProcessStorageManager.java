@@ -11,6 +11,7 @@ import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import it.bologna.ausl.model.entities.bdm.QProcess;
+import it.bologna.ausl.model.entities.bdm.TestJson;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -50,6 +51,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             return transactionTemplate.execute(a -> {
+//                BdmProcess bdmProcess = null;
                 BdmProcess bdmProcess = queryFactory.select(qProcess.jsonProcess).from(qProcess).where(qProcess.id.eq(id)).fetchOne();
                 if (bdmProcess == null) {
                     String error = String.format("Process with id %s not found", id);
@@ -75,11 +77,13 @@ public class DbProcessStorageManager implements ProcessStorageManager {
             JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             transactionTemplate.executeWithoutResult(a -> {
+//                BdmProcess readBdmProcess = null;
                 BdmProcess readBdmProcess = 
                     queryFactory.query().setLockMode(LockModeType.PESSIMISTIC_WRITE)
                         .select(qProcess.jsonProcess)
                         .from(qProcess)
                         .where(qProcess.id.eq(idProcess)).fetchOne();
+//                BdmProcess testJson = new SampleProcess();
                 if (readBdmProcess != null) {
                     if (readBdmProcess.getTransactionId() == null || p.getTransactionId() == null) {
                         String error = "one of the transactionId is null";
@@ -96,7 +100,8 @@ public class DbProcessStorageManager implements ProcessStorageManager {
                         // il processo esiste e transactionId fanno match, devo fare l'update
                         long updatedRows = queryFactory
                             .update(qProcess)
-                            .set(qProcess.jsonProcess, (SampleProcess)p)
+                            .set(qProcess.jsonProcess, p)
+//                            .set(qProcess.jsonProcess, testJson)
                             .set(qProcess.status, statusProcess)
                             .where(qProcess.id.eq(idProcess))
                             .execute();
@@ -113,7 +118,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
                 } else {
                     Process process = new Process();
                     process.setId(idProcess);
-                    process.setJsonProcess((SampleProcess)p);
+                    process.setJsonProcess(p);
                     process.setStatus(statusProcess);
                     try {
                         entityManager.persist(process);
