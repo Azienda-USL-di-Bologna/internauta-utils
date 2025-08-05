@@ -69,9 +69,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                    qStoricoRelazione);
 
                 List<Struttura> struttureArrivo = queryFactory
                     .select(qStruttura)

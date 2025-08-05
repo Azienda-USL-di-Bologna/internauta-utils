@@ -1,10 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.model.entities.ribaltonedati;
 
-import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -13,37 +8,39 @@ import java.time.ZonedDateTime;
  *
  * @author Top
  */
-public class UnificazioneEseguita implements Serializable, DatiRibaltoneInterface {
+public class UnificazioneDaGestire implements Serializable {
 
     private Integer idCasellaSorgente;
     private String nomeStrutturaSorgente;
     private String nomeAziendaSorgente;
+    private Integer idAziendaSorgente;
 
     private Integer idCasellaDestinazione;
     private String nomeStrutturaDestinazione;
     private String nomeAziendaDestinazione;
+    private Integer idAziendaDestinazione;
 
     private ZonedDateTime dataAccensioneAttivazione;
 
     private StrutturaUnificata.TipoUnificazione tipoOperazione;
 
-    private Integer idAzienda;
+    private Integer idUnificazione;
 
-    public static UnificazioneEseguita buildUnificazioneEseguita(StrutturaUnificata su) {
-        UnificazioneEseguita ue = new UnificazioneEseguita();
+    public static UnificazioneDaGestire buildUnificazioneEseguita(StrutturaUnificata su) {
+        UnificazioneDaGestire ue = new UnificazioneDaGestire();
+        ue.setIdUnificazione(su.getId());
         ue.setIdCasellaSorgente(su.getIdStrutturaSorgente().getIdCasella());
         ue.setNomeStrutturaSorgente(su.getIdStrutturaSorgente().getNome());
         ue.setNomeAziendaSorgente(su.getIdStrutturaSorgente().getIdAzienda().getNome());
+        ue.setIdAziendaSorgente(su.getIdStrutturaSorgente().getIdAzienda().getId());
 
         ue.setIdCasellaDestinazione(su.getIdStrutturaDestinazione().getIdCasella());
         ue.setNomeStrutturaDestinazione(su.getIdStrutturaDestinazione().getNome());
         ue.setNomeAziendaDestinazione(su.getIdStrutturaDestinazione().getIdAzienda().getNome());
-
+        ue.setIdAziendaDestinazione(su.getIdStrutturaDestinazione().getIdAzienda().getId());
         ue.setDataAccensioneAttivazione(su.getDataAccensioneAttivazione());
 
         ue.setTipoOperazione(su.getTipoOperazione());
-
-        ue.setIdAzienda(su.getIdStrutturaSorgente().getIdAzienda().getId());
 
         return ue;
     }
@@ -112,28 +109,32 @@ public class UnificazioneEseguita implements Serializable, DatiRibaltoneInterfac
         this.tipoOperazione = tipoOperazione;
     }
 
-    @Override
-    public String getKey() {
-        return null;
+    public Integer getIdUnificazione() {
+        return idUnificazione;
     }
 
-    @Override
-    public TipologiaCsv getTipo() {
-        return TipologiaCsv.UNIFICAZIONI;
+    public void setIdUnificazione(Integer idUnificazione) {
+        this.idUnificazione = idUnificazione;
     }
 
-    @Override
     public String getClasse() {
         return DatiImportatiAnagrafica.class.getCanonicalName();
     }
 
-    @Override
-    public Integer getIdAzienda() {
-        return idAzienda;
+    public Integer getIdAziendaSorgente() {
+        return idAziendaSorgente;
     }
 
-    public void setIdAzienda(Integer idAzienda) {
-        this.idAzienda = idAzienda;
+    public void setIdAziendaSorgente(Integer idAziendaSorgente) {
+        this.idAziendaSorgente = idAziendaSorgente;
+    }
+
+    public Integer getIdAziendaDestinazione() {
+        return idAziendaDestinazione;
+    }
+
+    public void setIdAziendaDestinazione(Integer idAziendaDestinazione) {
+        this.idAziendaDestinazione = idAziendaDestinazione;
     }
 
 }

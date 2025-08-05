@@ -92,7 +92,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
                         qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
                     ).fetchOne();
-                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
+                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
             }
             break;
 
@@ -114,9 +114,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                    qStoricoRelazione);
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
