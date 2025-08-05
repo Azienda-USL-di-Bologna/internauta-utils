@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 /**
  *
  * @author andrea
  */
-public interface Dumpable {
+public interface Dumpable extends Serializable{
 
     public static final String BDM_CLASS_TYPE = "__BDM_CLASS_TYPE__";
     

@@ -2,13 +2,16 @@ package it.bologna.ausl.internauta.utils.bdm.utilities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Embeddable;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 
 /**
  *
  * @author gdm
  */
-public class StepLog {
+//@Embeddable
+public class StepLog implements Serializable {
     private String stepId;
     private String stepType;
 

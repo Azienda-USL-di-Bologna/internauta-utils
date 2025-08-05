@@ -2,10 +2,13 @@ package it.bologna.ausl.model.entities.bdm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
+import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,7 +18,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
 import java.util.UUID;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 /**
  *
@@ -37,7 +42,11 @@ public class Process {
     
     @Column(name = "json_process", columnDefinition = "jsonb")
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+//    @Type(JsonBinaryType.class)
+//    @Embedded
+//    @JdbcTypeCode(SqlTypes.JSON)
+    @Type(JsonType.class)
+//    private TestJson jsonProcess;
     private BdmProcess jsonProcess;
     
     @Column(name = "status")
