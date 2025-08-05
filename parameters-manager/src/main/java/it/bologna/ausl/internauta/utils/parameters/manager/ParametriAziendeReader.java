@@ -120,7 +120,8 @@ public class ParametriAziendeReader {
 
     /**
      * Metodo per estrarre tutti i parametri di un'applicazione, in una determinata azienda.Tipico di un processo di inizializzazione.
-     * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente.
+     * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente nel db.
+     * Se app è null allora il filtro viene ignorato e vengono presi i parametri indipendentemene dal valore della colonna id_applicazione
      * @param app
      * @param idAzienda
      * @param includeHiddenFromApi
@@ -134,16 +135,55 @@ public class ParametriAziendeReader {
         BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
 
         BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
-
-        BooleanTemplate applicazioniOverlap = Expressions.booleanTemplate(
+        
+        BooleanExpression applicazioniOverlap = Expressions.TRUE;
+                
+        if (app != null) {
+            applicazioniOverlap = Expressions.booleanTemplate(
                 "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
                 QParametroAziende.parametroAziende.idApplicazioni, app);
-
+        }
         BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
 
         BooleanExpression filter = filterAziendaOrNull.and(applicazioniOverlap
                 .or(applicazioniEmptyArray)
                 .or(applicazioniIsNull));
+        if (!includeHiddenFromApi) {
+            BooleanExpression onlyVisibleOnApi = QParametroAziende.parametroAziende.hideFromApi.eq(false);
+            filter = filter.and(onlyVisibleOnApi);
+        }
+        
+        Iterable<ParametroAziende> parametriFound = parametroAziendeRepository.findAll(filter);
+        Map<String, Object> hashMapParams = new HashMap();
+
+        if (parametriFound != null) {
+            for (ParametroAziende parametroAziende : parametriFound) {
+                hashMapParams.put(parametroAziende.getNome(), parametroAziende.getValore());
+            }
+        }
+
+        return hashMapParams;
+    }
+    
+    /**
+     * Metodo per estrarre tutti i parametri di una azienda. Tipico di un processo di inizializzazione.
+     * @param idAzienda
+     * @param includeHiddenFromApi
+     * @return mappa di nome-valore dei parametri
+     */
+    public Map<String, Object> getAllAziendaParameters(Integer idAzienda, boolean includeHiddenFromApi) {
+
+        BooleanTemplate filterAzienda = Expressions.booleanTemplate(
+                "cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
+                QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
+        BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
+
+        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
+
+        BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
+
+        BooleanExpression filter = filterAziendaOrNull.and(applicazioniEmptyArray.or(applicazioniIsNull));
+        
         if (!includeHiddenFromApi) {
             BooleanExpression onlyVisibleOnApi = QParametroAziende.parametroAziende.hideFromApi.eq(false);
             filter = filter.and(onlyVisibleOnApi);
