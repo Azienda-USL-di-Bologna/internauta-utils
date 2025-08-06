@@ -18,7 +18,7 @@ import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.Map;
 
 /**
  *
@@ -60,8 +60,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     private List<UtenteStruttura> utenteStrutturaDaInserireList = new ArrayList();
     private List<UtenteStruttura> utenteStrutturaDaSpegnereList = new ArrayList();
 
-    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, UnificazionePair pair) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, UnificazionePair pair, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
         this.pair = pair;
     }
 

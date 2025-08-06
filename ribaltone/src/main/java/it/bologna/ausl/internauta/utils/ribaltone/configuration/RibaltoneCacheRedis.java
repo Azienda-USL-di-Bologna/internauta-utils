@@ -99,19 +99,19 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
                 switch (TipologiaCsv.valueOf(operationDaRedis.get("tipo").toString())) {
                     case ANAGRAFICHE -> {
-                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     }
                     case APPARTENENTI -> {
                         List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
-                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit, operationDaRedis.get("nomeCasella").toString()));
+                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
 
                     }
                     case STRUTTURE ->
-                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     case TRASFORMAZIONI ->
-                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     case UNIFICAZIONI_STRUTTURE ->
-                        listOfOperationUnificazioneStruttura.add(new OperationUnificazioneStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()), (List<UnificazioneDaGestire>) operationDaRedis.get("unificazioniEseguite")));
+                        listOfOperationUnificazioneStruttura.add(new OperationUnificazioneStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()), (List<UnificazioneDaGestire>) operationDaRedis.get("unificazioniEseguite"), (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     case UNIFICAZIONI_APPARTENENTI -> {
                         OperationUnificazioneAppartenente.UnificazionePair convertValue = objectMapper.convertValue(operationDaRedis.get("pair"),
                             new TypeReference<OperationUnificazioneAppartenente.UnificazionePair>() {
@@ -121,7 +121,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                                 Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
                                 entitaCoinvolta,
                                 entityManager,
-                                convertValue)
+                                convertValue, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive"))
                         );
                     }
                 }

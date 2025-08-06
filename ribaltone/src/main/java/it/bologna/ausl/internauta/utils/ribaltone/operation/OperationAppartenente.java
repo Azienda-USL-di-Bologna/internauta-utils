@@ -39,6 +39,7 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -57,34 +58,23 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
     private final QStruttura qStruttura = QStruttura.struttura;
     private final QAfferenzaStruttura qffAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
 
-    private String nomeCasella;
     private List<String> listOfEdit;
 
-    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit, String nomeCasella) {
-        super(azione, entitaCoinvolta, entityManager);
-        this.listOfEdit = listOfEdit;
-        this.nomeCasella = nomeCasella;
-    }
-
-    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
         this.listOfEdit = listOfEdit;
     }
 
+//    public OperationAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit) {
+//        super(azione, entitaCoinvolta, entityManager);
+//        this.listOfEdit = listOfEdit;
+//    }
     public List<String> getListOfEdit() {
         return listOfEdit;
     }
 
     public void setListOfEdit(List<String> listOfEdit) {
         this.listOfEdit = listOfEdit;
-    }
-
-    public String getNomeCasella() {
-        return nomeCasella;
-    }
-
-    public void setNomeCasella(String nomeCasella) {
-        this.nomeCasella = nomeCasella;
     }
 
     @Override

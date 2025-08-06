@@ -23,6 +23,7 @@ import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -34,8 +35,8 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
     private List<UnificazioneDaGestire> unificazioniDaGestire;
     private List<Struttura> strutturaPerGestioneContatti;
 
-    public OperationUnificazioneStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, StrutturaUnificata.TipoUnificazione tipoUnificazione, List<UnificazioneDaGestire> unificazioniDaGestire) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationUnificazioneStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, StrutturaUnificata.TipoUnificazione tipoUnificazione, List<UnificazioneDaGestire> unificazioniDaGestire, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
         this.tipoUnificazione = tipoUnificazione;
         this.unificazioniDaGestire = unificazioniDaGestire;
     }

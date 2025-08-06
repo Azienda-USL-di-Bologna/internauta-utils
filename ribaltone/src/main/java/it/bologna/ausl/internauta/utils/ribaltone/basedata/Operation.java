@@ -6,6 +6,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpE
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import jakarta.persistence.EntityManager;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +31,17 @@ public abstract class Operation<T extends DatiRibaltoneInterface> {
 
     private Azione azione;
     private T entitaCoinvolta;
+    private Map<String, String> descrizioniAggiuntive;
+
     @JsonIgnore
     private EntityManager entityManager;
 
-    public Operation(Azione azione, T entitaCoinvolta, EntityManager entityManager) {
+    public Operation(Azione azione, T entitaCoinvolta, EntityManager entityManager, Map<String, String> descrizioniAggiuntive) {
         this.azione = azione;
         this.entitaCoinvolta = entitaCoinvolta;
         this.entityManager = entityManager;
+        this.descrizioniAggiuntive = descrizioniAggiuntive;
+
     }
 
     public TipologiaCsv getTipo() {
@@ -65,6 +70,14 @@ public abstract class Operation<T extends DatiRibaltoneInterface> {
 
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    public Map<String, String> getDescrizioniAggiuntive() {
+        return descrizioniAggiuntive;
+    }
+
+    public void setDescrizioniAggiuntive(Map<String, String> descrizioniAggiuntive) {
+        this.descrizioniAggiuntive = descrizioniAggiuntive;
     }
 
     public abstract void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException;
