@@ -26,11 +26,41 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneInterface> implements Serializable {
 
-    private Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair;
+    public static class UnificazionePair implements Serializable {
+
+        private StrutturaUnificata.TipoUnificazione tipo;
+        private List<StrutturaUnificata> strutture;
+
+        // Costruttore vuoto necessario per Jackson
+        public UnificazionePair() {
+        }
+
+        public UnificazionePair(StrutturaUnificata.TipoUnificazione tipo, List<StrutturaUnificata> strutture) {
+            this.tipo = tipo;
+            this.strutture = strutture;
+        }
+
+        public StrutturaUnificata.TipoUnificazione getTipo() {
+            return tipo;
+        }
+
+        public void setTipo(StrutturaUnificata.TipoUnificazione tipo) {
+            this.tipo = tipo;
+        }
+
+        public List<StrutturaUnificata> getStrutture() {
+            return strutture;
+        }
+
+        public void setStrutture(List<StrutturaUnificata> strutture) {
+            this.strutture = strutture;
+        }
+    }
+    private UnificazionePair pair;
     private List<UtenteStruttura> utenteStrutturaDaInserireList = new ArrayList();
     private List<UtenteStruttura> utenteStrutturaDaSpegnereList = new ArrayList();
 
-    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair) {
+    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, UnificazionePair pair) {
         super(azione, entitaCoinvolta, entityManager);
         this.pair = pair;
     }
@@ -39,7 +69,7 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     public void esegui(Object workToDo, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
         QStruttura qStruttura = QStruttura.struttura;
-        List<StrutturaUnificata> strutturaUnificataList = pair.getRight();
+        List<StrutturaUnificata> strutturaUnificataList = pair.getStrutture();
         switch (getAzione()) {
 
             case INSERT -> {
@@ -117,11 +147,11 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
         }
     }
 
-    public Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> getPair() {
+    public UnificazionePair getPair() {
         return pair;
     }
 
-    public void setPair(Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair) {
+    public void setPair(UnificazionePair pair) {
         this.pair = pair;
     }
 

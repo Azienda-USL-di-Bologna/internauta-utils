@@ -364,19 +364,20 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @throws java.lang.ClassNotFoundException
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    @Transactional(rollbackOn = Throwable.class)
+//    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (hoPermessoPerLanciareRibaltone()) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
             realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
             try {
+
                 ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
                 ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
                 RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
@@ -384,8 +385,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 ribaltoneCache.cleanDataCache();
                 setRibaltoneFinito(idSelectedConfiguration);
                 return new ResponseEntity("tutto ok", HttpStatus.OK);
+
             } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
-                setRibaltoneInCorso(idSelectedConfiguration, realUser);
+                setRibaltoneFinito(idSelectedConfiguration);
                 throw ex;
             }
         } else {
