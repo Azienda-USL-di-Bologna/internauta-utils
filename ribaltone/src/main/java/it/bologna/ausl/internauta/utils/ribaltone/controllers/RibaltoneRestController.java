@@ -364,7 +364,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @throws java.lang.ClassNotFoundException
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-//    @Transactional(rollbackOn = Throwable.class)
+    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
