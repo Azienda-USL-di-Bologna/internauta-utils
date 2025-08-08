@@ -95,24 +95,24 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
 
             }
             case CAMBIO_PADRE, RINOMINA -> {
-                String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
-                DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
+//                String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
+//                DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
 
-                List<Struttura> struttureCoinvolteInTrasformazione = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
-                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza()))
-                    ).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
-                if (struttureCoinvolteInTrasformazione != null
-                    && struttureCoinvolteInTrasformazione.size() == 2) {
-                    Struttura strutturaChiusa = struttureCoinvolteInTrasformazione.get(1);
-                    Struttura strutturaAperta = struttureCoinvolteInTrasformazione.get(0);
-                    OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAperta.getId(), operazione, strutturaAperta.getDataAttivazione().toString());
-
-                } else {
-                    throw new RibaltoneHttpException("strutture coinvolte in trasformaione di cambio padre o rinomina non trovate");
-                }
+//                List<Struttura> struttureCoinvolteInTrasformazione = queryFactory
+//                    .select(qStruttura)
+//                    .from(qStruttura)
+//                    .where(qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
+//                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza()))
+//                    ).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+//                if (struttureCoinvolteInTrasformazione != null
+//                    && struttureCoinvolteInTrasformazione.size() == 2) {
+//                    Struttura strutturaChiusa = struttureCoinvolteInTrasformazione.get(1);
+//                    Struttura strutturaAperta = struttureCoinvolteInTrasformazione.get(0);
+//                    //OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAperta.getId(), operazione, strutturaAperta.getDataAttivazione().toString());
+//
+//                } else {
+//                    throw new RibaltoneHttpException("strutture coinvolte in trasformaione di cambio padre o rinomina non trovate");
+//                }
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
             }
@@ -270,18 +270,11 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     //ora devo pensare a tutti gli utenti struttura
                     List<UtenteStruttura> usAttivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                     List<UtenteStruttura> usDisattivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> !us.getAttivo()).toList();
-                    for (UtenteStruttura us : usAttivi) {
-                        DettaglioContatto idDettaglioContatto = us.getIdDettaglioContatto();
-                        if (idDettaglioContatto == null) {
-                            idDettaglioContatto = new DettaglioContatto();
-                            idDettaglioContatto.setIdContatto(us.getIdUtente().getIdPersona().getIdContatto());
-                            idDettaglioContatto.setEliminato(false);
-                        }
-                        idDettaglioContatto.setIdContattoEsterno(idContattoStruttura);
-                        idDettaglioContatto.setDescrizione(descrizioneContatto + " [" + us.getIdUtente().getIdAzienda().getNome() + "]");
+                    if (usAttivi != null && !usAttivi.isEmpty()) {
+                        DettaglioContatto idDettaglioContatto = usAttivi.get(0).getIdDettaglioContatto();
+                        idDettaglioContatto.setDescrizione(descrizioneContatto + " [" + usAttivi.get(0).getIdUtente().getIdAzienda().getNome() + "]");
                         em.persist(idDettaglioContatto);
                     }
-
                     for (UtenteStruttura usDis : usDisattivi) {
                         usDis.setIdDettaglioContatto(null);
                         em.persist(usDis);

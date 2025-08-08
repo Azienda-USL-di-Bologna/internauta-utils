@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.tuple.Pair;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
@@ -33,6 +34,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,8 +99,9 @@ public class OperationsManager {
      *
      * genera tutte le operazioni che sono da fare da queste si possono generare
      * i report per l'utente o si puo proseguire col ribaltone
+     * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    public Operations buildOperations() throws RibaltoneHttpException {
+    public Operations buildOperations() throws RibaltoneHttpException, JsonProcessingException {
         EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         this.popolaMappeUnificazioni(queryFactory);
@@ -173,7 +176,13 @@ public class OperationsManager {
                 trasf.setCodiceAzienda(daImportareStruttura.getCodiceAzienda());
                 trasf.setCodiceEnte(daImportareStruttura.getCodiceEnte());
                 trasf.setDataTrasformazione(ZonedDateTime.now());
-                Struttura strutturaVecchia = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.idAzienda.id.eq(daImportareStruttura.getIdAzienda()).and(qStruttura.attiva.and(qStruttura.idCasella.eq(daImportareStruttura.getIdCasella())))).fetchOne();
+                Struttura strutturaVecchia = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.idAzienda.id.eq(daImportareStruttura.getIdAzienda())
+                        .and(qStruttura.attiva)
+                        .and(qStruttura.idCasella.eq(daImportareStruttura.getIdCasella()))
+                    ).fetchOne();
                 if (strutturaVecchia != null) {
                     trasf.setDatainPartenza(strutturaVecchia.getDataAttivazione());
                 } else {
@@ -361,10 +370,12 @@ public class OperationsManager {
         return operationAppartenentiList;
     }
 
-    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) {
+    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) throws JsonProcessingException {
         List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
         log.info("Faccio il build delle operations anagrafiche");
         for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {
+            String writeValueAsString = repositoryFactory.getObjectMapper().writeValueAsString(datiDaImportareAnagrafica);
+            log.info(writeValueAsString);
             Operation.Azione azione = Operation.Azione.INSERT;
             Boolean salva = true;
             Integer posizione = indexAnagraficheImportate.get(datiDaImportareAnagrafica.getKey());
@@ -372,7 +383,7 @@ public class OperationsManager {
             if (posizione != null) {
                 if (!anagraficheImportate.get(posizione).getCognome().equals(datiDaImportareAnagrafica.getCognome())
                     || !anagraficheImportate.get(posizione).getNome().equals(datiDaImportareAnagrafica.getNome())
-                    || !anagraficheImportate.get(posizione).getEmail().equals(datiDaImportareAnagrafica.getEmail())) {
+                    || !Objects.equals(anagraficheImportate.get(posizione).getEmail(), datiDaImportareAnagrafica.getEmail())) {
                     azione = Operation.Azione.EDIT;
                 } else {
                     salva = false;

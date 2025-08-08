@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.ribaltone.configuration;
+package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -9,7 +9,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;

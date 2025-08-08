@@ -808,18 +808,21 @@ public class OperationsUtils {
         if (struttura != null) {
             if (persona == null) {
                 persona = new Persona();
+                persona.setIdAziendaDefault(struttura.getIdAzienda());
+                persona.setDescrizione(entitaDaInserire.getCognome() + " " + entitaDaInserire.getNome());
+                persona.setNome(entitaDaInserire.getNome());
+                persona.setCognome(entitaDaInserire.getCognome());
+                persona.setCodiceFiscale(entitaDaInserire.getCodiceFiscale());
             }
             persona.setAttiva(Boolean.TRUE);
-            persona.setNome(entitaDaInserire.getNome());
-            persona.setCognome(entitaDaInserire.getCognome());
-            persona.setCodiceFiscale(entitaDaInserire.getCodiceFiscale());
-            persona.setDescrizione(entitaDaInserire.getCognome() + " " + entitaDaInserire.getNome());
-            persona.setIdAziendaDefault(struttura.getIdAzienda());
 
             //inserire in baborg utenti se non c'è l'utente dell'azienda che lancia il ribaltone
             //nel caso si stia trattando una struttura unificata allora controllo che si sia
             //e nel caso inserisco in quelle aziende l'utente nuovo
-            Utente utente = getUtenteDiIdAzienda(queryFactory, struttura.getIdAzienda().getId(), persona);
+            Utente utente = null;
+            if (persona.getId() != null) {
+                utente = getUtenteDiIdAzienda(queryFactory, struttura.getIdAzienda().getId(), persona);
+            }
             if (utente == null) {
                 utente = new Utente();
                 utente.setIdAzienda(struttura.getIdAzienda());
@@ -831,7 +834,7 @@ public class OperationsUtils {
             utente.setDataSpegnimento(null);
             utente.setIdPersona(persona);
             entityManager.persist(utente);
-
+            entityManager.flush();
             UtenteStruttura utenteStruttura = getUtenteStrutturaAttivo(queryFactory, struttura, utente);
             if (utenteStruttura == null) {
                 utenteStruttura = new UtenteStruttura();
@@ -882,7 +885,9 @@ public class OperationsUtils {
     }
 
     public static Utente getUtenteDiIdAzienda(JPAQueryFactory queryFactory, Integer idAzienda, Persona persona) {
-        if (persona.getId() != null) {
+        if (persona == null) {
+            return null;
+        } else {
             List<Utente> utenti = queryFactory
                 .select(qUtente)
                 .from(qUtente)
@@ -895,13 +900,11 @@ public class OperationsUtils {
                 return utenti.get(0);
 
             }
-        } else {
-            throw new RibaltoneHttpException("persona è null non posso trovare nessun utente");
         }
     }
 
     public static UtenteStruttura getUtenteStrutturaAttivo(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
-        if (struttura != null && utente != null) {
+        if (struttura != null && utente.getId() != null) {
             log.info("utente cf: " + utente.getIdPersona().getCodiceFiscale());
             log.info("utente id: " + utente.getId());
             log.info("struttura id_casella: " + struttura.getIdCasella());
@@ -925,7 +928,10 @@ public class OperationsUtils {
 
     public static AfferenzaStruttura getAfferenzaFromSigla(JPAQueryFactory queryFactory, String sigla, Utente utente) {
         AfferenzaStruttura.CodiciAfferenzaStruttura codice;
-        boolean utenteHaAfferenzaDiretta = !utente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo() && us.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA)).toList().isEmpty();
+        boolean utenteHaAfferenzaDiretta = false;
+        if (utente.getUtenteStrutturaList() != null) {
+            utenteHaAfferenzaDiretta = !utente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo() && us.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA)).toList().isEmpty();
+        }
         if (utenteHaAfferenzaDiretta && !sigla.equalsIgnoreCase("U")) {
             codice = AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE;
         } else {
@@ -934,7 +940,7 @@ public class OperationsUtils {
                     codice = AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE;
                 case "T", "t" ->
                     codice = AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA;
-                case "U" -> {
+                case "U", "u" -> {
                     codice = AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA;
                     break;
                 }

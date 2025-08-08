@@ -157,9 +157,19 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     case INSERT -> {
                         DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                         Struttura strutturaAttiva = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.attiva.and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()))).fetchOne();
-                        List<DatiDaImportareTrasformazione> trasformazioniInerenti = datiDaImportareTrasformazioneList.stream().filter(t -> t.getIdCasellaArrivo().equals(entitaDaInserire.getIdCasella())).toList();
-                        //se non ci sono trasformazioni inerenti è davvero un nuovo utente
+                        List<DatiDaImportareTrasformazione> trasformazioniInerenti = new ArrayList<>();
+                        for (DatiDaImportareTrasformazione t : datiDaImportareTrasformazioneList) {
+                            try {
+                                if (t.getIdCasellaPartenza().equals(entitaDaInserire.getIdCasella()) || (t.getIdCasellaArrivo() != null && t.getIdCasellaArrivo().equals(entitaDaInserire.getIdCasella()))) {
+                                    trasformazioniInerenti.add(t);
+                                }
+                            } catch (Exception e) {
+                                log.error("errore qui, " + t.getIdCasellaPartenza() + "  " + t.getIdCasellaArrivo());
+                                throw e;
+                            }
+                        }
 
+                        //se non ci sono trasformazioni inerenti è davvero un nuovo utente
                         Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())).fetchOne();
                         if (p != null) {
                             Contatto c = p.getIdContatto();

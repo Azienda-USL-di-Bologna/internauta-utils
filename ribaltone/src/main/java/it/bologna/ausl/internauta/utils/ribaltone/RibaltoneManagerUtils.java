@@ -1,11 +1,12 @@
 package it.bologna.ausl.internauta.utils.ribaltone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.cache.OperationsCacheManager;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
@@ -41,7 +42,7 @@ public class RibaltoneManagerUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneManagerUtils.class);
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);

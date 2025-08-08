@@ -118,7 +118,7 @@ public class UnificazioneDaGestire implements Serializable {
     }
 
     public String getClasse() {
-        return DatiImportatiAnagrafica.class.getCanonicalName();
+        return UnificazioneDaGestire.class.getCanonicalName();
     }
 
     public Integer getIdAziendaSorgente() {

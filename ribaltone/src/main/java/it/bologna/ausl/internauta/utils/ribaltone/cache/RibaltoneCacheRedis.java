@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.ribaltone.configuration;
+package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -110,8 +110,21 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     case TRASFORMAZIONI ->
                         listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
-                    case UNIFICAZIONI_STRUTTURE ->
-                        listOfOperationUnificazioneStruttura.add(new OperationUnificazioneStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()), (List<UnificazioneDaGestire>) operationDaRedis.get("unificazioniEseguite"), (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
+                    case UNIFICAZIONI_STRUTTURE -> {
+                        List<UnificazioneDaGestire> unificazioniDaGestireList = objectMapper.convertValue(operationDaRedis.get("unificazioniDaGestire"),
+                            new TypeReference<List<UnificazioneDaGestire>>() {
+                        });
+                        listOfOperationUnificazioneStruttura.add(
+                            new OperationUnificazioneStruttura(
+                                Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
+                                entitaCoinvolta,
+                                entityManager,
+                                StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()),
+                                unificazioniDaGestireList,
+                                (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")
+                            )
+                        );
+                    }
                     case UNIFICAZIONI_APPARTENENTI -> {
                         OperationUnificazioneAppartenente.UnificazionePair convertValue = objectMapper.convertValue(operationDaRedis.get("pair"),
                             new TypeReference<OperationUnificazioneAppartenente.UnificazionePair>() {

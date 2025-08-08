@@ -46,8 +46,6 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
         QStruttura qStruttura = QStruttura.struttura;
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
-        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
-
         switch (getAzione()) {
 
             case INSERT -> {

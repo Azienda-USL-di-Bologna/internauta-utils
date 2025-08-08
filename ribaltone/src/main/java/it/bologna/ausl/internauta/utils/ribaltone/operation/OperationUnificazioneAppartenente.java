@@ -75,7 +75,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
             case INSERT -> {
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
-                    Struttura strutturaDoveInserire = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
+                    StrutturaUnificata strutturaUnificataReload = getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
+                    Struttura strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
 //                    if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
 //                    } else if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
@@ -85,17 +86,21 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
             }
             case CHIUSURA -> {
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
-                for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
+                for (StrutturaUnificata sU : strutturaUnificataList) {
+                    StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
                     Struttura strutturaSorgenteDiAziendaInCuiChiudere = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaChiudere.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
-                    Struttura strutturaDiUtenteDaRimuovere = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                        qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
-                            .and(qStruttura.attiva)
-                            .and(qStruttura.idAzienda.id.eq(strutturaSorgenteDiAziendaInCuiChiudere.getIdAzienda().getId()))
-                    ).orderBy(qStruttura.id.desc()).fetchOne();
-                    if (strutturaDiUtenteDaRimuovere != null) {
-                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere.getIdCasella(), strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+                    if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                        Struttura strutturaDiUtenteDaRimuovere = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+                            qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
+                                .and(qStruttura.attiva)
+                                .and(qStruttura.idAzienda.id.eq(strutturaSorgenteDiAziendaInCuiChiudere.getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                        if (strutturaDiUtenteDaRimuovere != null) {
+                            OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere.getIdCasella(), strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+                        }
                     } else {
-                        throw new RibaltoneHttpException("errore nella gestione degli utenti unificati");
+                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaUnificata.getIdStrutturaDestinazione().getIdCasella(), strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+
                     }
                 }
 
@@ -105,7 +110,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
                 // è il caso di utente che diventa o non è più responsabile,
                 // quindi verificare i permessi di flusso
-                for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
+                for (StrutturaUnificata sU : strutturaUnificataList) {
+                    StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
                     Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
                     Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
                         qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
