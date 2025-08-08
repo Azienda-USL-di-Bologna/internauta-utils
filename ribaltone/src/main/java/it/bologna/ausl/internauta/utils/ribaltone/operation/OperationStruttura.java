@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +39,8 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
     private Struttura strutturaNew;
     private Struttura strutturaChiusa;
 
-    public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
     }
 
     @Override
@@ -92,7 +93,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
                         qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
                     ).fetchOne();
-                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
+                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
             }
             break;
 
@@ -114,9 +115,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                    qStoricoRelazione);
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
