@@ -202,6 +202,8 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
                                         dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
                                         dc.setEliminato(false);
+                                        utenteStruttura.setIdDettaglioContatto(dc);
+                                        entityManager.persist(utenteStruttura);
                                         entityManager.persist(dc);
                                     }
                                     entityManager.refresh(c);
@@ -294,9 +296,11 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 switch (edit) {
                                     case "cognome" -> {
                                         idContatto.setCognome(entitaDaInserire.getCognome());
+                                        idContatto.setDescrizione(entitaDaInserire.getCognome() + " " + entitaDaInserire.getNome());
                                     }
                                     case "nome" -> {
                                         idContatto.setNome(entitaDaInserire.getNome());
+                                        idContatto.setDescrizione(entitaDaInserire.getCognome() + " " + entitaDaInserire.getNome());
                                     }
                                     case "afferenza" -> {
                                         List<DettaglioContatto> dcList = idContatto.getDettaglioContattoList().stream().filter(
@@ -312,7 +316,6 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         }
                                     }
                                     case "responsabile" -> {
-
                                     }
                                     default -> {
                                         log.info(edit);

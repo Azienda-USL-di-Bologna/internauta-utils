@@ -73,7 +73,7 @@ public class OperationsManager {
     private Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaDestinazione;
     private List<OperationUnificazioneStruttura> operationsUnificazioneStruttura = new ArrayList<>();
     private List<OperationUnificazioneAppartenente> operationsUnificazioneAppartenente = new ArrayList<>();
-    private Map<Integer, UnificazionePair> idCaselleUnificateMap = new HashMap<>();
+    private Map<Integer, UnificazionePair> idCaselleReplicateMap = new HashMap<>();
     private Map<String, Integer> indexStruttureDaImportare;
 
     public OperationsManager(DatiDaImportare datiDaImportare, String codiceAzienda, Integer tolleranzaAppartenenti, Integer tolleranzaStrutture, RepositoryFactory repositoryFactory) {
@@ -108,7 +108,7 @@ public class OperationsManager {
 
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsStruttureETrasformazione = buildOperationsStrutture(datiDaImportare.getStruttureDaImportare(), this.struttureImportate, this.indexStruttureImportate, RibaltoneUtils.generateIndex(this.datiDaImportare.getTrasformazioniDaImportare(), DatiDaImportareTrasformazione::getIdCasellaPartenza));
         List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildedOperationsStruttureETrasformazione.get("strutture");
-        List<OperationAppartenente> operationsAppartenenti = buildedOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare());
+        List<OperationAppartenente> operationsAppartenenti = buildedOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare(), queryFactory);
         List<OperationAnagrafica> operationsAnagrafiche = buildedOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsTrasformazioniUnificazioni = buildedOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
         List<OperationTrasformazione> operationsTraformazioni = (List<OperationTrasformazione>) buildedOperationsTrasformazioniUnificazioni.get("trasformazioni");
@@ -186,7 +186,7 @@ public class OperationsManager {
                 if (strutturaVecchia != null) {
                     trasf.setDatainPartenza(strutturaVecchia.getDataAttivazione());
                 } else {
-                    throw new RibaltoneHttpException("rilevata trasformazione su struttura non trovata o inesistente! id casella:" + daImportareStruttura.getIdCasella().toString());
+                    throw new RibaltoneHttpException("rilevata struttura da importare già importata ma non attiva! id casella:" + daImportareStruttura.getIdCasella().toString());
                 }
                 trasf.setIdCasellaPartenza(daImportareStruttura.getIdCasella());
                 trasf.setDataoraOper(ZonedDateTime.now());
@@ -221,7 +221,6 @@ public class OperationsManager {
                 } else {
                     //non è successo nulla è come era prima
                 }
-
             } else {
                 //allora è una nuova
                 DatiDaImportareStruttura casellaPadre = struttureDaImportare.get(indexStruttureDaImportare.get(daImportareStruttura.getIdPadre().toString()));
@@ -265,7 +264,8 @@ public class OperationsManager {
         List<DatiImportatiAppartenente> appartenentiImportati,
         Map<String, Integer> indexAppartenentiImportati,
         List<DatiImportatiStruttura> struttureImportateList,
-        List<DatiDaImportareStruttura> struttureDaImportareList
+        List<DatiDaImportareStruttura> struttureDaImportareList,
+        JPAQueryFactory queryFactory
     ) {
         log.info("Faccio il build delle operations appartenenti");
         List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
@@ -317,8 +317,9 @@ public class OperationsManager {
                     HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                     descrizioniAggiuntive.put("descrizioneCasella", struttura.getDescrizione());
                     operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, descrizioniAggiuntive));
-                    if (idCaselleUnificateMap.containsKey(datiDaImportareAppartenente.getIdCasella())) {
-                        operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleUnificateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
+
+                    if (idCaselleReplicateMap.containsKey(datiDaImportareAppartenente.getIdCasella()) || isCoinvoltoInReplica(struttura, mappaReplichePerIdCasellaSorgente, mappaReplichePerIdCasellaDestinazione, queryFactory) != null) {
+                        operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                     } else if (isCoinvoltoInFusione(datiDaImportareAppartenente.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                         List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(datiDaImportareAppartenente.getIdCasella());
                         UnificazionePair unificazionePair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
@@ -337,14 +338,17 @@ public class OperationsManager {
                     DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(datiDaImportareAppartenente.getIdCasella().toString()));
                     descrizione = struttura.getDescrizione();
                 }
-                if (idCaselleUnificateMap.containsKey(datiDaImportareAppartenente.getIdCasella())) {
-                    operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleUnificateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
+                //non ho fatto bene la comprensione delle repliche
+                DatiDaImportareStruttura struttura = datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
+                if (idCaselleReplicateMap.containsKey(datiDaImportareAppartenente.getIdCasella()) || isCoinvoltoInReplica(struttura, mappaReplichePerIdCasellaSorgente, mappaReplichePerIdCasellaDestinazione, queryFactory) != null) {
+                    operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                 } else if (isCoinvoltoInFusione(datiDaImportareAppartenente.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                     List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(datiDaImportareAppartenente.getIdCasella());
                     //Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
                     UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
                     operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), pair, null));
                 }
+
                 HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                 descrizioniAggiuntive.put("nomeCasella", descrizione);
                 operationAppartenentiList.add(new OperationAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), editString, descrizioniAggiuntive));
@@ -360,8 +364,9 @@ public class OperationsManager {
                 descrizioniAggiuntive.put("nomeCasella", struttura.getDescrizione());
                 operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), null, descrizioniAggiuntive));
                 this.utentiStrutturaChiusi++;
-                if (idCaselleUnificateMap.containsKey(appartenenteImportato.getIdCasella())) {
-                    operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), idCaselleUnificateMap.get(appartenenteImportato.getIdCasella()), null));
+
+                if (idCaselleReplicateMap.containsKey(appartenenteImportato.getIdCasella()) || isCoinvoltoInReplica(struttura, mappaReplichePerIdCasellaSorgente, mappaReplichePerIdCasellaDestinazione, queryFactory) != null) {
+                    operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(appartenenteImportato.getIdCasella()), null));
                 } else if (isCoinvoltoInFusione(appartenenteImportato.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                     List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(appartenenteImportato.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(appartenenteImportato.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(appartenenteImportato.getIdCasella());
                     //Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> paira = Pair.of(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
@@ -414,8 +419,14 @@ public class OperationsManager {
         for (DatiDaImportareTrasformazione datiDaImportareTrasformazione : trasformazioniDaImportare) {
             if (datiDaImportareTrasformazione.getProgressivoRiga() > ultimoProgressivoRiga) {
                 HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
-                descrizioniAggiuntive.put("nomeCasellaSorgente", datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareTrasformazione.getIdCasellaPartenza().toString())).getDescrizione());
-                descrizioniAggiuntive.put("nomeCasellaDestinazione", datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareTrasformazione.getIdCasellaArrivo().toString())).getDescrizione());
+                if (datiDaImportareTrasformazione.getMotivo().equalsIgnoreCase("X")) {
+                    descrizioniAggiuntive.put("nomeCasellaSorgente", struttureImportate.get(indexStruttureImportate.get(datiDaImportareTrasformazione.getIdCasellaPartenza().toString())).getDescrizione());
+                    descrizioniAggiuntive.put("nomeCasellaDestinazione", struttureImportate.get(indexStruttureImportate.get(datiDaImportareTrasformazione.getIdCasellaArrivo().toString())).getDescrizione());
+
+                } else {
+                    descrizioniAggiuntive.put("nomeCasellaSorgente", datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareTrasformazione.getIdCasellaPartenza().toString())).getDescrizione());
+                    descrizioniAggiuntive.put("nomeCasellaDestinazione", datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareTrasformazione.getIdCasellaArrivo().toString())).getDescrizione());
+                }
 
                 operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.CONFLUENZA, datiDaImportareTrasformazione, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
 
@@ -475,13 +486,13 @@ public class OperationsManager {
             List<StrutturaUnificata> strutturaUnificataList = mappaUnificazioniPerIdCasellaSorgente.get(struttura.getIdCasella());
 //            Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
             UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
-            idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
+            idCaselleReplicateMap.put(struttura.getIdCasella(), pair);
             return mappaUnificazioniPerIdCasellaSorgente.get(struttura.getIdCasella());
         } else if (mappaUnificazioniPerIdCasellaDestinazione.containsKey(struttura.getIdCasella())) {
             List<StrutturaUnificata> strutturaUnificataList = mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
 //            Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
             UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
-            idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
+            idCaselleReplicateMap.put(struttura.getIdCasella(), pair);
             return mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
         } else if (struttura.getIdCasellaPadre() != null && !struttura.getIdCasellaPadre().equals(0)) {
             boolean isDatiDaImportare = struttura.getClass().isAssignableFrom(DatiDaImportareStruttura.class);
@@ -507,7 +518,7 @@ public class OperationsManager {
             if (coinvoltoInReplica != null) {
 //                Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> paiar = Pair.of(StrutturaUnificata.TipoUnificazione.REPLICA, coinvoltoInReplica);
                 UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, coinvoltoInReplica);
-                idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
+                idCaselleReplicateMap.put(struttura.getIdCasella(), pair);
             }
             return coinvoltoInReplica;
         } else {
@@ -538,7 +549,7 @@ public class OperationsManager {
             for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
                 unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
             }
-            idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
+            idCaselleReplicateMap.put(struttura.getIdCasella(), pair);
             operationsUnificazioneStruttura.add(new OperationUnificazioneStruttura(azione, struttura, repositoryFactory.getEntityManager(), StrutturaUnificata.TipoUnificazione.FUSIONE, unificazioniEseguite, null));
         }
     }

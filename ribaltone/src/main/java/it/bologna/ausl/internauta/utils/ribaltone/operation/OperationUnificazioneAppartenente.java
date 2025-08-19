@@ -76,7 +76,19 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificataReload = getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
-                    Struttura strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
+                    Struttura strutturaDoveInserire = null;
+                    if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                        strutturaDoveInserire = jPAQueryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(
+                                qStruttura.attiva
+                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaInserire.getIdCasella()))
+                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificataReload.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                            ).fetchOne();
+                    } else {
+                        strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
+                    }
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
 //                    if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
 //                    } else if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
@@ -141,6 +153,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 //devo creare il dettaglio contatto
                 idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
                 getEntityManager().persist(idDettaglioContatto);
+                utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
+                getEntityManager().persist(utenteStrutturaNew);
 
             }
         }
