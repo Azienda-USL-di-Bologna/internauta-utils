@@ -88,44 +88,49 @@ public class OperationsUtils {
                 azienda,
                 false
             );
+            log.info("idCasellaPadre" + idCasellaPadre);
+            log.info("idAzienda" + idAzienda);
+            //da trovare il padre se non c'è devo segnarmela e poi sistemarla a meno che non sia la radice
+            if (idCasellaPadre != null && idCasellaPadre != 0) {
+                Struttura idStrutturaPadre = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva
+                        .and(qStruttura.idCasella.eq(idCasellaPadre))
+                        .and(qStruttura.idAzienda.id.eq(idAzienda))
+                    )
+                    .fetchOne();
 
-            //da trovare il padre se non c'è devo segnarmela e poi sistemarla
-            Struttura idStrutturaPadre = queryFactory
-                .select(qStruttura)
-                .from(qStruttura)
-                .where(qStruttura.attiva
-                    .and(qStruttura.idCasella.eq(idCasellaPadre))
-                    .and(qStruttura.idAzienda.id.eq(idAzienda))
-                )
-                .fetchOne();
+                //Inserire su baborg strutture
+                //Inserire su baborg storico relazione
+                if (idStrutturaPadre != null) {
+                    strutturaDaInserire.setIdStrutturaPadre(idStrutturaPadre);
+                    em.persist(strutturaDaInserire);
+                    em.refresh(strutturaDaInserire);
+                    StoricoRelazione storicoRelazione = new StoricoRelazione();
+                    storicoRelazione.setAttivaDal(ZonedDateTime.now());
+                    storicoRelazione.setIdStrutturaPadre(idStrutturaPadre);
+                    storicoRelazione.setIdStrutturaFiglia(strutturaDaInserire);
+                    em.persist(storicoRelazione);
+                    em.refresh(storicoRelazione);
+                } else {
+                    em.persist(strutturaDaInserire);
+                    em.refresh(strutturaDaInserire);
+                    strutturaDaInserire.getId();
+                    struttureDaAggiornareConPadre = putInMap(struttureDaAggiornareConPadre, strutturaDaInserire, idCasellaPadre);
+                }
+                //ho inserito una struttura quindi cerco se devo collegare qualcosa
+                if (struttureDaAggiornareConPadre.containsKey(strutturaDaInserire.getIdCasella())) {
+                    queryFactory
+                        .update(qStruttura)
+                        .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
+                        .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
 
-            //Inserire su baborg strutture
-            //Inserire su baborg storico relazione
-            if (idStrutturaPadre != null) {
-                strutturaDaInserire.setIdStrutturaPadre(idStrutturaPadre);
-                em.persist(strutturaDaInserire);
-                em.refresh(strutturaDaInserire);
-                StoricoRelazione storicoRelazione = new StoricoRelazione();
-                storicoRelazione.setAttivaDal(ZonedDateTime.now());
-                storicoRelazione.setIdStrutturaPadre(idStrutturaPadre);
-                storicoRelazione.setIdStrutturaFiglia(strutturaDaInserire);
-                em.persist(storicoRelazione);
-                em.refresh(storicoRelazione);
-            } else {
-                em.persist(strutturaDaInserire);
-                em.refresh(strutturaDaInserire);
-                strutturaDaInserire.getId();
-                struttureDaAggiornareConPadre = putInMap(struttureDaAggiornareConPadre, strutturaDaInserire, idCasellaPadre);
+                    struttureDaAggiornareConPadre.remove(strutturaDaInserire.getIdCasella());
+                }
             }
-            //ho inserito una struttura quindi cerco se devo collegare qualcosa
-            if (struttureDaAggiornareConPadre.containsKey(strutturaDaInserire.getIdCasella())) {
-                queryFactory
-                    .update(qStruttura)
-                    .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
-                    .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
-
-                struttureDaAggiornareConPadre.remove(strutturaDaInserire.getIdCasella());
-            }
+            em.persist(strutturaDaInserire);
+            em.refresh(strutturaDaInserire);
             return strutturaDaInserire;
         }
         return null;

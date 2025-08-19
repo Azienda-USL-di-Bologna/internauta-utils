@@ -474,12 +474,12 @@ public class OperationsManager {
             UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
             idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
             return mappaUnificazioniPerIdCasellaSorgente.get(struttura.getIdCasella());
-        } else if (mappaUnificazioniPerIdCasellaDestinazione.containsKey(struttura.getIdCasella())) {
-            List<StrutturaUnificata> strutturaUnificataList = mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
-//            Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
-            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
-            idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
-            return mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
+//        } else if (mappaUnificazioniPerIdCasellaDestinazione.containsKey(struttura.getIdCasella())) {
+//            List<StrutturaUnificata> strutturaUnificataList = mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
+          ////            Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
+//            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, strutturaUnificataList);
+//            idCaselleUnificateMap.put(struttura.getIdCasella(), pair);
+//            return mappaUnificazioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
         } else if (struttura.getIdCasellaPadre() != null && !struttura.getIdCasellaPadre().equals(0)) {
             boolean isDatiDaImportare = struttura.getClass().isAssignableFrom(DatiDaImportareStruttura.class);
             DatiRibaltoneStrutturaInterface strutturaPadre;
