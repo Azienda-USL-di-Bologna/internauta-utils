@@ -197,8 +197,11 @@ public class OperationsManager {
                     DatiDaImportareStruttura casellaPadre = struttureDaImportare.get(indexStruttureDaImportare.get(daImportareStruttura.getIdPadre().toString()));
                     DatiImportatiStruttura casellaPadreVecchio = struttureImportate.get(indexStruttureImportate.get(struttureImportate.get(posizione).getIdPadre().toString()));
                     HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
-                    descrizioniAggiuntive.put("descrizioneCasellaPadre", casellaPadre.getDescrizione());
+                    descrizioniAggiuntive.put("descrizioneCasellaPadreNuovo", casellaPadre.getDescrizione());
                     descrizioniAggiuntive.put("descrizioneCasellaPadreVecchio", casellaPadreVecchio.getDescrizione());
+                    descrizioniAggiuntive.put("idCasellaPadreNuovo", casellaPadre.getIdCasella().toString());
+                    descrizioniAggiuntive.put("idCasellaPadreVecchio", casellaPadreVecchio.getIdCasella().toString());
+                    descrizioniAggiuntive.put("descrizioneCasella", daImportareStruttura.getDescrizione());
                     operationStrutturaList.add(new OperationStruttura(Operation.Azione.CAMBIO_PADRE, daImportareStruttura, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
                     trasf.setMotivo("T");
                     operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.CAMBIO_PADRE, trasf, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
