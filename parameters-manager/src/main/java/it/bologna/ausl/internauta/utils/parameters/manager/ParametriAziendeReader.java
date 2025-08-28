@@ -134,16 +134,19 @@ public class ParametriAziendeReader {
                 QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
         BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
 
-        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
-        
+        BooleanExpression applicazioniEmptyArray = Expressions.TRUE;
         BooleanExpression applicazioniOverlap = Expressions.TRUE;
+        BooleanExpression applicazioniIsNull = Expressions.TRUE;
                 
         if (app != null) {
             applicazioniOverlap = Expressions.booleanTemplate(
                 "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
                 QParametroAziende.parametroAziende.idApplicazioni, app);
+            
+            applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
+            applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
         }
-        BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
+        
 
         BooleanExpression filter = filterAziendaOrNull.and(applicazioniOverlap
                 .or(applicazioniEmptyArray)
@@ -173,32 +176,7 @@ public class ParametriAziendeReader {
      */
     public Map<String, Object> getAllAziendaParameters(Integer idAzienda, boolean includeHiddenFromApi) {
 
-        BooleanTemplate filterAzienda = Expressions.booleanTemplate(
-                "cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
-                QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
-        BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
-
-        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
-
-        BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
-
-        BooleanExpression filter = filterAziendaOrNull.and(applicazioniEmptyArray.or(applicazioniIsNull));
-        
-        if (!includeHiddenFromApi) {
-            BooleanExpression onlyVisibleOnApi = QParametroAziende.parametroAziende.hideFromApi.eq(false);
-            filter = filter.and(onlyVisibleOnApi);
-        }
-        
-        Iterable<ParametroAziende> parametriFound = parametroAziendeRepository.findAll(filter);
-        Map<String, Object> hashMapParams = new HashMap();
-
-        if (parametriFound != null) {
-            for (ParametroAziende parametroAziende : parametriFound) {
-                hashMapParams.put(parametroAziende.getNome(), parametroAziende.getValore());
-            }
-        }
-
-        return hashMapParams;
+        return getAllAziendaApplicazioneParameters(null, idAzienda, includeHiddenFromApi);
     }
 
     /**

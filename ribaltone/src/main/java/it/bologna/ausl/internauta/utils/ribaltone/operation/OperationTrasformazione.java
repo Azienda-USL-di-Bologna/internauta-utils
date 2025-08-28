@@ -235,10 +235,10 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
             }
             case CAMBIO_PADRE -> {
                 //devo cambiare il puntamento
-                DatiDaImportareTrasformazione entitaRinominata = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
+                DatiDaImportareTrasformazione entitaCambioPadre = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                    .where(qStruttura.idCasella.eq(entitaCambioPadre.getIdCasellaPartenza())
+                        .and(qStruttura.idAzienda.codice.eq(entitaCambioPadre.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null) {
@@ -273,12 +273,12 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     em.persist(strutturaDisattiva);
                     strutturaAttiva.setIdContatto(idContattoStruttura);
 
-                    String descrizioneContatto = strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "]";
+                    String descrizioneContattoStruttura = strutturaAttiva.getNome() + " [ " + strutturaAttiva.getIdAzienda().getNome() + " - " + strutturaAttiva.getIdCasella().toString() + "]";
                     idContattoStruttura.setNome(strutturaAttiva.getNome());
-                    idContattoStruttura.setDescrizione(descrizioneContatto);
+                    idContattoStruttura.setDescrizione(descrizioneContattoStruttura);
 
                     DettaglioContatto dc = idContattoStruttura.getDettaglioContattoList().get(0);
-                    dc.setDescrizione("Babel degli utenti di " + descrizioneContatto);
+                    dc.setDescrizione(descrizioneContattoStruttura);
 
                     em.persist(strutturaAttiva);
                     em.persist(idContattoStruttura);
@@ -288,8 +288,14 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     List<UtenteStruttura> usAttivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                     List<UtenteStruttura> usDisattivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> !us.getAttivo()).toList();
                     if (usAttivi != null && !usAttivi.isEmpty()) {
+
                         DettaglioContatto idDettaglioContatto = usAttivi.get(0).getIdDettaglioContatto();
-                        idDettaglioContatto.setDescrizione(descrizioneContatto + " [" + usAttivi.get(0).getIdUtente().getIdAzienda().getNome() + "]");
+                        if (idDettaglioContatto != null) {
+                            idDettaglioContatto.setDescrizione(descrizioneContattoStruttura);
+                        } else {
+                            idDettaglioContatto = usAttivi.get(0).buildDettaglioContatto();
+
+                        }
                         em.persist(idDettaglioContatto);
                     }
                     for (UtenteStruttura usDis : usDisattivi) {
