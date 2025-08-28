@@ -106,8 +106,8 @@ public class Operations implements Serializable {
     }
 
     /**
-     * funzione che si occupa di gestire la parte finale delle operazioni come
-     * prima cosa generazione e manutenzione dei contatti
+     * funzione che si occupa di gestire la parte finale delle operazioni
+     * fa i vari check per verificare che il ribaltone sia andato a buon fine
      *
      * @param repositoryFactory
      * @throws RibaltoneHttpException

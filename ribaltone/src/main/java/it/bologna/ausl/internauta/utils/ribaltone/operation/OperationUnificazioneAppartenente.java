@@ -28,8 +28,14 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
     public static class UnificazionePair implements Serializable {
 
+        public enum DirezioneReplica {
+            PASSATO,
+            FUTURO
+        }
+
         private StrutturaUnificata.TipoUnificazione tipo;
         private List<StrutturaUnificata> strutture;
+        private DirezioneReplica direzioneReplica;
 
         // Costruttore vuoto necessario per Jackson
         public UnificazionePair() {
@@ -100,23 +106,26 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
                 for (StrutturaUnificata sU : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
-                    Struttura strutturaSorgenteDiAziendaInCuiChiudere = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaChiudere.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
+//                    Struttura strutturaSorgenteDiAziendaInCuiChiudere = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaChiudere.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
+                    Struttura strutturaDiUtenteDaRimuovere = strutturaUnificata.getIdStrutturaDestinazione();
                     if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
-                        Struttura strutturaDiUtenteDaRimuovere = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                            qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
-                                .and(qStruttura.attiva)
-                                .and(qStruttura.idAzienda.id.eq(strutturaSorgenteDiAziendaInCuiChiudere.getIdAzienda().getId()))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
-                        if (strutturaDiUtenteDaRimuovere != null) {
-                            OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere.getIdCasella(), strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
-                        }
-                    } else {
-                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaUnificata.getIdStrutturaDestinazione().getIdCasella(), strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+                        strutturaDiUtenteDaRimuovere = jPAQueryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(
+                                qStruttura.attiva
+                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaChiudere.getIdCasella()))
+                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                            ).fetchOne();
 
+                    }
+                    if (strutturaDiUtenteDaRimuovere != null) {
+                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
                     }
                 }
 
             }
+
             case EDIT -> {
                 DatiDaImportareAppartenente entitaDaModificare = (DatiDaImportareAppartenente) getEntitaCoinvolta();
 

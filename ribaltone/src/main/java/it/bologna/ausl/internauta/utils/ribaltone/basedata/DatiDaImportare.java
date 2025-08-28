@@ -34,8 +34,9 @@ public class DatiDaImportare {
     protected Map<String, Integer> indexAnagrafiche;
     private Integer progressivoTrasformazione;
     private final RepositoryFactory repositoryFactory;
+    private Integer idAzienda;
 
-    public DatiDaImportare(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiDaImportareStruttura> struttureDaImportare, List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer progressivoTrasformazione, RepositoryFactory repositoryFactory) {
+    public DatiDaImportare(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiDaImportareStruttura> struttureDaImportare, List<DatiDaImportareAppartenente> appartenentiDaImportare, List<DatiDaImportareTrasformazione> trasformazioniDaImportare, Integer progressivoTrasformazione, RepositoryFactory repositoryFactory, Integer idAzienda) {
         this.anagraficheDaImportare = anagraficheDaImportare;
         this.struttureDaImportare = struttureDaImportare;
         this.appartenentiDaImportare = appartenentiDaImportare;
@@ -47,6 +48,7 @@ public class DatiDaImportare {
         this.indexTrasformazioni = RibaltoneUtils.generateIndex(this.trasformazioniDaImportare, DatiDaImportareTrasformazione::getKey);
         this.indexAppartenenti = RibaltoneUtils.generateIndex(this.appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         this.repositoryFactory = repositoryFactory;
+        this.idAzienda = idAzienda;
     }
 
     public List<DatiDaImportareAnagrafica> getAnagraficheDaImportare() {
@@ -81,6 +83,14 @@ public class DatiDaImportare {
         this.trasformazioniDaImportare = trasformazioniDaImportare;
     }
 
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+
     public DatiDaImportare validate() throws RibaltoneHttpException {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;
@@ -107,12 +117,31 @@ public class DatiDaImportare {
                 List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(this.repositoryFactory);
 
                 List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(this.repositoryFactory);
-                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, this.repositoryFactory);
-
+                datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, this.repositoryFactory, idAzienda);
+                datiDaImportareValidati.transfer();
             }
 
         }
         return datiDaImportareValidati;
+    }
+
+    public void transfer() {
+        repositoryFactory.getDatiDaImportareAnagraficaRepository().deleteByIdAzienda(idAzienda);
+        repositoryFactory.getEntityManager().flush();
+        repositoryFactory.getEntityManager().clear();
+        repositoryFactory.getDatiDaImportareAnagraficaRepository().saveAll(anagraficheDaImportare);
+        repositoryFactory.getDatiDaImportareAppartenenteRepository().deleteByIdAzienda(idAzienda);
+        repositoryFactory.getEntityManager().flush();
+        repositoryFactory.getEntityManager().clear();
+        repositoryFactory.getDatiDaImportareAppartenenteRepository().saveAll(appartenentiDaImportare);
+        repositoryFactory.getDatiDaImportareStrutturaRepository().deleteByIdAzienda(idAzienda);
+        repositoryFactory.getEntityManager().flush();
+        repositoryFactory.getEntityManager().clear();
+        repositoryFactory.getDatiDaImportareStrutturaRepository().saveAll(struttureDaImportare);
+        repositoryFactory.getDatiDaImportareTrasformazioneRepository().deleteByIdAzienda(idAzienda);
+        repositoryFactory.getEntityManager().flush();
+        repositoryFactory.getEntityManager().clear();
+        repositoryFactory.getDatiDaImportareTrasformazioneRepository().saveAll(trasformazioniDaImportare);
     }
 
 //    public UserReport getUserReport() {

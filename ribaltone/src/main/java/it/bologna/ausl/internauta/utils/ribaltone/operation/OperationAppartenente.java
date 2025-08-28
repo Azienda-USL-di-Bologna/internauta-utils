@@ -94,8 +94,16 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             }
             case CHIUSURA -> {
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
+                Struttura strutturaDiUtenteDaRimuovere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(
+                        qStruttura.attiva
+                            .and(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella()))
+                            .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                    ).fetchOne();
 
-                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, entitaDaChiudere.getIdCasella(), entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
+                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
 
             }
             case EDIT -> {

@@ -23,6 +23,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  *
@@ -73,7 +74,8 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     private String errore;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_anagrafica_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_anagrafica_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_anagrafica_id_seq", allocationSize = 1000)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;

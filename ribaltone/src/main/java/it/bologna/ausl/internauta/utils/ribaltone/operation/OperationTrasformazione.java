@@ -245,14 +245,14 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto cDisattivo = strutturaDisattiva.getIdContatto();
-
-                    cDisattivo.setIdStruttura(strutturaAttiva);
-                    strutturaAttiva.setIdContatto(cDisattivo);
-                    strutturaDisattiva.setIdContatto(null);
-
-                    em.persist(cDisattivo);
-                    em.persist(strutturaAttiva);
-                    em.persist(strutturaDisattiva);
+                    if (cDisattivo != null) {
+                        cDisattivo.setIdStruttura(strutturaAttiva);
+                        strutturaAttiva.setIdContatto(cDisattivo);
+                        strutturaDisattiva.setIdContatto(null);
+                        em.persist(cDisattivo);
+                        em.persist(strutturaAttiva);
+                        em.persist(strutturaDisattiva);
+                    }
 
                 }
             }

@@ -114,6 +114,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         List<UnificazioneDaGestire> unificazioniDaGestireList = objectMapper.convertValue(operationDaRedis.get("unificazioniDaGestire"),
                             new TypeReference<List<UnificazioneDaGestire>>() {
                         });
+                        Object direzione = operationDaRedis.get("direzioneReplica");
                         listOfOperationUnificazioneStruttura.add(
                             new OperationUnificazioneStruttura(
                                 Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
@@ -121,7 +122,8 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                                 entityManager,
                                 StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()),
                                 unificazioniDaGestireList,
-                                (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")
+                                (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive"),
+                                direzione != null ? OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica.valueOf(direzione.toString()) : null
                             )
                         );
                     }

@@ -784,10 +784,10 @@ public class OperationsUtils {
         }
     }
 
-    public static void inserisciStrutturaNewInAziendaUnificata(JPAQueryFactory queryFactory, EntityManager em, Struttura strutturaNew, List<Struttura> struttureOld, Operation.Azione azione) {
+    public static void inserisciStrutturaNewInAziendaUnificata(JPAQueryFactory queryFactory, EntityManager em, Struttura strutturaNew, List<Struttura> struttureOld, Operation.Azione azione, StrutturaUnificata su) {
         for (Struttura strutturaOld : struttureOld) {
             if (!strutturaOld.getIdAzienda().getId().equals(strutturaNew.getIdAzienda().getId())) {
-                Struttura strutturaNuovaPerAziendaUnificata = strutturaOld.cloneStrutturaForUnificazione();
+                Struttura strutturaNuovaPerAziendaUnificata = strutturaOld.cloneStrutturaForUnificazione(su);
                 strutturaNuovaPerAziendaUnificata.setIdAzienda(strutturaOld.getIdAzienda());
                 strutturaNuovaPerAziendaUnificata.setIdStrutturaReplicata(strutturaNew);
                 Contatto buildContattoAndDettaglio = strutturaNuovaPerAziendaUnificata.buildContattoAndDettaglio(strutturaOld.getIdContatto().getIdUtenteCreazione(), strutturaOld.getIdContatto().getIdPersonaCreazione(), strutturaOld.getIdContatto().getIdAziende());
@@ -956,14 +956,14 @@ public class OperationsUtils {
         return afferenza;
     }
 
-    public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Integer idCasellaDestinazione, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
+    public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Struttura strutturaSuCuiSpentereUtente, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale()).and(qPersona.attiva)).fetchFirst();
         if (persona != null) {
             Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, idAziendaDestinazione, persona);//                    strutturaAppartenteOriginale = OperationsUtils.getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
             //chiudere in baborg utenti struttura
             //chiudere in baborg utenti se non ci sono afferenze attive
             //chiudere in baborg persone se non ci sono utenti attivi
-            UtenteStruttura utenteStruttura = getUtenteStrutturaAttivoByidCasella(queryFactory, idCasellaDestinazione, utente);
+            UtenteStruttura utenteStruttura = getUtenteStrutturaAttivoByidCasella(queryFactory, strutturaSuCuiSpentereUtente, utente);
             if (utenteStruttura != null) {
                 utenteStruttura.setAttivo(Boolean.FALSE);
                 utenteStruttura.setAttivoAl(ZonedDateTime.now());
@@ -1070,11 +1070,15 @@ public class OperationsUtils {
         }
     }
 
-    private static UtenteStruttura getUtenteStrutturaAttivoByidCasella(JPAQueryFactory queryFactory, Integer idCasella, Utente utente) {
-        if (idCasella != null && utente != null) {
+    private static UtenteStruttura getUtenteStrutturaAttivoByidCasella(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
+        if (struttura != null && utente != null) {
             log.info("utente cf: " + utente.getIdPersona().getCodiceFiscale());
             log.info("utente id: " + utente.getId());
-            log.info("struttura id_casella: " + idCasella);
+            if (struttura.getIdCasella() == null) {
+                log.info("struttura id_casella replicata: " + struttura.getIdStrutturaReplicata().getIdCasella());
+            } else {
+                log.info("struttura id_casella: " + struttura.getIdCasella());
+            }
             Utente userPerQuery = utente;
             if (!utente.getIdAzienda().getId().equals(utente.getIdAzienda().getId())) {
                 List<Utente> utentiDiAziendaDiStruttura = utente.getIdPersona().getUtenteList().stream().filter(u -> (u.getIdAzienda().getId().equals(utente.getIdAzienda().getId()) && u.getAttivo())).toList();
@@ -1086,7 +1090,7 @@ public class OperationsUtils {
                 .select(qUtenteStruttura)
                 .from(qUtenteStruttura)
                 .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
-                    .and(qUtenteStruttura.idStruttura.idCasella.eq(idCasella)).and(qUtenteStruttura.attivo))
+                    .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
                 .fetchFirst();
         } else {
             return null;
