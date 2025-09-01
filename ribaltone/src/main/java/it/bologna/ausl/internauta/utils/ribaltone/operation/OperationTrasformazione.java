@@ -22,6 +22,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.rubrica.GruppiContatti;
+import it.bologna.ausl.model.entities.rubrica.QDettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -140,6 +141,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
         EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
+        QDettaglioContatto qDettaglioContatto = QDettaglioContatto.dettaglioContatto;
         switch (getAzione()) {
             case CONFLUENZA -> {
                 //per le strutture avro gia avuto la insert della struttura e quindi ci sarà gia il contatto della destinzazione
@@ -162,7 +164,18 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 if (strutturaPartenzaList != null && !strutturaPartenzaList.isEmpty() && strutturaDestinazioneList != null && !strutturaDestinazioneList.isEmpty()) {
                     Struttura strutturaPartenza = strutturaPartenzaList.get(0);
                     Struttura strutturaDestinazione = strutturaDestinazioneList.get(0);
-                    List<GruppiContatti> gruppiDelContattoDaRimuovoreList = strutturaPartenza.getIdContatto().getGruppiDelContattoList();
+                    Contatto idContattoPartenza = strutturaPartenza.getIdContatto();
+                    idContattoPartenza.setEliminato(Boolean.TRUE);
+                    idContattoPartenza.setEliminatoDa("ribaltone");
+                    em.persist(idContattoPartenza);
+                    queryFactory
+                        .update(qDettaglioContatto)
+                        .set(qDettaglioContatto.eliminato, true)
+                        .where(qDettaglioContatto.idContatto.id.eq(idContattoPartenza.getId()))
+                        .execute();
+
+                    Contatto idContattoDestinazione = strutturaDestinazione.getIdContatto();
+                    List<GruppiContatti> gruppiDelContattoDaRimuovoreList = idContattoPartenza.getGruppiDelContattoList();
                     //vado nei gruppi e sostituisco il contatto della struttura vecchia con quello nuovo
                     for (GruppiContatti gruppoConContattoDaRimuovere : gruppiDelContattoDaRimuovoreList) {
                         gruppoConContattoDaRimuovere.setEliminato(Boolean.TRUE);
@@ -171,8 +184,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                         GruppiContatti gruppiContatti = new GruppiContatti();
                         gruppiContatti.setEliminato(false);
                         gruppiContatti.setIdGruppo(gruppoConContattoDaRimuovere.getIdGruppo());
-                        gruppiContatti.setIdContatto(strutturaDestinazione.getIdContatto());
-                        gruppiContatti.setIdDettaglioContatto(strutturaDestinazione.getIdContatto().getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale()).toList().get(0));
+                        gruppiContatti.setIdContatto(idContattoDestinazione);
+                        gruppiContatti.setIdDettaglioContatto(idContattoDestinazione.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale()).toList().get(0));
                         em.persist(gruppiContatti);
                     }
                     // 1 cercare contatto utente struttura da morire
@@ -215,8 +228,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                                 em.persist(gruppiContatti);
                             }
                         }
-
                     }
+
                 }
 
             }
@@ -232,14 +245,14 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto cDisattivo = strutturaDisattiva.getIdContatto();
-
-                    cDisattivo.setIdStruttura(strutturaAttiva);
-                    strutturaAttiva.setIdContatto(cDisattivo);
-                    strutturaDisattiva.setIdContatto(null);
-
-                    em.persist(cDisattivo);
-                    em.persist(strutturaAttiva);
-                    em.persist(strutturaDisattiva);
+                    if (cDisattivo != null) {
+                        cDisattivo.setIdStruttura(strutturaAttiva);
+                        strutturaAttiva.setIdContatto(cDisattivo);
+                        strutturaDisattiva.setIdContatto(null);
+                        em.persist(cDisattivo);
+                        em.persist(strutturaAttiva);
+                        em.persist(strutturaDisattiva);
+                    }
 
                 }
             }
@@ -256,6 +269,9 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto idContattoStruttura = strutturaDisattiva.getIdContatto();
+                    strutturaDisattiva.setIdContatto(null);
+                    em.persist(strutturaDisattiva);
+                    strutturaAttiva.setIdContatto(idContattoStruttura);
 
                     String descrizioneContattoStruttura = strutturaAttiva.getNome() + " [ " + strutturaAttiva.getIdAzienda().getNome() + " - " + strutturaAttiva.getIdCasella().toString() + "]";
                     idContattoStruttura.setNome(strutturaAttiva.getNome());
@@ -264,6 +280,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     DettaglioContatto dc = idContattoStruttura.getDettaglioContattoList().get(0);
                     dc.setDescrizione(descrizioneContattoStruttura);
 
+                    em.persist(strutturaAttiva);
                     em.persist(idContattoStruttura);
                     em.persist(dc);
 

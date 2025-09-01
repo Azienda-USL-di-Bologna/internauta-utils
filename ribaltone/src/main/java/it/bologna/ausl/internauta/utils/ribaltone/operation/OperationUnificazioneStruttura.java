@@ -10,6 +10,8 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CONFLUENZA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
@@ -19,9 +21,13 @@ import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
+import it.bologna.ausl.model.entities.rubrica.Contatto;
+import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,12 +39,14 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
 
     private StrutturaUnificata.TipoUnificazione tipoUnificazione;
     private List<UnificazioneDaGestire> unificazioniDaGestire;
-    private List<Struttura> strutturaPerGestioneContatti;
+    private Map<String, List<Struttura>> mappStrutturePerGestioneContatti = new HashMap();
+    private OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica;
 
-    public OperationUnificazioneStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, StrutturaUnificata.TipoUnificazione tipoUnificazione, List<UnificazioneDaGestire> unificazioniDaGestire, Map<String, String> descrizioniAggiuntive) {
+    public OperationUnificazioneStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, StrutturaUnificata.TipoUnificazione tipoUnificazione, List<UnificazioneDaGestire> unificazioniDaGestire, Map<String, String> descrizioniAggiuntive, OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica) {
         super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
         this.tipoUnificazione = tipoUnificazione;
         this.unificazioniDaGestire = unificazioniDaGestire;
+        this.direzioneReplica = direzioneReplica;
     }
 
     @Override
@@ -61,45 +69,56 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     if (strutturaBaborgAperta != null) {
                         for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
                             StrutturaUnificata unificazione = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
-                            Struttura cloneStrutturaForUnificazione = strutturaBaborgAperta.cloneStrutturaForUnificazione();
-                            cloneStrutturaForUnificazione.setIdAzienda(unificazione.getIdStrutturaDestinazione().getIdAzienda());
-                            getEntityManager().persist(cloneStrutturaForUnificazione);
-                            //ora cerco il padre per collegarlo
-                            Struttura strutturaPadreDaCollegare = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
-                                    .and(qStruttura.idCasella.eq(strutturaInserita.getIdCasellaPadre()))
-                                    .and(qStruttura.attiva.eq(Boolean.TRUE))
-                                ).orderBy(qStruttura.id.desc()).fetchOne();
-                            if (strutturaPadreDaCollegare != null) {
-                                cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaPadreDaCollegare);
+                            if (unificazioneDaGestire.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                                Struttura cloneStrutturaForUnificazione = strutturaBaborgAperta.cloneStrutturaForUnificazione(unificazione);
+                                cloneStrutturaForUnificazione.setIdAzienda(unificazione.getIdStrutturaDestinazione().getIdAzienda());
+                                getEntityManager().persist(cloneStrutturaForUnificazione);
+                                List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
+                                if (struttureList == null) {
+                                    struttureList = new ArrayList<>();
+                                }
+                                struttureList.add(cloneStrutturaForUnificazione);
+                                mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
+                                //ora cerco il padre per collegarlo
+                                Struttura strutturaPadreDaCollegare = jPAQueryFactory
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
+                                        .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaInserita.getIdCasellaPadre()))
+                                        .and(qStruttura.attiva.eq(Boolean.TRUE))
+                                    ).orderBy(qStruttura.id.desc()).fetchOne();
+                                if (strutturaPadreDaCollegare != null) {
+                                    cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaPadreDaCollegare);
 
-                                //devo fare la parte di storico relazioni
-                                StoricoRelazione storicoRelazione = new StoricoRelazione();
-                                storicoRelazione.setAttivaDal(ZonedDateTime.now());
-                                storicoRelazione.setIdStrutturaPadre(strutturaPadreDaCollegare);
-                                storicoRelazione.setIdStrutturaFiglia(cloneStrutturaForUnificazione);
-                            }
-
-                            //ora cerco i miei figli per collegarli a me
-                            List<Struttura> struttureFiglieNonAncoraCollegate = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
-                                    .and(qStruttura.idCasellaPadre.eq(strutturaInserita.getIdCasella()))
-                                    .and(qStruttura.attiva.eq(Boolean.TRUE))
-                                    .and(qStruttura.idStrutturaPadre.isNull())
-                                ).fetch();
-                            if (struttureFiglieNonAncoraCollegate != null && !struttureFiglieNonAncoraCollegate.isEmpty()) {
-                                for (Struttura strutturaFigliaDaCollegare : struttureFiglieNonAncoraCollegate) {
-                                    strutturaFigliaDaCollegare.setIdStrutturaPadre(cloneStrutturaForUnificazione);
-                                    getEntityManager().persist(strutturaFigliaDaCollegare);
                                     //devo fare la parte di storico relazioni
                                     StoricoRelazione storicoRelazione = new StoricoRelazione();
                                     storicoRelazione.setAttivaDal(ZonedDateTime.now());
-                                    storicoRelazione.setIdStrutturaPadre(cloneStrutturaForUnificazione);
-                                    storicoRelazione.setIdStrutturaFiglia(strutturaFigliaDaCollegare);
+                                    storicoRelazione.setIdStrutturaPadre(strutturaPadreDaCollegare);
+                                    storicoRelazione.setIdStrutturaFiglia(cloneStrutturaForUnificazione);
+
+                                    getEntityManager().persist(storicoRelazione);
+                                }
+
+                                //ora cerco i miei figli per collegarli a me
+                                List<Struttura> struttureFiglieNonAncoraCollegate = jPAQueryFactory
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
+                                        .and(qStruttura.idStrutturaReplicata.idCasellaPadre.eq(strutturaInserita.getIdCasella()))
+                                        .and(qStruttura.attiva.eq(Boolean.TRUE))
+                                        .and(qStruttura.idStrutturaPadre.isNull())
+                                    ).fetch();
+                                if (struttureFiglieNonAncoraCollegate != null && !struttureFiglieNonAncoraCollegate.isEmpty()) {
+                                    for (Struttura strutturaFigliaDaCollegare : struttureFiglieNonAncoraCollegate) {
+                                        strutturaFigliaDaCollegare.setIdStrutturaPadre(cloneStrutturaForUnificazione);
+                                        getEntityManager().persist(strutturaFigliaDaCollegare);
+                                        //devo fare la parte di storico relazioni
+                                        StoricoRelazione storicoRelazione = new StoricoRelazione();
+                                        storicoRelazione.setAttivaDal(ZonedDateTime.now());
+                                        storicoRelazione.setIdStrutturaPadre(cloneStrutturaForUnificazione);
+                                        storicoRelazione.setIdStrutturaFiglia(strutturaFigliaDaCollegare);
+                                        getEntityManager().persist(storicoRelazione);
+                                    }
                                 }
                             }
                         }
@@ -121,28 +140,21 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
                             getEntityManager().persist(unificazioneDaSpegnere);
                         }
-                        Struttura strutturaBaborgChiusa = jPAQueryFactory
+
+                        Struttura strutturaUnificataBaborgDaChiudere = jPAQueryFactory
                             .select(qStruttura)
                             .from(qStruttura)
-                            .where(qStruttura.idAzienda.id.eq(strutturaChiusa.getIdAzienda())
-                                .and(qStruttura.idCasella.eq(strutturaChiusa.getIdCasella())
-                                    .and(qStruttura.attiva.eq(Boolean.FALSE)))
-                            ).orderBy(qStruttura.id.desc()).fetchOne();
-                        if (strutturaBaborgChiusa != null) {
-                            Integer idStrutturaBaborgSorgenteChiusa = strutturaBaborgChiusa.getId();
-
-                            Struttura strutturaUnificataBaborgDaChiudere = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                    .and(qStruttura.idStrutturaReplicata.id.eq(idStrutturaBaborgSorgenteChiusa))
-                                ).orderBy(qStruttura.id.desc()).fetchOne();
-                            OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
-
-                        } else {
-                            // nulla da chiudere?
-
+                            .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaChiusa.getIdCasella()))
+                            ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
+                        OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
+                        List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
+                        if (struttureList == null) {
+                            struttureList = new ArrayList<>();
                         }
+                        struttureList.add(strutturaUnificataBaborgDaChiudere);
+                        mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
+
                     }
 
                 } else if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
@@ -152,50 +164,52 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaChiusa.getIdCasella())
                             || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaChiusa.getIdCasella())) {
                             StrutturaUnificata unificazioneDaSpegnere = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
-                            if (unificazioneDaSpegnere != null && unificazioneDaSpegnere.getDataDisattivazione() != null) {
+                            if (unificazioneDaSpegnere != null && unificazioneDaSpegnere.getDataDisattivazione() == null) {
                                 unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
                                 getEntityManager().persist(unificazioneDaSpegnere);
                             }
                         }
+
                     }
                 }
             }
             case CAMBIO_PADRE -> {
                 /*
-        Premesso che ho fatto le trasformaizoni delle unificaizoni,
-        e quindi sulla tabella delle unifichazioni tutte le
-        unificaizoni attive riguardano strutture attive
-
-        NB: Escludiamo la gestione del caso in cui un trasferimento comporti
-            l'inserimetno di una struttura già sorgente di replica come
-            figlia di una struttura anch'essa sorgente di replica.
-            Questo caso comporterebbe la doppia replica di una struttura.
-            Essendo caso raro e di difficile gestione lo trascuriamo.
-            Se accaddesse, dovrebbe essere trattabile a mano spegnendo una
-            delle due unficazioni e lanciando uno sposta strutture
-            tra la replica spenta e la replcia rimasta accesa
-
-        CAMBIO_PADRE:
-            - nel caso di fusioni devo solo aggiornare la fusione quindi
-                non faccio nulla Lo sposta strutture delle unificazioni
-                ha già sistemato la tabella unificaizoni
-            - Nel caso di repliche:
-                -- Se sono sorgente di replica non faccio nulla.
-                   Lo sposta strutture delle unificazioni ha già sistemato
-                   la tabella unificaizoni
-            - Se non sorgente allora:
-                -- Query1: Per cominciare spengo tutte le strutture accese che
-                    abbiano come id_struttura_replciata il mio
-                    id_struttura_vecchio, mi faccio tornare anche l'id e
-                    l'id_azienda della struttura spenta
-            - Se come id_struttura_nuovo sono un discendente di replica allora
-              mi replico dove devo:
-                -- Se dalla Query1 ho l'id vecchio (dell'azienda corretta)
-                    allora faccio lo sposta strutture
+                 * Premesso che ho fatto le trasformaizoni delle unificaizoni,
+                 * e quindi sulla tabella delle unifichazioni tutte le
+                 * unificaizoni attive riguardano strutture attive
+                 *
+                 * NB: Escludiamo la gestione del caso in cui un trasferimento comporti
+                 * l'inserimetno di una struttura già sorgente di replica come
+                 * figlia di una struttura anch'essa sorgente di replica.
+                 * Questo caso comporterebbe la doppia replica di una struttura.
+                 * Essendo caso raro e di difficile gestione lo trascuriamo.
+                 * Se accaddesse, dovrebbe essere trattabile a mano spegnendo una
+                 * delle due unficazioni e lanciando uno sposta strutture
+                 * tra la replica spenta e la replcia rimasta accesa
+                 *
+                 * CAMBIO_PADRE:
+                 * - nel caso di fusioni devo solo aggiornare la fusione quindi
+                 * non faccio nulla Lo sposta strutture delle unificazioni
+                 * ha già sistemato la tabella unificaizoni
+                 * - Nel caso di repliche:
+                 * -- Se sono sorgente di replica non faccio nulla.
+                 * Lo sposta strutture delle unificazioni ha già sistemato
+                 * la tabella unificaizoni
+                 * - Se non sorgente allora:
+                 * -- Query1: Per cominciare spengo tutte le strutture accese che
+                 * abbiano come id_struttura_replciata il mio
+                 * id_struttura_vecchio, mi faccio tornare anche l'id e
+                 * l'id_azienda della struttura spenta
+                 * - Se come id_struttura_nuovo sono un discendente di replica allora
+                 * mi replico dove devo:
+                 * -- Se dalla Query1 ho l'id vecchio (dell'azienda corretta)
+                 * allora faccio lo sposta strutture
                  */
                 DatiDaImportareStruttura strutturaTrasferita = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                     for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
+                        StrutturaUnificata unificazione = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaTrasferita.getIdCasella())) {
                             //non devo fare nulla ad aggiornare la l'unificazione ci ha pensato gia lo sposta strutture
                         } else {
@@ -209,7 +223,12 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
                             if (strutturaUnificataBaborgDaChiudere != null) {
                                 Struttura strutturaReplicaChiusa = OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
-
+                                List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
+                                if (struttureList == null) {
+                                    struttureList = new ArrayList<>();
+                                }
+                                struttureList.add(strutturaUnificataBaborgDaChiudere);
+                                mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
                                 Struttura strutturaBaborgAperta = jPAQueryFactory
                                     .select(qStruttura)
                                     .from(qStruttura)
@@ -224,7 +243,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                         .where(qStruttura.idStrutturaReplicata.id.eq(strutturaBaborgAperta.getIdStrutturaPadre().getId()))
                                         .fetch();
                                     for (Struttura strutturaPadre : padriSuCuiMiDevoReplicare) {
-                                        Struttura cloneStrutturaForUnificazione = strutturaBaborgAperta.cloneStrutturaForUnificazione();
+                                        Struttura cloneStrutturaForUnificazione = strutturaBaborgAperta.cloneStrutturaForUnificazione(unificazione);
                                         cloneStrutturaForUnificazione.setIdAzienda(strutturaPadre.getIdAzienda());
                                         cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaPadre);
 
@@ -273,41 +292,59 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                 if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                     //devo rinominare anche dall'altro lato
                     //devo avere la struttura baborg rinominata
-                    Struttura strutturaBaborgAperta = jPAQueryFactory
-                        .select(qStruttura)
-                        .from(qStruttura)
-                        .where(qStruttura.idAzienda.id.eq(strutturaRinominata.getIdAzienda())
-                            .and(qStruttura.idCasella.eq(strutturaRinominata.getIdCasella())
-                                .and(qStruttura.attiva.eq(Boolean.TRUE)))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
+
                     //adesso devo cercare la struttura baborg nell'azienda della replica
-                    if (strutturaBaborgAperta != null) {
-                        for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
-                            Struttura strutturaBaborgReplicaDaChiudere = jPAQueryFactory
+                    for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
+                        StrutturaUnificata unificazione = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
+                        Struttura strutturaBaborgReplicaDaChiudere = jPAQueryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaRinominata.getIdCasella())
+                                    .and(qStruttura.attiva.eq(Boolean.TRUE)))
+                            ).orderBy(qStruttura.id.desc()).fetchOne();
+                        if (strutturaBaborgReplicaDaChiudere != null) {
+                            Struttura idStrutturaReplicata = jPAQueryFactory
                                 .select(qStruttura)
                                 .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                    .and(qStruttura.idStrutturaReplicata.id.eq(strutturaBaborgAperta.getId())
+                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaSorgente())
+                                    .and(qStruttura.idCasella.eq(strutturaRinominata.getIdCasella())
                                         .and(qStruttura.attiva.eq(Boolean.TRUE)))
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
-                            if (strutturaBaborgReplicaDaChiudere != null) {
-                                Struttura cloneStrutturaForUnificazione = strutturaBaborgReplicaDaChiudere.cloneStrutturaForUnificazione();
 
-                                cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere);
-                                cloneStrutturaForUnificazione.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
-                                getEntityManager().persist(cloneStrutturaForUnificazione);
+                            Struttura cloneStrutturaForUnificazione = strutturaBaborgReplicaDaChiudere.cloneStrutturaForUnificazione(unificazione);
+                            cloneStrutturaForUnificazione.setNome(strutturaRinominata.getDescrizione());
+                            cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
+                            cloneStrutturaForUnificazione.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
+                            cloneStrutturaForUnificazione.setIdStrutturaReplicata(idStrutturaReplicata);
+                            StoricoRelazione storicoRelazione = new StoricoRelazione();
+                            storicoRelazione.setAttivaDal(ZonedDateTime.now());
+                            storicoRelazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
+                            storicoRelazione.setIdStrutturaFiglia(cloneStrutturaForUnificazione);
+                            getEntityManager().persist(storicoRelazione);
+                            getEntityManager().refresh(storicoRelazione);
+                            getEntityManager().persist(cloneStrutturaForUnificazione);
+                            getEntityManager().refresh(cloneStrutturaForUnificazione);
 
-                                OperationsUtils.chiudiStruttura(strutturaBaborgReplicaDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
-                                OperationsUtils.spostaStruttura(getEntityManager(),
-                                    strutturaBaborgReplicaDaChiudere.getId(),
-                                    cloneStrutturaForUnificazione.getId(),
-                                    "R",
-                                    ZonedDateTime.now().toString()
-                                );
-
+                            List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
+                            if (struttureList == null) {
+                                struttureList = new ArrayList<>();
                             }
+                            struttureList.add(strutturaBaborgReplicaDaChiudere);
+                            mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
+
+                            OperationsUtils.chiudiStruttura(strutturaBaborgReplicaDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
+
+                            OperationsUtils.spostaStruttura(getEntityManager(),
+                                strutturaBaborgReplicaDaChiudere.getId(),
+                                cloneStrutturaForUnificazione.getId(),
+                                "R",
+                                cloneStrutturaForUnificazione.getDataAttivazione().toString()
+                            );
+
                         }
                     }
+
                 } else if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
                     //non devo fare nulla se non aggiornare la l'unificazione
                 }
@@ -347,6 +384,11 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                     .and(qStruttura.idStrutturaReplicata.id.eq(idStrutturaBaborgSorgenteChiusa))
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
                             OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
+                            List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
+                            if (struttureList == null) {
+                                struttureList = new ArrayList<>();
+                            }
+                            struttureList.add(strutturaUnificataBaborgDaChiudere);
 
                         } else {
                             // nulla da chiudere?
@@ -375,7 +417,59 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
     }
 
     public void menageContattoStutturaUnificata(RepositoryFactory repositoryFactory) {
+        repositoryFactory.getEntityManager();
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
+        QPersona qPersona = QPersona.persona;
+        //forse sposta struttura ci pensa gia alla  gestione dei contatti cambiati di padre o rinominati o chiusi o confluiti
+        Persona ribaltonePersona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchFirst();
+        for (String key : mappStrutturePerGestioneContatti.keySet()) {
+            switch (Azione.valueOf(key)) {
+                case INSERT -> {
+                    for (Struttura str : mappStrutturePerGestioneContatti.get(key)) {
+                        Contatto buildContattoAndDettaglio = str.buildContattoAndDettaglio(ribaltonePersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(str.getIdAzienda().getId())).toList().get(0), ribaltonePersona, null);
+                        str.setIdContatto(buildContattoAndDettaglio);
+                        getEntityManager().persist(str);
+                        getEntityManager().persist(buildContattoAndDettaglio);
+                    }
+                    getEntityManager().flush();
+                }
+                case CAMBIO_PADRE -> {
 
+                }
+                case RINOMINA -> {
+//                    for (Struttura str : mappStrutturePerGestioneContatti.get(key)) {
+//                        Contatto idContatto = str.getIdContatto();
+//                        String descrizioneContattoStruttura = str.getNome() + " [ " + str.getIdAzienda().getNome();
+//                        if (str.getIdCasella() != null) {
+//                            descrizioneContattoStruttura = descrizioneContattoStruttura + " - " + str.getIdCasella().toString() + "]";
+//                        } else {
+//                            descrizioneContattoStruttura = descrizioneContattoStruttura + " ]";
+//                        }
+//                        idContatto.setNome(descrizioneContattoStruttura);
+//                        for (DettaglioContatto dettaglioContatto : idContatto.getDettaglioContattoList()) {
+//                            dettaglioContatto.setDescrizione(descrizioneContattoStruttura);
+//                            getEntityManager().persist(dettaglioContatto);
+//                        }
+//                        getEntityManager().persist(str);
+//                    }
+                }
+                case CONFLUENZA, CHIUSURA -> {
+//                    for (Struttura str : mappStrutturePerGestioneContatti.get(key)) {
+//                        Contatto idContatto = str.getIdContatto();
+//                        idContatto.setEliminato(Boolean.TRUE);
+//                        idContatto.setEliminatoDa("ribaltone");
+//                        for (DettaglioContatto dettaglioContatto : idContatto.getDettaglioContattoList()) {
+//                            dettaglioContatto.setEliminato(true);
+//
+//                            getEntityManager().persist(dettaglioContatto);
+//                        }
+//                        getEntityManager().persist(str);
+//                    }
+                }
+                default ->
+                    throw new AssertionError();
+            }
+        }
     }
 
     public StrutturaUnificata.TipoUnificazione getTipoUnificazione() {
@@ -399,12 +493,20 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
         return DatiRibaltoneInterface.TipologiaCsv.UNIFICAZIONI_STRUTTURE;
     }
 
-    public List<Struttura> getStrutturaPerGestioneContatti() {
-        return strutturaPerGestioneContatti;
+    public Map<String, List<Struttura>> getMappStrutturePerGestioneContatti() {
+        return mappStrutturePerGestioneContatti;
     }
 
-    public void setStrutturaPerGestioneContatti(List<Struttura> strutturaPerGestioneContatti) {
-        this.strutturaPerGestioneContatti = strutturaPerGestioneContatti;
+    public void setMappStrutturePerGestioneContatti(Map<String, List<Struttura>> mappStrutturePerGestioneContatti) {
+        this.mappStrutturePerGestioneContatti = mappStrutturePerGestioneContatti;
+    }
+
+    public OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica getDirezioneReplica() {
+        return direzioneReplica;
+    }
+
+    public void setDirezioneReplica(OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica) {
+        this.direzioneReplica = direzioneReplica;
     }
 
 }

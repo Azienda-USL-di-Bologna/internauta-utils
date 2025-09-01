@@ -82,6 +82,7 @@ public class RibaltoneManagerUtils {
         //recupero i dati da dove dice la conf
         DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
+        datiDaImportareValidated.transfer();
         return datiDaImportareValidated;
     }
 
@@ -139,7 +140,7 @@ public class RibaltoneManagerUtils {
         appartenenti = unisciListeUnichePerCodiceFiscaleIdCasella(appartenenti, fonteAggiuntaAppartenenti);
         anagrafiche = mergeAnagraficheListsOverrideOnCodiceFiscale(anagrafiche, fonteAggiuntaAnagrafica);
         //strutture = mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(strutture, fonteAggiuntaStrutture);
-        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory);
+        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory, idAzienda.getId());
         return datiDaImportare;
     }
 
