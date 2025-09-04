@@ -13,6 +13,8 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +34,11 @@ import org.springframework.format.annotation.DateTimeFormat;
 @GenerateProjections({})
 @DynamicUpdate
 public class FonteAggiuntaAppartenente implements Serializable {
+    
+    public static enum ProvenienzaFonteAggiunta {
+        ORGANIGRAMMA,
+        MATRICE_PERMESSI
+    }
 
     private static final long serialVersionUID = 1L;
 
@@ -103,6 +110,10 @@ public class FonteAggiuntaAppartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
+    
+    @Column(name = "provenienza")
+    @Enumerated(EnumType.STRING)
+    private ProvenienzaFonteAggiunta provenienza;
 
     public Integer getIdAzienda() {
         return idAzienda;
@@ -241,6 +252,14 @@ public class FonteAggiuntaAppartenente implements Serializable {
 
     public void setVersion(ZonedDateTime version) {
         this.version = version;
+    }
+
+    public ProvenienzaFonteAggiunta getProvenienza() {
+        return provenienza;
+    }
+
+    public void setProvenienza(ProvenienzaFonteAggiunta provenienza) {
+        this.provenienza = provenienza;
     }
 
     @Override
