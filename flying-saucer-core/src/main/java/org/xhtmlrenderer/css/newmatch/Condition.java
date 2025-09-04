@@ -368,8 +368,13 @@ abstract class Condition {
         }
     }
 
-    private static class NthChildCondition extends Condition {
-
+    /**
+     * {@code <An+B>} from <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-child">nth-child</a>
+     * Represents elements whose numeric position in a series of siblings matches the pattern An+B,
+     * for every non-negative integer n. The index of the first element is 1.
+     * The values A and B must both be integers.
+     */
+    static class NthChildCondition extends Condition {
         private static final Pattern pattern = Pattern.compile("([-+]?)(\\d*)n(\\s*([-+])\\s*(\\d+))?");
 
         private final int a;
@@ -383,84 +388,50 @@ abstract class Condition {
         @Override
         boolean matches(Node e, AttributeResolver attRes, TreeResolver treeRes) {
             // getPositionOfElement() starts at 0, CSS spec starts at 1
-            int position = treeRes.getPositionOfElement(e)+1;
+            int position = treeRes.getPositionOfElement(e) + 1;
+            return matches(position);
+        }
 
-
-            //<An+B> from https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-child
-            //Represents elements whose numeric position in a series of siblings matches the pattern An+B,
-            //for every positive integer or zero value of n. The index of the first element is 1.
-            //The values A and B must both be <integer>s.
-
-            // an+b generates a sequence b, a+b, 2a+b, 3a+b, 4a+b
-            // e.g. if
-            //a=2 b=3, it generates the sequence: 3, 5, 7, 9, 11... for values of n=0,1,2,3,4...
-            //a=2 b=0, the sequence is 0 (which is moot), 2, 4, 6... - i.e. even
-            //a=2 b=1, gives 1, 3, 5, 7... - i.e. even
-            //a=1 b=2, gives 2, 3, 4, 5, 6... - i.e. not first
-            //a=1 b=3, gives 3, 4, 5, 6, 7...
-            //a=-1 b=5, gives 5, 4, 3, 2, 1. So only matches the first 5 - it won't reverse the order of the elements!
-            //a=-2 b=5, gives 5, 3, 1. So only matches the odd 3 of the first 5
-            //a=0 b=1, gives 1, just the first element
-            //a=0 b=7, gives 7. Just the seventh element
-
-//            p = ( a * n ) + b  - is n zero, or a positive integer?
-//            p-b = ( a * n )
-//            (p-b)/a = n
-
-            //Clearly n==0 iff p==b, for any value of a
-            if ( position == b )
-                return true;
-
-            //And if a==0 then a x n is 0 for all n, and if we didn't match position==b above then n cannot be valid (0 or +ve integer).
-            if ( a == 0 )
-                return false;
-
-            //return true if n is an integer and 0 or +ve
-            // n is 0 or +ve
-            return (((position - b) % a) == 0)   // n is an integer
-                    && (((position - b) / a) >= 0);
-
-//
-//            position -= b;
-//
-//            if (a == 0) {
-//                return position == 0;
-//            } else if ((a < 0) && (position > 0)) {
-//                return false; // n is negative
-//            } else {
-//                return position % a == 0;
-//            }
+        boolean matches(int position) {
+            return switch (a) {
+                case 0 -> position == b;
+                default -> {
+                    int an = position - b;
+                    yield an % a == 0 &&
+                        (an == 0 || an > 0 == a > 0); // effectively same as "an / a >= 0"
+                }
+            };
         }
 
         static NthChildCondition fromString(String number) {
             number = number.trim().toLowerCase(ROOT);
 
-            if ("even".equals(number)) {
-                return new NthChildCondition(2, 0);
-            } else if ("odd".equals(number)) {
-                return new NthChildCondition(2, 1);
-            } else {
-                try {
-                    return new NthChildCondition(0, Integer.parseInt(number));
-                } catch (NumberFormatException e) {
-                    Matcher m = pattern.matcher(number);
+            return switch (number) {
+                case "even" -> new NthChildCondition(2, 0);
+                case "odd" -> new NthChildCondition(2, 1);
+                default -> {
+                    try {
+                        yield new NthChildCondition(0, Integer.parseInt(number));
+                    } catch (NumberFormatException e) {
+                        Matcher m = pattern.matcher(number);
 
-                    if (!m.matches()) {
-                        throw new CSSParseException("Invalid nth-child selector: " + number, -1, e);
-                    } else {
-                        int a = m.group(2).isEmpty() ? 1 : Integer.parseInt(m.group(2));
-                        int b = (m.group(5) == null) ? 0 : Integer.parseInt(m.group(5));
-                        if ("-".equals(m.group(1))) {
-                            a *= -1;
-                        }
-                        if ("-".equals(m.group(4))) {
-                            b *= -1;
-                        }
+                        if (!m.matches()) {
+                            throw new CSSParseException("Invalid nth-child selector: " + number, -1, e);
+                        } else {
+                            int a = m.group(2).isEmpty() ? 1 : Integer.parseInt(m.group(2));
+                            int b = (m.group(5) == null) ? 0 : Integer.parseInt(m.group(5));
+                            if ("-".equals(m.group(1))) {
+                                a *= -1;
+                            }
+                            if ("-".equals(m.group(4))) {
+                                b *= -1;
+                            }
 
-                        return new NthChildCondition(a, b);
+                            yield new NthChildCondition(a, b);
+                        }
                     }
                 }
-            }
+            };
         }
     }
 
@@ -476,7 +447,7 @@ abstract class Condition {
         @Override
         boolean matches(Node e, AttributeResolver attRes, TreeResolver treeRes) {
             int position = treeRes.getPositionOfElement(e);
-            return position >= 0 && position % 2 == 1;
+            return position % 2 == 1;
         }
     }
 

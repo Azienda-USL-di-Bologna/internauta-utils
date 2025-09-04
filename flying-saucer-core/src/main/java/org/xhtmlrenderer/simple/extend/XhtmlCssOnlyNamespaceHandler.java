@@ -52,7 +52,8 @@ import static org.xhtmlrenderer.util.TextUtil.readTextContent;
  */
 public class XhtmlCssOnlyNamespaceHandler extends NoNamespaceHandler {
 
-    private static final String _namespace = "http://www.w3.org/1999/xhtml";
+    private static final String NAMESPACE = "http://www.w3.org/1999/xhtml";
+
     @Nullable
     private static volatile StylesheetInfo _defaultStylesheet;
     private static final AtomicLong inlineCssCounter = new AtomicLong();
@@ -65,7 +66,7 @@ public class XhtmlCssOnlyNamespaceHandler extends NoNamespaceHandler {
     @Override
     @CheckReturnValue
     public String getNamespace() {
-        return _namespace;
+        return NAMESPACE;
     }
 
     /**
@@ -84,26 +85,7 @@ public class XhtmlCssOnlyNamespaceHandler extends NoNamespaceHandler {
     @Nullable
     @CheckReturnValue
     public String getID(Element e) {
-        String result = e.getAttribute("id").trim();
-        return result.isEmpty() ? null : result;
-    }
-
-    protected String convertToLength(String value) {
-        if (isInteger(value)) {
-            return value + "px";
-        } else {
-            return value;
-        }
-    }
-
-    protected boolean isInteger(String value) {
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (! (c >= '0' && c <= '9')) {
-                return false;
-            }
-        }
-        return true;
+        return getAttribute(e, "id");
     }
 
     @Nullable
@@ -119,60 +101,27 @@ public class XhtmlCssOnlyNamespaceHandler extends NoNamespaceHandler {
     @Override
     @CheckReturnValue
     public String getElementStyling(Element e) {
-        StringBuilder style = new StringBuilder();
+        StyleBuilder style = new StyleBuilder();
         switch (e.getNodeName()) {
             case "td":
             case "th": {
-                String s;
-                s = getAttribute(e, "colspan");
-                if (s != null) {
-                    style.append("-fs-table-cell-colspan: ");
-                    style.append(s);
-                    style.append(";");
-                }
-                s = getAttribute(e, "rowspan");
-                if (s != null) {
-                    style.append("-fs-table-cell-rowspan: ");
-                    style.append(s);
-                    style.append(";");
-                }
+                style.append(e, "colspan", "-fs-table-cell-colspan: ");
+                style.append(e, "rowspan", "-fs-table-cell-rowspan: ");
                 break;
             }
             case "img": {
-                String s;
-                s = getAttribute(e, "width");
-                if (s != null) {
-                    style.append("width: ");
-                    style.append(convertToLength(s));
-                    style.append(";");
-                }
-                s = getAttribute(e, "height");
-                if (s != null) {
-                    style.append("height: ");
-                    style.append(convertToLength(s));
-                    style.append(";");
-                }
+                style.appendWidth(e);
+                style.appendHeight(e);
                 break;
             }
             case "colgroup":
             case "col": {
-                String s;
-                s = getAttribute(e, "span");
-                if (s != null) {
-                    style.append("-fs-table-cell-colspan: ");
-                    style.append(s);
-                    style.append(";");
-                }
-                s = getAttribute(e, "width");
-                if (s != null) {
-                    style.append("width: ");
-                    style.append(convertToLength(s));
-                    style.append(";");
-                }
+                style.append(e, "span", "-fs-table-cell-colspan: ");
+                style.appendWidth(e);
                 break;
             }
         }
-        style.append(e.getAttribute("style"));
+        style.appendRawStyle(e.getAttribute("style"));
         return style.toString();
     }
 
@@ -196,22 +145,18 @@ public class XhtmlCssOnlyNamespaceHandler extends NoNamespaceHandler {
         return null;
     }
 
-    private static String collapseWhiteSpace(String text) {
-        StringBuilder result = new StringBuilder();
-        int l = text.length();
-        for (int i = 0; i < l; i++) {
+    static String collapseWhiteSpace(String text) {
+        int length = text.length();
+        char last = '?';
+
+        StringBuilder result = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
             char c = text.charAt(i);
-            if (Character.isWhitespace(c)) {
-                result.append(' ');
-                while (++i < l) {
-                    c = text.charAt(i);
-                    if (! Character.isWhitespace(c)) {
-                        i--;
-                        break;
-                    }
-                }
-            } else {
+            if (Character.isWhitespace(c)) c = ' ';
+
+            if (c != ' ' || last != ' ') {
                 result.append(c);
+                last = c;
             }
         }
         return result.toString();

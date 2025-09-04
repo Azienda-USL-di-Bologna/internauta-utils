@@ -21,6 +21,8 @@ package org.xhtmlrenderer.css.parser;
 
 import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.css.CSSPrimitiveValue;
 import org.xhtmlrenderer.css.constants.CSSName;
 import org.xhtmlrenderer.css.constants.MarginBoxName;
@@ -49,20 +51,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Locale.ROOT;
 import static org.w3c.dom.css.CSSPrimitiveValue.CSS_NUMBER;
 import static org.w3c.dom.css.CSSPrimitiveValue.CSS_PERCENTAGE;
+import static org.xhtmlrenderer.css.newmatch.Selector.ACTIVE_PSEUDOCLASS;
 import static org.xhtmlrenderer.css.newmatch.Selector.Axis.CHILD_AXIS;
 import static org.xhtmlrenderer.css.newmatch.Selector.Axis.DESCENDANT_AXIS;
 import static org.xhtmlrenderer.css.newmatch.Selector.Axis.IMMEDIATE_SIBLING_AXIS;
+import static org.xhtmlrenderer.css.newmatch.Selector.FOCUS_PSEUDOCLASS;
+import static org.xhtmlrenderer.css.newmatch.Selector.HOVER_PSEUDOCLASS;
+import static org.xhtmlrenderer.css.newmatch.Selector.VISITED_PSEUDOCLASS;
 import static org.xhtmlrenderer.css.parser.Token.Type.AT_RULE;
 
 @SuppressWarnings("MissingCasesInEnumSwitch")
 public class CSSParser {
-    private static final Set<String> SUPPORTED_PSEUDO_ELEMENTS = setOf("first-line", "first-letter", "before", "after");
-    private static final Set<String> CSS21_PSEUDO_ELEMENTS = setOf("first-line", "first-letter", "before", "after");
+
+    private static final Logger log = LoggerFactory.getLogger(CSSParser.class);
 
     @Nullable
     private Token _saved;
@@ -519,21 +525,23 @@ public class CSSParser {
         //System.out.println("page()");
         Token t = next();
         try {
-            PageRule pageRule = new PageRule(stylesheet.getOrigin());
             if (t == Token.TK_PAGE_SYM) {
+                String pageName = null;
+                String pseudoPage = null;
+                Map<MarginBoxName, List<PropertyDeclaration>> margins = new HashMap<>();
+
                 skip_whitespace();
                 t = la();
                 if (t == Token.TK_IDENT) {
-                    String pageName = getTokenValue(t);
+                    pageName = getTokenValue(t);
                     if (pageName.equals("auto")) {
                         throw new CSSParseException("page name may not be auto", getCurrentLine());
                     }
                     next();
-                    pageRule.setName(pageName);
                     t = la();
                 }
                 if (t == Token.TK_COLON) {
-                    pageRule.setPseudoPage(pseudo_page());
+                    pseudoPage = pseudo_page();
                 }
                 Ruleset ruleset = new Ruleset(stylesheet.getOrigin());
 
@@ -548,7 +556,7 @@ public class CSSParser {
                             skip_whitespace();
                             break;
                         } else if (t == Token.TK_AT_RULE) {
-                            margin(stylesheet, pageRule);
+                            margins.putAll(margin(stylesheet));
                         } else {
                             declaration_list(ruleset, false, true, false);
                         }
@@ -558,7 +566,7 @@ public class CSSParser {
                     throw new CSSParseException(t, Token.TK_LBRACE, getCurrentLine());
                 }
 
-                pageRule.addContent(ruleset);
+                PageRule pageRule = new PageRule(stylesheet.getOrigin(), pageName, pseudoPage, margins, ruleset);
                 stylesheet.addContent(pageRule);
             } else {
                 push(t);
@@ -573,19 +581,20 @@ public class CSSParser {
 //  margin :
 //    margin_sym S* '{' declaration [ ';' S* declaration? ]* '}' S*
 //    ;
-    private void margin(Stylesheet stylesheet, PageRule pageRule) throws IOException {
+    private Map<MarginBoxName, List<PropertyDeclaration>> margin(Stylesheet stylesheet) throws IOException {
         Token t = next();
         if (t != Token.TK_AT_RULE) {
             error(new CSSParseException(t, Token.TK_AT_RULE, getCurrentLine()), "at rule", true);
             recover(true, false);
-            return;
+            return emptyMap();
         }
+
         String name = getTokenValue(t);
         MarginBoxName marginBoxName = MarginBoxName.valueOf(name);
         if (marginBoxName == null) {
             error(new CSSParseException(name + " is not a valid margin box name", getCurrentLine()), "at rule", true);
             recover(true, false);
-            return;
+            return emptyMap();
         }
 
         skip_whitespace();
@@ -600,7 +609,7 @@ public class CSSParser {
                     push(t);
                     throw new CSSParseException(t, Token.TK_RBRACE, getCurrentLine());
                 }
-                pageRule.addMarginBoxProperties(marginBoxName, ruleset.getPropertyDeclarations());
+                return Map.of(marginBoxName, ruleset.getPropertyDeclarations());
             } else {
                 push(t);
                 throw new CSSParseException(t, Token.TK_LBRACE, getCurrentLine());
@@ -609,6 +618,7 @@ public class CSSParser {
             error(e, "margin box", true);
             recover(false, false);
         }
+        return emptyMap();
     }
 
 
@@ -897,8 +907,8 @@ public class CSSParser {
                  IDENT,
                  VERTICAL_BAR -> {
                 NamespacePair pair = typed_value(false);
-                selector.setNamespaceURI(pair.getNamespaceURI());
-                selector.setName(pair.getName());
+                selector.setNamespaceURI(pair.namespaceURI());
+                selector.setName(pair.name());
 
                 LOOP: while (true) {
                     t = la();
@@ -1069,8 +1079,8 @@ public class CSSParser {
             if (t == Token.TK_IDENT || t == Token.TK_ASTERISK || t == Token.TK_VERTICAL_BAR) {
                 boolean existenceMatch = true;
                 NamespacePair pair = typed_value(true);
-                String attrNamespaceURI = pair.getNamespaceURI();
-                String attrName = pair.getName();
+                String attrNamespaceURI = pair.namespaceURI();
+                String attrName = pair.name();
                 skip_whitespace();
                 t = la();
                 switch (t.getType()) {
@@ -1087,24 +1097,12 @@ public class CSSParser {
                         if (t == Token.TK_IDENT || t == Token.TK_STRING) {
                             String value = getTokenValue(t, true);
                             switch (selectorType.getType()) {
-                                case EQUALS -> {
-                                    selector.addAttributeEqualsCondition(attrNamespaceURI, attrName, value);
-                                }
-                                case DASHMATCH -> {
-                                    selector.addAttributeMatchesFirstPartCondition(attrNamespaceURI, attrName, value);
-                                }
-                                case INCLUDES -> {
-                                    selector.addAttributeMatchesListCondition(attrNamespaceURI, attrName, value);
-                                }
-                                case PREFIXMATCH -> {
-                                    selector.addAttributePrefixCondition(attrNamespaceURI, attrName, value);
-                                }
-                                case SUFFIXMATCH -> {
-                                    selector.addAttributeSuffixCondition(attrNamespaceURI, attrName, value);
-                                }
-                                case SUBSTRINGMATCH -> {
-                                    selector.addAttributeSubstringCondition(attrNamespaceURI, attrName, value);
-                                }
+                                case EQUALS -> selector.addAttributeEqualsCondition(attrNamespaceURI, attrName, value);
+                                case DASHMATCH -> selector.addAttributeMatchesFirstPartCondition(attrNamespaceURI, attrName, value);
+                                case INCLUDES -> selector.addAttributeMatchesListCondition(attrNamespaceURI, attrName, value);
+                                case PREFIXMATCH -> selector.addAttributePrefixCondition(attrNamespaceURI, attrName, value);
+                                case SUFFIXMATCH -> selector.addAttributeSuffixCondition(attrNamespaceURI, attrName, value);
+                                case SUBSTRINGMATCH -> selector.addAttributeSubstringCondition(attrNamespaceURI, attrName, value);
                             }
                             skip_whitespace();
                         } else {
@@ -1140,63 +1138,68 @@ public class CSSParser {
 
     private void addPseudoClassOrElement(Token t, Selector selector) {
         String value = getTokenValue(t);
-        if (value.equals("link")) {
-            selector.addLinkCondition();
-        } else if (value.equals("visited")) {
-            selector.setPseudoClass(Selector.VISITED_PSEUDOCLASS);
-        } else if (value.equals("hover")) {
-            selector.setPseudoClass(Selector.HOVER_PSEUDOCLASS);
-        } else if (value.equals("focus")) {
-            selector.setPseudoClass(Selector.FOCUS_PSEUDOCLASS);
-        } else if (value.equals("active")) {
-            selector.setPseudoClass(Selector.ACTIVE_PSEUDOCLASS);
-        } else if (value.equals("first-child")) {
-            selector.addFirstChildCondition();
-        } else if (value.equals("even")) {
-            selector.addEvenChildCondition();
-        } else if (value.equals("odd")) {
-            selector.addOddChildCondition();
-        } else if (value.equals("last-child")) {
-            selector.addLastChildCondition();
-        } else if (CSS21_PSEUDO_ELEMENTS.contains(value)){
-            selector.setPseudoElement(value);
-        } else {
-            throw new CSSParseException(value + " is not a recognized pseudo-class", getCurrentLine());
+        switch (value) {
+            case "link" ->
+                selector.addLinkCondition();
+            case "visited" ->
+                selector.setPseudoClass(VISITED_PSEUDOCLASS);
+            case "hover" ->
+                selector.setPseudoClass(HOVER_PSEUDOCLASS);
+            case "focus" ->
+                selector.setPseudoClass(FOCUS_PSEUDOCLASS);
+            case "active" ->
+                selector.setPseudoClass(ACTIVE_PSEUDOCLASS);
+            case "first-child" ->
+                selector.addFirstChildCondition();
+            case "even" ->
+                selector.addEvenChildCondition();
+            case "odd" ->
+                selector.addOddChildCondition();
+            case "last-child" ->
+                selector.addLastChildCondition();
+            case "first-line", "first-letter", "before", "after" ->
+                selector.setPseudoElement(value);
+            default ->
+                throw new CSSParseException(value + " is not a recognized pseudo-class", getCurrentLine());
         }
     }
 
     private void addPseudoClassOrElementFunction(Token t, Selector selector) throws IOException {
-        String f = getTokenValue(t);
-        f = f.substring(0, f.length()-1);
+        final String f0 = getTokenValue(t);
+        final String f = f0.substring(0, f0.length() - 1);
 
-        if (f.equals("lang")) {
-            skip_whitespace();
-            t = next();
-            if (t == Token.TK_IDENT) {
-                String lang = getTokenValue(t);
-                selector.addLangCondition(lang);
+        switch (f) {
+            case "lang" -> {
                 skip_whitespace();
                 t = next();
-            } else {
-                push(t);
-                throw new CSSParseException(t, Token.TK_IDENT, getCurrentLine());
+                if (t == Token.TK_IDENT) {
+                    String lang = getTokenValue(t);
+                    selector.addLangCondition(lang);
+                    skip_whitespace();
+                    t = next();
+                } else {
+                    push(t);
+                    throw new CSSParseException(t, Token.TK_IDENT, getCurrentLine());
+                }
             }
-        } else if (f.equals("nth-child")) {
-            StringBuilder number = new StringBuilder();
-            while ((t = next()) != null && (t == Token.TK_IDENT || t == Token.TK_S || t == Token.TK_NUMBER || t == Token.TK_DIMENSION || t == Token.TK_PLUS || t == Token.TK_MINUS)) {
-                number.append(getTokenValue(t));
-            }
+            case "nth-child" -> {
+                StringBuilder number = new StringBuilder();
+                while ((t = next()) != null && (t == Token.TK_IDENT || t == Token.TK_S || t == Token.TK_NUMBER || t == Token.TK_DIMENSION || t == Token.TK_PLUS || t == Token.TK_MINUS)) {
+                    number.append(getTokenValue(t));
+                }
 
-            try {
-                selector.addNthChildCondition(number.toString());
-            } catch (CSSParseException e) {
-                e.setLine(getCurrentLine());
-                push(t);
-                throw e;
+                try {
+                    selector.addNthChildCondition(number.toString());
+                } catch (CSSParseException e) {
+                    e.setLine(getCurrentLine());
+                    push(t);
+                    throw e;
+                }
             }
-        } else {
-            push(t);
-            throw new CSSParseException(f + " is not a valid function in this context", getCurrentLine());
+            default -> {
+                push(t);
+                throw new CSSParseException(f + " is not a valid function in this context", getCurrentLine());
+            }
         }
 
         if (t != Token.TK_RPAREN) {
@@ -1207,10 +1210,12 @@ public class CSSParser {
 
     private void addPseudoElement(Token t, Selector selector) {
         String value = getTokenValue(t);
-        if (SUPPORTED_PSEUDO_ELEMENTS.contains(value)) {
-            selector.setPseudoElement(value);
-        } else {
-            throw new CSSParseException(value + " is not a recognized pseudo-element", getCurrentLine());
+        switch (value) {
+            case "first-line", "first-letter", "before", "after":
+                selector.setPseudoElement(value);
+                break;
+            default:
+                throw new CSSParseException(value + " is not a recognized pseudo-element", getCurrentLine());
         }
     }
 
@@ -1227,12 +1232,8 @@ public class CSSParser {
                     t = next();
                     addPseudoElement(t, selector);
                 }
-                case IDENT -> {
-                    addPseudoClassOrElement(t, selector);
-                }
-                case FUNCTION -> {
-                    addPseudoClassOrElementFunction(t, selector);
-                }
+                case IDENT -> addPseudoClassOrElement(t, selector);
+                case FUNCTION -> addPseudoClassOrElementFunction(t, selector);
                 default -> {
                     push(t);
                     throw new CSSParseException(t,
@@ -1459,21 +1460,33 @@ public class CSSParser {
         }
         final PropertyValue result;
         switch (t.getType()) {
-            case ANGLE,
-                 TIME,
-                 FREQ,
-                 DIMENSION -> {
-                throw new CSSParseException("Unsupported CSS unit " + extractUnit(t), getCurrentLine());
-            }
-            case NUMBER -> {
-                result = new PropertyValue(
-                        CSS_NUMBER,
-                        sign * Float.parseFloat(getTokenValue(t)),
-                        sign(sign) + getTokenValue(t),
-                        operatorToken);
+            case ANGLE -> {
+                String unit = extractUnit(t);
+                short type = switch (unit) {
+                    case "deg" -> CSSPrimitiveValue.CSS_DEG;
+                    case "rad" -> CSSPrimitiveValue.CSS_RAD;
+                    default -> throw new CSSParseException("Unsupported CSS unit " + unit, getCurrentLine());
+                };
+
+                result = new PropertyValue(type,
+                        sign * Float.parseFloat(extractNumber(t)),
+                        sign(sign) + getTokenValue(t));
+
                 next();
                 skip_whitespace();
             }
+
+
+            case TIME, FREQ, DIMENSION -> throw new CSSParseException("Unsupported CSS unit " + extractUnit(t), getCurrentLine());
+            case NUMBER -> {
+                    result = new PropertyValue(
+                            CSS_NUMBER,
+                            sign * Float.parseFloat(getTokenValue(t)),
+                            sign(sign) + getTokenValue(t),
+                            operatorToken);
+                    next();
+                    skip_whitespace();
+                }
             case PERCENTAGE -> {
                 result = new PropertyValue(
                         CSS_PERCENTAGE,
@@ -1584,20 +1597,14 @@ public class CSSParser {
                 next();
                 skip_whitespace();
             }
-            case HASH -> {
-                result = hexcolor(operatorToken);
-            }
-            case FUNCTION -> {
-                result = function(operatorToken);
-            }
-            default -> {
-                throw new CSSParseException(t, new Token[] { Token.TK_NUMBER,
-                        Token.TK_PERCENTAGE, Token.TK_PX, Token.TK_EMS, Token.TK_EXS,
-                        Token.TK_PC, Token.TK_MM, Token.TK_CM, Token.TK_IN, Token.TK_PT,
-                        Token.TK_ANGLE, Token.TK_TIME, Token.TK_FREQ, Token.TK_STRING,
-                        Token.TK_IDENT, Token.TK_URI, Token.TK_HASH, Token.TK_FUNCTION },
-                        getCurrentLine());
-                }
+            case HASH -> result = hexcolor(operatorToken);
+            case FUNCTION -> result = function(operatorToken);
+            default -> throw new CSSParseException(t, new Token[] { Token.TK_NUMBER,
+                    Token.TK_PERCENTAGE, Token.TK_PX, Token.TK_EMS, Token.TK_EXS,
+                    Token.TK_PC, Token.TK_MM, Token.TK_CM, Token.TK_IN, Token.TK_PT,
+                    Token.TK_ANGLE, Token.TK_TIME, Token.TK_FREQ, Token.TK_STRING,
+                    Token.TK_IDENT, Token.TK_URI, Token.TK_HASH, Token.TK_FUNCTION },
+                    getCurrentLine());
         }
         return result;
     }
@@ -1619,7 +1626,7 @@ public class CSSParser {
                 throw new CSSParseException(t, Token.TK_RPAREN, getCurrentLine());
             }
 
-            if (f.equals("rgb(")) {
+            if (f.equals("rgb(") || f.equals("rgba(")) {
                 result = new PropertyValue(createRGBColorFromFunction(params), operatorToken);
             } else if (f.equals("cmyk(")) {
                 if (! isSupportCMYKColors()) {
@@ -1680,48 +1687,52 @@ public class CSSParser {
     }
 
     private FSRGBColor createRGBColorFromFunction(List<PropertyValue> params) {
-        if (params.size() != 3) {
+        if (params.size() != 3 && params.size() != 4) {
             throw new CSSParseException(
-                    "The rgb() function must have exactly three parameters",
+                    "The rgb() function must have three or four parameters",
                     getCurrentLine());
         }
 
-        int red = 0;
-        int green = 0;
-        int blue = 0;
-        for (int i = 0; i < params.size(); i++) {
-            float f = extractRgbValue(i, params.get(i));
+        int red = (int) calculateColor(params, 0);
+        int green = (int) calculateColor(params, 1);
+        int blue = (int) calculateColor(params, 2);
+        float alpha = params.size() < 4 ? 1 : calculateColor(params, 3);
 
-            switch (i) {
-                case 0:
-                    red = (int) f;
-                    break;
-                case 1:
-                    green = (int) f;
-                    break;
-                case 2:
-                    blue = (int) f;
-                    break;
-            }
+        return new FSRGBColor(red, green, blue, alpha);
+    }
+
+    private float calculateColor(List<PropertyValue> params, int index) {
+        PropertyValue value = params.get(index);
+        short type = validateType(index, value);
+
+        float f = switch (type) {
+            case CSS_PERCENTAGE -> value.getFloatValue() / 100 * 255;
+            default -> value.getFloatValue();
+        };
+
+        if (f < 0) {
+            return 0;
+        } else if (f > 255) {
+            return 255;
+        } else {
+            return f;
+        }
+    }
+
+    private short validateType(int index, PropertyValue value) {
+        short type = value.getPrimitiveType();
+        if (type != CSS_PERCENTAGE && type != CSS_NUMBER) {
+            throw new CSSParseException(
+                    "Parameter " + (index +1) + " to the rgb() function is " +
+                    "not a number or percentage", getCurrentLine());
         }
 
-        return new FSRGBColor(red, green, blue);
-    }
-
-    private float extractRgbValue(int i, PropertyValue value) {
-        final short type = value.getPrimitiveType();
-        return switch (type) {
-            case CSS_PERCENTAGE -> fromZeroTo255(value.getFloatValue() / 100 * 255);
-            case CSS_NUMBER -> fromZeroTo255(value.getFloatValue());
-            default -> {
-                String message = String.format("Parameter %s to the rgb() function is not a number or percentage", i + 1);
-                throw new CSSParseException(message, getCurrentLine());
-            }
-        };
-    }
-
-    private static float fromZeroTo255(float f) {
-        return Math.max(0, Math.min(255, f));
+        if (type != CSS_NUMBER && index == 3) {
+            throw new CSSParseException(
+                    "Parameter alpha to the rgba() function is " +
+                    "not a number", getCurrentLine());
+        }
+        return type;
     }
 
     //  /*
@@ -1800,12 +1811,9 @@ public class CSSParser {
 
     private void skip_whitespace_and_cdocdc() throws IOException {
         Token t;
-        while (true) {
+        do {
             t = next();
-            if (! (t == Token.TK_S || t == Token.TK_CDO || t == Token.TK_CDC)) {
-                break;
-            }
-        }
+        } while (t == Token.TK_S || t == Token.TK_CDO || t == Token.TK_CDC);
         push(t);
     }
 
@@ -1924,16 +1932,9 @@ public class CSSParser {
 
                 // Relative URIs are resolved relative to CSS file, not XHTML file
                 if (isRelativeURI(uriResult) && _uri != null) {
-                    int lastSlash = _uri.lastIndexOf('/');
-                    if (lastSlash != -1) {
-                        uriResult = _uri.substring(0, lastSlash + 1) + uriResult;
-                    }
-                } else if (isServerRelativeURI(uriResult) && _uri != null) {
-                    int uriOffset = _uri.indexOf("://") + 3;
-                    int firstSlashAfterProtocol = _uri.substring(uriOffset).indexOf('/');
-                    if (firstSlashAfterProtocol != -1) {
-                        uriResult = _uri.substring(0, uriOffset + firstSlashAfterProtocol) + uriResult;
-                    }
+                    uriResult = getPartBeforeLastSlash(_uri) + uriResult;
+                } else if (isServerRelativeURI(uriResult) && _uri != null && isAbsoluteUri(_uri)) {
+                    uriResult = getPartBeforeFirstSlash(_uri) + uriResult;
                 }
 
                 yield uriResult;
@@ -1956,18 +1957,34 @@ public class CSSParser {
         };
     }
 
-    private boolean isRelativeURI(String uri) {
+    private String getPartBeforeFirstSlash(String uri) {
         try {
-            return !uri.isEmpty() && (uri.charAt(0) != '/' && ! new URI(uri).isAbsolute());
+            URI u = new URI(uri);
+            return u.getRawAuthority() == null ? u.getScheme() : u.getScheme() + "://" + u.getRawAuthority();
         } catch (URISyntaxException e) {
-            return false;
+            throw new IllegalArgumentException("Invalid uri: " + uri, e);
         }
     }
 
+    private String getPartBeforeLastSlash(String uri) {
+        int lastSlash = uri.lastIndexOf('/');
+        return lastSlash == -1 ? "" : uri.substring(0, lastSlash + 1);
+    }
+
+    private boolean isRelativeURI(String uri) {
+        return !uri.isEmpty() && !uri.startsWith("/") && !isAbsoluteUri(uri);
+    }
+
     private boolean isServerRelativeURI(String uri) {
+        return uri.startsWith("/") && !isAbsoluteUri(uri);
+    }
+
+    private boolean isAbsoluteUri(String uri) {
         try {
-            return !uri.isEmpty() && uri.charAt(0) == '/' && !new URI(uri).isAbsolute();
+            return uri.startsWith("http:") || uri.startsWith("https:") ||
+                uri.startsWith("data:") || uri.startsWith("blob:") || new URI(uri).isAbsolute();
         } catch (URISyntaxException e) {
+            log.debug("Invalid uri: {}", uri, e);
             return false;
         }
     }
@@ -2041,25 +2058,6 @@ public class CSSParser {
         _supportCMYKColors = b;
     }
 
-    private static class NamespacePair {
-        private final String _namespaceURI;
-        private final String _name;
-
-        private NamespacePair(String namespaceURI, String name) {
-            _namespaceURI = namespaceURI;
-            _name = name;
-        }
-
-        public String getNamespaceURI() {
-            return _namespaceURI;
-        }
-
-        public String getName() {
-            return _name;
-        }
-    }
-
-    private static Set<String> setOf(String... values) {
-        return Set.of(values);
+    private record NamespacePair(String namespaceURI, String name) {
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.xhtmlrenderer.pdf;
 
-import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 import org.xhtmlrenderer.extend.FSImage;
@@ -46,7 +45,6 @@ public class ITextReplacedElementFactory implements ReplacedElementFactory {
     }
 
     @Nullable
-    @CheckReturnValue
     @Override
     public ReplacedElement createReplacedElement(LayoutContext c, BlockBox box,
                                                  UserAgentCallback uac, int cssWidth, int cssHeight) {
@@ -63,7 +61,7 @@ public class ITextReplacedElementFactory implements ReplacedElementFactory {
                     FSImage fsImage = uac.getImageResource(srcAttr).getImage();
                     if (fsImage != null) {
                         if (cssWidth != -1 || cssHeight != -1) {
-                            fsImage.scale(cssWidth, cssHeight);
+                            fsImage = fsImage.scale(cssWidth, cssHeight);
                         }
                         return new ITextImageElement(fsImage);
                     }
@@ -145,7 +143,6 @@ public class ITextReplacedElementFactory implements ReplacedElementFactory {
     }
 
     @Nullable
-    @CheckReturnValue
     public List<RadioButtonFormField> getRadioButtons(String name) {
         return _radioButtonsByName.get(name);
     }

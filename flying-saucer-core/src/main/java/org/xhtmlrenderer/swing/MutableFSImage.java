@@ -19,6 +19,9 @@
  */
 package org.xhtmlrenderer.swing;
 
+import com.google.errorprone.annotations.CheckReturnValue;
+import org.jspecify.annotations.NonNull;
+import org.xhtmlrenderer.extend.FSImage;
 import org.xhtmlrenderer.util.ImageUtil;
 import org.xhtmlrenderer.util.XRLog;
 
@@ -58,9 +61,12 @@ public class MutableFSImage extends AWTFSImage {
         return img.getHeight(null);
     }
 
+    @NonNull
+    @CheckReturnValue
     @Override
-    public synchronized void scale(int width, int height) {
+    public synchronized FSImage scale(int width, int height) {
         img.getScaledInstance(width, height, Image.SCALE_DEFAULT);
+        return this;
     }
 
     public synchronized void setImage(String uri, BufferedImage newImg, final boolean wasScaled) {
