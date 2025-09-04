@@ -35,12 +35,11 @@ public class ValidatorStrutture extends AbstractValidator {
         List<DatiDaImportareStruttura> struttureValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> struttureNonValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> datiDaImportareStrutture = (List<DatiDaImportareStruttura>) this.datiDaImportare;
+        Integer nRadici = 0;
         for (DatiDaImportareStruttura strutturaDaImportare : datiDaImportareStrutture) {
             String motivoInvalidita = "";
 
             Boolean isValida = true;
-
-            Integer nRadici = 0;
             //caso della radice
             if (strutturaDaImportare.getIdPadre() == null) {
                 nRadici = nRadici + 1;
@@ -99,7 +98,7 @@ public class ValidatorStrutture extends AbstractValidator {
         Optional<DatiImportatiStruttura> findById = repositoryFactory.getDatiImportatiStrutturaRepository().findById(antenatoMorto);
         if (findById.isPresent()) {
             DatiImportatiStruttura strutturaMorta = findById.get();
-            return " id casella " + strutturaMorta.getIdCasella() + " con nome " + strutturaMorta.getDescrizione();
+            return "con id casella " + strutturaMorta.getIdCasella() + " e con nome " + strutturaMorta.getDescrizione();
         }
         return " non trovata anche nella precedente importazione";
     }
