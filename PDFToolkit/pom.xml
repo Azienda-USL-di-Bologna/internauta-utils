@@ -18,12 +18,12 @@
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>flying-saucer-core-local</artifactId>
-            <version>9.10.2</version>
+            <version>9.13.3</version>
         </dependency>
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>flying-saucer-pdf-local</artifactId>
-            <version>9.10.2</version>
+            <version>9.13.3</version>
             <type>jar</type>
         </dependency>
          <dependency>
@@ -83,7 +83,7 @@
         <dependency>
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
-            <version>2.2.4</version>
+            <version>3.0.0</version>
         </dependency>
         
 <!--        <dependency>
