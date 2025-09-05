@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.pdfgeneratorfromtemplate;
 
-import com.lowagie.text.DocumentException;
+import org.openpdf.text.DocumentException;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateModelException;

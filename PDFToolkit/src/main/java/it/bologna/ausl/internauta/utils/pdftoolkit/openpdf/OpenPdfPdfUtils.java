@@ -1,9 +1,9 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.exceptions.BadPasswordException;
-import com.lowagie.text.pdf.PdfEncryption;
-import com.lowagie.text.pdf.PdfReader;
+import org.openpdf.text.DocumentException;
+import org.openpdf.text.exceptions.BadPasswordException;
+import org.openpdf.text.pdf.PdfEncryption;
+import org.openpdf.text.pdf.PdfReader;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -87,7 +87,7 @@ public class OpenPdfPdfUtils {
 //        }
 //    }
     
-    public static boolean isPdfAMarked(com.lowagie.text.pdf.PdfReader pdfReader) {
+    public static boolean isPdfAMarked(org.openpdf.text.pdf.PdfReader pdfReader) {
         try {
             if (pdfReader.getMetadata() != null) {
                 String regex = "pdfaid:conformance\\s*(>?\\s*|=\\s*\\\"?)\\s*A";
@@ -105,7 +105,7 @@ public class OpenPdfPdfUtils {
         boolean isAllPdfAMarked = false;
         try {
             for (InputStream file : files) {
-                try (com.lowagie.text.pdf.PdfReader reader = new com.lowagie.text.pdf.PdfReader(file)) {
+                try (org.openpdf.text.pdf.PdfReader reader = new org.openpdf.text.pdf.PdfReader(file)) {
                     isAllPdfAMarked = isPdfAMarked(reader);
                     if (!isAllPdfAMarked) {
                         break;
@@ -134,36 +134,36 @@ public class OpenPdfPdfUtils {
     public static byte[] mergePdfOpenPdf(ArrayList<File> inputFiles, InputStream iccProfileStream, String title) throws IOException {
         boolean pdfa = true;
         InputStream is = null;
-        com.lowagie.text.pdf.PdfReader reader = null;
-        com.lowagie.text.Document document = null;
-        com.lowagie.text.Document documentPdfA = null;
-        com.lowagie.text.pdf.PdfCopy cp = null;
-        com.lowagie.text.pdf.PdfCopy cpPdfA = null;
+        org.openpdf.text.pdf.PdfReader reader = null;
+        org.openpdf.text.Document document = null;
+        org.openpdf.text.Document documentPdfA = null;
+        org.openpdf.text.pdf.PdfCopy cp = null;
+        org.openpdf.text.pdf.PdfCopy cpPdfA = null;
         ByteArrayOutputStream tempos = new ByteArrayOutputStream();
         ByteArrayOutputStream temposPdfA = new ByteArrayOutputStream();
         try {
             is = new FileInputStream(inputFiles.get(0));
-            reader = new com.lowagie.text.pdf.PdfReader(is);
+            reader = new org.openpdf.text.pdf.PdfReader(is);
             removeSignsOpenPdf(reader);
             pdfa = pdfa && isPdfAMarked(reader);
             
             if (pdfa) {
-                documentPdfA = new com.lowagie.text.Document(reader.getPageSizeWithRotation(1));
-                cpPdfA = new com.lowagie.text.pdf.PdfCopy(documentPdfA, temposPdfA);
-                cpPdfA.setPDFXConformance(com.lowagie.text.pdf.PdfWriter.PDFA1A);
-                cpPdfA.setPdfVersion(com.lowagie.text.pdf.PdfWriter.PDF_VERSION_1_7);
+                documentPdfA = new org.openpdf.text.Document(reader.getPageSizeWithRotation(1));
+                cpPdfA = new org.openpdf.text.pdf.PdfCopy(documentPdfA, temposPdfA);
+                cpPdfA.setPDFXConformance(org.openpdf.text.pdf.PdfWriter.PDFA1A);
+                cpPdfA.setPdfVersion(org.openpdf.text.pdf.PdfWriter.PDF_VERSION_1_7);
                 documentPdfA.open();
             } else {
                 IOUtils.close(temposPdfA);
                 temposPdfA = null;
             }
-            document = new com.lowagie.text.Document(reader.getPageSizeWithRotation(1));
-            cp = new com.lowagie.text.pdf.PdfCopy(document, tempos);
+            document = new org.openpdf.text.Document(reader.getPageSizeWithRotation(1));
+            cp = new org.openpdf.text.pdf.PdfCopy(document, tempos);
             document.open();
             for (int i = 0; i < inputFiles.size(); i++) {
                 if (i > 0) {
                     is = new FileInputStream(inputFiles.get(i));
-                    reader = new com.lowagie.text.pdf.PdfReader(is);
+                    reader = new org.openpdf.text.pdf.PdfReader(is);
                 }
                 pdfa = pdfa && isPdfAMarked(reader);
                 if (!pdfa && temposPdfA != null) {
@@ -184,11 +184,11 @@ public class OpenPdfPdfUtils {
                 IOUtils.closeQuietly(is);
             }
             if (title == null) {
-                title = reader.getInfo().get(com.lowagie.text.pdf.PdfName.decodeName(com.lowagie.text.pdf.PdfName.TITLE.toString()));
+                title = reader.getInfo().get(org.openpdf.text.pdf.PdfName.decodeName(org.openpdf.text.pdf.PdfName.TITLE.toString()));
             }
-            cp.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title));
+            cp.getInfo().put(org.openpdf.text.pdf.PdfName.TITLE, new org.openpdf.text.pdf.PdfString(title));
             if (pdfa) {
-                cpPdfA.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title));
+                cpPdfA.getInfo().put(org.openpdf.text.pdf.PdfName.TITLE, new org.openpdf.text.pdf.PdfString(title));
             }
             if (pdfa) {
                 OpenPdfMetadataUtils.writeExtraCatalog(cpPdfA, iccProfileStream);
@@ -239,10 +239,10 @@ public class OpenPdfPdfUtils {
      * Rimuove i campi firma dal reader. Utile da usare in caso di merge per evitare di avere i campi firma nel risultato
      * @param reader 
      */
-    public static void removeSignsOpenPdf(com.lowagie.text.pdf.PdfReader reader) {
+    public static void removeSignsOpenPdf(org.openpdf.text.pdf.PdfReader reader) {
         try {
             List<String> signatureNames = reader.getAcroFields().getSignedFieldNames();
-            com.lowagie.text.pdf.AcroFields acroFields = reader.getAcroFields();
+            org.openpdf.text.pdf.AcroFields acroFields = reader.getAcroFields();
             for (String signatureName : signatureNames) {
                 // se la larghezza e l'altezza del rettangolo in cui la firma è posizionata sono diverso da 0 allora il campo firma è visibile.
                 // se è visibile posso rimuovere il campo
