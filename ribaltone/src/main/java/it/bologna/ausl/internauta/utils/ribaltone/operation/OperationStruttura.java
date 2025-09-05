@@ -16,12 +16,14 @@ import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
+import it.bologna.ausl.model.entities.baborg.StoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -129,7 +131,21 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     qStruttura,
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
+                //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
 
+                List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
+                for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
+                    storicoRelazione.setAttivaAl(ZonedDateTime.now());
+
+                    StoricoRelazione storicoRelazioneNew = new StoricoRelazione();
+                    storicoRelazioneNew.setAttivaDal(ZonedDateTime.now());
+                    storicoRelazioneNew.setIdStrutturaFiglia(storicoRelazione.getIdStrutturaFiglia());
+                    storicoRelazioneNew.setIdStrutturaPadre(strutturaNew);
+
+                    getEntityManager().persist(storicoRelazione);
+                    getEntityManager().persist(storicoRelazioneNew);
+                    getEntityManager().flush();
+                }
                 OperationsUtils.attivaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudere);
                 //OperationsUtils.inserisciStrutturaNewInAziendaUnificata(queryFactory, em, strutturaNew, struttureOld, getAzione());
                 OperationsUtils.spostaStruttura(em, strutturaSorgenteDaChiudere.getId(), strutturaNew.getId(), operazione, strutturaNew.getDataAttivazione().toString());

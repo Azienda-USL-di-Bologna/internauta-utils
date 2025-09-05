@@ -308,7 +308,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         setImportazioneCSVInCorso(fonteSelezionata, realUser);
                         setRibaltoneInCorso(fonteSelezionata, realUser);
 
-//                ribaltoneCache.cleanCache();
+                        //                ribaltoneCache.cleanCache();
                         Map<String, Object> infoRibaltone = new HashMap<>();
                         Operations restore = ribaltoneCache.restore();
                         if (restore != null) {
@@ -616,6 +616,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 StrutturaUnificata.TipoUnificazione tipoUnificazione = unificazione.getTipoOperazione();
                 Struttura sorgente = unificazione.getIdStrutturaSorgente();
                 Struttura destinazione = unificazione.getIdStrutturaDestinazione();
+
                 switch (tipoUnificazione) {
 
                     case FUSIONE -> {
@@ -634,7 +635,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             daSpegnereADestinazione = spegniUtenteStruttura(daSpegnereADestinazione, repositoryFactory.getEntityManager());
 
                         }
-                        repositoryFactory.getEntityManager().persist(unificazione);
+
                     }
 
                     case REPLICA -> {
@@ -649,7 +650,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             .select(qStruttura)
                             .from(qStruttura)
                             .where(
-                                qStruttura.idStrutturaUnificata.id.eq(unificazione.getId())).fetch();
+                                qStruttura.idStrutturaUnificata.id.eq(unificazione.getId()).and(qStruttura.attiva)).fetch();
                         for (Struttura struttura : struttureDaChiudereList) {
                             OperationsUtils.chiudiStruttura(
                                 struttura,
@@ -665,7 +666,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     default ->
                         throw new AssertionError();
                 }
-
+                repositoryFactory.getEntityManager().persist(unificazione);
             }
         } else {
             throw new RibaltoneHttpException("Non posso lanciare l'unificazione perche non ne ho il permesso");
