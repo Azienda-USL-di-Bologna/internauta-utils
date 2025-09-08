@@ -28,8 +28,14 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
     public static class UnificazionePair implements Serializable {
 
+        public enum DirezioneReplica {
+            PASSATO,
+            FUTURO
+        }
+
         private StrutturaUnificata.TipoUnificazione tipo;
         private List<StrutturaUnificata> strutture;
+        private DirezioneReplica direzioneReplica;
 
         // Costruttore vuoto necessario per Jackson
         public UnificazionePair() {
@@ -76,7 +82,19 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificataReload = getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
-                    Struttura strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
+                    Struttura strutturaDoveInserire = null;
+                    if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                        strutturaDoveInserire = jPAQueryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(
+                                qStruttura.attiva
+                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaInserire.getIdCasella()))
+                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificataReload.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                            ).fetchOne();
+                    } else {
+                        strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
+                    }
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
 //                    if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
 //                    } else if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
@@ -88,23 +106,26 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
                 for (StrutturaUnificata sU : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
-                    Struttura strutturaSorgenteDiAziendaInCuiChiudere = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaChiudere.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
+//                    Struttura strutturaSorgenteDiAziendaInCuiChiudere = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaChiudere.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
+                    Struttura strutturaDiUtenteDaRimuovere = strutturaUnificata.getIdStrutturaDestinazione();
                     if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
-                        Struttura strutturaDiUtenteDaRimuovere = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                            qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
-                                .and(qStruttura.attiva)
-                                .and(qStruttura.idAzienda.id.eq(strutturaSorgenteDiAziendaInCuiChiudere.getIdAzienda().getId()))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
-                        if (strutturaDiUtenteDaRimuovere != null) {
-                            OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere.getIdCasella(), strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
-                        }
-                    } else {
-                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaUnificata.getIdStrutturaDestinazione().getIdCasella(), strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+                        strutturaDiUtenteDaRimuovere = jPAQueryFactory
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(
+                                qStruttura.attiva
+                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaChiudere.getIdCasella()))
+                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                            ).fetchOne();
 
+                    }
+                    if (strutturaDiUtenteDaRimuovere != null) {
+                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
                     }
                 }
 
             }
+
             case EDIT -> {
                 DatiDaImportareAppartenente entitaDaModificare = (DatiDaImportareAppartenente) getEntitaCoinvolta();
 
@@ -141,6 +162,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 //devo creare il dettaglio contatto
                 idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
                 getEntityManager().persist(idDettaglioContatto);
+                utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
+                getEntityManager().persist(utenteStrutturaNew);
 
             }
         }
