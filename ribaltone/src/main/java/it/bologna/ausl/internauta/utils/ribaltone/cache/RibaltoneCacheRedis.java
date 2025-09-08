@@ -1,9 +1,9 @@
-package it.bologna.ausl.internauta.utils.ribaltone.configuration;
+package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
+import com.jayway.jsonpath.TypeRef;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
@@ -13,15 +13,18 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
-import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazione;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneAppartenente;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneStruttura;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Utente;
+import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisPassword;
@@ -30,6 +33,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  *
@@ -75,7 +79,8 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         List<OperationAppartenente> listOfOperationAppartenenti = new ArrayList();
         List<OperationAnagrafica> listOfOperationAnagrafiche = new ArrayList();
         List<OperationTrasformazione> listOfOperationTrasformazioni = new ArrayList();
-        List<OperationUnificazione> listOfOperationUnificazione = new ArrayList();
+        List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura = new ArrayList();
+        List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente = new ArrayList();
 
         Map<String, List<Map<String, Object>>> data = this.getData(keyRibaltoneDati);
         if (data == null) {
@@ -92,24 +97,50 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                 Class<DatiRibaltoneInterface> c = (Class<DatiRibaltoneInterface>) Class.forName(entitaName);
                 DatiRibaltoneInterface entitaCoinvolta = this.objectMapper.convertValue(entitaCoinvoltaMap, c);
 
-                switch (operationDaRedis.get("tipo").toString()) {
-                    case "ANAGRAFICHE" ->
-                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                    case "APPARTENENTI" -> {
-                        List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
-                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit, operationDaRedis.get("nomeCasella").toString()));
+                switch (TipologiaCsv.valueOf(operationDaRedis.get("tipo").toString())) {
+                    case ANAGRAFICHE -> {
+                        listOfOperationAnagrafiche.add(new OperationAnagrafica(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
                     }
-                    case "STRUTTURE" ->
-                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                    case "TRASFORMAZIONI" ->
-                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
-                    case "UNIFICAZIONI" ->
-                        listOfOperationUnificazione.add(new OperationUnificazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager));
+                    case APPARTENENTI -> {
+                        List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
+                        listOfOperationAppartenenti.add(new OperationAppartenente(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, edit, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
+
+                    }
+                    case STRUTTURE ->
+                        listOfOperationStrutture.add(new OperationStruttura(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
+                    case TRASFORMAZIONI ->
+                        listOfOperationTrasformazioni.add(new OperationTrasformazione(Operation.Azione.valueOf(operationDaRedis.get("azione").toString()), entitaCoinvolta, entityManager, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")));
+                    case UNIFICAZIONI_STRUTTURE -> {
+                        List<UnificazioneDaGestire> unificazioniDaGestireList = objectMapper.convertValue(operationDaRedis.get("unificazioniDaGestire"),
+                            new TypeReference<List<UnificazioneDaGestire>>() {
+                        });
+                        listOfOperationUnificazioneStruttura.add(
+                            new OperationUnificazioneStruttura(
+                                Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
+                                entitaCoinvolta,
+                                entityManager,
+                                StrutturaUnificata.TipoUnificazione.valueOf(operationDaRedis.get("tipoUnificazione").toString()),
+                                unificazioniDaGestireList,
+                                (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive")
+                            )
+                        );
+                    }
+                    case UNIFICAZIONI_APPARTENENTI -> {
+                        OperationUnificazioneAppartenente.UnificazionePair convertValue = objectMapper.convertValue(operationDaRedis.get("pair"),
+                            new TypeReference<OperationUnificazioneAppartenente.UnificazionePair>() {
+                        });
+                        listOfOperationUnificazioneAppartenente.add(
+                            new OperationUnificazioneAppartenente(
+                                Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
+                                entitaCoinvolta,
+                                entityManager,
+                                convertValue, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive"))
+                        );
+                    }
                 }
             }
         }
-//
-        return new Operations(listOfOperationStrutture, listOfOperationAppartenenti, listOfOperationAnagrafiche, listOfOperationTrasformazioni, listOfOperationUnificazione);
+        return new Operations(listOfOperationStrutture, listOfOperationAppartenenti, listOfOperationAnagrafiche, listOfOperationTrasformazioni, listOfOperationUnificazioneStruttura, listOfOperationUnificazioneAppartenente);
     }
 
     private RedisTemplate<String, Object> buildRedisTemplate(Map<String, Object> cacheConfig) {
@@ -138,7 +169,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             redisTemp.afterPropertiesSet();
             return redisTemp;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("", e);
             return null;
         }
     }

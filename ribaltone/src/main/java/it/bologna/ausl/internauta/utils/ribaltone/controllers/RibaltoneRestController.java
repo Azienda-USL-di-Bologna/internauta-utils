@@ -9,7 +9,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
@@ -258,6 +258,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             } catch (RibaltoneHttpException | JsonProcessingException ex) {
                 setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
                 ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
+                LOGGER.error("", ex);
                 return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
         } else {
@@ -370,12 +371,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (hoPermessoPerLanciareRibaltone()) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
             realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
             try {
+
                 ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
                 ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
                 RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
@@ -383,8 +385,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 ribaltoneCache.cleanDataCache();
                 setRibaltoneFinito(idSelectedConfiguration);
                 return new ResponseEntity("tutto ok", HttpStatus.OK);
+
             } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
-                setRibaltoneInCorso(idSelectedConfiguration, realUser);
+                setRibaltoneFinito(idSelectedConfiguration);
                 throw ex;
             }
         } else {

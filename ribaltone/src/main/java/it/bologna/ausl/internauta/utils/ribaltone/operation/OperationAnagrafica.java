@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -35,8 +36,8 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
     private final QPersona qPersona = QPersona.persona;
     private final QUtente qUtente = QUtente.utente;
 
-    public OperationAnagrafica(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationAnagrafica(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
     }
 
     @Override
