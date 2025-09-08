@@ -829,7 +829,7 @@ public class OperationsUtils {
         }
     }
 
-    static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+    public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
         Persona persona = getPersona(queryFactory, entitaDaInserire);
 
         //inserire in baborg persone se non c'è la persona
