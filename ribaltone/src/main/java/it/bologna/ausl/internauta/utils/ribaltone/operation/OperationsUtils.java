@@ -52,7 +52,7 @@ public class OperationsUtils {
 
     /**
      *
-     * @param em
+     * @param entityManager
      * @param queryFactory
      * @param idAzienda
      * @param idCasella
@@ -63,7 +63,7 @@ public class OperationsUtils {
      * @return
      */
     public static Struttura inserisciStruttura(
-        EntityManager em,
+        EntityManager entityManager,
         JPAQueryFactory queryFactory,
         Integer idAzienda,
         Integer idCasella,
@@ -72,7 +72,7 @@ public class OperationsUtils {
         QStruttura qStruttura,
         HashMap<Integer, List<Integer>> struttureDaAggiornareConPadre
     ) {
-        Azienda azienda = em.find(Azienda.class, idAzienda);
+        Azienda azienda = entityManager.find(Azienda.class, idAzienda);
         if (idAzienda != null) {
             Struttura strutturaDaInserire = new Struttura(
                 idCasella,
@@ -105,17 +105,17 @@ public class OperationsUtils {
                 //Inserire su baborg storico relazione
                 if (idStrutturaPadre != null) {
                     strutturaDaInserire.setIdStrutturaPadre(idStrutturaPadre);
-                    em.persist(strutturaDaInserire);
-                    em.refresh(strutturaDaInserire);
+                    entityManager.persist(strutturaDaInserire);
+                    entityManager.flush();
                     StoricoRelazione storicoRelazione = new StoricoRelazione();
                     storicoRelazione.setAttivaDal(ZonedDateTime.now());
                     storicoRelazione.setIdStrutturaPadre(idStrutturaPadre);
                     storicoRelazione.setIdStrutturaFiglia(strutturaDaInserire);
-                    em.persist(storicoRelazione);
-                    em.refresh(storicoRelazione);
+                    entityManager.persist(storicoRelazione);
+                    entityManager.flush();
                 } else {
-                    em.persist(strutturaDaInserire);
-                    em.refresh(strutturaDaInserire);
+                    entityManager.persist(strutturaDaInserire);
+                    entityManager.flush();
                     strutturaDaInserire.getId();
                     struttureDaAggiornareConPadre = putInMap(struttureDaAggiornareConPadre, strutturaDaInserire, idCasellaPadre);
                 }
@@ -125,12 +125,35 @@ public class OperationsUtils {
                         .update(qStruttura)
                         .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
                         .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
+                    for (Integer idStrutturaFiglia : struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella())) {
+                        Struttura strutturaFiglia = entityManager.find(Struttura.class, idStrutturaFiglia);
+                        if (strutturaFiglia != null) {
+                            StoricoRelazione sr = new StoricoRelazione();
+                            sr.setAttivaDal(ZonedDateTime.now());
+                            sr.setIdStrutturaFiglia(strutturaFiglia);
+                            sr.setIdStrutturaPadre(strutturaDaInserire);
+                            entityManager.persist(sr);
+                            entityManager.flush();
+                        } else {
+                            throw new RibaltoneHttpException("struttura figlia con id_casella_padre" + strutturaDaInserire.getIdCasella() + " non trovata questo non puo accadere");
+                        }
+
+                    }
 
                     struttureDaAggiornareConPadre.remove(strutturaDaInserire.getIdCasella());
                 }
+            } else {
+                //sono la radice
+                StoricoRelazione sr = new StoricoRelazione();
+                sr.setAttivaDal(ZonedDateTime.now());
+                sr.setIdStrutturaFiglia(strutturaDaInserire);
+                entityManager.persist(sr);
+                entityManager.flush();
+                entityManager.persist(strutturaDaInserire);
+                entityManager.flush();
             }
-            em.persist(strutturaDaInserire);
-            em.refresh(strutturaDaInserire);
+
+            entityManager.refresh(strutturaDaInserire);
             return strutturaDaInserire;
         }
         return null;
