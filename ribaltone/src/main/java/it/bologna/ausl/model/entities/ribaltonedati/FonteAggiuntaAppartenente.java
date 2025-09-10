@@ -34,7 +34,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @GenerateProjections({})
 @DynamicUpdate
 public class FonteAggiuntaAppartenente implements Serializable {
-    
+
     public static enum ProvenienzaFonteAggiunta {
         ORGANIGRAMMA,
         MATRICE_PERMESSI
@@ -78,7 +78,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
 
     @Size(max = 2147483647)
     @Column(name = "tipo_appartenenza")
-    private String tipoAppartenenza;
+    private String tipoAppartenenza = "F";
 
     @Size(max = 2147483647)
     @Column(name = "username")
@@ -110,7 +110,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
-    
+
     @Column(name = "provenienza")
     @Enumerated(EnumType.STRING)
     private ProvenienzaFonteAggiunta provenienza;
@@ -191,11 +191,11 @@ public class FonteAggiuntaAppartenente implements Serializable {
     }
 
     public String getTipoAppartenenza() {
-        return tipoAppartenenza;
+        return "F";
     }
 
     public void setTipoAppartenenza(String tipoAppartenenza) {
-        this.tipoAppartenenza = tipoAppartenenza;
+        this.tipoAppartenenza = "F";
     }
 
     public String getUsername() {
@@ -303,7 +303,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setIdCasella(idCasella);
         datiDaImportareAppartenente.setNome(nome);
         datiDaImportareAppartenente.setResponsabile(responsabile);
-        datiDaImportareAppartenente.setTipoAppartenenza(tipoAppartenenza);
+        datiDaImportareAppartenente.setTipoAppartenenza("F");
         datiDaImportareAppartenente.setUsername(username);
         return datiDaImportareAppartenente;
     }

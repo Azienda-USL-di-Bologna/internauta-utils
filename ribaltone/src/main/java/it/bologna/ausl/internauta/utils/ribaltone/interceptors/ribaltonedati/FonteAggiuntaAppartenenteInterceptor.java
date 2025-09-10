@@ -43,7 +43,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
     public Object afterCreateEntityInterceptor(Object entity, Map<String, String> additionalData, HttpServletRequest request, boolean mainEntity, Class projectionClass) throws AbortSaveInterceptorException {
         QStruttura qStruttura = QStruttura.struttura;
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
-        AuthenticatedSessionData authenticatedSessionData = getAuthenticatedUserProperties();
+//        AuthenticatedSessionData authenticatedSessionData = getAuthenticatedUserProperties();
         FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Struttura struttura = queryFactory
@@ -51,8 +51,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
             .from(qStruttura)
             .where(qStruttura.attiva.and(qStruttura.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella()))).limit(1)
             .fetchOne();
-        //ragionare bene su strutture unificate
-        OperationsUtils.insertUtenteInStruttura(queryFactory, fonteAggiuntaAppartenente.buildDatidaImportare(), struttura, repositoryFactory.getEntityManager(), repositoryFactory.getPermissionManager(), null);
+        OperationsUtils.insertUtenteInStruttura(queryFactory, fonteAggiuntaAppartenente.buildDatidaImportare(), struttura, repositoryFactory.getEntityManager(), repositoryFactory.getPermissionManager(), null, fonteAggiuntaAppartenente.getId());
 
         //gestito le repliche
         List<Struttura> struttureReplicate = queryFactory

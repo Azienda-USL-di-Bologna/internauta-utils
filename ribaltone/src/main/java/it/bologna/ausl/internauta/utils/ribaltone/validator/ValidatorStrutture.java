@@ -36,15 +36,17 @@ public class ValidatorStrutture extends AbstractValidator {
         List<DatiDaImportareStruttura> struttureNonValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> datiDaImportareStrutture = (List<DatiDaImportareStruttura>) this.datiDaImportare;
         Integer nRadici = 0;
+        String strutture = "";
         for (DatiDaImportareStruttura strutturaDaImportare : datiDaImportareStrutture) {
             String motivoInvalidita = "";
 
             Boolean isValida = true;
             //caso della radice
             if (strutturaDaImportare.getIdPadre() == null) {
+                strutture = strutture + strutturaDaImportare.getDescrizione() + "[" + strutturaDaImportare.getIdCasella() + "] ";
                 nRadici = nRadici + 1;
                 if (nRadici > 1) {
-                    throw new RibaltoneHttpException("piu di una radice trovata questo non puo accadere");
+                    throw new RibaltoneHttpException("piu di una radice trovata questo non puo accadere le strutture sono: " + strutture);
                 }
                 //caso della non radice che deve avere tutti gli antenati vivi
             } else {

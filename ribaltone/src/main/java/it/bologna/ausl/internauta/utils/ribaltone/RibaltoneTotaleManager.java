@@ -126,23 +126,23 @@ public class RibaltoneTotaleManager {
             //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
             //        DatiDaImportare validatedSourceData = RibaltoneManagerUtils.getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
 
-            DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
-            DatiDaImportare datiDaImportareValidated = sourceData.validate();
-
-            OperationsManager operationsManager = new OperationsManager(
-                datiDaImportareValidated,
-                codiceAzienda,
-                configRibaltoneView.getTolleranzaAppartenenti(),
-                configRibaltoneView.getTolleranzaStrutture(),
-                repositoryFactory);
-
             try {
-                Operations buildOperations = operationsManager.buildOperations();
+                DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+                DatiDaImportare datiDaImportareValidated = sourceData.validate();
+
+                OperationsManager operationsManager = new OperationsManager(
+                    datiDaImportareValidated,
+                    codiceAzienda,
+                    configRibaltoneView.getTolleranzaAppartenenti(),
+                    configRibaltoneView.getTolleranzaStrutture(),
+                    repositoryFactory);
+
+                Operations buildedOperations = operationsManager.buildOperations();
                 operationsManager.isQuantitaDatiOk();
                 RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
                 OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-                operationsCacheManager.dump(buildOperations);
-                return buildOperations;
+                operationsCacheManager.dump(buildedOperations);
+                return buildedOperations;
             } catch (RibaltoneHttpException | JsonProcessingException ex) {
                 throw new RibaltoneHttpException(ex);
             }

@@ -830,6 +830,10 @@ public class OperationsUtils {
     }
 
     public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+        insertUtenteInStruttura(queryFactory, entitaDaInserire, struttura, entityManager, permissionManager, utenteStrutturaDaInserireList, null);
+    }
+
+    public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList, Integer idFonteAggiunta) {
         Persona persona = getPersona(queryFactory, entitaDaInserire);
 
         //inserire in baborg persone se non c'è la persona
@@ -873,6 +877,7 @@ public class OperationsUtils {
                 //inserire in baborg utenti_struttura se non c'è l'afferenza ricordandosi di una sola afferenza diretta e n funzionali
                 utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getIdAzienda().equals(struttura.getIdAzienda().getId()) ? entitaDaInserire.getTipoAppartenenza() : "U", utente));
                 utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
+                utenteStruttura.setIdFonteAggiuntaAppartenente(idFonteAggiunta);
                 log.info("sto creando l'utente struttura username: " + username + " su struttura: " + utenteStruttura.getIdStruttura().getIdCasella());
                 entityManager.persist(utenteStruttura);
                 if (utenteStrutturaDaInserireList != null) {

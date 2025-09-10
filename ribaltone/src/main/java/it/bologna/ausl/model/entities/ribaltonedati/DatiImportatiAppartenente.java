@@ -280,4 +280,29 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
         this.idAzienda = idAzienda;
     }
 
+    public FonteAggiuntaAppartenente buildFonteAggiunta(FonteAggiuntaAppartenente.ProvenienzaFonteAggiunta provenienza) {
+        FonteAggiuntaAppartenente fonte = new FonteAggiuntaAppartenente();
+
+        fonte.setCodiceAzienda(codiceAzienda);
+        fonte.setCodiceEnte(codiceEnte);
+        fonte.setCodiceFiscale(codiceFiscale);
+        fonte.setCodiceMatricola(codiceMatricola);
+        fonte.setCognome(cognome);
+        fonte.setNome(nome);
+        fonte.setIdCasella(idCasella);
+        fonte.setIdAzienda(idAzienda);
+        fonte.setDatain(datain);
+        fonte.setDatafi(datafi);
+        fonte.setDataAssunzione(dataAssunzione);
+        fonte.setDataDimissione(dataDimissione);
+        fonte.setTipoAppartenenza("F");
+        fonte.setUsername(username);
+        fonte.setResponsabile(responsabile);
+
+        // campo extra presente solo in FonteAggiuntaAppartenente
+        fonte.setProvenienza(provenienza);
+
+        return fonte;
+    }
+
 }
