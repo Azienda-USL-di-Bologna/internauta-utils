@@ -524,6 +524,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         nuovaStruttura.setUfficio(sorgente.getUfficio());
                         nuovaStruttura.setSpettrale(sorgente.getSpettrale());
                         nuovaStruttura.setUsaSegreteriaBucataPadre(sorgente.getUsaSegreteriaBucataPadre());
+                        nuovaStruttura.setIdStrutturaUnificata(unificazione);
                         //creo lo storico relazione
                         StoricoRelazione sr = new StoricoRelazione();
                         sr.setAttivaDal(ZonedDateTime.now());
@@ -531,13 +532,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         sr.setIdStrutturaFiglia(nuovaStruttura);
 
                         //creo l'unificazione
-                        unificazione = new StrutturaUnificata();
-                        unificazione.setDataAttivazione(ZonedDateTime.now());
-                        unificazione.setDataInserimentoRiga(ZonedDateTime.now());
-                        unificazione.setIdStrutturaSorgente(sorgente);
-                        unificazione.setIdStrutturaDestinazione(nuovaStruttura);
-                        unificazione.setTipoOperazione(tipoUnificazione);
-                        unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
+//                        unificazione = new StrutturaUnificata();
+//                        unificazione.setDataAttivazione(ZonedDateTime.now());
+//                        unificazione.setDataInserimentoRiga(ZonedDateTime.now());
+//                        unificazione.setIdStrutturaSorgente(sorgente);
+//                        unificazione.setIdStrutturaDestinazione(nuovaStruttura);
+//                        unificazione.setTipoOperazione(tipoUnificazione);
+//                        unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
                         //creo gli utenti struttura
                         List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                         List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();

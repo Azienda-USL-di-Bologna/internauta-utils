@@ -71,7 +71,7 @@ public class OperationsManager {
     Map<String, Integer> indexTrasformazioniImportate;
     private RepositoryFactory repositoryFactory;
     private Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaSorgente;
-    private Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaDestinazione;
+//    private Map<Integer, List<StrutturaUnificata>> mappaReplichePerIdCasellaDestinazione;
     private Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaSorgente;
     private Map<Integer, List<StrutturaUnificata>> mappaFusioniPerIdCasellaDestinazione;
     private List<OperationUnificazioneStruttura> operationsUnificazioneStruttura = new ArrayList<>();
@@ -137,9 +137,8 @@ public class OperationsManager {
             .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
 
         // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
-        this.mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
-            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
-
+//        this.mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
+//            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
         this.mappaFusioniPerIdCasellaSorgente
             = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
                 .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
@@ -366,7 +365,11 @@ public class OperationsManager {
 
         for (DatiImportatiAppartenente appartenenteImportato : appartenentiImportati) {
             if (indexDaImportare != null && !indexDaImportare.isEmpty() && !indexDaImportare.containsKey(appartenenteImportato.getKey())) {
-                DatiImportatiStruttura struttura = struttureImportateList.get(indexIdCasellaStruttureImportate.get(appartenenteImportato.getIdCasella().toString()));
+                DatiImportatiStruttura struttura = struttureImportateList.get(
+                    indexIdCasellaStruttureImportate.get(
+                        appartenenteImportato.getIdCasella().toString()
+                    )
+                );
                 HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                 descrizioniAggiuntive.put("nomeCasella", struttura.getDescrizione());
                 operationAppartenentiList.add(new OperationAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), null, descrizioniAggiuntive));
