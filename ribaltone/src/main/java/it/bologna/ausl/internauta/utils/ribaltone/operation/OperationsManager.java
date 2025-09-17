@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.lang3.tuple.Pair;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
@@ -178,6 +177,7 @@ public class OperationsManager {
                 trasf.setCodiceAzienda(daImportareStruttura.getCodiceAzienda());
                 trasf.setCodiceEnte(daImportareStruttura.getCodiceEnte());
                 trasf.setDataTrasformazione(ZonedDateTime.now());
+                log.info("inizio query");
                 Struttura strutturaVecchia = queryFactory
                     .select(qStruttura)
                     .from(qStruttura)
@@ -185,6 +185,7 @@ public class OperationsManager {
                         .and(qStruttura.attiva)
                         .and(qStruttura.idCasella.eq(daImportareStruttura.getIdCasella()))
                     ).fetchOne();
+                log.info("fine query");
                 if (strutturaVecchia != null) {
                     trasf.setDatainPartenza(strutturaVecchia.getDataAttivazione());
                 } else {
@@ -208,7 +209,9 @@ public class OperationsManager {
                     trasf.setMotivo("T");
                     operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.CAMBIO_PADRE, trasf, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
                     //sto trasferendo una struttura unificata?
+                    log.info("inizio manageOperationUnificazioniStruttura");
                     manageOperationUnificazioniStruttura(daImportareStruttura, Operation.Azione.CAMBIO_PADRE, queryFactory);
+                    log.info("fine manageOperationUnificazioniStruttura");
                 } else if (!struttureImportate.get(posizione).getDescrizione().equals(daImportareStruttura.getDescrizione())) {
                     //rinomina
                     HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
@@ -219,7 +222,9 @@ public class OperationsManager {
                     trasf.setMotivo("R");
                     operationTrasformazioneList.add(new OperationTrasformazione(Operation.Azione.RINOMINA, trasf, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
                     //sto rinominando una struttura unificata?
+                    log.info("inizio manageOperationUnificazioniStruttura rinomina");
                     manageOperationUnificazioniStruttura(daImportareStruttura, Operation.Azione.RINOMINA, queryFactory);
+                    log.info("fine manageOperationUnificazioniStruttura rinomina");
                 } else {
                     //non è successo nulla è come era prima
                 }
@@ -231,12 +236,15 @@ public class OperationsManager {
                 operationStrutturaList.add(new OperationStruttura(Operation.Azione.INSERT, daImportareStruttura, repositoryFactory.getEntityManager(), descrizioniAggiuntive));
 
                 //devo controllare che nella gerarchia precedente arrivo ad avere un padre che fa parte di una unificazione
+                log.info("inizio manageOperationUnificazioniStruttura nuova");
                 manageOperationUnificazioniStruttura(daImportareStruttura, Operation.Azione.INSERT, queryFactory);
+                log.info("fine manageOperationUnificazioniStruttura nuova");
                 //(mi salvo anche quante ne ho aperto per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
                 this.struttureChiuse--;
             }
         }
         //capire le chiusure (mi salvo anche quante ne ho da chiudere per capire se è una cosa coerente o c'è un grave errore sulla fonte dati)
+        log.info("inizio a capire strutture chiuse");
         for (DatiImportatiStruttura strutturaImportata : struttureImportate) {
             if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
                 && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
@@ -252,8 +260,8 @@ public class OperationsManager {
                 && indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
                 manageOperationUnificazioniStruttura(strutturaImportata, Operation.Azione.CONFLUENZA, queryFactory);
             }
-
         }
+        log.info("fine strutture chiuse");
 
         mapToReturn.put("strutture", operationStrutturaList);
         mapToReturn.put("trasformazioni", operationTrasformazioneList);
@@ -269,6 +277,8 @@ public class OperationsManager {
         List<DatiDaImportareStruttura> struttureDaImportareList,
         JPAQueryFactory queryFactory
     ) {
+        Integer totaleAppartenentiDaImportare = appartenentiDaImportare.size();
+        Integer afferenzaNumero = 0;
         log.info("Faccio il build delle operations appartenenti");
         List<OperationAppartenente> operationAppartenentiList = new ArrayList<>();
         //prendo in considerazione tutte le modifiche e gli inserimenti dei nuovi utenti
@@ -277,6 +287,7 @@ public class OperationsManager {
         Map<String, Integer> indexIdCasellaStruttureDaImportare = RibaltoneUtils.generateIndex(struttureDaImportareList, DatiDaImportareStruttura::getIdCasella);
         Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
+            log.info("siamo a " + afferenzaNumero + " su " + totaleAppartenentiDaImportare);
             Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
             log.info("sto controllando le operation per " + datiDaImportareAppartenente.getCodiceFiscale() + " su casella " + datiDaImportareAppartenente.getIdCasella());
             Operation.Azione azione = Operation.Azione.INSERT;

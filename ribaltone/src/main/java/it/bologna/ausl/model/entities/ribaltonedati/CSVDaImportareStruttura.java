@@ -18,6 +18,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -238,7 +239,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
         output.setIdCasella(this.idCasella);
         output.setIdPadre(this.idPadre);
-        output.setDescrizione(this.descrizione);
+        output.setDescrizione(WordUtils.capitalizeFully(this.descrizione).trim());
         output.setDatain(this.datain);
         output.setDatafi(this.datafi);
         output.setTipoLegame(this.tipoLegame);

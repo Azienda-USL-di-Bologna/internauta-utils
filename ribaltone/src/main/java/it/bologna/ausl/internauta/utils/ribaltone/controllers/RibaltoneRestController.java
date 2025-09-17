@@ -30,7 +30,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.io.File;
 import java.io.FileOutputStream;
