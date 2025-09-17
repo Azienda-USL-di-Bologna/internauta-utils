@@ -288,6 +288,7 @@ public class OperationsManager {
         Map<String, Integer> indexDaImportare = RibaltoneUtils.generateIndex(appartenentiDaImportare, DatiDaImportareAppartenente::getKey);
         for (DatiDaImportareAppartenente datiDaImportareAppartenente : appartenentiDaImportare) {
             log.info("siamo a " + afferenzaNumero + " su " + totaleAppartenentiDaImportare);
+            afferenzaNumero += 1;
             Integer posizione = indexAppartenentiImportati.get(datiDaImportareAppartenente.getKey());
             log.info("sto controllando le operation per " + datiDaImportareAppartenente.getCodiceFiscale() + " su casella " + datiDaImportareAppartenente.getIdCasella());
             Operation.Azione azione = Operation.Azione.INSERT;
