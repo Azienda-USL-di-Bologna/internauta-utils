@@ -67,7 +67,7 @@ public class CsvImportManager {
         );
 
         if (notFoundHeaders != null && !notFoundHeaders.isEmpty()) {
-            String errorMessage = String.format("non sono stati trovati i seguenti headers: %s . Controllare che la tipologia selezionata sia quella corretta.", Arrays.toString(notFoundHeaders.toArray()));
+            String errorMessage = String.format("Non sono stati trovati i seguenti headers: %s . /n Controllare che la tipologia selezionata sia quella corretta.", Arrays.toString(notFoundHeaders.toArray()));
             throw new RibaltoneHttpException(errorMessage);
         }
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);

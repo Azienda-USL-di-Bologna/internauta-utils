@@ -4,18 +4,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
-import com.querydsl.core.types.Path;
-import static com.querydsl.core.types.Projections.tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
-import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
@@ -30,12 +27,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import org.springframework.beans.factory.annotation.Autowired;
-import static org.springframework.data.redis.connection.ReactiveZSetCommands.ZAddCommand.tuple;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StreamUtils;
@@ -64,11 +59,10 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
     @RequestMapping(value = "downloadCSVFileFromIdAzienda", method = RequestMethod.GET)
     public void downloadCSVFileFromIdAzienda(
         @RequestParam("idAzienda") Integer idAzienda,
-        @RequestParam("tipo") String tipo,
+        @RequestParam("tipo") TipologiaCsv tipo,
         HttpServletResponse response,
         HttpServletRequest request) {
         File buildCSV = null;
-        
 
         //SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, data_assunzione, data_dimissione, id_azienda FROM gru.mdr_appartenenti WHERE id_azienda = ?1
         QDatiImportatiAnagrafica qDatiImportatiAnagrafica = QDatiImportatiAnagrafica.datiImportatiAnagrafica;
@@ -79,10 +73,9 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         List<Expression<?>> expressions = new ArrayList<>();
         List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
-        List<Map<String, Object>> list = new ArrayList<>();
 
         switch (tipo) {
-            case "APPARTENENTI":
+            case APPARTENENTI:
                 expressions = List.of(qDatiImportatiAppartenente.codiceEnte,
                     qDatiImportatiAppartenente.codiceMatricola,
                     qDatiImportatiAppartenente.cognome,
@@ -92,7 +85,10 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                     qDatiImportatiAppartenente.datain,
                     qDatiImportatiAppartenente.datafi,
                     qDatiImportatiAppartenente.tipoAppartenenza,
-                    qDatiImportatiAppartenente.responsabile);
+                    qDatiImportatiAppartenente.username,
+                    qDatiImportatiAppartenente.responsabile,
+                    qDatiImportatiAppartenente.dataAssunzione,
+                    qDatiImportatiAppartenente.dataDimissione);
 
                 selectRigheByIdAzienda = queryFactory
                     .select(expressions.toArray(new Expression[0]))
@@ -101,24 +97,22 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
                 break;
 
-            case "STRUTTURE":
-                expressions = List.of(qDatiImportatiStruttura.codiceEnte,
-                    qDatiImportatiStruttura.descrizione,
-                    qDatiImportatiStruttura.tipoLegame,
-                    qDatiImportatiStruttura.codiceEnte,
+            case STRUTTURE:
+                expressions = List.of(qDatiImportatiStruttura.idCasella,
                     qDatiImportatiStruttura.idPadre,
-                    qDatiImportatiStruttura.idCasella,
+                    qDatiImportatiStruttura.descrizione,
                     qDatiImportatiStruttura.datain,
-                    qDatiImportatiStruttura.datafi
-                );
+                    qDatiImportatiStruttura.datafi,
+                    qDatiImportatiStruttura.tipoLegame,
+                    qDatiImportatiStruttura.codiceEnte);
 
                 selectRigheByIdAzienda = queryFactory
                     .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiAppartenente)
-                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
+                    .from(qDatiImportatiStruttura)
+                    .where(qDatiImportatiStruttura.idAzienda.eq(idAzienda)).fetch();
                 break;
 
-            case "TRASFORMAZIONI":
+            case TRASFORMAZIONI:
                 expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
                     qDatiImportatiTrasformazione.idCasellaPartenza,
                     qDatiImportatiTrasformazione.idCasellaArrivo,
@@ -135,8 +129,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                     .where(qDatiImportatiTrasformazione.idAzienda.eq(idAzienda)).fetch();
                 break;
 
-            case "ANAGRAFICHE":
-                expressions = List.of(qDatiImportatiAnagrafica.codiceEnte,
+            case ANAGRAFICHE:
+                expressions = List.of(qDatiImportatiAnagrafica.codiceEnte.as("pippo"),
                     qDatiImportatiAnagrafica.codiceMatricola,
                     qDatiImportatiAnagrafica.cognome,
                     qDatiImportatiAnagrafica.nome,
@@ -151,8 +145,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 break;
         }
 
-        list = ExportDatiManager.getMapListFromTupleList(selectRigheByIdAzienda, expressions);
-        buildCSV = ExportDatiManager.buildCSV(list, tipo);
+
+        buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
 
         if (buildCSV != null) {
             try {

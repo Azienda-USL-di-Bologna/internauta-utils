@@ -16,7 +16,9 @@ public interface DatiRibaltoneInterface {
         ANAGRAFICHE,
         APPARTENENTI,
         STRUTTURE,
-        TRASFORMAZIONI
+        TRASFORMAZIONI,
+        UNIFICAZIONI_STRUTTURE,
+        UNIFICAZIONI_APPARTENENTI,
     }
 
     public static <T extends DatiRibaltoneInterface> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {

@@ -23,6 +23,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  *
@@ -69,8 +70,12 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
+    @Column(name = "errore")
+    private String errore;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_anagrafica_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_anagrafica_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_anagrafica_id_seq", allocationSize = 1000)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -175,6 +180,14 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         this.passwordHash = passwordHash;
     }
 
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -216,7 +229,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         return DatiDaImportareAnagrafica.class.getCanonicalName();
     }
 
-    public DatiImportatiAnagrafica buildDatiImportatiAnagrafica() {
+    public DatiImportatiAnagrafica buildDatiImportati() {
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);

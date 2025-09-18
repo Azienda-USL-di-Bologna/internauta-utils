@@ -7,6 +7,8 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneAppartenente;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
@@ -40,21 +42,28 @@ public class Operations implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(Operations.class);
 
     private List<OperationStruttura> listOfOperationStruttura;
-    private List<OperationAppartenente> listOfOperationAppartenenti;
-    private List<OperationAnagrafica> listOfOperationAnagrafiche;
-    private List<OperationTrasformazione> listOfOperationTrasformazioni;
+    private List<OperationAppartenente> listOfOperationAppartenente;
+    private List<OperationAnagrafica> listOfOperationAnagrafica;
+    private List<OperationTrasformazione> listOfOperationTrasformazione;
+    private List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura;
+    private List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente;
     private Object workToDo;
 
     public Operations(
         List<OperationStruttura> listOfOperationStruttura,
         List<OperationAppartenente> listOfOperationAppartenenti,
         List<OperationAnagrafica> listOfOperationAnagrafiche,
-        List<OperationTrasformazione> listOfOperationTrasformazioni) {
+        List<OperationTrasformazione> listOfOperationTrasformazioni,
+        List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura,
+        List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente
+    ) {
 
         this.listOfOperationStruttura = listOfOperationStruttura;
-        this.listOfOperationAppartenenti = listOfOperationAppartenenti;
-        this.listOfOperationAnagrafiche = listOfOperationAnagrafiche;
-        this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
+        this.listOfOperationAppartenente = listOfOperationAppartenenti;
+        this.listOfOperationAnagrafica = listOfOperationAnagrafiche;
+        this.listOfOperationTrasformazione = listOfOperationTrasformazioni;
+        this.listOfOperationUnificazioneStruttura = listOfOperationUnificazioneStruttura;
+        this.listOfOperationUnificazioneAppartenente = listOfOperationUnificazioneAppartenente;
     }
 
     public Operations() {
@@ -66,29 +75,39 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
         }
-        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
+//        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
-        for (OperationAppartenente operation : listOfOperationAppartenenti) {
+        for (OperationAppartenente operation : listOfOperationAppartenente) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenente(repositoryFactory);
         }
         workToDo = null;
-        for (OperationTrasformazione operation : listOfOperationTrasformazioni) {
+        for (OperationTrasformazione operation : listOfOperationTrasformazione) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattiTrasformati(repositoryFactory);
         }
         risistemaAfferenze(repositoryFactory);
         workToDo = null;
-        for (OperationAnagrafica operation : listOfOperationAnagrafiche) {
+        for (OperationAnagrafica operation : listOfOperationAnagrafica) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
+        }
+        workToDo = null;
+        for (OperationUnificazioneStruttura operation : listOfOperationUnificazioneStruttura) {
+            operation.esegui(workToDo, repositoryFactory);
+            operation.menageContattoStutturaUnificata(repositoryFactory);
+        }
+        workToDo = null;
+        for (OperationUnificazioneAppartenente operation : listOfOperationUnificazioneAppartenente) {
+            operation.esegui(workToDo, repositoryFactory);
+            operation.menageContattoAppartenenteUnificato(repositoryFactory);
         }
 //        finalOperations(repositoryFactory, codiceAzienda);
     }
 
     /**
-     * funzione che si occupa di gestire la parte finale delle operazioni come
-     * prima cosa generazione e manutenzione dei contatti
+     * funzione che si occupa di gestire la parte finale delle operazioni
+     * fa i vari check per verificare che il ribaltone sia andato a buon fine
      *
      * @param repositoryFactory
      * @throws RibaltoneHttpException
@@ -157,28 +176,44 @@ public class Operations implements Serializable {
         this.listOfOperationStruttura = listOfOperationStruttura;
     }
 
-    public List<OperationAppartenente> getListOfOperationAppartenenti() {
-        return listOfOperationAppartenenti;
+    public List<OperationAppartenente> getListOfOperationAppartenente() {
+        return listOfOperationAppartenente;
     }
 
-    public void setListOfOperationAppartenenti(List<OperationAppartenente> listOfOperationAppartenenti) {
-        this.listOfOperationAppartenenti = listOfOperationAppartenenti;
+    public void setListOfOperationAppartenente(List<OperationAppartenente> listOfOperationAppartenente) {
+        this.listOfOperationAppartenente = listOfOperationAppartenente;
     }
 
-    public List<OperationAnagrafica> getListOfOperationAnagrafiche() {
-        return listOfOperationAnagrafiche;
+    public List<OperationAnagrafica> getListOfOperationAnagrafica() {
+        return listOfOperationAnagrafica;
     }
 
-    public void setListOfOperationAnagrafiche(List<OperationAnagrafica> listOfOperationAnagrafiche) {
-        this.listOfOperationAnagrafiche = listOfOperationAnagrafiche;
+    public void setListOfOperationAnagrafica(List<OperationAnagrafica> listOfOperationAnagrafica) {
+        this.listOfOperationAnagrafica = listOfOperationAnagrafica;
     }
 
-    public List<OperationTrasformazione> getListOfOperationTrasformazioni() {
-        return listOfOperationTrasformazioni;
+    public List<OperationTrasformazione> getListOfOperationTrasformazione() {
+        return listOfOperationTrasformazione;
     }
 
-    public void setListOfOperationTrasformazioni(List<OperationTrasformazione> listOfOperationTrasformazioni) {
-        this.listOfOperationTrasformazioni = listOfOperationTrasformazioni;
+    public void setListOfOperationTrasformazione(List<OperationTrasformazione> listOfOperationTrasformazione) {
+        this.listOfOperationTrasformazione = listOfOperationTrasformazione;
+    }
+
+    public List<OperationUnificazioneStruttura> getListOfOperationUnificazioneStruttura() {
+        return listOfOperationUnificazioneStruttura;
+    }
+
+    public void setListOfOperationUnificazioneStruttura(List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura) {
+        this.listOfOperationUnificazioneStruttura = listOfOperationUnificazioneStruttura;
+    }
+
+    public List<OperationUnificazioneAppartenente> getListOfOperationUnificazioneAppartenente() {
+        return listOfOperationUnificazioneAppartenente;
+    }
+
+    public void setListOfOperationUnificazioneAppartenente(List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente) {
+        this.listOfOperationUnificazioneAppartenente = listOfOperationUnificazioneAppartenente;
     }
 
     /**

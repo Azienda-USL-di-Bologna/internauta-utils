@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.blackbox.PermissionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -43,6 +44,9 @@ public class RepositoryFactory {
 
     @Autowired
     private PermissionManager permissionManager;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public RepositoryFactory() {
     }
@@ -93,6 +97,14 @@ public class RepositoryFactory {
 
     public void setPermissionManager(PermissionManager permissionManager) {
         this.permissionManager = permissionManager;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
 }

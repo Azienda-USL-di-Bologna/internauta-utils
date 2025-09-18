@@ -23,13 +23,14 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  *
  * @author Top
  */
 @Entity
-@Table(name = "csv_da_importare_anagrafiche", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "csv_da_importare_anagrafica", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
@@ -230,6 +231,19 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
 
     public DatiImportatiAnagrafica buildDatiImportatiAnagrafica() {
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
+        anagraficaImportata.setCodiceEnte(this.codiceEnte);
+        anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
+        anagraficaImportata.setCognome(this.cognome);
+        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
+        anagraficaImportata.setEmail(this.email);
+        anagraficaImportata.setIdAzienda(this.idAzienda);
+        anagraficaImportata.setCodiceAzienda(this.codiceAzienda);
+        return anagraficaImportata;
+    }
+
+    public DatiDaImportareAnagrafica buildDatiDaImportareAnagrafica() {
+        DatiDaImportareAnagrafica anagraficaImportata = new DatiDaImportareAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
         anagraficaImportata.setCognome(this.cognome);

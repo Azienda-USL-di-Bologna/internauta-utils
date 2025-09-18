@@ -13,12 +13,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -30,11 +27,11 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "fonte_babel_appartenenti", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_appartenenti", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class FonteBabelAppartenente implements Serializable {
+public class FonteAggiuntaAppartenente implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -58,6 +55,9 @@ public class FonteBabelAppartenente implements Serializable {
 
     @Column(name = "id_casella")
     private Integer idCasella;
+
+    @Column(name = "id_azienda")
+    private Integer idAzienda;
 
     @Column(name = "datain")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -86,7 +86,7 @@ public class FonteBabelAppartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataDimissione;
-    
+
     @Column(name = "responsabile")
     private Boolean responsabile;
 
@@ -104,7 +104,15 @@ public class FonteBabelAppartenente implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
-    public FonteBabelAppartenente() {
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+
+    public FonteAggiuntaAppartenente() {
     }
 
     public String getCodiceEnte() {
@@ -245,10 +253,10 @@ public class FonteBabelAppartenente implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof FonteBabelAppartenente)) {
+        if (!(object instanceof FonteAggiuntaAppartenente)) {
             return false;
         }
-        FonteBabelAppartenente other = (FonteBabelAppartenente) object;
+        FonteAggiuntaAppartenente other = (FonteAggiuntaAppartenente) object;
         if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
             return false;
         }
@@ -258,6 +266,27 @@ public class FonteBabelAppartenente implements Serializable {
     @Override
     public String toString() {
         return "it.bologna.ausl.internauta.model.entities.FonteBabelAppartenente[ id=" + id + " ]";
+    }
+
+    public DatiDaImportareAppartenente buildDatidaImportare() {
+        DatiDaImportareAppartenente datiDaImportareAppartenente = new DatiDaImportareAppartenente();
+
+        datiDaImportareAppartenente.setCodiceAzienda(codiceAzienda);
+        datiDaImportareAppartenente.setCodiceEnte(codiceEnte);
+        datiDaImportareAppartenente.setCodiceFiscale(codiceFiscale);
+        datiDaImportareAppartenente.setCodiceMatricola(codiceMatricola);
+        datiDaImportareAppartenente.setCognome(cognome);
+        datiDaImportareAppartenente.setDataAssunzione(dataAssunzione);
+        datiDaImportareAppartenente.setDataDimissione(dataDimissione);
+        datiDaImportareAppartenente.setDatain(datain);
+        datiDaImportareAppartenente.setDatafi(datafi);
+        datiDaImportareAppartenente.setIdAzienda(idAzienda);
+        datiDaImportareAppartenente.setIdCasella(idCasella);
+        datiDaImportareAppartenente.setNome(nome);
+        datiDaImportareAppartenente.setResponsabile(responsabile);
+        datiDaImportareAppartenente.setTipoAppartenenza(tipoAppartenenza);
+        datiDaImportareAppartenente.setUsername(username);
+        return datiDaImportareAppartenente;
     }
 
 }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.BooleanPath;
 import com.querydsl.core.types.dsl.BooleanTemplate;
 import com.querydsl.core.types.dsl.Expressions;
 import it.bologna.ausl.internauta.utils.parameters.manager.repositories.ParametroAziendeRepository;
@@ -52,10 +51,13 @@ public class ParametriAziendeReader {
         loginConfig,
         babelshareConfig,
         oliammConfiguration,
+        tabRegistrazioniScriptaActive,
+        firmaJNJ,
         ribaltoneConf,
         processaDati,
         usaNuovoRibaltoneVeloce,
-        tabRegistrazioniScriptaActive
+        abilitaGestioneMassivaArchiviPerResponsabiliAndVicari,
+        maxSchedePerFiltriEdiEfiWithAutoMode
     }
     
     @Autowired
@@ -118,7 +120,8 @@ public class ParametriAziendeReader {
 
     /**
      * Metodo per estrarre tutti i parametri di un'applicazione, in una determinata azienda.Tipico di un processo di inizializzazione.
-     * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente.
+     * Combina il filtro dell'azienda, che deve esserci, con quello dell'applicazione, se presente nel db.
+     * Se app è null allora il filtro viene ignorato e vengono presi i parametri indipendentemene dal valore della colonna id_applicazione
      * @param app
      * @param idAzienda
      * @param includeHiddenFromApi
@@ -131,13 +134,19 @@ public class ParametriAziendeReader {
                 QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
         BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
 
-        BooleanTemplate applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
-
-        BooleanTemplate applicazioniOverlap = Expressions.booleanTemplate(
+        BooleanExpression applicazioniEmptyArray = Expressions.TRUE;
+        BooleanExpression applicazioniOverlap = Expressions.TRUE;
+        BooleanExpression applicazioniIsNull = Expressions.TRUE;
+                
+        if (app != null) {
+            applicazioniOverlap = Expressions.booleanTemplate(
                 "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
                 QParametroAziende.parametroAziende.idApplicazioni, app);
-
-        BooleanExpression applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
+            
+            applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
+            applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
+        }
+        
 
         BooleanExpression filter = filterAziendaOrNull.and(applicazioniOverlap
                 .or(applicazioniEmptyArray)
@@ -157,6 +166,17 @@ public class ParametriAziendeReader {
         }
 
         return hashMapParams;
+    }
+    
+    /**
+     * Metodo per estrarre tutti i parametri di una azienda. Tipico di un processo di inizializzazione.
+     * @param idAzienda
+     * @param includeHiddenFromApi
+     * @return mappa di nome-valore dei parametri
+     */
+    public Map<String, Object> getAllAziendaParameters(Integer idAzienda, boolean includeHiddenFromApi) {
+
+        return getAllAziendaApplicazioneParameters(null, idAzienda, includeHiddenFromApi);
     }
 
     /**

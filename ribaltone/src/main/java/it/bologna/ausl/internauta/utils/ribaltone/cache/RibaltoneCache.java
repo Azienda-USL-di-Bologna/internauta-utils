@@ -1,10 +1,11 @@
-package it.bologna.ausl.internauta.utils.ribaltone.configuration;
+package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import jakarta.persistence.EntityManager;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -31,5 +32,17 @@ public abstract class RibaltoneCache {
 
     public abstract Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException;
 
-    public abstract void cleanCache();
+    public abstract Boolean isExecuting();
+
+    public abstract void setExecuting(Boolean executing, Utente user) throws JsonProcessingException;
+
+    public abstract Integer getIdUserExecuting() throws RibaltoneHttpException, JsonProcessingException;
+
+    public abstract Boolean isImportingCSV();
+
+    public abstract void setImportingCSV(Boolean executing, Utente user) throws JsonProcessingException;
+
+    public abstract Integer getIdUserImportingCSV() throws RibaltoneHttpException, JsonProcessingException;
+
+    public abstract void cleanDataCache();
 }

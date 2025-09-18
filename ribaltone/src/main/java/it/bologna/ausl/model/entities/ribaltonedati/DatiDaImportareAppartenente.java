@@ -17,6 +17,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  *
@@ -90,7 +91,8 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     private ZonedDateTime dataDimissione;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_appartenenti_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_appartenenti_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_appartenenti_id_seq", allocationSize = 1000)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -99,6 +101,9 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
+
+    @Column(name = "errore")
+    private String errore;
 
     public DatiDaImportareAppartenente() {
     }
@@ -280,7 +285,15 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         return DatiDaImportareAppartenente.class.getCanonicalName();
     }
 
-    public DatiImportatiAppartenente buildDatiImportatiAppartenente() {
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
+    public DatiImportatiAppartenente buildDatiImportati() {
         DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
         datiImportatiAppartenente.setCodiceAzienda(this.codiceAzienda);
         datiImportatiAppartenente.setCodiceEnte(this.codiceEnte);

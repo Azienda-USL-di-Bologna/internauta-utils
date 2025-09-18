@@ -19,11 +19,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ValidatorStrutture extends AbstractValidator {
-    
+
     @Autowired
     private DatiImportatiStrutturaRepository datiImportatiStrutturaRepository;
-    
+
     private Map<String, Integer> indexStrutture;
+
     public ValidatorStrutture(List<DatiDaImportareStruttura> datiDaImportare, Map<String, Integer> indexStrutture) {
         super(datiDaImportare);
         this.indexStrutture = indexStrutture;
@@ -35,8 +36,8 @@ public class ValidatorStrutture extends AbstractValidator {
         List<DatiDaImportareStruttura> struttureNonValide = new ArrayList<DatiDaImportareStruttura>();
         List<DatiDaImportareStruttura> datiDaImportareStrutture = (List<DatiDaImportareStruttura>) this.datiDaImportare;
         for (DatiDaImportareStruttura strutturaDaImportare : datiDaImportareStrutture) {
-            String motivoInvalidita="";
-            
+            String motivoInvalidita = "";
+
             Boolean isValida = true;
 
             Integer nRadici = 0;
@@ -50,37 +51,36 @@ public class ValidatorStrutture extends AbstractValidator {
             } else {
                 Integer antenatoMorto = getAntenatoMorto(indexStrutture, datiDaImportareStrutture, strutturaDaImportare);
                 if (antenatoMorto != null) {
-                    
-                    isValida=false;
-                    motivoInvalidita = "la struttura " + getDatiAntenatoMorto(antenatoMorto, repositoryFactory) + 
-                            " è spenta e impedisce l'importazione di " + 
-                            strutturaDaImportare.getIdCasella() + 
-                            " " + strutturaDaImportare.getDescrizione() +
-                            " si prega di correggere i dati alla fonte";
+
+                    isValida = false;
+                    motivoInvalidita = "la struttura " + getDatiAntenatoMorto(antenatoMorto, repositoryFactory)
+                        + " è spenta e impedisce l'importazione di "
+                        + strutturaDaImportare.getIdCasella()
+                        + " " + strutturaDaImportare.getDescrizione()
+                        + " si prega di correggere i dati alla fonte";
                 }
             }
 
             if (!StringUtils.hasText(strutturaDaImportare.getDescrizione())) {
-                isValida=false;
+                isValida = false;
                 motivoInvalidita = motivoInvalidita + " la struttura con chiave " + strutturaDaImportare.getKey() + " non ha la descrizione";
             }
-
+            strutturaDaImportare.setErrore(motivoInvalidita);
             if (isValida) {
                 struttureValide.add(strutturaDaImportare);
-            }else{
+            } else {
                 struttureNonValide.add(strutturaDaImportare);
-                
+
             }
 
         }
-        datiInvalidi=struttureNonValide;
+        datiInvalidi = struttureNonValide;
         return struttureValide;
     }
 
     private Integer getAntenatoMorto(Map<String, Integer> indexStrutture, List<DatiDaImportareStruttura> datiDaImportareStrutture, DatiDaImportareStruttura datiDaImportareStruttura) {
         Integer idPadre = datiDaImportareStruttura.getIdPadre();
         boolean isRadice = idPadre == null || idPadre.equals(0);
-        
 
         while (!isRadice && idPadre != null) {
             if (idPadre == null || idPadre.equals(0)) {
@@ -95,9 +95,9 @@ public class ValidatorStrutture extends AbstractValidator {
         return null;
     }
 
-    private String getDatiAntenatoMorto(Integer antenatoMorto,RepositoryFactory repositoryFactory) {
+    private String getDatiAntenatoMorto(Integer antenatoMorto, RepositoryFactory repositoryFactory) {
         Optional<DatiImportatiStruttura> findById = repositoryFactory.getDatiImportatiStrutturaRepository().findById(antenatoMorto);
-        if (findById.isPresent()){
+        if (findById.isPresent()) {
             DatiImportatiStruttura strutturaMorta = findById.get();
             return " id casella " + strutturaMorta.getIdCasella() + " con nome " + strutturaMorta.getDescrizione();
         }

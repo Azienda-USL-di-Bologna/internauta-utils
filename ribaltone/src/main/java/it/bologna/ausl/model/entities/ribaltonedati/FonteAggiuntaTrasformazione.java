@@ -13,12 +13,9 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
@@ -30,11 +27,11 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author Top
  */
 @Entity
-@Table(name = "fonte_babel_trasformazioni", catalog = "internauta", schema = "ribaltone_dati")
+@Table(name = "fonte_aggiunta_trasformazioni", catalog = "internauta", schema = "ribaltone_dati")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class FonteBabelTrasformazione implements Serializable {
+public class FonteAggiuntaTrasformazione implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -42,38 +39,38 @@ public class FonteBabelTrasformazione implements Serializable {
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
-    
+
     @Column(name = "progressivo_riga")
     private Integer progressivoRiga;
-    
+
     @Column(name = "id_casella_partenza")
     private Integer idCasellaPartenza;
-    
+
     @Column(name = "id_casella_arrivo")
     private Integer idCasellaArrivo;
-    
+
     @Column(name = "data_trasformazione")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataTrasformazione;
-    
+
     @Size(max = 2147483647)
     @Column(name = "motivo")
     private String motivo;
-    
+
     @Column(name = "datain_partenza")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime datainPartenza;
-    
+
     @Column(name = "dataora_oper")
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime dataoraOper;
-    
+
     @Column(name = "codice_ente")
     private String codiceEnte;
-    
+
     @Column(name = "codice_azienda")
     private String codiceAzienda;
 
@@ -81,11 +78,11 @@ public class FonteBabelTrasformazione implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
-    
-    public FonteBabelTrasformazione() {
+
+    public FonteAggiuntaTrasformazione() {
     }
 
-    public FonteBabelTrasformazione(Integer id) {
+    public FonteAggiuntaTrasformazione(Integer id) {
         this.id = id;
     }
 
@@ -187,10 +184,10 @@ public class FonteBabelTrasformazione implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof FonteBabelTrasformazione)) {
+        if (!(object instanceof FonteAggiuntaTrasformazione)) {
             return false;
         }
-        FonteBabelTrasformazione other = (FonteBabelTrasformazione) object;
+        FonteAggiuntaTrasformazione other = (FonteAggiuntaTrasformazione) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 

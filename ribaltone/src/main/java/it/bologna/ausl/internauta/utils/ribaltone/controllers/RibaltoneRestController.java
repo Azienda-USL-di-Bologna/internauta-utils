@@ -9,7 +9,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
@@ -56,10 +56,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.QRuolo;
+import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.Ruolo;
+import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
+import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import java.util.HashMap;
 import java.util.Map;
+import org.hibernate.StaleObjectStateException;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.TransactionDefinition;
 
 /**
  *
@@ -77,14 +84,17 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     @Autowired
     private ConversionService conversionService;
 
     @Autowired
     private AuthenticatedSessionDataBuilder authenticatedSessionDataBuilder;
+
+    @Autowired
+    private RepositoryFactory repositoryFactory;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
 //    @RequestMapping(value = "/cleanSourceData", method = RequestMethod.GET)
 //    public DatiDaImportare cleanSourceData(
@@ -135,63 +145,129 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     public void ribalta(
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
-    ) throws RibaltoneHttpException {
-        if (!isRibaltoneInCorso()) {
+    ) throws RibaltoneHttpException, JsonProcessingException {
+        if (!isRibaltoneInCorso(configRibaltoneView.getFonteSelezionata())) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
-            ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
-            ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata().toString(), realUser, configRibaltoneView.getNote(), null, "ribalta");
+            realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+            try {
+                setRibaltoneInCorso(configRibaltoneView.getFonteSelezionata(), realUser);
+                ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
+                ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta");
+            } catch (RibaltoneHttpException ex) {
+                throw ex;
+            } finally {
+                setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
+            }
         } else {
             throw new RibaltoneHttpException("non puoi lanicare il ribaltone perche è gia in corso");
         }
     }
 
-    @Transactional(rollbackOn = Throwable.class)
+//    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
-    public void importaCSV(
+    public Object importaCSV(
         @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
         @RequestBody(required = true) MultipartFile csv,
         @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
-        @RequestParam(required = true, name = "separatore") String separatore
-    ) throws RibaltoneHttpException {
-        File csvFile = null;
+        @RequestParam(required = true, name = "separatore") String separatore,
+        @RequestParam(required = true, name = "idSelectedConfiguration") String idSelectedConfiguration
+    ) throws RibaltoneHttpException, JsonProcessingException {
+        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+        Utente utente = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+        utente = repositoryFactory.getEntityManager().find(Utente.class, utente.getId());
+        Integer idUtente = utente.getId();
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
+        if (!isImportazioneCSVInCorso(idSelectedConfiguration)) {
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
 
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        switch (tipologia) {
-            case APPARTENENTI ->
-                jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
-                    QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
-            case STRUTTURE ->
-                jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
-                    QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
-            case ANAGRAFICHE ->
-                jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
-                    QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
-            case TRASFORMAZIONI ->
-                jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
-                    QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
-            default ->
-                throw new AssertionError();
-        }
-        try {
-            // creo il csv come file temporaneo e lo cancello al termine
-            csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
-            csvFile.deleteOnExit();
-            try (FileOutputStream fos = new FileOutputStream(csvFile);) {
-                try (InputStream csvIs = csv.getInputStream()) {
-                    IOUtils.copy(csvIs, fos);
+            //metto la riga su importazioni organigramma
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            Integer idImportazioneOrganigramma = transactionTemplate.execute(action -> {
+                QUtente qUtente = QUtente.utente;
+                Utente ut = jPAQueryFactory.select(qUtente).from(qUtente).where(qUtente.id.eq(idUtente)).fetchOne();
+                if (ut != null) {
+                    ImportazioniOrganigramma entity = new ImportazioniOrganigramma();
+                    entity.setDataInserimentoRiga(ZonedDateTime.now());
+                    entity.setIdAzienda(ut.getIdAzienda());
+                    entity.setIdPersona(ut.getIdPersona());
+                    entity.setIdUtente(ut);
+                    entity.setNomeFile(csv.getOriginalFilename());
+                    entity.setTipo(tipologia.toString());
+                    entity.setEsito("IN CORSO");
+
+                    repositoryFactory.getEntityManager().persist(entity);
+                    repositoryFactory.getEntityManager().flush(); // per avere subito l'ID
+                    return entity.getId();
                 }
-            }
-            CsvImportManager csvImportManager = new CsvImportManager(objectMapper, entityManager, conversionService);
-            csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
+                return null;
+            });
+            try {
+                setImportazioneCSVInCorso(idSelectedConfiguration, utente);
 
-        } catch (RibaltoneHttpException | IOException ex) {
-            throw new RibaltoneHttpException("errore nell'importazione", ex);
-        } finally {
-            if (csvFile != null) {
-                csvFile.delete();
+                if (idImportazioneOrganigramma == null) {
+                    return new ResponseEntity("Utente non trovato", HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+                File csvFile = null;
+
+                switch (tipologia) {
+                    case APPARTENENTI ->
+                        jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
+                            QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
+                    case STRUTTURE ->
+                        jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
+                            QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
+                    case ANAGRAFICHE ->
+                        jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
+                            QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
+                    case TRASFORMAZIONI ->
+                        jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
+                            QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
+                    default ->
+                        throw new AssertionError();
+                }
+                try {
+                    // creo il csv come file temporaneo e lo cancello al termine
+                    csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
+                    csvFile.deleteOnExit();
+                    try (FileOutputStream fos = new FileOutputStream(csvFile);) {
+                        try (InputStream csvIs = csv.getInputStream()) {
+                            IOUtils.copy(csvIs, fos);
+                        }
+                    }
+                    CsvImportManager csvImportManager = new CsvImportManager(objectMapper, repositoryFactory.getEntityManager(), conversionService);
+                    csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
+                    setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
+                } catch (RibaltoneHttpException | IOException ex) {
+                    LOGGER.error("", ex);
+                    ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
+                    setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
+                    return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//                    throw new RibaltoneHttpException("errore nell'importazione", ex);
+                } finally {
+                    ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
+                    if (csvFile != null) {
+                        csvFile.delete();
+                    }
+
+                }
+                setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
+                return new ResponseEntity(true, HttpStatus.OK);
+            } catch (RibaltoneHttpException | JsonProcessingException ex) {
+                setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
+                ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
+                LOGGER.error("", ex);
+                return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
+        } else {
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+            Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserImportingCSV());
+            return new ResponseEntity(user, HttpStatus.IM_USED);
         }
+
     }
 
     /**
@@ -201,40 +277,81 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      * @param typeUserReport
      * @return
      * @throws RibaltoneHttpException
+     * @throws java.lang.ClassNotFoundException
+     * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    @Transactional(rollbackOn = Throwable.class)
+//    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
         @RequestBody ConfigRibaltoneView configRibaltoneView,
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-        if (hoPermessoPerLanciareRibaltone()) {
-            if (!isRibaltoneInCorso()) {
-                AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
-                Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        String fonteSelezionata = configRibaltoneView.getFonteSelezionata();
+        EntityManager em = repositoryFactory.getEntityManager();
 
-                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, configRibaltoneView.getFonteSelezionata().toString());
-                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+        ResponseEntity response = transactionTemplate.execute(action -> {
+            if (hoPermessoPerLanciareRibaltone()) {
+                if (!isRibaltoneInCorso(fonteSelezionata) && !isImportazioneCSVInCorso(fonteSelezionata)) {
+                    AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+                    Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+                    realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+                    RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(em, fonteSelezionata);
+                    RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+
+                    try {
+                        setImportazioneCSVInCorso(fonteSelezionata, realUser);
+                        setRibaltoneInCorso(fonteSelezionata, realUser);
 
 //                ribaltoneCache.cleanCache();
-                Map<String, Object> infoRibaltone = new HashMap<>();
-                Operations restore = ribaltoneCache.restore();
-                if (restore != null) {
-                    infoRibaltone.put("operations", restore);
-                } else {
-                    infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
-                }
-                Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata().toString(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
-                infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
-                return new ResponseEntity(infoRibaltone, HttpStatus.OK);
-            } else {
-                return new ResponseEntity("non puoi lanicare il ribaltone perche è gia in corso", HttpStatus.IM_USED);
-            }
-        } else {
-            return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
-        }
+                        Map<String, Object> infoRibaltone = new HashMap<>();
+                        Operations restore = ribaltoneCache.restore();
+                        if (restore != null) {
+                            infoRibaltone.put("operations", restore);
+                        } else {
 
+                            infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
+                        }
+                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
+                        infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
+                        return new ResponseEntity(infoRibaltone, HttpStatus.OK);
+                    } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException | StaleObjectStateException ex) {
+                        try {
+                            setRibaltoneFinito(configRibaltoneView.getFonteSelezionata());
+                        } catch (JsonProcessingException e) {
+                            LOGGER.error("non ho settato il ribaltone finito", e);
+                            //throw new RibaltoneHttpException();
+                        }
+                        LOGGER.info("setto la connessione come rollbackonly", ex);
+                        action.setRollbackOnly();
+                        return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+                    } finally {
+                        try {
+                            ribaltoneCache.setImportingCSV(Boolean.FALSE, realUser);
+                        } catch (JsonProcessingException e) {
+                            LOGGER.error("non ho settato l'importazione csv come finita", e);
+                            //throw new RibaltoneHttpException("", e);
+                            action.setRollbackOnly();
+                            return new ResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                } else {
+                    RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), configRibaltoneView.getFonteSelezionata());
+                    RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+                    try {
+                        Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserExecuting());
+                        return new ResponseEntity(user, HttpStatus.IM_USED);
+                    } catch (JsonProcessingException e) {
+                        return new ResponseEntity(null, HttpStatus.IM_USED);
+                    }
+                }
+            } else {
+
+                return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
+            }
+        });
+        return response;
     }
 
     /**
@@ -254,16 +371,25 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
-
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (hoPermessoPerLanciareRibaltone()) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
-            ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
-            ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
-            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idSelectedConfiguration);
-            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-            ribaltoneCache.cleanCache();
-            return new ResponseEntity("tutto ok", HttpStatus.OK);
+            realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+            try {
+
+                ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
+                ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
+                RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+                RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+                ribaltoneCache.cleanDataCache();
+                setRibaltoneFinito(idSelectedConfiguration);
+                return new ResponseEntity("tutto ok", HttpStatus.OK);
+
+            } catch (RibaltoneHttpException | ClassNotFoundException | JsonProcessingException ex) {
+                setRibaltoneFinito(idSelectedConfiguration);
+                throw ex;
+            }
         } else {
             return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
         }
@@ -276,11 +402,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(entityManager, idSelectedConfiguration);
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-        ribaltoneCache.cleanCache();
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        ribaltoneCache.cleanDataCache();
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
         Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+        realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache");
     }
 
@@ -292,7 +419,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) StrutturaUnificata.TipoUnificazione tipoUnificazione
     ) throws RibaltoneHttpException {
         if (hoPermessoPerLanciareRibaltone()) {
-            JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+            JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
             QStruttura qStruttura = QStruttura.struttura;
             QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
             QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
@@ -356,7 +483,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         utenteStruttura.setIdUtente(utente);
                         LOGGER.info(utente.getIdPersona().getDescrizione());
                         LOGGER.info(utente.getIdAzienda().getId().toString());
-                        entityManager.persist(utenteStruttura);
+                        repositoryFactory.getEntityManager().persist(utenteStruttura);
                     }
 
                     for (UtenteStruttura daAggiungereADestinazione : usDaAggiungereADestinazione) {
@@ -385,9 +512,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         LOGGER.info(utente.getIdPersona().getDescrizione());
                         LOGGER.info(utente.getIdAzienda().getId().toString());
                         LOGGER.info(destinazione.getIdAzienda().getId().toString());
-                        entityManager.persist(utenteStruttura);
+                        repositoryFactory.getEntityManager().persist(utenteStruttura);
                     }
-                    entityManager.persist(unificazione);
+                    repositoryFactory.getEntityManager().persist(unificazione);
                 }
 
                 case REPLICA -> {
@@ -448,12 +575,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     }
                     //salvataggio di tutto sul db
                     //prima l'unificazione altrimenti il trigger di spargi_afferenza_da_sottoresponsabile_unificato mi da errore
-                    entityManager.persist(unificazione);
+                    repositoryFactory.getEntityManager().persist(unificazione);
 
                     //set degli utenti struttura e salvataggio per evitare confitto con spargi_afferenza_da_sottoresponsabile_unificato
-                    entityManager.persist(sr);
+                    repositoryFactory.getEntityManager().persist(sr);
                     nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
-                    entityManager.persist(nuovaStruttura);
+                    repositoryFactory.getEntityManager().persist(nuovaStruttura);
                 }
                 default ->
                     throw new AssertionError();
@@ -464,7 +591,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     }
 
     private boolean hoPermessoPerLanciareRibaltone() {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QRuolo qRuolo = QRuolo.ruolo;
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
         Utente realUser = authenticatedUserProperties.getRealUser();
@@ -491,8 +618,46 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         return lanciaRibaltone;
     }
 
-    public Boolean isRibaltoneInCorso() {
-        return false;
+    private boolean isRibaltoneInCorso(String idSelectedConfiguration) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        return ribaltoneCache.isExecuting();
+    }
+
+    private void setRibaltoneInCorso(String idSelectedConfiguration, Utente utente) throws RibaltoneHttpException, JsonProcessingException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        ribaltoneCache.setExecuting(Boolean.TRUE, utente);
+    }
+
+    private void setRibaltoneFinito(String idSelectedConfiguration) throws RibaltoneHttpException, JsonProcessingException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        ribaltoneCache.setExecuting(Boolean.FALSE, null);
+    }
+
+    private boolean isImportazioneCSVInCorso(String idSelectedConfiguration) throws RibaltoneHttpException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        return ribaltoneCache.isImportingCSV();
+    }
+
+    private void setImportazioneOrganigrammaFinito(Integer idImportazioneOgranigramma, String esito) {
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        transactionTemplate.executeWithoutResult(action -> {
+            QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
+            jPAQueryFactory
+                .update(qImportazioniOrganigramma)
+                .set(qImportazioniOrganigramma.esito, esito)
+                .where(qImportazioniOrganigramma.id.eq(idImportazioneOgranigramma))
+                .execute();
+        });
+    }
+
+    private void setImportazioneCSVInCorso(String idSelectedConfiguration, Utente utente) throws RibaltoneHttpException, JsonProcessingException {
+        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
+        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        ribaltoneCache.setImportingCSV(true, utente);
     }
 
 }

@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
+import jakarta.persistence.SequenceGenerator;
 
 /**
  *
@@ -27,7 +29,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface {
+public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface, DatiRibaltoneStrutturaInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -65,7 +67,8 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     private String codiceAzienda;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_strutture_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_strutture_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_strutture_id_seq", allocationSize = 100)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -75,9 +78,13 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
 
+    @Column(name = "errore")
+    private String errore;
+
     public DatiDaImportareStruttura() {
     }
 
+    @Override
     public Integer getIdCasella() {
         return idCasella;
     }
@@ -94,6 +101,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         this.idPadre = idPadre;
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -204,7 +212,15 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         return DatiDaImportareStruttura.class.getCanonicalName();
     }
 
-    public DatiImportatiStruttura buildDatiImportatiStruttura() {
+    public String getErrore() {
+        return errore;
+    }
+
+    public void setErrore(String errore) {
+        this.errore = errore;
+    }
+
+    public DatiImportatiStruttura buildDatiImportati() {
         DatiImportatiStruttura output = new DatiImportatiStruttura();
 
         output.setIdCasella(this.idCasella);
@@ -218,5 +234,15 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         output.setIdAzienda(this.idAzienda);
 
         return output;
+    }
+
+    @Override
+    public Integer getIdCasellaPadre() {
+        return idPadre;
+    }
+
+    @Override
+    public void setIdCasellaPadre(Integer idCasellaPadre) {
+        this.idPadre = idCasellaPadre;
     }
 }

@@ -251,4 +251,21 @@ public class CSVDaImportareTrasformazione implements Serializable, DatiRibaltone
 
         return output;
     }
+
+    public DatiDaImportareTrasformazione buildDatiDaImportareTrasformazione() {
+        DatiDaImportareTrasformazione output = new DatiDaImportareTrasformazione();
+
+        output.setProgressivoRiga(this.progressivoRiga);
+        output.setIdCasellaPartenza(this.idCasellaPartenza);
+        output.setIdCasellaArrivo(this.idCasellaArrivo);
+        output.setIdAzienda(this.idAzienda);
+        output.setDataTrasformazione(this.dataTrasformazione);
+        output.setMotivo(this.motivo);
+        output.setDatainPartenza(this.datainPartenza);
+        output.setDataoraOper(this.dataOraOper);
+        output.setCodiceEnte(this.codiceEnte);
+        output.setCodiceAzienda(this.codiceAzienda);
+
+        return output;
+    }
 }
