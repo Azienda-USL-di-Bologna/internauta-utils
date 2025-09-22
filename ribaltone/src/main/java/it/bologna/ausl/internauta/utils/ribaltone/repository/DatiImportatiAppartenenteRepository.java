@@ -27,7 +27,7 @@ public interface DatiImportatiAppartenenteRepository extends QuerydslPredicateEx
     @Query(value = "INSERT INTO ribaltone_dati.dati_importati_appartenenti "
         + "(codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda) "
         + "SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda "
-        + "FROM ribaltone_dati.dati_da_importare_appartenenti WHERE codice_azienda =?1 AND  datain < now() AND (datafi IS NULL OR datafi > now())", nativeQuery = true)
+        + "FROM ribaltone_dati.dati_da_importare_appartenenti WHERE codice_azienda =?1", nativeQuery = true)
     public void fromDatiDaImportareToDatiImportati(String codiceAzienda);
 
     @Modifying

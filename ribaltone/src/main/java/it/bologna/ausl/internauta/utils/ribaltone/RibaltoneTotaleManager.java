@@ -205,7 +205,7 @@ public class RibaltoneTotaleManager {
         repositoryFactory.getDatiImportatiAppartenenteRepository().deleteAllByCodiceAzienda(codiceAzienda);
         repositoryFactory.getDatiImportatiStrutturaRepository().deleteAllByCodiceAzienda(codiceAzienda);
         repositoryFactory.getDatiImportatiTrasformazioneRepository().deleteAllByCodiceAzienda(codiceAzienda);
-
+        log.info("fonteeeeeeeeeeeeeee " + fonte);
         switch (fonte) {
             case "GRU" -> {
                 repositoryFactory.getDatiImportatiAnagraficaRepository().fromDatiDaImportareToDatiImportati(codiceAzienda);

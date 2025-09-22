@@ -234,8 +234,8 @@ public class CSVDaImportareAnagrafica implements Serializable, DatiRibaltoneInte
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
-        anagraficaImportata.setCognome(this.cognome);
-        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCognome(WordUtils.capitalizeFully(this.cognome));
+        anagraficaImportata.setNome(WordUtils.capitalizeFully(this.nome));
         anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
         anagraficaImportata.setEmail(this.email);
         anagraficaImportata.setIdAzienda(this.idAzienda);

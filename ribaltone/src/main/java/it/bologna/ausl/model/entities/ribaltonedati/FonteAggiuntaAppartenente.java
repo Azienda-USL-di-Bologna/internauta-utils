@@ -21,6 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -294,14 +295,14 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setCodiceEnte(codiceEnte);
         datiDaImportareAppartenente.setCodiceFiscale(codiceFiscale);
         datiDaImportareAppartenente.setCodiceMatricola(codiceMatricola);
-        datiDaImportareAppartenente.setCognome(cognome);
+        datiDaImportareAppartenente.setCognome(WordUtils.capitalizeFully(cognome));
         datiDaImportareAppartenente.setDataAssunzione(dataAssunzione);
         datiDaImportareAppartenente.setDataDimissione(dataDimissione);
         datiDaImportareAppartenente.setDatain(datain);
         datiDaImportareAppartenente.setDatafi(datafi);
         datiDaImportareAppartenente.setIdAzienda(idAzienda);
         datiDaImportareAppartenente.setIdCasella(idCasella);
-        datiDaImportareAppartenente.setNome(nome);
+        datiDaImportareAppartenente.setNome(WordUtils.capitalizeFully(nome));
         datiDaImportareAppartenente.setResponsabile(responsabile);
         datiDaImportareAppartenente.setTipoAppartenenza("F");
         datiDaImportareAppartenente.setUsername(username);

@@ -299,8 +299,8 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         datiImportatiAppartenente.setCodiceEnte(this.codiceAzienda.concat("01"));
         datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
         datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
-        datiImportatiAppartenente.setCognome(this.cognome);
-        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setCognome(WordUtils.capitalizeFully(this.cognome));
+        datiImportatiAppartenente.setNome(WordUtils.capitalizeFully(this.nome));
         datiImportatiAppartenente.setUsername(this.username);
         datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
         datiImportatiAppartenente.setIdCasella(this.idCasella);

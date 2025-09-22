@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -287,8 +288,8 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
         fonte.setCodiceEnte(codiceEnte);
         fonte.setCodiceFiscale(codiceFiscale);
         fonte.setCodiceMatricola(codiceMatricola);
-        fonte.setCognome(cognome);
-        fonte.setNome(nome);
+        fonte.setCognome(WordUtils.capitalizeFully(cognome));
+        fonte.setNome(WordUtils.capitalizeFully(nome));
         fonte.setIdCasella(idCasella);
         fonte.setIdAzienda(idAzienda);
         fonte.setDatain(datain);

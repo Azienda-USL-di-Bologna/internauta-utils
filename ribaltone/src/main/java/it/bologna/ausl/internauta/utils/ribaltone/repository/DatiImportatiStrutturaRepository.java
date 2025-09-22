@@ -41,7 +41,7 @@ public interface DatiImportatiStrutturaRepository extends
         + "(id_casella, id_padre, descrizione, datain, datafi, tipo_legame, codice_ente, codice_azienda,id_azienda) "
         + "SELECT id_casella, id_padre, descrizione,datain, datafi, tipo_legame,  codice_ente, codice_azienda, id_azienda "
         + "FROM ribaltone_dati.dati_da_importare_strutture "
-        + "WHERE codice_azienda=?1 AND (datafi IS NULL OR datafi > now()) AND datain < now()", nativeQuery = true)
+        + "WHERE codice_azienda=?1", nativeQuery = true)
     public void fromDatiDaImportareToDatiImportati(String codiceAzienda);
 
     @Modifying

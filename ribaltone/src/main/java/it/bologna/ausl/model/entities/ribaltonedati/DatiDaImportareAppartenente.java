@@ -18,6 +18,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -299,8 +300,8 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         datiImportatiAppartenente.setCodiceEnte(this.codiceEnte);
         datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
         datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
-        datiImportatiAppartenente.setCognome(this.cognome);
-        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setCognome(WordUtils.capitalizeFully(this.cognome));
+        datiImportatiAppartenente.setNome(WordUtils.capitalizeFully(this.nome));
         datiImportatiAppartenente.setUsername(this.username);
         datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
         datiImportatiAppartenente.setIdCasella(this.idCasella);
