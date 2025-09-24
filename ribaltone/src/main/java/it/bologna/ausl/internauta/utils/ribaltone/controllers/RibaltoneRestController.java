@@ -470,6 +470,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
                             utenteStruttura.setIdStruttura(sorgente);
                             utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                            utenteStruttura.setIdAziendaDerivazioneUnificazione(destinazione.getIdAzienda());
                             boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
                             utenteStruttura.setResponsabile(responsabile);
                             utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
@@ -500,6 +501,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             utenteStruttura.setIdStruttura(destinazione);
                             utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
                             utenteStruttura.setResponsabile(responsabile);
+                            utenteStruttura.setIdAziendaDerivazioneUnificazione(sorgente.getIdAzienda());
                             utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
                             utenteStruttura.setIdUtente(utente);
                             LOGGER.info(utente.getIdPersona().getDescrizione());
@@ -621,14 +623,18 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                     case FUSIONE -> {
                         List<UtenteStruttura> sorgenteUtentiStrutturaDaSpegnereList = sorgente.getUtenteStrutturaList().stream().filter(
-                            us -> us.getAttivo() && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())).toList();
+                            us -> us.getAttivo()
+                            && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
+                            && us.getIdAziendaDerivazioneUnificazione().getId().equals(destinazione.getIdAzienda().getId())
+                        ).toList();
 
                         List<UtenteStruttura> destinazioneUtenteStrutturaDaSpegnereList = destinazione.getUtenteStrutturaList().stream().filter(
-                            us -> us.getAttivo() && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())).toList();
+                            us -> us.getAttivo() && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
+                            && us.getIdAziendaDerivazioneUnificazione().getId().equals(sorgente.getIdAzienda().getId())
+                        ).toList();
 
                         for (UtenteStruttura daSpegnereASorgente : sorgenteUtentiStrutturaDaSpegnereList) {
                             daSpegnereASorgente = spegniUtenteStruttura(daSpegnereASorgente, repositoryFactory.getEntityManager());
-
                         }
 
                         for (UtenteStruttura daSpegnereADestinazione : destinazioneUtenteStrutturaDaSpegnereList) {
