@@ -37,7 +37,7 @@ public interface DatiImportatiAppartenenteRepository extends QuerydslPredicateEx
         + "FROM ( SELECT distinct a.id,a.version,a.codice_ente, a.codice_matricola, a.cognome, a.nome, a.codice_fiscale, a.id_casella, a.tipo_appartenenza, a.username, a.responsabile, a.codice_azienda, a.id_azienda, a.datain, a.datafi, a.data_assunzione, a.data_dimissione, a.errore "
         + "FROM ribaltone_dati.csv_da_importare_strutture s "
         + "JOIN ribaltone_dati.csv_da_importare_appartenenti a ON s.id_casella = a.id_casella "
-        + "WHERE  s.datain < now() AND (s.datafi IS NULL OR s.datafi > now()) AND s.id_azienda = ?1 AND a.datain < now() AND (a.datafi IS NULL OR a.datafi > now()))", nativeQuery = true)
+        + "WHERE  s.datain < now() AND (s.datafi IS NULL OR s.datafi > now()) AND a.codice_azienda = ?1 AND a.datain < now() AND (a.datafi IS NULL OR a.datafi > now()))", nativeQuery = true)
     public void fromCSVDaImportareToDatiImportati(String codiceAzienda);
 
     @Modifying
