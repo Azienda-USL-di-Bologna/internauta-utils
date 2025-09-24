@@ -24,6 +24,7 @@ import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
@@ -97,6 +98,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         }
         log.info(res);
         return ResponseEntity.ok(res);
+//          return dSSValidatorManager.validateSingleFile(fileRepoFileId, fileRepoMongoUuid, validationDate, request);
     }
     
     @RequestMapping(value = "/validateSignedFile", consumes = "multipart/form-data", method = RequestMethod.POST, produces = "text/plain")
@@ -236,4 +238,9 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         log.info(signsReport.toString());
         return ResponseEntity.ok(signsReport);
     }
+    
+
+    
+    
+    
 }
