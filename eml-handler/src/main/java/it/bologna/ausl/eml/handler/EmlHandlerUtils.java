@@ -91,6 +91,10 @@ public class EmlHandlerUtils {
 
     private static String getTextPart(Part p, String mime) throws MessagingException, IOException, EmlHandlerException {
         String text;
+        String disposition = p.getDisposition();
+        if (disposition != null && disposition.equalsIgnoreCase(Part.ATTACHMENT)) {
+            return null;
+        }
         if (p.isMimeType(mime) && (mime.equals("text/html") || mime.equals("text/plain"))) {
             return (String) getTextPartProcessingByteArray(p, mime);
         }else if (p.isMimeType(mime)) {
