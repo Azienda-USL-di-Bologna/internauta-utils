@@ -125,13 +125,16 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                             dc.setEmail(email);
                             dc.setDescrizione(entitaDaInserire.getEmail());
                             entityManager.persist(dc);
+                            entityManager.flush();
                         } else if (c.getDettaglioContattoList() != null && !c.getDettaglioContattoList().isEmpty()) {
                             List<Utente> utentiList = p.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())).toList();
                             if (utentiList.size() == 1) {
                                 Utente u = utentiList.get(0);
                                 List<DettaglioContatto> dc = u.buildDettagliContattoEmail(c);
                                 c.getDettaglioContattoList().addAll(dc);
+                                log.info("sto salvando il contatto con descrizione" + c.getDescrizione() + "con dettaglio contatto " + dc.get(0).getDescrizione());
                                 entityManager.persist(c);
+                                entityManager.flush();
                             }
                         }
                     }
@@ -146,7 +149,8 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                     Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.attiva.and(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()))).fetchOne();
                     if (p != null) {
                         Contatto c = p.getIdContatto();
-                        if (c != null && c.getDettaglioContattoList() != null) {
+                        log.info("gestisco la persona " + p.getDescrizione() + " con cf: " + p.getCodiceFiscale());
+                        if (c != null && c.getDettaglioContattoList() != null && p.getUtenteList() != null) {
                             //List<DettaglioContatto> dcList = c.getDettaglioContattoList().stream().filter(dc -> dc.getDescrizione().equals(entitaDaInserire.getEmail())).toList();
                             List<Utente> utentiList = p.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())).toList();
                             if (utentiList.size() == 1) {

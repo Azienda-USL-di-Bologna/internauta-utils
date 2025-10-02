@@ -861,9 +861,10 @@ public class OperationsUtils {
                 persona.setNome(entitaDaInserire.getNome());
                 persona.setCognome(entitaDaInserire.getCognome());
                 persona.setCodiceFiscale(entitaDaInserire.getCodiceFiscale());
+                persona.setIdSecondario(entitaDaInserire.getCodiceMatricola());
             }
             persona.setAttiva(Boolean.TRUE);
-
+            persona.setIdSecondario(entitaDaInserire.getCodiceMatricola());
             //inserire in baborg utenti se non c'è l'utente dell'azienda che lancia il ribaltone
             //nel caso si stia trattando una struttura unificata allora controllo che si sia
             //e nel caso inserisco in quelle aziende l'utente nuovo
