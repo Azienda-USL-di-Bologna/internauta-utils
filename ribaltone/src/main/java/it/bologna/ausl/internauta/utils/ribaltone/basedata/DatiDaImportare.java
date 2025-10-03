@@ -91,6 +91,14 @@ public class DatiDaImportare {
         this.idAzienda = idAzienda;
     }
 
+    public Integer getProgressivoTrasformazione() {
+        return progressivoTrasformazione;
+    }
+
+    public void setProgressivoTrasformazione(Integer progressivoTrasformazione) {
+        this.progressivoTrasformazione = progressivoTrasformazione;
+    }
+
     public DatiDaImportare validate() throws RibaltoneHttpException {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;

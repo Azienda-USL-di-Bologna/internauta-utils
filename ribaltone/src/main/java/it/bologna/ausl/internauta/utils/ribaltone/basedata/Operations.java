@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;

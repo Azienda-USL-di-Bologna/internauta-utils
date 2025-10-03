@@ -145,7 +145,6 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 break;
         }
 
-
         buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
 
         if (buildCSV != null) {
@@ -158,7 +157,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
     }
 
     /*
-     *Servlet che si occupa di salvare i dati di configuraione del ribaltone smistando i dati su più entità: parametroAziende e ribaltoneDataConfiguration
+     * Servlet che si occupa di salvare i dati di configuraione del ribaltone smistando i dati su più entità: parametroAziende e ribaltoneDataConfiguration
      */
     @RequestMapping(value = "updateRibaltoneConf", method = RequestMethod.POST)
     public ResponseEntity<?> updateRibaltoneConf(
