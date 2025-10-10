@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -278,6 +279,31 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
 
     public void setIdAzienda(Integer idAzienda) {
         this.idAzienda = idAzienda;
+    }
+
+    public FonteAggiuntaAppartenente buildFonteAggiunta(FonteAggiuntaAppartenente.ProvenienzaFonteAggiunta provenienza) {
+        FonteAggiuntaAppartenente fonte = new FonteAggiuntaAppartenente();
+
+        fonte.setCodiceAzienda(codiceAzienda);
+        fonte.setCodiceEnte(codiceEnte);
+        fonte.setCodiceFiscale(codiceFiscale);
+        fonte.setCodiceMatricola(codiceMatricola);
+        fonte.setCognome(WordUtils.capitalizeFully(cognome));
+        fonte.setNome(WordUtils.capitalizeFully(nome));
+        fonte.setIdCasella(idCasella);
+        fonte.setIdAzienda(idAzienda);
+        fonte.setDatain(datain);
+        fonte.setDatafi(datafi);
+        fonte.setDataAssunzione(dataAssunzione);
+        fonte.setDataDimissione(dataDimissione);
+        fonte.setTipoAppartenenza("F");
+        fonte.setUsername(username);
+        fonte.setResponsabile(responsabile);
+
+        // campo extra presente solo in FonteAggiuntaAppartenente
+        fonte.setProvenienza(provenienza);
+
+        return fonte;
     }
 
 }

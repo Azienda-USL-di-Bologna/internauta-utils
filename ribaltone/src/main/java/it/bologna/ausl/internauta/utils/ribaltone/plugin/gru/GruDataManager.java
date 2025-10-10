@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -164,8 +165,8 @@ public class GruDataManager extends SourceDataManager {
             Map<String, Object> appartenenteData = new HashMap<>();
             appartenenteData.put("codiceEnte", appartenente.getCodiceEnte());
             appartenenteData.put("codiceMatricola", appartenente.getCodiceMatricola());
-            appartenenteData.put("cognome", appartenente.getCognome());
-            appartenenteData.put("nome", appartenente.getNome());
+            appartenenteData.put("cognome", WordUtils.capitalizeFully(appartenente.getCognome()));
+            appartenenteData.put("nome", WordUtils.capitalizeFully(appartenente.getNome()));
             appartenenteData.put("codiceFiscale", appartenente.getCodiceFiscale());
             appartenenteData.put("idCasella", appartenente.getIdCasella());
 //            appartenenteData.put("datain", appartenente.getDatain().toInstant().atZone(ZoneId.systemDefault()));
@@ -204,8 +205,8 @@ public class GruDataManager extends SourceDataManager {
                 fonteIntermediaAppartenente.setCodiceMatricola(responsabileTotale.getCodiceMatricola());
                 fonteIntermediaAppartenente.setCodiceAzienda(codiceAzienda);
                 fonteIntermediaAppartenente.setCodiceFiscale(appartenenteData.get("codiceFiscale").toString());
-                fonteIntermediaAppartenente.setCognome(appartenenteData.get("cognome").toString());
-                fonteIntermediaAppartenente.setNome(appartenenteData.get("nome").toString());
+                fonteIntermediaAppartenente.setCognome(WordUtils.capitalizeFully(appartenenteData.get("cognome").toString()));
+                fonteIntermediaAppartenente.setNome(WordUtils.capitalizeFully(appartenenteData.get("nome").toString()));
                 if (appartenenteData.get("username") != null) {
                     fonteIntermediaAppartenente.setUsername(appartenenteData.get("username").toString());
                 }

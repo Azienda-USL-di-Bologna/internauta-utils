@@ -164,7 +164,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     //va verificato il perche se perche confluito allora va gestito il caso
                     case INSERT -> {
                         DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
-                        Struttura strutturaAttiva = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.attiva.and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()))).fetchOne();
+                        Struttura strutturaAttiva = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.attiva.and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella())).and(qStruttura.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))).fetchOne();
                         List<DatiDaImportareTrasformazione> trasformazioniInerenti = new ArrayList<>();
                         for (DatiDaImportareTrasformazione t : datiDaImportareTrasformazioneList) {
                             try {
@@ -214,7 +214,6 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                         entityManager.persist(utenteStruttura);
                                         entityManager.persist(dc);
                                     }
-                                    entityManager.refresh(c);
                                     p.setIdContatto(c);
                                     entityManager.persist(p);
                                 } else {

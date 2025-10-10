@@ -83,7 +83,7 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificataReload = getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
                     Struttura strutturaDoveInserire = null;
-                    if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                    if (strutturaUnificataReload.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                         strutturaDoveInserire = jPAQueryFactory
                             .select(qStruttura)
                             .from(qStruttura)

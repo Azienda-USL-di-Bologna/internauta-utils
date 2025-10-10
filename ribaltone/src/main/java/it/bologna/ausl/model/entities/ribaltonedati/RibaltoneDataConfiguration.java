@@ -11,6 +11,8 @@ import java.util.Map;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.EntityManager;
+import java.util.List;
 
 /**
  *
@@ -51,7 +53,7 @@ public class RibaltoneDataConfiguration {
         personeDaSpegnere,
         queryRecuperoDati,
         personeNonSpegnibili,
-        progressivo_ultima_trasformazione
+        progressivoUltimaTrasformazione
     }
 
     /**
@@ -111,5 +113,4 @@ public class RibaltoneDataConfiguration {
     public void setSpecifiche(HashMap<String, Object> specifiche) {
         this.specifiche = specifiche;
     }
-
 }

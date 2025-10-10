@@ -19,6 +19,8 @@
  */
 package org.xhtmlrenderer.css.extend;
 
+import com.google.errorprone.annotations.CheckReturnValue;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Node;
 
 /**
@@ -35,6 +37,7 @@ public interface TreeResolver {
     /**
      * returns the parent element of an element, or null if this was the root element
      */
+    @Nullable
     Node getParentElement(Node element);
 
     /**
@@ -45,6 +48,7 @@ public interface TreeResolver {
     /**
      * The previous sibling element, or null if none exists
      */
+    @Nullable
     Node getPreviousSiblingElement(Node node);
 
     /**
@@ -62,6 +66,7 @@ public interface TreeResolver {
      * @param element The node
      * @return -1 in case of error, 0 indexed position otherwise
      */
+    @CheckReturnValue
     int getPositionOfElement(Node element);
 
     /**

@@ -3,8 +3,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import jakarta.persistence.Column;
 import java.io.Serializable;
-import java.time.ZoneId;
-import java.util.Date;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -23,7 +22,7 @@ public class Appartenente implements Serializable {
 
     @Column(name = "NOME")
     private String nome;
-    
+
     @Column(name = "CODICE_FISCALE")
     private String codiceFiscale;
 
@@ -39,7 +38,6 @@ public class Appartenente implements Serializable {
 //    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    private Date datafi;
-
     @Column(name = "TIPO_APPARTENENZA")
     private String tipoAppartenenza;
 
@@ -55,7 +53,6 @@ public class Appartenente implements Serializable {
 //    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    private Date dataDimissione;
-
     public Appartenente() {
     }
 
@@ -154,26 +151,26 @@ public class Appartenente implements Serializable {
 //    public void setDataDimissione(Date dataDimissione) {
 //        this.dataDimissione = dataDimissione;
 //    }
-
     @Override
     public String toString() {
         return "it.bologna.ausl.internauta.model.entities.ribaltone.entita.plugin.gru.oracledata.Appartenente[ id=" + codiceFiscale + " ]";
     }
-    
+
     /**
-     * ritorna un appartenente in formato fonte intermedia 
+     * ritorna un appartenente in formato fonte intermedia
      * setta sempre la responsabilita a false
+     *
      * @param codiceAzienda
      * @param idAzienda
-     * @return DatiDaImportareAppartenente 
+     * @return DatiDaImportareAppartenente
      */
-    public DatiDaImportareAppartenente toFonteIntermedia(String codiceAzienda, Integer idAzienda){
+    public DatiDaImportareAppartenente toFonteIntermedia(String codiceAzienda, Integer idAzienda) {
         DatiDaImportareAppartenente fonteIntermediaAppartenente = new DatiDaImportareAppartenente();
         fonteIntermediaAppartenente.setCodiceEnte(codiceEnte);
         fonteIntermediaAppartenente.setCodiceFiscale(codiceFiscale);
         fonteIntermediaAppartenente.setCodiceMatricola(codiceMatricola);
-        fonteIntermediaAppartenente.setNome(nome);
-        fonteIntermediaAppartenente.setCognome(cognome);
+        fonteIntermediaAppartenente.setNome(WordUtils.capitalizeFully(nome));
+        fonteIntermediaAppartenente.setCognome(WordUtils.capitalizeFully(cognome));
         fonteIntermediaAppartenente.setIdAzienda(idAzienda);
 //        fonteIntermediaAppartenente.setDataAssunzione(dataAssunzione.toInstant().atZone(ZoneId.systemDefault()));
 //        fonteIntermediaAppartenente.setDataDimissione(dataDimissione.toInstant().atZone(ZoneId.systemDefault()));
@@ -184,7 +181,7 @@ public class Appartenente implements Serializable {
         fonteIntermediaAppartenente.setUsername(username);
         fonteIntermediaAppartenente.setCodiceAzienda(codiceAzienda);
         fonteIntermediaAppartenente.setResponsabile(Boolean.FALSE);
-    return fonteIntermediaAppartenente;
+        return fonteIntermediaAppartenente;
     }
 
 }

@@ -10,6 +10,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
@@ -236,4 +237,27 @@ public class RibaltoneManagerUtils {
         return new ArrayList<>(mappaPerIdCasella.values());
     }
 
+    public static void updateProgressivoUltimaTrasformazione(String fonte, String codiceEnte, RepositoryFactory repositoryFactory) {
+        List<DatiDaImportareTrasformazione> trasformazioniEseguite = repositoryFactory.getDatiDaImportareTrasformazioneRepository().findAll();
+        if (trasformazioniEseguite != null && !trasformazioniEseguite.isEmpty()) {
+
+            String sql = """
+                UPDATE ribaltone_dati.configuration t
+                SET specifiche = jsonb_set(
+                        t.specifiche,
+                        '{progressivoUltimaTrasformazione}',
+                        to_jsonb((
+                            SELECT max(d.progressivo_riga)
+                            FROM ribaltone_dati.dati_da_importare_trasformazioni d
+                            WHERE d.codice_ente = ?
+                        )),
+                        false
+                    )
+                WHERE t.id = ?;
+                """;
+            repositoryFactory.getJdbcTemplate()
+                .update(sql, codiceEnte, fonte);
+        }
+
+    }
 }

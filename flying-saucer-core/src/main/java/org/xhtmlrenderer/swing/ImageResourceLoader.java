@@ -1,5 +1,6 @@
 package org.xhtmlrenderer.swing;
 
+import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
 import org.xhtmlrenderer.extend.FSImage;
 import org.xhtmlrenderer.resource.ImageResource;
@@ -109,15 +110,18 @@ public class ImageResourceLoader {
         _imageCache.clear();
     }
 
+    @CheckReturnValue
     public ImageResource get(final String uri) {
         return get(uri, -1, -1);
     }
 
+    @CheckReturnValue
     public synchronized ImageResource get(final String uri, final int width, final int height) {
         if (isEmbeddedBase64Image(uri)) {
             ImageResource resource = loadEmbeddedBase64ImageResource(uri);
-            resource.getImage().scale(width, height);
-            return resource;
+            FSImage image = resource.getImage();
+            FSImage scaledImage = image == null ? null : image.scale(width, height);
+            return new ImageResource(resource.getImageUri(), scaledImage);
         } else {
             CacheKey key = new CacheKey(uri, width, height);
             ImageResource ir = _imageCache.get(key);

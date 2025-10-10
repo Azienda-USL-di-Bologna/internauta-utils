@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
+import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -30,6 +31,9 @@ public abstract class Task implements Dumpable {
     protected Bag params;
     protected Boolean auto = false;
 
+    @JsonIgnore
+    protected EntityManager entityManager;
+    
     // di questa funzione va fatto l'override nelle sottoclassi
     public static String getTaskParametersKey() {
         return TASK_PARAMETER_KEY;
@@ -107,6 +111,14 @@ public abstract class Task implements Dumpable {
 
     public BdmStatus getStatus() {
         return status;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     @JsonIgnore

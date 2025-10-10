@@ -21,8 +21,10 @@ package org.xhtmlrenderer.newtable;
 
 import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
+import org.w3c.dom.Element;
 import org.xhtmlrenderer.css.constants.CSSName;
 import org.xhtmlrenderer.css.constants.IdentValue;
+import org.xhtmlrenderer.css.style.CalculatedStyle;
 import org.xhtmlrenderer.css.style.CssContext;
 import org.xhtmlrenderer.css.style.derived.BorderPropertySet;
 import org.xhtmlrenderer.css.style.derived.RectPropertySet;
@@ -50,16 +52,13 @@ public class TableRowBox extends BlockBox {
     private int _extraSpaceTop;
     private int _extraSpaceBottom;
 
-    public TableRowBox() {
+    public TableRowBox(@Nullable Element element, @Nullable CalculatedStyle style, boolean anonymous) {
+        super(element, style, anonymous);
     }
 
     @Override
     public BlockBox copyOf() {
-        TableRowBox result = new TableRowBox();
-        result.setStyle(getStyle());
-        result.setElement(getElement());
-
-        return result;
+        return new TableRowBox(getElement(), getStyle(), isAnonymous());
     }
 
     @Override
@@ -130,19 +129,9 @@ public class TableRowBox extends BlockBox {
     }
 
     @Override
-    public void analyzePageBreaks(LayoutContext c, ContentLimitContainer container) {
+    public void analyzePageBreaks(LayoutContext c, @Nullable ContentLimitContainer container) {
         if (getTable().getStyle().isPaginateTable()) {
-            _contentLimitContainer = new ContentLimitContainer(c, getAbsY());
-            _contentLimitContainer.setParent(container);
-
-            if (container != null) {
-                container.updateTop(c, getAbsY());
-                container.updateBottom(c, getAbsY() + getHeight());
-            }
-
-            for (Box b : getChildren()) {
-                b.analyzePageBreaks(c, _contentLimitContainer);
-            }
+            _contentLimitContainer = buildContainerAndAnalyzePageBreaks(c, container);
 
             if (container != null && _contentLimitContainer.isContainsMultiplePages()) {
                 propagateExtraSpace(c, container, _contentLimitContainer, getExtraSpaceTop(), getExtraSpaceBottom());
