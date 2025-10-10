@@ -71,6 +71,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private static final String P7M_CONTENT_TYPE = "application/pkcs7-mime";
 
     private static final String CREDENTIAL_PROXY_PASS = "$credential_proxy";
+    private static final String DELEGATE_FIXED_OTP = "dsign";
     
     private Boolean credentialProxyActive = false;
     private final Map<String, Object> credentialProxyAdminInfo;
@@ -354,27 +355,52 @@ public class FirmaRemotaAruba extends FirmaRemota {
         logger.info("dominio: " + userInformation.getDominioFirma());     
         if (StringUtils.hasText(userInformation.getDominioFirma())) {
             identity.setTypeOtpAuth(userInformation.getDominioFirma());
+            if (userInformation.getFirmaDelegata()) {
+                identity.setDelegatedDomain(userInformation.getDominioFirma());
+            }
         } else {
             identity.setTypeOtpAuth(dominioFirmaDefault);
+            if (userInformation.getFirmaDelegata()) {
+                identity.setDelegatedDomain(dominioFirmaDefault);
+            }
         }
-        identity.setUser(userInformation.getUsername());
+        if (userInformation.getFirmaDelegata()) {
+            identity.setDelegatedUser(userInformation.getUsername());
+        } else {
+            identity.setUser(userInformation.getUsername());
+        }
         
         if (userInformation.useSavedCredential()) {
             if (configuration.getInternalCredentialsManager()) {
-                identity.setUserPWD(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
+                if (userInformation.getFirmaDelegata()) {
+                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
+                } else {
+                    identity.setUserPWD(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
+                }
             } else {
-                identity.setUserPWD(CREDENTIAL_PROXY_PASS);
-                
+                if (userInformation.getFirmaDelegata()) {
+                    identity.setDelegatedPassword(CREDENTIAL_PROXY_PASS);
+                } else {
+                    identity.setUserPWD(CREDENTIAL_PROXY_PASS);
+                }
             }
         } else {
-            identity.setUserPWD(userInformation.getPassword());
+            if (userInformation.getFirmaDelegata()) {
+                    identity.setDelegatedPassword(userInformation.getPassword());
+            } else {
+                identity.setUserPWD(userInformation.getPassword());
+            }
         }
         
         // questo serve nel caso in cui si vuole effettuare la pre-autenthication
         if (userInformation.getModalitaFirma() == ModalitaFirma.ARUBACALL) {
             identity.setExtAuthtype(CredentialsType.ARUBACALL);
         }
-        identity.setOtpPwd(userInformation.getToken());
+        if (userInformation.getFirmaDelegata()) {
+            identity.setOtpPwd(DELEGATE_FIXED_OTP);
+        } else {
+            identity.setOtpPwd(userInformation.getToken());
+        }
 
         return identity;
     }
