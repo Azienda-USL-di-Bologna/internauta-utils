@@ -293,7 +293,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         String fonteSelezionata = configRibaltoneView.getFonteSelezionata();
         EntityManager em = repositoryFactory.getEntityManager();
-
+        LOGGER.info("codiceAzienda " + codiceAzienda);
         ResponseEntity response = transactionTemplate.execute(action -> {
             if (hoPermessoPerLanciareRibaltone()) {
                 if (!isRibaltoneInCorso(fonteSelezionata) && !isImportazioneCSVInCorso(fonteSelezionata)) {

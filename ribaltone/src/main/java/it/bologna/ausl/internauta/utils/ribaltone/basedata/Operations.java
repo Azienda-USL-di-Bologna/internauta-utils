@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
@@ -22,6 +23,7 @@ import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
@@ -31,6 +33,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +51,7 @@ public class Operations implements Serializable {
     private List<OperationTrasformazione> listOfOperationTrasformazione;
     private List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura;
     private List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente;
-    private Object workToDo;
+    private Object workToDo = null;
 
     public Operations(
         List<OperationStruttura> listOfOperationStruttura,
@@ -72,6 +75,7 @@ public class Operations implements Serializable {
     }
 
     public void execute(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
+        workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
@@ -82,18 +86,22 @@ public class Operations implements Serializable {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenente(repositoryFactory);
         }
-        workToDo = null;
+        //qui bisogna scrivere una funzione che va sul db e per ogni afferenza di utenti in listofOperation
+        //deve risistemare afferenze funzionali e dirette e mettere il dettaglio principare corretto
+
+        workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationTrasformazione operation : listOfOperationTrasformazione) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattiTrasformati(repositoryFactory);
         }
-        risistemaAfferenze(repositoryFactory);
+        risistemaAfferenze(repositoryFactory, codiceAzienda);
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafica) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
         }
-        workToDo = null;
+
+        workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationUnificazioneStruttura operation : listOfOperationUnificazioneStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStutturaUnificata(repositoryFactory);
@@ -223,19 +231,20 @@ public class Operations implements Serializable {
      * un'afferenza diretta per utente mette tutte quelle di troppo come
      * funzionali. (ritorna gli utenti struttura cambiati)
      */
-    private void risistemaAfferenze(RepositoryFactory repositoryFactory) {
+    private void risistemaAfferenze(RepositoryFactory repositoryFactory, String codiceAzienda) {
         //faccio la query di select
         //count e poi vedo che fare
         QUtenteStruttura us = QUtenteStruttura.utenteStruttura;
         QUtente u = QUtente.utente;
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
-        Integer idAfferenzaStruttura = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
+        Integer idAfferenzaFunzionale = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
+        AfferenzaStruttura idAfferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
             .select(us.idUtente.id)
             .from(us)
             .where(us.attivo.isTrue()
-                .and(us.idUtente.idAzienda.id.eq(2))
+                .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
                 .and(us.idAfferenzaStruttura.id.eq(1)))
             .groupBy(us.idUtente.id)
             .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
@@ -245,7 +254,7 @@ public class Operations implements Serializable {
             .select(us)
             .from(us)
             .where(us.attivo.isTrue()
-                .and(us.idUtente.idAzienda.id.eq(2))
+                .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
                 .and(us.idAfferenzaStruttura.id.eq(1))
                 .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette))) // Join con il risultato della prima query
             .fetch();
@@ -259,7 +268,7 @@ public class Operations implements Serializable {
                 Integer utenteStrutturaDaNonToccare = utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1);
                 queryFactory
                     .update(us)
-                    .set(us.idAfferenzaStruttura.id, idAfferenzaStruttura)
+                    .set(us.idAfferenzaStruttura.id, idAfferenzaFunzionale)
                     .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId())));
                 //segno gia sistemata questa persona
                 utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).put(2, 1);
@@ -268,6 +277,47 @@ public class Operations implements Serializable {
                 usSalvo.put(1, utenteStruttura.getId());
                 utentiConGiaAfferenzaDiretta.put(utenteStruttura.getIdUtente().getId(), usSalvo);
             }
+        }
+        QUtenteStruttura us2 = new QUtenteStruttura("us2");
+
+        List<UtenteStruttura> utentiStrutturaFunzionaliSenzaDirette = queryFactory
+            .selectFrom(us)
+            .where(
+                us.attivo.isTrue()
+                    .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
+                    .and(us.idAfferenzaStruttura.id.eq(3))
+                    // esclude utenti che hanno almeno una diretta attiva
+                    .and(
+                        us.idUtente.id.notIn(
+                            JPAExpressions
+                                .select(us2.idUtente.id)
+                                .from(us2)
+                                .where(
+                                    us2.attivo.isTrue()
+                                        .and(us2.idAfferenzaStruttura.id.eq(1))
+                                        .and(us2.idUtente.idAzienda.codice.eq(codiceAzienda))
+                                )
+                        )
+                    )
+            )
+            .orderBy(us.idUtente.id.asc()) //
+            .fetch();
+
+        Integer idUtenteDiAppoggio = null;
+
+        for (UtenteStruttura utenteStrutturaFunzionale : utentiStrutturaFunzionaliSenzaDirette) {
+            if (!Objects.equals(idUtenteDiAppoggio, utenteStrutturaFunzionale.getIdUtente().getId())) {
+                idUtenteDiAppoggio = utenteStrutturaFunzionale.getIdUtente().getId();
+                utenteStrutturaFunzionale.setIdAfferenzaStruttura(idAfferenzaDiretta);
+                repositoryFactory.getEntityManager().persist(utenteStrutturaFunzionale);
+                DettaglioContatto idDettaglioContatto = utenteStrutturaFunzionale.getIdDettaglioContatto();
+                if (idDettaglioContatto != null) {
+                    idDettaglioContatto.setPrincipale(Boolean.TRUE);
+                    repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                    repositoryFactory.getEntityManager().flush();
+                }
+            }
+
         }
     }
 

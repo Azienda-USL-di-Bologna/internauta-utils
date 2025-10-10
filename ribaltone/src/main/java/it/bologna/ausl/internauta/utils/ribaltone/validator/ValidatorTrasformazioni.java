@@ -62,12 +62,12 @@ public class ValidatorTrasformazioni extends AbstractValidator {
                         }
                     }
                 }
-            }
-            datiDaImportareTrasformazione.setErrore(motivoInvalidita);
-            if (trasformazioneValida) {
-                datiDaImportareTrasformazioniValide.add(datiDaImportareTrasformazione);
-            } else {
-                trasformazioniNonValide.add(datiDaImportareTrasformazione);
+                datiDaImportareTrasformazione.setErrore(motivoInvalidita);
+                if (trasformazioneValida) {
+                    datiDaImportareTrasformazioniValide.add(datiDaImportareTrasformazione);
+                } else {
+                    trasformazioniNonValide.add(datiDaImportareTrasformazione);
+                }
             }
 
         }

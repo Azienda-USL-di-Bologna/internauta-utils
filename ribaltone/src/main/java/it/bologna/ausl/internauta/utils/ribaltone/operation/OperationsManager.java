@@ -126,6 +126,7 @@ public class OperationsManager {
         List<OperationStruttura> operationsStrutture = (List<OperationStruttura>) buildedOperationsStruttureETrasformazione.get("strutture");
         List<OperationAppartenente> operationsAppartenenti = buildedOperationsAppartenenti(datiDaImportare.getAppartenentiDaImportare(), this.appartenentiImportati, indexAppartenentiImportati, this.struttureImportate, datiDaImportare.getStruttureDaImportare(), queryFactory);
         List<OperationAnagrafica> operationsAnagrafiche = buildedOperationsAnagrafiche(datiDaImportare.getAnagraficheDaImportare(), this.anagraficheImportate, this.indexAnagraficheImportate);
+        log.info("progressivo " + trasformazioniImportateUltimoProgressivoRiga);
         Map<String, List<? extends Operation<DatiRibaltoneInterface>>> buildedOperationsTrasformazioniUnificazioni = buildedOperationsTrasformazioni(datiDaImportare.getTrasformazioniDaImportare(), this.trasformazioniImportateUltimoProgressivoRiga);
         List<OperationTrasformazione> operationsTraformazioni = (List<OperationTrasformazione>) buildedOperationsTrasformazioniUnificazioni.get("trasformazioni");
 
@@ -265,6 +266,7 @@ public class OperationsManager {
         for (DatiImportatiStruttura strutturaImportata : struttureImportate) {
             if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
                 && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
+                log.info("struttura importata");
                 DatiImportatiStruttura casellaPadre = struttureImportate.get(indexStruttureImportate.get(strutturaImportata.getIdPadre().toString()));
                 HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                 descrizioniAggiuntive.put("descrizioneCasellaPadre", casellaPadre.getDescrizione());
@@ -445,8 +447,7 @@ public class OperationsManager {
         List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
         log.info("Faccio il build delle operations anagrafiche");
         for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {
-            String writeValueAsString = repositoryFactory.getObjectMapper().writeValueAsString(datiDaImportareAnagrafica);
-            log.info(writeValueAsString);
+
             Operation.Azione azione = Operation.Azione.INSERT;
             Boolean salva = true;
             Integer posizione = indexAnagraficheImportate.get(datiDaImportareAnagrafica.getKey());
@@ -460,6 +461,7 @@ public class OperationsManager {
                     salva = false;
                 }
             }
+
             if (salva) {
                 if (Operation.Azione.INSERT.equals(azione) && !StringUtils.hasText(datiDaImportareAnagrafica.getEmail())) {
                 } else {
@@ -634,6 +636,7 @@ public class OperationsManager {
         if (coinvoltoInReplicheFuture != null && coinvoltoInReplichePassate == null) {
             List<UnificazioneDaGestire> unificazioniEseguite = new ArrayList<>();
             for (StrutturaUnificata strutturaUnificata : coinvoltoInReplicheFuture) {
+                log.info("inizio a gestire questa unificazione" + strutturaUnificata.getId() + "con questa struttura " + strutturaUnificata.getIdStruttura());
                 unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
             }
             operationsUnificazioneStruttura.add(new OperationUnificazioneStruttura(azione, struttura, repositoryFactory.getEntityManager(), StrutturaUnificata.TipoUnificazione.REPLICA, unificazioniEseguite, null, DirezioneReplica.FUTURO));

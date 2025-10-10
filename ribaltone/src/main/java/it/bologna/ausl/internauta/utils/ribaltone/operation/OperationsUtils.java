@@ -132,7 +132,6 @@ public class OperationsUtils {
                 } else {
                     entityManager.persist(strutturaDaInserire);
                     entityManager.flush();
-                    strutturaDaInserire.getId();
                     struttureDaAggiornareConPadre = putInMap(struttureDaAggiornareConPadre, strutturaDaInserire, idCasellaPadre);
                 }
                 //ho inserito una struttura quindi cerco se devo collegare qualcosa
@@ -184,17 +183,17 @@ public class OperationsUtils {
      * @param idPadre
      * @return mappa
      */
-    private static HashMap<Integer, List<Integer>> putInMap(HashMap<Integer, List<Integer>> mappa, Struttura struttura, Integer idPadre) {
+    private static HashMap<Integer, List<Integer>> putInMap(HashMap<Integer, List<Integer>> mappa, Struttura struttura, Integer idCasellaPadre) {
         if (struttura != null) {
             if (mappa == null) {
                 mappa = new HashMap<>();
                 List<Integer> arrayList = new ArrayList<>();
                 arrayList.add(struttura.getId());
-                mappa.put(idPadre, arrayList);
+                mappa.put(idCasellaPadre, arrayList);
             } else {
                 List<Integer> listaDiFigliDiIdPadre;
-                if (mappa.containsKey(idPadre)) {
-                    listaDiFigliDiIdPadre = mappa.get(idPadre);
+                if (mappa.containsKey(idCasellaPadre)) {
+                    listaDiFigliDiIdPadre = mappa.get(idCasellaPadre);
                     listaDiFigliDiIdPadre.add(struttura.getId());
 
                 } else {
@@ -202,7 +201,7 @@ public class OperationsUtils {
                     listaDiFigliDiIdPadre.add(struttura.getId());
 
                 }
-                mappa.put(idPadre, listaDiFigliDiIdPadre);
+                mappa.put(idCasellaPadre, listaDiFigliDiIdPadre);
             }
         }
         return mappa;

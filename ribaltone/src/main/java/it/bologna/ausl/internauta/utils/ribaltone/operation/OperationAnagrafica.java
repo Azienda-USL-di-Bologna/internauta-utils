@@ -1,5 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
@@ -24,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -46,56 +50,71 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
     @Override
     public void esegui(Object workToDo, RepositoryFactory repositoryFactory) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
-        switch (getAzione()) {
+        DatiDaImportareAnagrafica entitaDaInserireOModificare = (DatiDaImportareAnagrafica) getEntitaCoinvolta();
+        log.info("inizio a gestire la mail di cf "
+            + entitaDaInserireOModificare.getCodiceFiscale()
+            + " codice matricola "
+            + entitaDaInserireOModificare.getCodiceMatricola()
+            + " codice ente "
+            + entitaDaInserireOModificare.getCodiceEnte()
+        );
 
-            case EDIT, INSERT -> {
-                DatiDaImportareAnagrafica entitaDaInserireOModificare = (DatiDaImportareAnagrafica) getEntitaCoinvolta();
-                Utente utente = queryFactory
-                    .select(qUtente)
-                    .from(qPersona)
-                    .join(qUtente).on(qUtente.idPersona.eq(qPersona))
-                    .where(
-                        qPersona.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale())
-                            .and(
-                                qUtente.idAzienda.id.eq(entitaDaInserireOModificare.getIdAzienda()).and(qUtente.attivo)
-                            )
+        Utente utente = queryFactory
+            .select(qUtente)
+            .from(qPersona)
+            .join(qUtente).on(qUtente.idPersona.eq(qPersona))
+            .where(
+                qPersona.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale())
+                    .and(
+                        qUtente.idAzienda.id.eq(entitaDaInserireOModificare.getIdAzienda()).and(qUtente.attivo)
                     )
-                    .fetchOne();
-                DatiImportatiAnagrafica anagraficaImportata = queryFactory
-                    .select(qDatiImportatiAnagrafica)
-                    .from(qDatiImportatiAnagrafica)
-                    .where(qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale()).and(qDatiImportatiAnagrafica.idAzienda.eq(entitaDaInserireOModificare.getIdAzienda()))).fetchOne();
-                if (utente != null && entitaDaInserireOModificare.getEmail() != null) {
-                    String oldMail = "";
-                    if (anagraficaImportata != null) {
-                        oldMail = anagraficaImportata.getEmail();
-                    }
-                    String nuovaEmail = entitaDaInserireOModificare.getEmail();
-                    if (utente.getEmails() != null) {
-                        String[] nuoveEmails = Arrays.copyOf(utente.getEmails(), utente.getEmails().length);
+            )
+            .fetchOne();
+        if (utente != null) {
 
-                        if (nuovaEmail != null && !nuovaEmail.equals("")) {
-                            int indexOldMail = Arrays.binarySearch(nuoveEmails, oldMail);
-                            if (indexOldMail >= 0) {
-                                nuoveEmails[indexOldMail] = nuovaEmail;
-                            } else {
-                                nuoveEmails = Arrays.copyOf(utente.getEmails(), utente.getEmails().length + 1);
-                                nuoveEmails[nuoveEmails.length - 1] = nuovaEmail;
-                            }
+            switch (getAzione()) {
+
+                case EDIT -> {
+                    if (entitaDaInserireOModificare.getEmail() != null) {
+                        String nuovaEmail = entitaDaInserireOModificare.getEmail();
+                        DatiImportatiAnagrafica anagraficaVecchia = queryFactory.select(qDatiImportatiAnagrafica)
+                            .from(qDatiImportatiAnagrafica)
+                            .where(
+                                qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale()).and(
+                                    qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserireOModificare.getCodiceMatricola())).and(
+                                    qDatiImportatiAnagrafica.codiceEnte.eq(entitaDaInserireOModificare.getCodiceEnte()))
+                            ).fetchOne();
+                        if (anagraficaVecchia != null && anagraficaVecchia.getEmail() != null) {
+                            String oldEmail = anagraficaVecchia.getEmail();
+                            utente.setEmails(
+                                Stream.concat(Arrays.stream(utente.getEmails()).filter(e -> !e.equals(oldEmail)), // rimuove il vecchio elemento
+                                    Stream.of(nuovaEmail) // aggiunge in coda il nuovo
+                                ).toArray(String[]::new));
+                        }
+
+                    }
+                }
+
+                case INSERT -> {
+                    if (entitaDaInserireOModificare.getEmail() != null && !entitaDaInserireOModificare.getEmail().equals("")) {
+                        String nuovaEmail = entitaDaInserireOModificare.getEmail();
+                        String[] nuoveEmails = null;
+                        if (utente.getEmails() != null) {
+                            nuoveEmails = Stream.concat(Arrays.stream(utente.getEmails()), Stream.of(nuovaEmail))
+                                .filter(Objects::nonNull)
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .distinct()
+                                .toArray(String[]::new);
+
                         } else {
-                            ArrayList<String> lista = new ArrayList<>(Arrays.asList(utente.getEmails()));
-                            lista.remove(oldMail);
-                            nuoveEmails = lista.toArray(String[]::new);
+                            nuoveEmails = List.of(nuovaEmail).toArray(new String[0]);
                         }
                         utente.setEmails(nuoveEmails);
-
-                    } else {
-                        // Se non esiste, creiamo un nuovo array con la sola nuova email
-                        utente.setEmails(new String[]{nuovaEmail});
                     }
-                    repositoryFactory.getEntityManager().persist(utente);
                 }
             }
+            repositoryFactory.getEntityManager().persist(utente);
         }
     }
 

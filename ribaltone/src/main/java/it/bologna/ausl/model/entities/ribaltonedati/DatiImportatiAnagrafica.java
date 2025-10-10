@@ -189,7 +189,7 @@ public class DatiImportatiAnagrafica implements Serializable, DatiRibaltoneInter
 
     @Override
     public String getKey() {
-        return this.codiceFiscale;
+        return this.codiceFiscale + "_" + this.codiceMatricola + "_" + this.codiceAzienda;
     }
 
     @Override

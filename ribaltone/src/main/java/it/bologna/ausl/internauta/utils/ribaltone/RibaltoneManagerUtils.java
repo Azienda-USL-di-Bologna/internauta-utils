@@ -238,23 +238,26 @@ public class RibaltoneManagerUtils {
     }
 
     public static void updateProgressivoUltimaTrasformazione(String fonte, String codiceEnte, RepositoryFactory repositoryFactory) {
+        List<DatiDaImportareTrasformazione> trasformazioniEseguite = repositoryFactory.getDatiDaImportareTrasformazioneRepository().findAll();
+        if (trasformazioniEseguite != null && !trasformazioniEseguite.isEmpty()) {
 
-        String sql = """
-            UPDATE ribaltone_dati.configuration t
-            SET specific_data = jsonb_set(
-                    t.specific_data,
-                    '{progressivoUltimaTrasformazione}',
-                    to_jsonb((
-                        SELECT max(d.progressivo_riga)
-                        FROM ribaltone_dati.dati_da_importare_trasformazioni d
-                        WHERE d.codice_ente = ?
-                    )),
-                    false
-                )
-            WHERE t.id = ?;
-            """;
-        repositoryFactory.getJdbcTemplate()
-            .update(sql, codiceEnte, fonte);
+            String sql = """
+                UPDATE ribaltone_dati.configuration t
+                SET specifiche = jsonb_set(
+                        t.specifiche,
+                        '{progressivoUltimaTrasformazione}',
+                        to_jsonb((
+                            SELECT max(d.progressivo_riga)
+                            FROM ribaltone_dati.dati_da_importare_trasformazioni d
+                            WHERE d.codice_ente = ?
+                        )),
+                        false
+                    )
+                WHERE t.id = ?;
+                """;
+            repositoryFactory.getJdbcTemplate()
+                .update(sql, codiceEnte, fonte);
+        }
 
     }
 }

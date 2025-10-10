@@ -217,7 +217,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @JsonIgnore
     @Override
     public String getKey() {
-        return this.codiceFiscale;
+        return this.codiceFiscale + "_" + this.codiceMatricola + "_" + this.codiceAzienda;
     }
 
     @Override
