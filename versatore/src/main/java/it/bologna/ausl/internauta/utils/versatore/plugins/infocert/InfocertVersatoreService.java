@@ -94,7 +94,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class InfocertVersatoreService extends VersatoreDocs {
-    
+
     private enum AzioneVersamento {
         VERSA, CONTROLLO
     };
@@ -106,7 +106,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
     private String uriWebserviceDetermine;
     private String uriWebserviceDelibere;
     private String uriWebserviceRegistroProtocollo;
- 
+
     @Override
     public void init(VersatoreConfiguration versatoreConfiguration) {
         super.init(versatoreConfiguration);
@@ -131,7 +131,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      */
     @Override
     public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
-              
+
         Integer idDoc = versamentoDocInformation.getIdDoc();
         Doc doc = entityManager.find(Doc.class, idDoc);
         try {
@@ -148,9 +148,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 Versamento versamentoDoc = entityManager.find(Versamento.class, versamentoDocInformation.getIdVersamentoPrecedente());
                 List<VersamentoAllegato> versamentiAllegati = versamentoDoc.getVersamentoAllegatoList();
                 versamentiAllegati = versamentiAllegati
-                        .stream()
-                        .filter(v -> !Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.VERSATO).contains(v.getStato()))
-                        .collect(Collectors.toList());
+                    .stream()
+                    .filter(v -> !Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.VERSATO).contains(v.getStato()))
+                    .collect(Collectors.toList());
                 List<String> idAllegatiWithTipoDettaglio = versamentiAllegati
                     .stream()
                     .map(v -> v.getIdAllegato().getId().toString() + "_" + getKeyByTipo(v.getDettaglioAllegato())).collect(Collectors.toList());
@@ -164,34 +164,34 @@ public class InfocertVersatoreService extends VersatoreDocs {
                                 metadatiVersati = objectMapper.writeValueAsString(docAttributes);
                             }
                             Allegato allegato = versamentoAllegato.getIdAllegato();
-                            VersamentoAllegatoInformation allegatoInfo = 
-                                    versaAllegato(
-                                        allegato, 
-                                        versamentoAllegato.getDettaglioAllegato(), 
-                                        docAttributes, 
-                                        versamentiAllegati.size(),
-                                        idAllegatiWithTipoDettaglio,
-                                        infocertService);
+                            VersamentoAllegatoInformation allegatoInfo
+                                = versaAllegato(
+                                    allegato,
+                                    versamentoAllegato.getDettaglioAllegato(),
+                                    docAttributes,
+                                    versamentiAllegati.size(),
+                                    idAllegatiWithTipoDettaglio,
+                                    infocertService);
                             versamentiAllegatiInfo.add(allegatoInfo);
                             break;
                         case CONTROLLO:
                             VersamentoAllegatoInformation allegatoInformation = controllaStatoVersamento(versamentoAllegato, infocertService);
                             versamentiAllegatiInfo.add(allegatoInformation);
-                        break;
-                    }  
+                            break;
+                    }
                 }
                 versamentoDocInformation.setMetadatiVersati(metadatiVersati);
                 versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
             }
-            boolean errorOccured = versamentoDocInformation.getVersamentiAllegatiInformations().stream().filter(all -> 
-                    Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.ERRORE_RITENTABILE)
-                        .contains(all.getStatoVersamento())).findFirst().isPresent();
+            boolean errorOccured = versamentoDocInformation.getVersamentiAllegatiInformations().stream().filter(all
+                -> Arrays.asList(Versamento.StatoVersamento.ERRORE, Versamento.StatoVersamento.ERRORE_RITENTABILE)
+                    .contains(all.getStatoVersamento())).findFirst().isPresent();
             if (errorOccured) {
                 log.error("Versamenti di allegati in errore");
                 versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             } else {
-                boolean allVersati = versamentoDocInformation.getVersamentiAllegatiInformations().stream().allMatch(all -> 
-                        Versamento.StatoVersamento.VERSATO.equals(all.getStatoVersamento()));
+                boolean allVersati = versamentoDocInformation.getVersamentiAllegatiInformations().stream().allMatch(all
+                    -> Versamento.StatoVersamento.VERSATO.equals(all.getStatoVersamento()));
                 versamentoDocInformation.setStatoVersamento(allVersati ? Versamento.StatoVersamento.VERSATO : Versamento.StatoVersamento.IN_CARICO);
             }
         } catch (MalformedURLException | JsonProcessingException ex) {
@@ -199,10 +199,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
             versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             versamentoDocInformation.setDescrizioneErrore(ex.getMessage());
         }
-        log.info("processing doc: {} done.", idDoc.toString());         
+        log.info("processing doc: {} done.", idDoc.toString());
         return versamentoDocInformation;
     }
-    
+
     /**
      * Metodo che riceve il Doc e costruisce l'oggetto con i metadati da versare.
      * @param doc Il doc da versare.
@@ -211,27 +211,27 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @throws VersatoreProcessingException Eventuali errori.
      */
     private VersamentoDocInformation versaDoc(
-            Doc doc, 
-            VersamentoDocInformation versamentoDocInformation,
-            GenericDocument infocertService) throws VersatoreProcessingException {
+        Doc doc,
+        VersamentoDocInformation versamentoDocInformation,
+        GenericDocument infocertService) throws VersatoreProcessingException {
         String docId = doc.getId().toString();
-          
+
         // Build metadati generici dell'unità documentaria
-        List<DocumentAttribute> docAttributes;             
+        List<DocumentAttribute> docAttributes;
         // Elaborazione degli allegati
         try {
             versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
-           
+
             docAttributes = buildMetadatiDoc(doc, versamentoDocInformation);
             versamentoDocInformation.setMetadatiVersati(objectMapper.writeValueAsString(docAttributes));
-            
+
             List<Allegato> allegati = doc.getAllegati();
             List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList();
             List<Pair<Allegato, Allegato.DettagliAllegato.TipoDettaglioAllegato>> pairsAllegati = new ArrayList<>();
-            
+
             // In questa lista ci saranno gli id di tutti gli allegati che saranno versati con i rispettivi dettagli
             List<String> idAllegatiWithTipoDettaglio = new ArrayList<>();
-            for (Allegato allegato: allegati) {
+            for (Allegato allegato : allegati) {
                 for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
                     Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
                     // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
@@ -242,13 +242,13 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 }
             }
             for (Pair<Allegato, Allegato.DettagliAllegato.TipoDettaglioAllegato> pair : pairsAllegati) {
-                VersamentoAllegatoInformation allegatoInformation = 
-                    versaAllegato(pair.getFirst(), pair.getSecond(), docAttributes, pairsAllegati.size(), idAllegatiWithTipoDettaglio, infocertService);
+                VersamentoAllegatoInformation allegatoInformation
+                    = versaAllegato(pair.getFirst(), pair.getSecond(), docAttributes, pairsAllegati.size(), idAllegatiWithTipoDettaglio, infocertService);
                 if (allegatoInformation != null) {
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
             }
-            
+
             versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
         } catch (JsonProcessingException ex) {
             log.error(ERROR_PARSING_JSON, ex);
@@ -261,7 +261,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         log.info("Versamento idDoc: {} concluso.", docId);
         return versamentoDocInformation;
     }
-    
+
     /**
      * Metodo che controlla lo status del versamento di un allegato effettuando una chiamata http
      * al servizio Infocert.
@@ -270,14 +270,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @return L'oggetto VersamentoAllegatoInformation con i riferimenti dell'allegato, il repporto e lo stato.
      */
     public VersamentoAllegatoInformation controllaStatoVersamento(
-            VersamentoAllegato versamentoAllegato,
-            GenericDocument infocertService) {
+        VersamentoAllegato versamentoAllegato,
+        GenericDocument infocertService) {
         DocumentStatus status;
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
         try {
             RapportoVersamentoInfocert rapporto = objectMapper.readValue(versamentoAllegato.getRapporto(), RapportoVersamentoInfocert.class);
-            log.info("call getDocumentStatus allegato: {} with hash: {}", 
-                    versamentoAllegato.getIdAllegato().getId().toString(), rapporto.getHash());
+            log.info("call getDocumentStatus allegato: {} with hash: {}",
+                versamentoAllegato.getIdAllegato().getId().toString(), rapporto.getHash());
             status = infocertService.getDocumentStatus(rapporto.getHash());
             switch (status.getDocumentStatusCode()) {
                 case SUCCESS:
@@ -290,7 +290,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 default:
                     allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
                     break;
-            }   
+            }
             rapporto.setDocumentStatus(status);
             if (status.getDocumentError() != null) {
                 allegatoInformation.setCodiceErrore(status.getDocumentError().getErrorCode());
@@ -301,12 +301,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
             allegatoInformation.setDataVersamento(ZonedDateTime.now());
             allegatoInformation.setTipoDettaglioAllegato(versamentoAllegato.getDettaglioAllegato());
             allegatoInformation.setMetadatiVersati(versamentoAllegato.getMetadatiVersati());
-            allegatoInformation.setRapporto(objectMapper.writeValueAsString(rapporto)); 
+            allegatoInformation.setRapporto(objectMapper.writeValueAsString(rapporto));
         } catch (JsonProcessingException ex) {
             log.error(ERROR_PARSING_JSON, ex);
         }
         return allegatoInformation;
-    }   
+    }
 
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> attributes, final InfocertAttributesEnum name, final String value) {
         return addNewAttribute(attributes, name, null, value);
@@ -321,14 +321,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @return Restituisce l'oggetto corrente.
      */
     public InfocertVersatoreService addNewAttribute(List<DocumentAttribute> attributes,
-            final InfocertAttributesEnum name, final Integer index, final String value) {
+        final InfocertAttributesEnum name, final Integer index, final String value) {
         DocumentAttribute attr = new DocumentAttribute();
         attr.setName(index != null ? name.toString().replace("x", index.toString()) : name.toString());
         attr.setValue(value);
         attributes.add(attr);
         return this;
     }
-    
+
     /**
      * Inizializza la lista dei metadati con i dati generici del documento.
      * @param doc Il documento da versare.
@@ -338,56 +338,56 @@ public class InfocertVersatoreService extends VersatoreDocs {
     private List<DocumentAttribute> buildMetadatiDoc(Doc doc, VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
         DocDetail docDetail = entityManager.find(DocDetail.class, doc.getId());
         Integer idArchivio = versamentoDocInformation.getIdArchivio();
-        
+
         if (idArchivio == null) {
             // L'archivio è obbligatorio. Dato che è null provo a ricavarmelo dai precedenti versamenti del doc. (se ne ha)
             QVersamento qVersamento = QVersamento.versamento;
             JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
             idArchivio = jpaQueryFactory
-                    .select(qVersamento.idArchivio.id)
-                    .from(qVersamento)
-                    .where(qVersamento.idDoc.id.eq(doc.getId()))
-                    .orderBy(qVersamento.data.desc())
-                    .limit(1)
-                    .fetchOne();
+                .select(qVersamento.idArchivio.id)
+                .from(qVersamento)
+                .where(qVersamento.idDoc.id.eq(doc.getId()))
+                .orderBy(qVersamento.data.desc())
+                .limit(1)
+                .fetchOne();
         }
-        
+
         if (idArchivio == null) {
             throw new VersatoreProcessingException("idArchivio null");
         }
-        
+
         Archivio archivio = entityManager.find(Archivio.class, idArchivio);
 
         List<DocumentAttribute> docAttributes = new ArrayList<>();
-        
+
         // Dati generici del documento
         addNewAttribute(docAttributes, InfocertAttributesEnum.IDENTIFICATIVO_DOCUMENTO, docDetail.getId().toString())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_DOCUMENTO, ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_REGISTRO, getCodiceRegistro(docDetail))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_REGISTRO, getTipoRegistro(docDetail))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_REGISTRAZIONE, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO,
-                        String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto());
-        
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_DOCUMENTO, ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_REGISTRO, getCodiceRegistro(docDetail))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_REGISTRO, getTipoRegistro(docDetail))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DATA_REGISTRAZIONE, docDetail.getDataRegistrazione().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.NUMERO_DOCUMENTO,
+                String.join("/", docDetail.getNumeroRegistrazione().toString(), docDetail.getAnnoRegistrazione().toString()))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.OGGETTO, docDetail.getOggetto());
+
         // Metadati degli Agenti (Soggetti)
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO, "produttore")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO, "SW")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdAzienda().getDescrizione());
-        
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO, "SW")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE, docDetail.getIdAzienda().getDescrizione());
+
         int index = 2;  // Indice per i metadati ricorsivi del ruolo, il numero 1 è default ed è il produttore
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "redattore")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, docDetail.getIdPersonaRedattrice().getNome());
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, docDetail.getIdPersonaRedattrice().getCognome())
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, docDetail.getIdPersonaRedattrice().getNome());
         index++;    // Index 3
-        
+
         String modalitaFormazione = "b";
-        // Tipologia e Mittente    
+        // Tipologia e Mittente
         switch (docDetail.getTipologia()) {
             case PROTOCOLLO_IN_USCITA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Protocolli")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U");
                 if (docDetail.getStato() == StatoDoc.SMISTAMENTO) {
                     addMittenteProtEntrataPuSmistamento(docAttributes, docDetail, index);
                 } else {
@@ -401,56 +401,57 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 break;
             case DETERMINA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Determine")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U");
                 addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case DELIBERA:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Delibere")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U"); 
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "U");
                 addMittenteAzienda(docAttributes, docDetail, index);
                 break;
             case RGPICO:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di protocollo")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
                 addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case RGDETE:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di determine")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); 
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
                 addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case RGDELI:
                 modalitaFormazione = "a";
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro giornaliero di delibere")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
                 addNumeriProtInizioFine(docAttributes, doc.getOggetto());
                 break;
             case DOCUMENT:
             case DOCUMENT_UTENTE:
                 addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DOCUMENTALE, "Registro documentale")
-                        .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I"); ;
+                    .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPOLOGIA_DI_FLUSSO, "I");
+                ;
                 break;
         }
         index++;
-        
+
         addNewAttribute(docAttributes, InfocertAttributesEnum.MODALITA_DI_FORMAZIONE, modalitaFormazione);
-        
+
         List<AttoreDoc> responsabili = getAttoriDoc(doc, Arrays.asList("RESPONSABILE"));
         for (AttoreDoc attoreDoc : responsabili) {
             Persona attore = attoreDoc.getIdPersona();
-            addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "RGD")    // Responsabile Gestione Documentale
+            addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "RGD") // Responsabile Gestione Documentale
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, attore.getCognome())
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, attore.getNome());
             index++;
         }
-        
+
         // Soggetti che registrano, FIRMATARI
         List<AttoreDoc> attori = new ArrayList<>();
         attori = getAttoriDoc(doc, Arrays.asList(
-                "FIRMA", "RICEZIONE", "DIRETTORE_GENERALE", "DIRETTORE_AMMINISTRATIVO", "DIRETTORE_SANITARIO", "DIRETTORE_SCIENTIFICO"));
+            "FIRMA", "RICEZIONE", "DIRETTORE_GENERALE", "DIRETTORE_AMMINISTRATIVO", "DIRETTORE_SANITARIO", "DIRETTORE_SCIENTIFICO"));
         for (AttoreDoc attoreDoc : attori) {
             Persona attore = attoreDoc.getIdPersona();
             addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "Soggetto che effettua la registrazione")
@@ -459,29 +460,29 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, attore.getNome());
             index++;
         }
-        
+
         // Metadati di archiviazione
         Titolo titolo = archivio.getIdTitolo();
         if (titolo != null) {
             addNewAttribute(docAttributes, InfocertAttributesEnum.INDICE_DI_CLASSIFICAZIONE, titolo.getClassificazione())
-                   .addNewAttribute(docAttributes, InfocertAttributesEnum.DESCRIZIONE_CLASSIFICAZIONE, titolo.getNome());
+                .addNewAttribute(docAttributes, InfocertAttributesEnum.DESCRIZIONE_CLASSIFICAZIONE, titolo.getNome());
         } else {
             log.warn("Titolo non trovato.");
         }
-        
+
         addNewAttribute(docAttributes, InfocertAttributesEnum.RISERVATO, ((Boolean) docDetail.getVisibilita().equals(Doc.VisibilitaDoc.RISERVATO)).toString())
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_MARCA_TEMPORALE, "false")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_SIGILLO, "false")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_CONFORMITA_COPIE, "false")
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, getVersioneDocumento(versamentoDocInformation))
-                .addNewAttribute(docAttributes, InfocertAttributesEnum.ID_AGGREGAZIONE, archivio.getNumerazioneGerarchica())
-                .addNewAttribute(docAttributes, 
-                        InfocertAttributesEnum.TEMPO_DI_CONSERVAZIONE,
-                        archivio.getAnniTenuta() != null ? archivio.getAnniTenuta().toString() : "999");
-        
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_MARCA_TEMPORALE, "false")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_SIGILLO, "false")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.VERIFICA_CONFORMITA_COPIE, "false")
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO, getVersioneDocumento(versamentoDocInformation))
+            .addNewAttribute(docAttributes, InfocertAttributesEnum.ID_AGGREGAZIONE, archivio.getNumerazioneGerarchica())
+            .addNewAttribute(docAttributes,
+                InfocertAttributesEnum.TEMPO_DI_CONSERVAZIONE,
+                archivio.getAnniTenuta() != null ? archivio.getAnniTenuta().toString() : "999");
+
         return docAttributes;
     }
-    
+
     /**
      * Effettua il versamento ad Infocert di una specifica tipologia dell'allegato.
      *
@@ -493,23 +494,25 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @return L'
      */
     private VersamentoAllegatoInformation versaAllegato(
-            Allegato allegato,
-            Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato,
-            List<DocumentAttribute> docAttributes,
-            Integer numeroAllegati,
-            List<String> allegatiList,
-            GenericDocument infocertService) {
-        
+        Allegato allegato,
+        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato,
+        List<DocumentAttribute> docAttributes,
+        Integer numeroAllegati,
+        List<String> allegatiList,
+        GenericDocument infocertService) {
+
         List<DocumentAttribute> fileAttributes;
         List<DocumentAttribute> docFileAttributes;
         Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
         // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
-        if (dettaglioAllegato == null) return null;
+        if (dettaglioAllegato == null) {
+            return null;
+        }
 
         fileAttributes = new ArrayList<>();
         String mimeType = "application/octet-stream";
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
-        try ( InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
+        try (InputStream fileStream = minIOWrapper.getByFileId(dettaglioAllegato.getIdRepository())) {
             if (fileStream != null) {
                 if (dettaglioAllegato.getMimeType() != null) {
                     mimeType = dettaglioAllegato.getMimeType();
@@ -519,42 +522,42 @@ public class InfocertVersatoreService extends VersatoreDocs {
                         mimeType = detector.getMimeType(fileStream);
                     } catch (UnsupportedEncodingException | MimeTypeException ex) {
                         log.warn("errore nel calcolo del mimetype, lasciamo il default octet-stream", ex);
-                    } 
+                    }
                 }
-                
+
                 // Tutta sta parte è una merda, non che il resto sia meglio ma per versare bisogna specificare questa cosa
                 // I versamenti infocert hanno un allegato principale che veicola tutti gli altri allegati.
                 // Identifichiamo il doc principale, ovvero il testo firmato oppure l'allegato principale nel caso di PE
                 // Questo allegato identifica il versamento principale al quale puntano tutti gli altri allegati
                 boolean isAllegatoPrincipale = allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)
-                        && tipoDettaglioAllegato.toString().contains("FIRMATO")
-                        || allegato.getPrincipale() && Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato);
+                    && tipoDettaglioAllegato.toString().contains("FIRMATO")
+                    || allegato.getPrincipale() && Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato);
                 // Identifichiamo eventuali altri formati dell'allegato principale che vengono inviati come allegati annessi al principale
-                String descrizioneAllegato;                
+                String descrizioneAllegato;
                 if (allegato.getPrincipale() && !Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE.equals(tipoDettaglioAllegato)) {
                     descrizioneAllegato = getTipoDocFromAllegato(allegato) + " CONV";
                 } else {
                     descrizioneAllegato = allegato.getTipo().toString();
                 }
-                
+
                 // Metadati degli allegati
                 addNewAttribute(fileAttributes, InfocertAttributesEnum.IDENTIFICATIVO_DEL_FORMATO, mimeType)
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.NOME_FILE, dettaglioAllegato.getNome())
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
-                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5");
+                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.NOME_FILE, dettaglioAllegato.getNome())
+                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.IMPRONTA, dettaglioAllegato.getHashMd5())
+                    .addNewAttribute(fileAttributes, InfocertAttributesEnum.ALGORITMO, "md5");
 
                 if (isAllegatoPrincipale) {
                     addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, String.valueOf(numeroAllegati - 1))
-                            .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, String.join(",", allegatiList));
+                        .addNewAttribute(fileAttributes, InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI, String.join(",", allegatiList));
                 } else {
                     addNewAttribute(fileAttributes, InfocertAttributesEnum.ALLEGATI_NUMERO, "0")
-                            .addNewAttribute(
-                                    fileAttributes,
-                                    InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI,
-                                    allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                        .addNewAttribute(
+                            fileAttributes,
+                            InfocertAttributesEnum.ID_DOC_INDICE_ALLEGATI,
+                            allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
                 }
-                addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, descrizioneAllegato);                
-                
+                addNewAttribute(fileAttributes, InfocertAttributesEnum.DESCRIZIONE_ALLEGATI, descrizioneAllegato);
+
                 if (tipoDettaglioAllegato.toString().contains("FIRMATO") || isAllegatoPrincipale && allegato.getFirmato()) {
                     addNewAttribute(fileAttributes, InfocertAttributesEnum.VERIFICA_FIRMA_DIGITALE, "true");
                 } else {
@@ -566,7 +569,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 docFileAttributes = new ArrayList<>();
                 docFileAttributes.addAll(docAttributes);
                 docFileAttributes.addAll(fileAttributes);
-                
+
                 allegatoInformation.setIdAllegato(allegato.getId());
                 allegatoInformation.setDataVersamento(ZonedDateTime.now());
                 allegatoInformation.setTipoDettaglioAllegato(tipoDettaglioAllegato);
@@ -574,7 +577,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 log.info("chiamata della submitDocument per l'allegato: {}", allegato.getId().toString());
                 String hash = infocertService.submitDocument(allegato.getIdDoc().getId().toString(), docFileAttributes, data);
                 allegatoInformation.setRapporto(objectMapper.writeValueAsString(new RapportoVersamentoInfocert(hash)));
-                allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);     
+                allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.IN_CARICO);
             } else {
                 log.error("file stream is null");
             }
@@ -587,10 +590,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
             allegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             allegatoInformation.setDescrizioneErrore(ex.getMessage());
         }
-        
+
         return allegatoInformation;
     }
-    
+
     /**
      * Aggiunge come metadato Mittente l'azienda (eg. Azienda USL Bologna)
      * @param docAttributes La lista dei metadati a cui verrà aggiunto il mittente.
@@ -606,7 +609,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             addNewAttribute(docAttributes, InfocertAttributesEnum.INDIRIZZI_DIGITALI_DI_RIFERIMENTO_N, index, pecMittente.getIndirizzo());
         }
     }
-    
+
     /**
      * Aggiunge il metadato Mittente per un protocollo in entrata o un protocollo in uscita che è in smistamento.
      * Se presente, aggiunge anche l'indirizzo email.
@@ -618,20 +621,20 @@ public class InfocertVersatoreService extends VersatoreDocs {
     private void addMittenteProtEntrataPuSmistamento(List<DocumentAttribute> docAttributes, DocDetail docDetail, int index) throws VersatoreProcessingException {
         addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "mittente");
         Contatto idContattoMittente = Optional.ofNullable(docDetail.getIdContattoMittente()).orElse(null);
-        if  (idContattoMittente != null) { 
+        if (idContattoMittente != null) {
             addContattoRubrica(docAttributes, idContattoMittente, index);
-        } else if (docDetail.getMittente() != null || StringUtils.hasLength(docDetail.getMittente())) {
-            addSoggettoGenerico(docAttributes, docDetail.getMittente(), index);
+        } else if (docDetail.getMittente() != null) {
+            addSoggettoGenerico(docAttributes, docDetail.getMittente().getNome(), index);
         } else {
             String message = "Manca il campo mittente";
             log.error(message);
-             throw new VersatoreProcessingException(message);
+            throw new VersatoreProcessingException(message);
         }
     }
-    
+
     /**
      * Aggiunge alla lista dei metadati un contatto dalla rubrica.
-     * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto. 
+     * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto.
      * @param contatto Il contatto della rubrica.
      * @param index L'indice del metadato ricorsivo.
      */
@@ -660,9 +663,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 break;
         }
     }
-    
+
     /**
-     * Aggiunge alla lista dei metadati un contatto di persona dalla rubrica. 
+     * Aggiunge alla lista dei metadati un contatto di persona dalla rubrica.
      * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto.
      * @param contatto Il contatto della rubrica.
      * @param index L'indice del metadato ricorsivo.
@@ -671,12 +674,13 @@ public class InfocertVersatoreService extends VersatoreDocs {
         addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PF")
             .addNewAttribute(docAttributes, InfocertAttributesEnum.COGNOME_N, index, contatto.getCognome())
             .addNewAttribute(docAttributes, InfocertAttributesEnum.NOME_N, index, contatto.getNome());
-        if (StringUtils.hasLength(contatto.getCodiceFiscale())) 
+        if (StringUtils.hasLength(contatto.getCodiceFiscale())) {
             addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_FISCALE_N, index, contatto.getCodiceFiscale());
+        }
     }
-    
+
     /**
-     * Aggiunge alla lista dei metadati un contatto di un'azienda o una Pubblica Amminstrazione dalla rubrica. 
+     * Aggiunge alla lista dei metadati un contatto di un'azienda o una Pubblica Amminstrazione dalla rubrica.
      * @param docAttributes La lista dei metadati a cui verrà aggiunto il contatto.
      * @param contatto Il contatto della rubrica.
      * @param index L'indice del metadato ricorsivo.
@@ -684,20 +688,22 @@ public class InfocertVersatoreService extends VersatoreDocs {
      */
     private void addContattoAziendaOrPA(List<DocumentAttribute> docAttributes, Contatto contatto, int index, String tipo) {
         String descrizione = contatto.getRagioneSociale() != null ? contatto.getRagioneSociale() : contatto.getDescrizione();
-        
+
         addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, tipo)
             .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, descrizione);
-        if (StringUtils.hasLength(contatto.getPartitaIva())) 
+        if (StringUtils.hasLength(contatto.getPartitaIva())) {
             addNewAttribute(docAttributes, InfocertAttributesEnum.CODICE_FISCALE_N, index, contatto.getPartitaIva());
-        
+        }
+
         Optional<DettaglioContatto> dettaglioContatto = contatto.getDettaglioContattoList()
-                .stream()
-                .filter(d -> DettaglioContatto.TipoDettaglio.EMAIL.equals(d.getTipo()) && Objects.equals(d.getPrincipale(), Boolean.TRUE))
-                .findFirst();
-        if (dettaglioContatto.isPresent())
+            .stream()
+            .filter(d -> DettaglioContatto.TipoDettaglio.EMAIL.equals(d.getTipo()) && Objects.equals(d.getPrincipale(), Boolean.TRUE))
+            .findFirst();
+        if (dettaglioContatto.isPresent()) {
             addNewAttribute(docAttributes, InfocertAttributesEnum.INDIRIZZI_DIGITALI_DI_RIFERIMENTO_N, index, dettaglioContatto.get().getDescrizione());
+        }
     }
-    
+
     /**
      * Aggiunge alla lista dei metadati un soggetto con descrizione generica.
      * @param docAttributes La lista dei metadati a cui verrà aggiunto il soggetto.
@@ -708,9 +714,9 @@ public class InfocertVersatoreService extends VersatoreDocs {
         addNewAttribute(docAttributes, InfocertAttributesEnum.TIPO_SOGGETTO_N, index, "PG")
             .addNewAttribute(docAttributes, InfocertAttributesEnum.DENOMINAZIONE_N, index, descrizione);
     }
-    
+
     /**
-     * Metodo che controlla lo stato del versamento di un allegato 
+     * Metodo che controlla lo stato del versamento di un allegato
      * e verifica se è di nuovo da versare oppure controllare.
      * @param versamentoAllegato Il versamento allegato.
      * @return Azione versamento VERSA oppure CONTROLLO.
@@ -729,10 +735,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return azione;
     }
-    
+
     /**
      * Inizializza il web service di Infocert per effettuare le operazioni di Submit e getStatus.
-     * 
+     *
      * @param docdetail Il docDetail del documento, dalla tipologia recuperiamo l'endpoint.
      * @return Il web service.
      * @throws MalformedURLException Errore nell'URL dell'end point del servizio.
@@ -744,10 +750,10 @@ public class InfocertVersatoreService extends VersatoreDocs {
         GenericDocument is = iss.getGenericDocumentPort();
         BindingProvider bp = (BindingProvider) is;
         bp.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
-                endPointUri);
+            endPointUri);
         return is;
     }
-    
+
     /**
      * Recupera un attributo del metadato dal json dei metadati versati.
      * @param metadatiVersati I metadati.
@@ -770,7 +776,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * altrimenti restituisce il default "1".
      * @param docInfo L'oggetto docInformation.
      * @return La versione del documento.
-     * @throws Errori nel parsing dei metadati. 
+     * @throws Errori nel parsing dei metadati.
      */
     private String getVersioneDocumento(final VersamentoDocInformation docInfo) throws VersatoreProcessingException {
         String versione = "1";
@@ -778,12 +784,12 @@ public class InfocertVersatoreService extends VersatoreDocs {
             final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
             final QVersamento qVersamento = QVersamento.versamento;
             final Versamento ultimoVersamento = queryFactory
-                    .select(qVersamento)
-                    .from(qVersamento)
-                    .where(qVersamento.idDoc.id.eq(docInfo.getIdDoc())
-                            .and(qVersamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
-                    .orderBy(qVersamento.data.desc())
-                    .fetchFirst();
+                .select(qVersamento)
+                .from(qVersamento)
+                .where(qVersamento.idDoc.id.eq(docInfo.getIdDoc())
+                    .and(qVersamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
+                .orderBy(qVersamento.data.desc())
+                .fetchFirst();
             if (ultimoVersamento != null) {
                 final String versioneDoc = getAttributoFromMetadati(ultimoVersamento.getMetadatiVersati(), InfocertAttributesEnum.VERSIONE_DEL_DOCUMENTO);
                 final Integer versioneInt = Integer.valueOf(versioneDoc) + 1;
@@ -792,8 +798,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return versione;
     }
-    
-    
+
     /**
      * Legge l'inputStream e lo restituisce in formato String.
      * @param is L'inputStream del file.
@@ -810,6 +815,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return result.toString("UTF-8");
     }
+
     /**
      * Restituisce il tipo registro del documento.
      * @param doc Il documento.
@@ -834,7 +840,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return tipoRegistro;
     }
-    
+
     /**
      * Restituisce il codice registro del documento.
      * @param doc Il documento.
@@ -868,20 +874,20 @@ public class InfocertVersatoreService extends VersatoreDocs {
         }
         return codice;
     }
-    
+
     /**
      * Restituisce la denominazione del produttore.
      * @param docDetail Il documento detail.
      * @return La denominazione.
      */
     private String getDenominazione(final DocDetail docDetail) {
-        String denominazione =  docDetail.getIdAzienda().getDescrizione();
+        String denominazione = docDetail.getIdAzienda().getDescrizione();
         if (docDetail.getIdStrutturaRegistrazione() != null) {
             denominazione = String.join(" - ", denominazione, docDetail.getIdStrutturaRegistrazione().getNome());
         }
         return denominazione;
     }
-    
+
     /**
      * Restituisce la lista degli attori del doc filtrati per il ruolo passato.
      * @param doc Il documento.
@@ -893,16 +899,16 @@ public class InfocertVersatoreService extends VersatoreDocs {
         QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
 
         List<AttoreDoc> attoriDoc = queryFactory
-                .select(qAttoreDoc)
-                .from(qAttoreDoc)
-                .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.in(ruoli)))
-                .fetch();
+            .select(qAttoreDoc)
+            .from(qAttoreDoc)
+            .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.in(ruoli)))
+            .fetch();
         if (attoriDoc.isEmpty()) {
             log.error("Attori {} not found", ruoli.toString());
         }
         return attoriDoc;
     }
-    
+
     private String getKeyByTipo(Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato) {
         switch (tipoDettaglioAllegato) {
             case ORIGINALE:
@@ -923,26 +929,26 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 return "originale";
         }
     }
-    
+
     /**
      * Metodo per definire il tipo di doc dal nome allegato.
-     * 
+     *
      * @param allegato l'allegato.
      * @return Il tipo di doc.
      */
     private String getTipoDocFromAllegato(Allegato allegato) {
         String substringNomeAllegato = allegato.getNome().substring(0, 4);
-                String tipoDoc;
-                if (substringNomeAllegato.contains("DETE")) {
-                    tipoDoc = "DETERMINA";
-                } else if (substringNomeAllegato.contains("DELI")) {
-                    tipoDoc = "DELIBERA";
-                } else {
-                    tipoDoc = "PROTOCOLLO";
-                }
+        String tipoDoc;
+        if (substringNomeAllegato.contains("DETE")) {
+            tipoDoc = "DETERMINA";
+        } else if (substringNomeAllegato.contains("DELI")) {
+            tipoDoc = "DELIBERA";
+        } else {
+            tipoDoc = "PROTOCOLLO";
+        }
         return tipoDoc;
     }
-    
+
     /**
      * Restituisce l'endpoint del webservice in base alla tipologia di documento fornita.
      *
@@ -964,16 +970,16 @@ public class InfocertVersatoreService extends VersatoreDocs {
                 return null;
         }
     }
-    
+
     /**
-     * Analizza il testo dell'oggetto per trovare i numeri di protocollo 
+     * Analizza il testo dell'oggetto per trovare i numeri di protocollo
      * all'inizio e alla fine.
-     * Aggiunge i numeri di protocollo di inizio e fine come attributi 
+     * Aggiunge i numeri di protocollo di inizio e fine come attributi
      * alla lista docAttributes data.
-     * Usa una regex per cercare pattern "n. <numero>/<anno>". 
-     * La prima corrispondenza è il numero di inizio, la seconda 
+     * Usa una regex per cercare pattern "n. <numero>/<anno>".
+     * La prima corrispondenza è il numero di inizio, la seconda
      * corrispondenza è il numero di fine.
-     * 
+     *
      * @param docAttributes la lista di attributi del documento dove aggiungere i numeri di protocollo
      * @param oggetto il testo dell'oggetto da analizzare
      */
