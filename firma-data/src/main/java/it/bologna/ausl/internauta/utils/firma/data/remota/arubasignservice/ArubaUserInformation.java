@@ -25,11 +25,17 @@ public class ArubaUserInformation extends UserInformation {
     private String dominioFirma; // rappresenta il dominio della firma (es. frAUSLBO)
     private Boolean useSavedCredential;
     private ModalitaFirma modalitaFirma;
+    private Boolean firmaDelegata = false; // se true indica che la firma sarà automatica, quindi non sarà richiesto l'otp all'utente
+    
 
     public ArubaUserInformation() {
     }
 
     public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential) {
+        this(username, password, token, modalitaFirma, certId, dominioFirma, useSavedCredential, false);
+    }
+    
+    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential, Boolean firmaDelegata) {
         this.username = username;
         this.password = password;
         this.token = token;
@@ -37,6 +43,7 @@ public class ArubaUserInformation extends UserInformation {
         this.certId = certId;
         this.dominioFirma = dominioFirma;
         this.useSavedCredential = useSavedCredential;
+        this.firmaDelegata = firmaDelegata;
     }
 
     @Override
@@ -98,5 +105,13 @@ public class ArubaUserInformation extends UserInformation {
 
     public void setDominioFirma(String dominioFirma) {
         this.dominioFirma = dominioFirma;
+    }
+
+    public Boolean getFirmaDelegata() {
+        return firmaDelegata;
+    }
+
+    public void setFirmaDelegata(Boolean firmaDelegata) {
+        this.firmaDelegata = firmaDelegata;
     }
 }
