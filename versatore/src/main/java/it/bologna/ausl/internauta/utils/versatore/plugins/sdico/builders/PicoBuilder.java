@@ -63,6 +63,7 @@ public class PicoBuilder {
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
+        String amministrazioneTitolareDelProcedimento = (String) parametriVersamento.get("amministrazioneTitolareDelProcedimento");
         String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         Map<String, Object> parametriSoloPU = (Map<String, Object>) mappaParametri.get("PROTOCOLLO_IN_USCITA");
@@ -103,7 +104,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(amministrazioneTitolareDelProcedimento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
@@ -168,9 +169,9 @@ public class PicoBuilder {
             List<AttoreDoc> listaAttori = doc.getAttoriList();
             tipologiaDiFlusso = (String) tipiDiFlusso.get("esterno");
             for (AttoreDoc attore : listaAttori) {
-                if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO) 
-                        || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
-                        || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
+                if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO)
+                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
+                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
                     tipologiaDiFlusso = (String) tipiDiFlusso.get("interno");
                     break;
                 }
@@ -188,12 +189,12 @@ public class PicoBuilder {
             }
             tipologiaDiFlusso = parametriSoloPE.get("tipologiaDiFlusso");
         }
-        
+
         //attributi differenti tra pe e pu
         versamentoBuilder.addSinglemetadataByParams(false, "firmato_digitalmente", Arrays.asList(firmatoDigitalmente), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "identificativo_documento_primario", Arrays.asList(identificativoDocumentoPrimario), TESTO); metadato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
-        
+
         //Questa coppia di metadati serve per non fare andare in errore la struttura di Scryba
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroProtocollo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
