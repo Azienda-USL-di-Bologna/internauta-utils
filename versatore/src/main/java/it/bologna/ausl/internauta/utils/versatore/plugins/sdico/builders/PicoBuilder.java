@@ -58,7 +58,7 @@ public class PicoBuilder {
      * @return
      */
     public VersamentoBuilder build() throws VersatoreSdicoException {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         DecimalFormat df = new DecimalFormat("0000000");
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
@@ -110,7 +110,7 @@ public class PicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList(numeroProtocollo), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "NUMERO_ALLEGATI", Arrays.asList(Integer.toString(doc.getAllegati().size())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(docDetail.getIdStrutturaRegistrazione().getNome()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
@@ -197,7 +197,7 @@ public class PicoBuilder {
 
         //Questa coppia di metadati serve per non fare andare in errore la struttura di Scryba
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroProtocollo), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
 
         return versamentoBuilder;
     }

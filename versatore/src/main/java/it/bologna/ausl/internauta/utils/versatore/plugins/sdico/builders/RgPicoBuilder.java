@@ -65,7 +65,7 @@ public class RgPicoBuilder {
      */
     public VersamentoBuilder build() {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         DecimalFormat df = new DecimalFormat("0000000");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
@@ -102,9 +102,9 @@ public class RgPicoBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_progressivo_del_registro", Arrays.asList(numeroProgressivo), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Anno", Arrays.asList(annoRegistrazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_ultima_registrazione_effettuata_sul_registro", Arrays.asList(numeroFinale), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_ultima_registrazione_effettuata_sul_registro", Arrays.asList(dataFinale.toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "Numero_prima_registrazione_effettuata_sul_registro", Arrays.asList(numeroIniziale), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "Data_prima_registrazione_effettuata_sul_registro", Arrays.asList(dataIniziale.toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         //uso note1 per passare il valore degli anni tenuta
         versamentoBuilder.addSinglemetadataByParams(false, "note1", Arrays.asList(anniTenuta), TESTO);

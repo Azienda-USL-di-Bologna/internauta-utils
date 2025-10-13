@@ -56,7 +56,7 @@ public class DeteBuilder {
      */
     public VersamentoBuilder build() throws VersatoreSdicoException {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
@@ -139,7 +139,7 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
@@ -168,12 +168,12 @@ public class DeteBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "sigillato_elettronicamente", Arrays.asList(sigillatoElettronicamente), TESTO);
 
         //metadati aggiunti dopo le modifiche al tracciato
-        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(naturaDocumento), TESTO);
         if (docDetail.getDataPubblicazione() != null) {
-            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
+            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().toLocalDateTime().format(formatter)), DATA);
         } else {
             throw new VersatoreSdicoException("La Determina non ha data pubblicazione");
         }
