@@ -242,6 +242,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         && codiceFiscaleResponsabileGestioneDocumentale != null
                         && codiceFiscaleResponsabileGestioneDocumentale != "") {
                         responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
+                        log.info("Il responsabile della gestione documentale è: " + responsabileGestioneDocumentale.getCognome() + " " + responsabileGestioneDocumentale.getNome());
                     } else {
                         throw new VersatoreSdicoException("Non è stato indicato il Responsabile della Gestione Documentale");
                     }
@@ -545,7 +546,6 @@ public class SdicoVersatoreService extends VersatoreDocs {
             .where(utente.idAzienda.id.eq(idAzienda)
                 .and(utente.username.eq(username)))
             .fetchOne();
-
         return result;
     }
 }
