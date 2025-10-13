@@ -238,6 +238,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                     }
                     String codiceFiscaleResponsabileGestioneDocumentale = (String) parametriVersamento.get("codiceFiscaleResponsabileGestioneDocumentale");
+                    log.info("codiceFiscaleResponsabileGestioneDocumentale" + codiceFiscaleResponsabileGestioneDocumentale);
                     if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
                         && codiceFiscaleResponsabileGestioneDocumentale != null
                         && codiceFiscaleResponsabileGestioneDocumentale != "") {
