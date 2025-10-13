@@ -19,6 +19,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.Err
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ResponseUnimatica;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
+import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
@@ -402,14 +403,20 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
      * @return
      */
     //TODO levare entity manager
-    private Persona personaDaCodiceFiscaleEAzienda(String codiceFiscale, Integer idAzienda, EntityManager entityManager) {
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        Persona persona = jPAQueryFactory.select(QPersona.persona)
-            .from(QPersona.persona)
-            .where(QPersona.persona.codiceFiscale.eq(codiceFiscale)
-                .and(QPersona.persona.idAziendaDefault.id.eq(idAzienda)))
+    private Persona personaDaCodiceFiscaleEAzienda(String username, Integer idAzienda) {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+
+        QUtente utente = QUtente.utente;
+        QPersona persona = QPersona.persona;
+
+        Persona result = queryFactory
+            .select(persona)
+            .from(utente)
+            .join(utente.idPersona, persona)
+            .where(utente.idAzienda.id.eq(idAzienda)
+                .and(utente.username.eq(username)))
             .fetchOne();
-        return persona;
+        return result;
     }
 
     /**
