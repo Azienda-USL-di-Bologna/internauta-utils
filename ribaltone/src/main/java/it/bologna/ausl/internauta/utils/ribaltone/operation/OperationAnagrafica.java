@@ -128,7 +128,13 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
 
             case EDIT -> {
                 DatiDaImportareAnagrafica entitaDaInserire = (DatiDaImportareAnagrafica) getEntitaCoinvolta();
-                DatiImportatiAnagrafica datiImportatiAnagrafica = queryFactory.select(qDatiImportatiAnagrafica).from(qDatiImportatiAnagrafica).where(qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()).and(qDatiImportatiAnagrafica.idAzienda.eq(entitaDaInserire.getIdAzienda()))).fetchOne();
+                DatiImportatiAnagrafica datiImportatiAnagrafica
+                    = queryFactory.select(qDatiImportatiAnagrafica)
+                        .from(qDatiImportatiAnagrafica)
+                        .where(qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())
+                            .and(qDatiImportatiAnagrafica.idAzienda.eq(entitaDaInserire.getIdAzienda()))
+                            .and(qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserire.getCodiceMatricola())))
+                        .fetchOne();
                 if (StringUtils.hasText(entitaDaInserire.getEmail())) {
                     Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.attiva.and(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()))).fetchOne();
                     if (p != null && datiImportatiAnagrafica != null) {
