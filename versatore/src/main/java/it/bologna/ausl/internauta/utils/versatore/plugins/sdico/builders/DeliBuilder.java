@@ -4,7 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -58,12 +58,13 @@ public class DeliBuilder {
      *
      * @return
      */
-    public VersamentoBuilder build() throws VersatorePluginException {
+    public VersamentoBuilder build() throws VersatoreSdicoException {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEnteVersatore = (String) parametriVersamento.get("ente");
+        String amministrazioneTitolareDelProcedimento = (String) parametriVersamento.get("amministrazioneTitolareDelProcedimento");
         String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String descrizioneClassificazione = archivio.getIdTitolo().getNome();
@@ -93,7 +94,7 @@ public class DeliBuilder {
         for (AttoreDoc attore : listaAttoriDelDocumento) {
             if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.FIRMA)) {
                 stringaDiFirmatari += "Proponente: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
-            }        
+            }
             if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE)) {
                 ufficioProduttore = attore.getIdStruttura().getNome();
                 stringaDiFirmatari += "DG: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
@@ -106,8 +107,8 @@ public class DeliBuilder {
             }
         }
         if (ufficioProduttore.isEmpty() || ufficioProduttore == null) {
-            throw new VersatorePluginException("Per la delibera non è indicato un Direttore Generale oppure non ne è stata specificata la struttura");
-        } 
+            throw new VersatoreSdicoException("Per la delibera non è indicato un Direttore Generale oppure non ne è stata specificata la struttura");
+        }
         stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String firmatoDigitalmente = (String) mappaParametri.get("firmatoDigitalmente");
         String marcaturaTemporale = (String) mappaParametri.get("marcaturaTemporale");
@@ -126,13 +127,13 @@ public class DeliBuilder {
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
                 } else {
-                    throw new VersatorePluginException("La Delibera non ha data esecutivita");
+                    throw new VersatoreSdicoException("La Delibera non ha data esecutivita");
                 }
             } else {
-                throw new VersatorePluginException("La Delibera non ha i dati di pubblicazione");
+                throw new VersatoreSdicoException("La Delibera non ha i dati di pubblicazione");
             }
         } else {
-            throw new VersatorePluginException("La Delibera non ha gli additionalData");
+            throw new VersatoreSdicoException("La Delibera non ha gli additionalData");
         }
         String naturaDocumento = (String) mappaParametri.get("naturaDocumento");
         String modalitaDiFormazione = (String) parametriVersamento.get("modalitaDiFormazione");
@@ -140,27 +141,27 @@ public class DeliBuilder {
         String produttore = (String) parametriVersamento.get("produttore");
         String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
         String sigillatoElettronicamente = (String) mappaParametri.get("sigillatoElettronicamente");
-        
+
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEnteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idClassifica", Arrays.asList(idClassifica), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "classificazioneArchivistica", Arrays.asList(classificazioneArchivistica), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEnteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(amministrazioneTitolareDelProcedimento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(ufficioProduttore), TESTO);
         if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
-                versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
-            } else {
-                versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non impostato"), TESTO);
-            }
+            versamentoBuilder.addSinglemetadataByParams(false, "responasbileProcedimento", Arrays.asList(docDetail.getIdPersonaResponsabileProcedimento().getDescrizione()), TESTO);
+        } else {
+            versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non impostato"), TESTO);
+        }
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
         //TODO da aggiungere nel caso ci sia bisogno dei controlli if (registro != null && registro.getCodice() != null) {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
@@ -179,14 +180,14 @@ public class DeliBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(doc.getTipologia().toString()), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "id_doc_allegati", Arrays.asList(stringaAllegati), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_proposta", Arrays.asList(docDetail.getDataCreazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_proposta", Arrays.asList(numeroProposta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "data_esecutivita", Arrays.asList(dataEsecutivita), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "natura_documento", Arrays.asList(naturaDocumento), TESTO);
         if (docDetail.getDataPubblicazione() != null) {
-            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().format(formatter)), DATA);
+            versamentoBuilder.addSinglemetadataByParams(false, "data_pubblicazione", Arrays.asList(docDetail.getDataPubblicazione().toLocalDateTime().format(formatter)), DATA);
         } else {
-            throw new VersatorePluginException("La Delibera non ha data pubblicazione");
+            throw new VersatoreSdicoException("La Delibera non ha data pubblicazione");
         }
         versamentoBuilder.addSinglemetadataByParams(false, "modalita_di_formazione", Arrays.asList(modalitaDiFormazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);

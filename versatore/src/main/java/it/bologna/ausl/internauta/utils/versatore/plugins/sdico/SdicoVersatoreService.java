@@ -46,6 +46,7 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExce
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.QPersona;
+import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.ArchivioDetail;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
@@ -125,8 +126,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 case ERRORE_PLUG_IN_RITENTABILE:
                 case ERRORE_PLUG_IN: {
                     Versamento.StatoVersamento statoVersamento = response.getResponseCode().equals(ERRORE_PLUG_IN)
-                            ? Versamento.StatoVersamento.ERRORE
-                            : Versamento.StatoVersamento.ERRORE_RITENTABILE;
+                        ? Versamento.StatoVersamento.ERRORE
+                        : Versamento.StatoVersamento.ERRORE_RITENTABILE;
                     versamentoDocInformation.setRapporto(responseJson);
                     versamentoDocInformation.setCodiceErrore(response.getResponseCode());
                     versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
@@ -204,7 +205,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         if (archivio.getId() != null && !listaArchivioDocs.isEmpty()) {
                             Archivio archivioDaLista = new Archivio();
                             for (ArchivioDoc archivioDoc : listaArchivioDocs) {
-                                //controllo se il documento appartiene a un sottofasicolo o a un inserto anziché al fasciolo radice 
+                                //controllo se il documento appartiene a un sottofasicolo o a un inserto anziché al fasciolo radice
                                 //e controllo che non sia stato eliminato logicamente
                                 if (archivioDoc.getIdArchivio().getIdArchivioRadice().getId().equals(archivio.getId()) && archivioDoc.getDataEliminazione() == null) {
                                     archivioDaLista = archivioDoc.getIdArchivio();
@@ -213,7 +214,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             if (archivioDaLista.getId() != null) {
                                 archivio = archivioDaLista;
                             } else {
-                                //se archivioDaLista è vuoto allora il documento è stato eliminato logicamente dal fasicolo, e non è collegato ad altri fascicoli, 
+                                //se archivioDaLista è vuoto allora il documento è stato eliminato logicamente dal fasicolo, e non è collegato ad altri fascicoli,
                                 //in quel caso non verso il documento
                                 response.setErrorMessage("Il documento è stato cancellato logicamente dal fascicolo");
                                 response.setResponseCode(CANCELLATO);
@@ -237,10 +238,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                     }
                     String codiceFiscaleResponsabileGestioneDocumentale = (String) parametriVersamento.get("codiceFiscaleResponsabileGestioneDocumentale");
+                    log.info("codiceFiscaleResponsabileGestioneDocumentale" + codiceFiscaleResponsabileGestioneDocumentale);
                     if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
-                            && codiceFiscaleResponsabileGestioneDocumentale != null
-                            && codiceFiscaleResponsabileGestioneDocumentale != "") {
+                        && codiceFiscaleResponsabileGestioneDocumentale != null
+                        && codiceFiscaleResponsabileGestioneDocumentale != "") {
                         responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
+                        log.info("Il responsabile della gestione documentale è: " + responsabileGestioneDocumentale.getCognome() + " " + responsabileGestioneDocumentale.getNome());
                     } else {
                         throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
                     }
@@ -289,11 +292,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             String numeroIniziale = matcher.group(2);
                             String numeroFinale = matcher.group(3);
                             ZonedDateTime dataIniziale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
-                                    numeroIniziale,
-                                    doc.getIdAzienda().getId());
+                                numeroIniziale,
+                                doc.getIdAzienda().getId());
                             ZonedDateTime dataFinale = getDataRegistrazioneDaNumeroDiRegistrazioneEAnno(
-                                    numeroFinale,
-                                    doc.getIdAzienda().getId());
+                                numeroFinale,
+                                doc.getIdAzienda().getId());
                             RgPicoBuilder rb = new RgPicoBuilder(doc, docDetail, archivio, registro, firmatari, parametriVersamento, numeroIniziale, numeroFinale, dataIniziale, dataFinale, responsabileGestioneDocumentale);
                             versamentoBuilder = rb.build();
                             break;
@@ -349,8 +352,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 // Conversione file metadati.xml da inputstream to byte[] e aggiungo al multipart
                 byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
                 MultipartBody.Builder buildernew = new MultipartBody.Builder()
-                        .setType(MultipartBody.FORM)
-                        .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", "metadati.xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
 
                 // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
                 log.info("Ciclo i file...");
@@ -373,10 +376,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 // richiesta
                 log.info("Costruisco la request");
                 Request request = new Request.Builder()
-                        .url(sdicoServizioVersamentoURI)
-                        .addHeader("Authorization", token)
-                        .post(requestBody)
-                        .build();
+                    .url(sdicoServizioVersamentoURI)
+                    .addHeader("Authorization", token)
+                    .post(requestBody)
+                    .build();
                 log.info("Uri: " + sdicoServizioVersamentoURI);
                 log.info("Effettuo la chiamata a SDICO");
                 try (Response resp = okHttpClient.newCall(request).execute()) {
@@ -444,9 +447,9 @@ public class SdicoVersatoreService extends VersatoreDocs {
         String json = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
         RequestBody body = RequestBody.create(JSON, json);
         Request request = new Request.Builder()
-                .url(this.sdicoLoginURI)
-                .post(body)
-                .build();
+            .url(this.sdicoLoginURI)
+            .post(body)
+            .build();
         Response response = okHttpClient.newCall(request).execute();
         JSONObject jsonObject = new JSONObject(response.body().string());
 
@@ -467,8 +470,8 @@ public class SdicoVersatoreService extends VersatoreDocs {
             PaccoFile paccoFile = new PaccoFile();
             try {
                 InputStream is = identityFile.getUuidMongo() != null
-                        ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
-                        : minIOWrapper.getByFileId(identityFile.getFileBase64());
+                    ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
+                    : minIOWrapper.getByFileId(identityFile.getFileBase64());
                 paccoFile.setInputStream(is);
                 paccoFile.setMime(identityFile.getMime());
                 paccoFile.setFileName(identityFile.getFileName());
@@ -494,14 +497,14 @@ public class SdicoVersatoreService extends VersatoreDocs {
         Integer anno = Integer.parseInt(parts[1]);
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
         ZonedDateTime dataRegistrazione = jPAQueryFactory
-                .select(QDocDetail.docDetail.dataRegistrazione)
-                .from(QDocDetail.docDetail)
-                .where(QDocDetail.docDetail.numeroRegistrazione.eq(numeroRegistrazione)
-                        .and(QDocDetail.docDetail.annoRegistrazione.eq(anno))
-                        .and(QDocDetail.docDetail.idAzienda.id.eq(idAzienda))
-                        .and(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
-                                .or(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA))))
-                .fetchOne();
+            .select(QDocDetail.docDetail.dataRegistrazione)
+            .from(QDocDetail.docDetail)
+            .where(QDocDetail.docDetail.numeroRegistrazione.eq(numeroRegistrazione)
+                .and(QDocDetail.docDetail.annoRegistrazione.eq(anno))
+                .and(QDocDetail.docDetail.idAzienda.id.eq(idAzienda))
+                .and(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
+                    .or(QDocDetail.docDetail.tipologia.eq(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA))))
+            .fetchOne();
 
         return dataRegistrazione;
     }
@@ -517,11 +520,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
     private Long numeroVersamentiDocPerArchivio(Integer idDoc, Integer idArchivio) {
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
         Long numeroDocVersati = jPAQueryFactory.select(QVersamento.versamento.count())
-                .from(QVersamento.versamento)
-                .where(QVersamento.versamento.idDoc.id.eq(idDoc)
-                        .and(QVersamento.versamento.idArchivio.id.eq(idArchivio))
-                        .and(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
-                .fetchOne();
+            .from(QVersamento.versamento)
+            .where(QVersamento.versamento.idDoc.id.eq(idDoc)
+                .and(QVersamento.versamento.idArchivio.id.eq(idArchivio))
+                .and(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
+            .fetchOne();
         return numeroDocVersati;
     }
 
@@ -531,13 +534,19 @@ public class SdicoVersatoreService extends VersatoreDocs {
      * @param codiceFiscale
      * @return
      */
-    private Persona personaDaCodiceFiscaleEAzienda(String codiceFiscale, Integer idAzienda) {
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        Persona persona = jPAQueryFactory.select(QPersona.persona)
-                .from(QPersona.persona)
-                .where(QPersona.persona.codiceFiscale.eq(codiceFiscale)
-                        .and(QPersona.persona.idAziendaDefault.id.eq(idAzienda)))
-                .fetchOne();
-        return persona;
+    private Persona personaDaCodiceFiscaleEAzienda(String username, Integer idAzienda) {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+
+        QUtente utente = QUtente.utente;
+        QPersona persona = QPersona.persona;
+
+        Persona result = queryFactory
+            .select(persona)
+            .from(utente)
+            .join(utente.idPersona, persona)
+            .where(utente.idAzienda.id.eq(idAzienda)
+                .and(utente.username.eq(username)))
+            .fetchOne();
+        return result;
     }
 }
