@@ -84,6 +84,7 @@ import jakarta.xml.ws.WebServiceException;
 import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -93,6 +94,7 @@ import org.springframework.util.StringUtils;
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
 @Component
+@Scope("prototype")
 public class InfocertVersatoreService extends VersatoreDocs {
 
     private enum AzioneVersamento {

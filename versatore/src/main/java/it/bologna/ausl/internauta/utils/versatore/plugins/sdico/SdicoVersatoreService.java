@@ -59,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.util.StringUtils;
 
 /**
@@ -66,6 +67,7 @@ import org.springframework.util.StringUtils;
  * @author Andrea
  */
 @Component
+@Scope("prototype")
 public class SdicoVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
@@ -452,8 +454,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
             .post(body)
             .build();
         Response response = okHttpClient.newCall(request).execute();
-        log.info("Esito login per l'utente " + username + ": " + response.message());
-        JSONObject jsonObject = new JSONObject(response.body().string());
+        String responseBodyString = response.body().string();
+        log.info("Effettuo login per l'utente " + username);
+        log.info("uri: " + sdicoLoginURI);
+        JSONObject jsonObject = new JSONObject(responseBodyString);
 
         return (String) jsonObject.get("token");
     }
