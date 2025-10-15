@@ -237,12 +237,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     } else {
                         throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
                     }
-                    String codiceFiscaleResponsabileGestioneDocumentale = (String) parametriVersamento.get("codiceFiscaleResponsabileGestioneDocumentale");
-                    log.info("codiceFiscaleResponsabileGestioneDocumentale" + codiceFiscaleResponsabileGestioneDocumentale);
-                    if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
-                        && codiceFiscaleResponsabileGestioneDocumentale != null
-                        && codiceFiscaleResponsabileGestioneDocumentale != "") {
-                        responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
+                    //prendo il responsabile della gestione documentale
+                    String usernameResponsabileGestioneDocumentale = (String) parametriVersamento.get("usernameResponsabileGestioneDocumentale");
+                    log.info("usernameResponsabileGestioneDocumentale" + usernameResponsabileGestioneDocumentale);
+                    if (!usernameResponsabileGestioneDocumentale.isEmpty()
+                        && usernameResponsabileGestioneDocumentale != null
+                        && usernameResponsabileGestioneDocumentale != "") {
+                        responsabileGestioneDocumentale = personaDaUsernameEAzienda(usernameResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
                         log.info("Il responsabile della gestione documentale è: " + responsabileGestioneDocumentale.getCognome() + " " + responsabileGestioneDocumentale.getNome());
                     } else {
                         throw new VersatoreSdicoException("Non è stato indicato il Responsabile della Gestione Documentale");
@@ -451,6 +452,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
             .post(body)
             .build();
         Response response = okHttpClient.newCall(request).execute();
+        log.info("Esito login per l'utente " + username + ": " + response.message());
         JSONObject jsonObject = new JSONObject(response.body().string());
 
         return (String) jsonObject.get("token");
@@ -529,12 +531,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
     }
 
     /**
-     * Metodo che dato un codice fiscale ti restituisce la persona
+     * Metodo che dato uno username ti restituisce la persona
      *
      * @param codiceFiscale
      * @return
      */
-    private Persona personaDaCodiceFiscaleEAzienda(String username, Integer idAzienda) {
+    private Persona personaDaUsernameEAzienda(String username, Integer idAzienda) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
         QUtente utente = QUtente.utente;
