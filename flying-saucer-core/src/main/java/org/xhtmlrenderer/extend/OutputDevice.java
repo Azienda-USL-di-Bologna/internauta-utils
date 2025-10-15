@@ -19,11 +19,11 @@
  */
 package org.xhtmlrenderer.extend;
 
-import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
 import org.xhtmlrenderer.css.parser.FSColor;
 import org.xhtmlrenderer.css.style.CalculatedStyle;
 import org.xhtmlrenderer.css.style.derived.BorderPropertySet;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
 import org.xhtmlrenderer.render.FSFont;
@@ -62,6 +62,7 @@ public interface OutputDevice {
     void setFont(FSFont font);
 
     void setColor(FSColor color);
+    void setOpacity(float opacity);
 
     void drawRect(int x, int y, int width, int height);
     void drawOval(int x, int y, int width, int height);
@@ -69,6 +70,7 @@ public interface OutputDevice {
     void drawBorderLine(Shape bounds, int side, int width, boolean solid);
 
     void drawImage(FSImage image, int x, int y);
+    void drawLinearGradient(FSLinearGradient gradient, int x, int y, int width, int height);
 
     void draw(Shape s);
     void fill(Shape s);
@@ -86,7 +88,6 @@ public interface OutputDevice {
     Stroke getStroke();
 
     @Nullable
-    @CheckReturnValue
     Object getRenderingHint(RenderingHints.Key key);
 
     void setRenderingHint(RenderingHints.Key key, Object value);

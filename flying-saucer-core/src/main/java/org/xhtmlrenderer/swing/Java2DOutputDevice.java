@@ -23,6 +23,8 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import org.jspecify.annotations.Nullable;
 import org.xhtmlrenderer.css.parser.FSColor;
 import org.xhtmlrenderer.css.parser.FSRGBColor;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient.StopValue;
 import org.xhtmlrenderer.extend.FSGlyphVector;
 import org.xhtmlrenderer.extend.FSImage;
 import org.xhtmlrenderer.extend.OutputDevice;
@@ -40,6 +42,7 @@ import java.awt.*;
 import java.awt.font.GlyphVector;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
 public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDevice {
     private final Graphics2D _graphics;
@@ -51,7 +54,6 @@ public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDe
     public Java2DOutputDevice(BufferedImage outputImage) {
         this(outputImage.createGraphics());
     }
-
 
     @Override
     public void drawSelection(RenderingContext c, InlineText inlineText) {
@@ -127,9 +129,9 @@ public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDe
                                 i, new Point2D.Double(point.getX() + adjust, point.getY()));
                     }
                     if (ch == ' ' || ch == '\u00a0' || ch == '\u3000') {
-                        adjust += info.getSpaceAdjust();
+                        adjust += info.spaceAdjust();
                     } else {
-                        adjust += info.getNonSpaceAdjust();
+                        adjust += info.nonSpaceAdjust();
                     }
                 }
 
@@ -191,9 +193,18 @@ public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDe
     }
 
     @Override
+    public void setOpacity(float opacity) {
+        _graphics.setComposite(opacity == 1 ?
+            AlphaComposite.SrcOver :
+            AlphaComposite.SrcOver.derive(opacity)
+        );
+	}
+
+
+    @Override
     public void setColor(FSColor color) {
         if (color instanceof FSRGBColor rgb) {
-            _graphics.setColor(new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue()));
+            _graphics.setColor(new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue(),(int) (rgb.getAlpha() * 255)));
         } else {
             throw new RuntimeException("internal error: unsupported color class " + color.getClass().getName());
         }
@@ -225,8 +236,7 @@ public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDe
     public Shape getClip() {
         return _graphics.getClip();
     }
-
-    @Override
+@Override
     public void clip(Shape s) {
         _graphics.clip(s);
     }
@@ -301,4 +311,35 @@ public class Java2DOutputDevice extends AbstractOutputDevice implements OutputDe
     public boolean isSupportsCMYKColors() {
         return true;
     }
+
+	@Override
+	public void drawLinearGradient(FSLinearGradient gradient, int x, int y, int width, int height) {
+        List<StopValue> stopPoints = gradient.getStopPoints();
+        float[] fractions = new float[stopPoints.size()];
+		Color[] colors = new Color[stopPoints.size()];
+
+		float range = stopPoints.get(stopPoints.size() - 1).getLength() - stopPoints.get(0).getLength();
+
+		int i = 0;
+		for (StopValue pt : stopPoints)
+		{
+	        if (pt.getColor() instanceof FSRGBColor rgb) {
+                colors[i] = new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue());
+	        } else {
+	            throw new RuntimeException("internal error: unsupported color class " + pt.getColor().getClass().getName());
+	        }
+
+	        if (range != 0)
+	        	fractions[i] = pt.getLength() / range;
+
+	        i++;
+		}
+
+        LinearGradientPaint paint = new LinearGradientPaint(
+                gradient.getStartX() + x, gradient.getStartY() + y,
+                gradient.getEndX() + x, gradient.getEndY() + y, fractions, colors);
+		_graphics.setPaint(paint);
+		_graphics.fillRect(x, y, width, height);
+		_graphics.setPaint(null);
+	}
 }

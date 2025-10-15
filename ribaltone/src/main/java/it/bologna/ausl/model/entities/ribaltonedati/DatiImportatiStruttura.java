@@ -3,6 +3,7 @@ package it.bologna.ausl.model.entities.ribaltonedati;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
@@ -28,7 +29,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterface {
+public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterface, DatiRibaltoneStrutturaInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -79,6 +80,7 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     public DatiImportatiStruttura() {
     }
 
+    @Override
     public Integer getIdCasella() {
         return idCasella;
     }
@@ -159,6 +161,7 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
         this.version = version;
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -203,6 +206,16 @@ public class DatiImportatiStruttura implements Serializable, DatiRibaltoneInterf
     @Override
     public String getClasse() {
         return DatiImportatiStruttura.class.getCanonicalName();
+    }
+
+    @Override
+    public Integer getIdCasellaPadre() {
+        return idPadre;
+    }
+
+    @Override
+    public void setIdCasellaPadre(Integer idCasellaPadre) {
+        this.idPadre = idCasellaPadre;
     }
 
 }

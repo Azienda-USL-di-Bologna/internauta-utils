@@ -23,6 +23,8 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -73,7 +75,8 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     private String errore;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_anagrafica_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_anagrafica_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_anagrafica_id_seq", allocationSize = 1000)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -214,7 +217,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @JsonIgnore
     @Override
     public String getKey() {
-        return this.codiceFiscale;
+        return this.codiceFiscale + "_" + this.codiceMatricola + "_" + this.codiceAzienda;
     }
 
     @Override
@@ -231,8 +234,8 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
-        anagraficaImportata.setCognome(this.cognome);
-        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCognome(WordUtils.capitalizeFully(this.cognome));
+        anagraficaImportata.setNome(WordUtils.capitalizeFully(this.nome));
         anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
         anagraficaImportata.setEmail(this.email);
         anagraficaImportata.setIdAzienda(this.idAzienda);

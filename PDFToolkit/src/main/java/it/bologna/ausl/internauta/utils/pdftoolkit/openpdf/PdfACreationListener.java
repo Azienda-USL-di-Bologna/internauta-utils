@@ -23,7 +23,7 @@ public class PdfACreationListener implements PDFCreationListener {
 
     private Path fileIcc = Paths.get(WORKDIR, RESOURCES_RELATIVE_PATH, "/AdobeRGB1998.icc");
 
-    private int pdfAConformanceLevel = com.lowagie.text.pdf.PdfWriter.PDFA1A;
+    private int pdfAConformanceLevel = org.openpdf.text.pdf.PdfWriter.PDFA1A;
 
     public PdfACreationListener(String title, List<Path> fontsDirectory, Path fileIcc, int pdfAConformanceLevel) {
         this.title = title;
@@ -46,9 +46,9 @@ public class PdfACreationListener implements PDFCreationListener {
     @Override
     public void preOpen(ITextRenderer iTextRenderer) {
         iTextRenderer.getWriter().setTagged(); // a che serve?
-        com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
-        writer.setPDFXConformance(com.lowagie.text.pdf.PdfWriter.PDFA1A);
-        writer.setPdfVersion(com.lowagie.text.pdf.PdfWriter.PDF_VERSION_1_7);
+        org.openpdf.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+        writer.setPDFXConformance(org.openpdf.text.pdf.PdfWriter.PDFA1A);
+        writer.setPdfVersion(org.openpdf.text.pdf.PdfWriter.PDF_VERSION_1_7);
         
     }
 
@@ -67,9 +67,9 @@ public class PdfACreationListener implements PDFCreationListener {
 
     @Override
     public void onClose(ITextRenderer iTextRenderer) {
-        com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+        org.openpdf.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
         try {
-            writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title));
+            writer.getInfo().put(org.openpdf.text.pdf.PdfName.TITLE, new org.openpdf.text.pdf.PdfString(title));
 //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
             OpenPdfMetadataUtils.writeExtraCatalog(writer, fileIcc.toFile());
             OpenPdfMetadataUtils.writeXmpMetadata(writer);

@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.pdf.BaseFont;
+import org.openpdf.text.DocumentException;
+import org.openpdf.text.pdf.BaseFont;
 import it.bologna.ausl.internauta.utils.pdftoolkit.enums.FontFamily;
 import org.slf4j.Logger;
 import org.xhtmlrenderer.pdf.ITextRenderer;

@@ -35,14 +35,17 @@ import org.xhtmlrenderer.css.parser.property.PrimitivePropertyBuilders;
 import org.xhtmlrenderer.css.sheet.PropertyDeclaration;
 import org.xhtmlrenderer.css.style.derived.BorderPropertySet;
 import org.xhtmlrenderer.css.style.derived.DerivedValueFactory;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient;
 import org.xhtmlrenderer.css.style.derived.FunctionValue;
 import org.xhtmlrenderer.css.style.derived.LengthValue;
 import org.xhtmlrenderer.css.style.derived.ListValue;
+import org.xhtmlrenderer.css.style.derived.NullableInsets;
 import org.xhtmlrenderer.css.style.derived.NumberValue;
 import org.xhtmlrenderer.css.style.derived.RectPropertySet;
 import org.xhtmlrenderer.css.value.FontSpecification;
 import org.xhtmlrenderer.render.FSFont;
 import org.xhtmlrenderer.render.FSFontMetrics;
+import org.xhtmlrenderer.util.GeneralUtil;
 import org.xhtmlrenderer.util.XRLog;
 import org.xhtmlrenderer.util.XRRuntimeException;
 
@@ -54,6 +57,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import static org.xhtmlrenderer.css.constants.CSSName.PADDING_SIDE_PROPERTIES;
+import static org.xhtmlrenderer.css.constants.CSSName.cssProperty;
 import static org.xhtmlrenderer.css.style.CssKnowledge.BLOCK_EQUIVALENTS;
 import static org.xhtmlrenderer.css.style.CssKnowledge.BORDERS_NOT_ALLOWED;
 import static org.xhtmlrenderer.css.style.CssKnowledge.LAID_OUT_IN_INLINE_CONTEXT;
@@ -201,6 +206,7 @@ public class CalculatedStyle {
         return genStyleKey();
     }
 
+    @Nullable
     public FSColor asColor(CSSName cssName) {
         FSDerivedValue prop = valueByName(cssName);
         return prop == IdentValue.TRANSPARENT ? FSRGBColor.TRANSPARENT : prop.asColor();
@@ -252,6 +258,23 @@ public class CalculatedStyle {
         return valueByName(cssName).asIdentValue();
     }
 
+    /**
+     * Convenience property accessor; returns a Opacity
+     * Uses the actual value (computed actual value) for this
+     * element.
+     *
+     * @return The opacity value
+     */
+    public float getOpacity() {
+    	float opacity = asFloat(CSSName.OPACITY);
+
+        for (CalculatedStyle parentStyle = getParent(); parentStyle != null; parentStyle = parentStyle.getParent()) {
+    		opacity = opacity * parentStyle.asFloat(CSSName.OPACITY);
+    	}
+
+    	return opacity;
+    }
+
     public IdentValue getDisplay() {
         return getIdent(CSSName.DISPLAY);
     }
@@ -263,6 +286,7 @@ public class CalculatedStyle {
      *
      * @return The color value
      */
+    @Nullable
     public FSColor getColor() {
         return asColor(CSSName.COLOR);
     }
@@ -351,6 +375,11 @@ public class CalculatedStyle {
         } else {
             return getBorderProperty(this, ctx);
         }
+    }
+
+    public boolean disableOSBorder() {
+        BorderPropertySet border = getBorder(null);
+        return border.leftStyle() != null || border.rightStyle() != null || border.topStyle() != null || border.bottomStyle() != null;
     }
 
     public FontSpecification getFont(CssContext ctx) {
@@ -474,16 +503,12 @@ public class CalculatedStyle {
      *
      * @return The paddingWidth value
      */
-    public RectPropertySet getPaddingRect(float cbWidth, CssContext ctx, boolean useCache) {
+    public RectPropertySet getPaddingRect(float cbWidth, CssContext ctx) {
         if (! _paddingAllowed) {
             return RectPropertySet.ALL_ZEROS;
         } else {
-            return getPaddingProperty(this, cbWidth, ctx, useCache);
+            return getPaddingProperty(this, cbWidth, ctx);
         }
-    }
-
-    public RectPropertySet getPaddingRect(float cbWidth, CssContext ctx) {
-        return getPaddingRect(cbWidth, ctx, true);
     }
 
     public String getStringProperty(CSSName cssName) {
@@ -528,7 +553,7 @@ public class CalculatedStyle {
                             "Check CSSName declarations.");
                 }
                 if (initialValue.charAt(0) == '=') {
-                    CSSName ref = CSSName.getByPropertyName(initialValue.substring(1));
+                    CSSName ref = cssProperty(initialValue.substring(1));
                     val = valueByName(ref);
                 } else {
                     val = cssName.initialDerivedValue();
@@ -593,28 +618,13 @@ public class CalculatedStyle {
 
     private static RectPropertySet getPaddingProperty(CalculatedStyle style,
                                                       float cbWidth,
-                                                      CssContext ctx,
-                                                      boolean useCache) {
-        if (! useCache) {
-            return newRectInstance(style, CSSName.PADDING_SIDE_PROPERTIES, cbWidth, ctx);
-        } else {
-            if (style._padding == null) {
-                RectPropertySet result = newRectInstance(style, CSSName.PADDING_SIDE_PROPERTIES, cbWidth, ctx);
-                boolean allZeros = result.isAllZeros();
-
-                if (allZeros) {
-                    result = RectPropertySet.ALL_ZEROS;
-                }
-
-                style._padding = result;
-
-                if (! allZeros && style._padding.hasNegativeValues()) {
-                    style._padding.resetNegativeValues();
-                }
-            }
-
-            return style._padding;
+                                                      CssContext ctx) {
+        if (style._padding == null) {
+            style._padding = newRectInstance(style, PADDING_SIDE_PROPERTIES, cbWidth, ctx)
+                    .resetNegativeValues();
         }
+
+        return style._padding;
     }
 
     private static RectPropertySet getMarginProperty(CalculatedStyle style,
@@ -625,11 +635,7 @@ public class CalculatedStyle {
             return newRectInstance(style, CSSName.MARGIN_SIDE_PROPERTIES, cbWidth, ctx);
         } else {
             if (style._margin == null) {
-                RectPropertySet result = newRectInstance(style, CSSName.MARGIN_SIDE_PROPERTIES, cbWidth, ctx);
-                if (result.isAllZeros()) {
-                    result = RectPropertySet.ALL_ZEROS;
-                }
-                style._margin = result;
+                style._margin = newRectInstance(style, CSSName.MARGIN_SIDE_PROPERTIES, cbWidth, ctx);
             }
 
             return style._margin;
@@ -640,29 +646,18 @@ public class CalculatedStyle {
                                                    CSSName.CSSSideProperties sides,
                                                    float cbWidth,
                                                    CssContext ctx) {
-        RectPropertySet rect;
-        rect = RectPropertySet.newInstance(style,
-                sides,
-                cbWidth,
-                ctx);
+        RectPropertySet rect = RectPropertySet.newInstance(style, sides, cbWidth, ctx);
+
+        if (rect.isAllZeros()) {
+            rect = RectPropertySet.ALL_ZEROS;
+        }
         return rect;
     }
 
     private static BorderPropertySet getBorderProperty(CalculatedStyle style,
                                                        @Nullable CssContext ctx) {
         if (style._border == null) {
-            BorderPropertySet result = BorderPropertySet.newInstance(style, ctx);
-
-            boolean allZeros = result.isAllZeros();
-            if (allZeros && ! result.hasHidden() && !result.hasBorderRadius()) {
-                result = BorderPropertySet.EMPTY_BORDER;
-            }
-
-            style._border = result;
-
-            if (! allZeros && style._border.hasNegativeValues()) {
-                style._border.resetNegativeValues();
-            }
+            style._border = BorderPropertySet.newInstance(style, ctx).resetNegativeValues();
         }
         return style._border;
     }
@@ -671,7 +666,16 @@ public class CalculatedStyle {
         LEFT,
         RIGHT,
         TOP,
-        BOTTOM,
+        BOTTOM;
+
+        public int getMarginBorderPadding(RectPropertySet margin, BorderPropertySet border, RectPropertySet padding) {
+            return switch (this) {
+                case LEFT -> (int) (margin.left() + border.left() + padding.left());
+                case RIGHT -> (int) (margin.right() + border.right() + padding.right());
+                case TOP -> (int) (margin.top() + border.top() + padding.top());
+                case BOTTOM -> (int) (margin.bottom() + border.bottom() + padding.bottom());
+            };
+        }
     }
 
     public int getMarginBorderPadding(CssContext cssCtx, int cbWidth, Edge edge) {
@@ -679,12 +683,27 @@ public class CalculatedStyle {
         RectPropertySet margin = getMarginRect(cbWidth, cssCtx);
         RectPropertySet padding = getPaddingRect(cbWidth, cssCtx);
 
-        return switch (edge) {
-            case LEFT -> (int) (margin.left() + border.left() + padding.left());
-            case RIGHT -> (int) (margin.right() + border.right() + padding.right());
-            case TOP -> (int) (margin.top() + border.top() + padding.top());
-            case BOTTOM -> (int) (margin.bottom() + border.bottom() + padding.bottom());
-        };
+        return edge.getMarginBorderPadding(margin, border, padding);
+    }
+
+    @Nullable
+    @CheckReturnValue
+    private Integer getLengthValue(CSSName cssName) {
+        FSDerivedValue widthValue = valueByName(cssName);
+        if (widthValue instanceof LengthValue length) {
+            return (int) length.asFloat();
+        }
+
+        return null;
+    }
+
+    @CheckReturnValue
+    public NullableInsets padding() {
+        Integer paddingTop = getLengthValue(CSSName.PADDING_TOP);
+        Integer paddingLeft = getLengthValue(CSSName.PADDING_LEFT);
+        Integer paddingBottom = getLengthValue(CSSName.PADDING_BOTTOM);
+        Integer paddingRight = getLengthValue(CSSName.PADDING_RIGHT);
+        return new NullableInsets(paddingTop, paddingLeft, paddingBottom, paddingRight);
     }
 
     public IdentValue getWhitespace() {
@@ -708,7 +727,9 @@ public class CalculatedStyle {
     public IdentValue getWordWrap() {
         return getIdent(CSSName.WORD_WRAP);
     }
-
+public IdentValue getWordBreak() {
+        return getIdent(CSSName.WORD_BREAK);
+    }
     public IdentValue getHyphens() {
         return getIdent(CSSName.HYPHENS);
     }
@@ -910,6 +931,20 @@ public class CalculatedStyle {
     public boolean isRunning() {
         FSDerivedValue value = valueByName(CSSName.POSITION);
         return value instanceof FunctionValue;
+    }
+
+    public boolean isLinearGradient() {
+        FSDerivedValue value = valueByName(CSSName.BACKGROUND_IMAGE);
+        return value instanceof FunctionValue function &&
+        		GeneralUtil.ciEquals(function.getFunction().getName(), "linear-gradient");
+    }
+
+    public FSLinearGradient getLinearGradient(final CssContext cssContext, final int w, final int h)
+    {
+        assert(isLinearGradient());
+
+        final FunctionValue value = (FunctionValue) valueByName(CSSName.BACKGROUND_IMAGE);
+        return new FSLinearGradient(value.getFunction(), this, w, h, cssContext);
     }
 
     public String getRunningName() {

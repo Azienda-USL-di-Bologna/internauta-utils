@@ -1,14 +1,16 @@
 package it.bologna.ausl.internauta.utils.ribaltone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.cache.OperationsCacheManager;
-import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneCache;
+import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
@@ -41,7 +43,7 @@ public class RibaltoneManagerUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneManagerUtils.class);
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
         RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
@@ -81,6 +83,7 @@ public class RibaltoneManagerUtils {
         //recupero i dati da dove dice la conf
         DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
+        datiDaImportareValidated.transfer();
         return datiDaImportareValidated;
     }
 
@@ -138,7 +141,7 @@ public class RibaltoneManagerUtils {
         appartenenti = unisciListeUnichePerCodiceFiscaleIdCasella(appartenenti, fonteAggiuntaAppartenenti);
         anagrafiche = mergeAnagraficheListsOverrideOnCodiceFiscale(anagrafiche, fonteAggiuntaAnagrafica);
         //strutture = mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(strutture, fonteAggiuntaStrutture);
-        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory);
+        DatiDaImportare datiDaImportare = new DatiDaImportare(anagrafiche, strutture, appartenenti, trasformazioni, progressivoUltimaTrasformazione, repositoryFactory, idAzienda.getId());
         return datiDaImportare;
     }
 
@@ -234,4 +237,27 @@ public class RibaltoneManagerUtils {
         return new ArrayList<>(mappaPerIdCasella.values());
     }
 
+    public static void updateProgressivoUltimaTrasformazione(String fonte, String codiceEnte, RepositoryFactory repositoryFactory) {
+        List<DatiDaImportareTrasformazione> trasformazioniEseguite = repositoryFactory.getDatiDaImportareTrasformazioneRepository().findAll();
+        if (trasformazioniEseguite != null && !trasformazioniEseguite.isEmpty()) {
+
+            String sql = """
+                UPDATE ribaltone_dati.configuration t
+                SET specifiche = jsonb_set(
+                        t.specifiche,
+                        '{progressivoUltimaTrasformazione}',
+                        to_jsonb((
+                            SELECT max(d.progressivo_riga)
+                            FROM ribaltone_dati.dati_da_importare_trasformazioni d
+                            WHERE d.codice_ente = ?
+                        )),
+                        false
+                    )
+                WHERE t.id = ?;
+                """;
+            repositoryFactory.getJdbcTemplate()
+                .update(sql, codiceEnte, fonte);
+        }
+
+    }
 }

@@ -21,6 +21,7 @@
 package org.xhtmlrenderer.render;
 
 import com.google.errorprone.annotations.CheckReturnValue;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -104,14 +105,18 @@ public abstract class Box implements Styleable {
     @Nullable
     private String _pseudoElementOrClass;
 
-    private boolean _anonymous;
-
-    protected Box() {
-    }
+    private final boolean _anonymous;
 
     protected Box(@Nullable Box parent, @Nullable CalculatedStyle style) {
         this._parent = parent;
-        this._style = style;
+        this.setStyle(style);
+        _anonymous = false;
+    }
+
+    protected Box(@Nullable Element element, @Nullable CalculatedStyle style, boolean anonymous) {
+        this._element = element;
+        this.setStyle(style);
+        _anonymous = anonymous;
     }
 
     public abstract String dump(LayoutContext c, String indent, Dump which);
@@ -306,6 +311,7 @@ public abstract class Box implements Styleable {
         return getBorderEdge(getAbsX(), getAbsY(), cssCtx);
     }
 
+    @CheckReturnValue
     public Rectangle getPaintingPaddingEdge(CssContext cssCtx) {
         return getPaddingEdge(getAbsX(), getAbsY(), cssCtx);
     }
@@ -314,6 +320,7 @@ public abstract class Box implements Styleable {
         return getPaintingBorderEdge(cssCtx);
     }
 
+    @CheckReturnValue
     public Rectangle getChildrenClipEdge(RenderingContext c) {
         return getPaintingPaddingEdge(c);
     }
@@ -333,6 +340,7 @@ public abstract class Box implements Styleable {
                 getHeight() - (int) margin.top() - (int) margin.bottom());
     }
 
+    @CheckReturnValue
     public Rectangle getPaddingEdge(int left, int top, CssContext cssCtx) {
         RectPropertySet margin = getMargin(cssCtx);
         RectPropertySet border = getBorder(cssCtx);
@@ -369,6 +377,7 @@ public abstract class Box implements Styleable {
         _layer = layer;
     }
 
+    @Nullable
     public Dimension positionRelative(CssContext cssCtx) {
         int initialX = getX();
         int initialY = getY();
@@ -400,8 +409,7 @@ public abstract class Box implements Styleable {
                     CSSName.BOTTOM, cbContentHeight, cssCtx)));
         }
 
-        Dimension relativeOffset = new Dimension(getX() - initialX, getY() - initialY);
-        _relativeOffset = relativeOffset;
+        _relativeOffset = new Dimension(getX() - initialX, getY() - initialY);
         return getRelativeOffset();
     }
 
@@ -723,30 +731,29 @@ public abstract class Box implements Styleable {
         _element = element;
     }
 
-    public void setMarginTop(CssContext cssContext, int marginTop) {
-        ensureWorkingMargin(cssContext);
-        _workingMargin.setTop(marginTop);
+    protected final void setMarginTop(CssContext cssContext, int marginTop) {
+        ensureWorkingMargin(cssContext).setTop(marginTop);
     }
 
-    public void setMarginBottom(CssContext cssContext, int marginBottom) {
-        ensureWorkingMargin(cssContext);
-        _workingMargin.setBottom(marginBottom);
+    protected void setMarginBottom(CssContext cssContext, int marginBottom) {
+        ensureWorkingMargin(cssContext).setBottom(marginBottom);
     }
 
     public void setMarginLeft(CssContext cssContext, int marginLeft) {
-        ensureWorkingMargin(cssContext);
-        _workingMargin.setLeft(marginLeft);
+        ensureWorkingMargin(cssContext).setLeft(marginLeft);
     }
 
-    public void setMarginRight(CssContext cssContext, int marginRight) {
-        ensureWorkingMargin(cssContext);
-        _workingMargin.setRight(marginRight);
+    protected void setMarginRight(CssContext cssContext, int marginRight) {
+        ensureWorkingMargin(cssContext).setRight(marginRight);
     }
 
-    private void ensureWorkingMargin(CssContext cssContext) {
+    @NonNull
+    @CheckReturnValue
+    private RectPropertySet ensureWorkingMargin(CssContext cssContext) {
         if (_workingMargin == null) {
             _workingMargin = getStyleMargin(cssContext).copyOf();
         }
+        return _workingMargin;
     }
 
     public RectPropertySet getMargin(CssContext cssContext) {
@@ -801,13 +808,12 @@ public abstract class Box implements Styleable {
             return cached;
         }
 
-        final PaintingInfo result = new PaintingInfo();
-
         Rectangle bounds = getMarginEdge(getAbsX(), getAbsY(), c, 0, 0);
-        result.setOuterMarginCorner(
-            new Dimension(bounds.x + bounds.width, bounds.y + bounds.height));
 
-        result.setAggregateBounds(getPaintingClipEdge(c));
+        PaintingInfo result = new PaintingInfo(
+                new Dimension(bounds.x + bounds.width, bounds.y + bounds.height),
+                getPaintingClipEdge(c)
+        );
 
         if (!getStyle().isOverflowApplies() || getStyle().isOverflowVisible()) {
             calcChildPaintingInfo(c, result, useCache);
@@ -832,13 +838,7 @@ public abstract class Box implements Styleable {
         BorderPropertySet border = getBorder(cssCtx);
         RectPropertySet margin = getMargin(cssCtx);
         RectPropertySet padding = getPadding(cssCtx);
-
-        return switch (edge) {
-            case LEFT -> (int) (margin.left() + border.left() + padding.left());
-            case RIGHT -> (int) (margin.right() + border.right() + padding.right());
-            case TOP -> (int) (margin.top() + border.top() + padding.top());
-            case BOTTOM -> (int) (margin.bottom() + border.bottom() + padding.bottom());
-        };
+        return edge.getMarginBorderPadding(margin, border, padding);
     }
 
     protected void moveIfGreater(Dimension result, Dimension test) {
@@ -999,19 +999,8 @@ public abstract class Box implements Styleable {
         return _anonymous;
     }
 
-    public void setAnonymous(boolean anonymous) {
-        _anonymous = anonymous;
-    }
-
     public BoxDimensions getBoxDimensions() {
-        BoxDimensions result = new BoxDimensions();
-
-        result.setLeftMBP(getLeftMBP());
-        result.setRightMBP(getRightMBP());
-        result.setContentWidth(getContentWidth());
-        result.setHeight(getHeight());
-
-        return result;
+        return new BoxDimensions(getLeftMBP(), getRightMBP(), getContentWidth(), getHeight());
     }
 
     public void setBoxDimensions(BoxDimensions dimensions) {

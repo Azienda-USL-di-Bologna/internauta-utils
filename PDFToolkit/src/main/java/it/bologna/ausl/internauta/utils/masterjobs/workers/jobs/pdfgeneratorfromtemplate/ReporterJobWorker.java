@@ -122,14 +122,14 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
 //                    writer.setPdfVersion(PdfWriter.PDF_VERSION_1_4);
                     
                     iTextRenderer.getWriter().setTagged(); // a che serve?
-                    com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
-                    writer.setPDFXConformance(com.lowagie.text.pdf.PdfWriter.PDFA1A);
-                    writer.setPdfVersion(com.lowagie.text.pdf.PdfWriter.PDF_VERSION_1_7);
+                    org.openpdf.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+                    writer.setPDFXConformance(org.openpdf.text.pdf.PdfWriter.PDFA1A);
+                    writer.setPdfVersion(org.openpdf.text.pdf.PdfWriter.PDF_VERSION_1_7);
                 }
 
                 @Override
                 public void onClose(ITextRenderer iTextRenderer) {
-                com.lowagie.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
+                org.openpdf.text.pdf.PdfWriter writer = iTextRenderer.getWriter();
 //                    PdfAWriter writer = (PdfAWriter) itr.getWriter();
 //                    try {
 //
@@ -155,7 +155,7 @@ public class ReporterJobWorker extends JobWorker<ReporterJobWorkerData, JobWorke
                         try {
                         Object title = workerData.getParametriTemplate().get("title");
                         if (title != null) {
-                            writer.getInfo().put(com.lowagie.text.pdf.PdfName.TITLE, new com.lowagie.text.pdf.PdfString(title.toString()));
+                            writer.getInfo().put(org.openpdf.text.pdf.PdfName.TITLE, new org.openpdf.text.pdf.PdfString(title.toString()));
                         }
             //            iTextRenderer.getWriter().setLanguage(Locale.ITALY.getLanguage());
                         OpenPdfMetadataUtils.writeExtraCatalog(writer, adobeProfileFile);

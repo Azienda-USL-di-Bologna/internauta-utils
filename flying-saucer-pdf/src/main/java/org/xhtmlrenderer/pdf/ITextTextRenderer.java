@@ -19,8 +19,7 @@
  */
 package org.xhtmlrenderer.pdf;
 
-import com.google.errorprone.annotations.CheckReturnValue;
-import com.lowagie.text.pdf.BaseFont;
+import org.openpdf.text.pdf.BaseFont;
 import org.xhtmlrenderer.extend.FSGlyphVector;
 import org.xhtmlrenderer.extend.FontContext;
 import org.xhtmlrenderer.extend.OutputDevice;
@@ -49,27 +48,23 @@ public class ITextTextRenderer implements TextRenderer {
         ((ITextOutputDevice)outputDevice).drawString(string, x, y, info);
     }
 
-    @CheckReturnValue
     @Override
     public FSFontMetrics getFSFontMetrics(FontContext context, FSFont font, String string) {
         FontDescription description = ((ITextFSFont)font).getFontDescription();
         BaseFont bf = description.getFont();
         float size = font.getSize2D();
-        ITextFSFontMetrics result = new ITextFSFontMetrics();
-        result.setAscent(bf.getFontDescriptor(BaseFont.BBOXURY, size));
-        result.setDescent(-bf.getFontDescriptor(BaseFont.BBOXLLY, size));
+        float strikethroughThickness = description.getYStrikeoutSize() != 0 ?
+                description.getYStrikeoutSize() / 1000f * size :
+                size / 12.0f;
 
-        result.setStrikethroughOffset(-description.getYStrikeoutPosition() / 1000f * size);
-        if (description.getYStrikeoutSize() != 0) {
-            result.setStrikethroughThickness(description.getYStrikeoutSize() / 1000f * size);
-        } else {
-            result.setStrikethroughThickness(size / 12.0f);
-        }
-
-        result.setUnderlineOffset(-description.getUnderlinePosition() / 1000f * size);
-        result.setUnderlineThickness(description.getUnderlineThickness() / 1000f * size);
-
-        return result;
+        return new ITextFSFontMetrics(
+                bf.getFontDescriptor(BaseFont.BBOXURY, size),
+                -bf.getFontDescriptor(BaseFont.BBOXLLY, size),
+                -description.getYStrikeoutPosition() / 1000f * size,
+                strikethroughThickness,
+                -description.getUnderlinePosition() / 1000f * size,
+                description.getUnderlineThickness() / 1000f * size
+        );
     }
 
     @Override

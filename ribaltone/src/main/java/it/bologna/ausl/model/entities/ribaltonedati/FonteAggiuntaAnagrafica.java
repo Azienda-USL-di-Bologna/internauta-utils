@@ -19,6 +19,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -181,9 +182,9 @@ public class FonteAggiuntaAnagrafica implements Serializable {
         datiDaImportareAnagrafica.setCodiceEnte(codiceEnte);
         datiDaImportareAnagrafica.setCodiceFiscale(codiceFiscale);
         datiDaImportareAnagrafica.setCodiceMatricola(codiceMatricola);
-        datiDaImportareAnagrafica.setCognome(cognome);
+        datiDaImportareAnagrafica.setCognome(WordUtils.capitalizeFully(cognome));
         datiDaImportareAnagrafica.setEmail(email);
-        datiDaImportareAnagrafica.setNome(nome);
+        datiDaImportareAnagrafica.setNome(WordUtils.capitalizeFully(nome));
         datiDaImportareAnagrafica.setIdAzienda(idAzienda);
         datiDaImportareAnagrafica.setPasswordHash(null);
         return datiDaImportareAnagrafica;

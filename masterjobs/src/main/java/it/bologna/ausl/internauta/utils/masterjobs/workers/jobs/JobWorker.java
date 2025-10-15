@@ -106,7 +106,7 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      * @return il risultato della chiamata al metodo doRealWork
      * @throws MasterjobsWorkerException 
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    //@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
     public R doWork() throws MasterjobsWorkerException {
         log.info(String.format("executing job %s with jobId: %s ", getName(), getJobId()));

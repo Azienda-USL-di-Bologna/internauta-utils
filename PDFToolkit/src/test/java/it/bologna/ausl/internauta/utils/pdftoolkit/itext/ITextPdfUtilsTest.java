@@ -6,7 +6,7 @@
 //import com.itextpdf.text.pdf.PdfStamper;
 //import com.itextpdf.xmp.XMPConst;
 //import com.itextpdf.xmp.XMPMeta;
-//import com.lowagie.text.DocumentException;
+//import org.openpdf.text.DocumentException;
 //import freemarker.template.Configuration;
 //import freemarker.template.Template;
 //import freemarker.template.TemplateModelException;

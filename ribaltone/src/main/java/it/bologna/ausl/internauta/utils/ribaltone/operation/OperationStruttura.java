@@ -9,22 +9,21 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
-import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
-import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
+import it.bologna.ausl.model.entities.baborg.StoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +34,11 @@ import org.slf4j.LoggerFactory;
 public class OperationStruttura extends Operation<DatiRibaltoneInterface> implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(OperationStruttura.class);
+    private Struttura strutturaNew;
+    private Struttura strutturaChiusa;
 
-    public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
     }
 
     @Override
@@ -45,22 +46,21 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         //string = codiceCasellaPadre che sto aspettando di inserire
         //List<Integer> = lista di id di strutture figlie che ho gia inserito e sulle quali devo fare update in idStrutturaPadre
         //dovro anche andare a ad inserire in storico relazione la riga
-        if (workToDo == null) {
-            workToDo = new HashMap<Integer, List<Integer>>();
-        }
+//        if (workToDo == null) {
+//            workToDo = new HashMap<Integer, List<Integer>>();
+//        }
         HashMap<Integer, List<Integer>> struttureDaAggiornareConPadreNonAncoraInserito = (HashMap<Integer, List<Integer>>) workToDo;
         EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QStruttura qStruttura = QStruttura.struttura;
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
-        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
-        List<Integer> idAziendeList = new ArrayList<>();
-        List<Struttura> struttureUnificate = new ArrayList<>();
-
+//        QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
+//        List<Integer> idAziendeList = new ArrayList<>();
+//        List<Struttura> struttureUnificate = new ArrayList<>();
         switch (getAzione()) {
-            case INSERT: {
+            case INSERT:
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
-                OperationsUtils.inserisciStruttura(
+                strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
                     entitaDaInserire.getIdAzienda(),
@@ -70,24 +70,27 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     qStruttura,
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
-            }
-
+                break;
             //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
-            break;
 
-            case CHIUSURA: {
+            case CHIUSURA:
                 //non serve spegnere i permessi veicolati qui perche tanto gli utenti
                 //che facevano parte della struttura chiusa o non potranno entrare o
                 //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
-                Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
+//                Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
-                OperationsUtils.chiudiStruttura(entitaDaChiudere.getIdCasella(), idAzienda.getId(), queryFactory, qStruttura, qStoricoRelazione, qStrutturaUnificata, true);
-                //ora gestisco il caso in cui chiudo la struttura e tocco un'unificazione
-            }
-            break;
+                Struttura strutturaSorgenteDaChiudere = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
+                        qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                    ).fetchOne();
+                strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
+                break;
 
             case CAMBIO_PADRE:
             case RINOMINA:
@@ -95,18 +98,23 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
-                Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    entitaDaCambio.getIdCasella(),
-                    entitaDaCambio.getIdAzienda(),
+                Struttura strutturaSorgenteDaChiudereR = queryFactory
+                    .select(qStruttura)
+                    .from(qStruttura)
+                    .where(qStruttura.attiva.and(
+                        qStruttura.idCasella.eq(entitaDaCambio.getIdCasella())).and(
+                        qStruttura.idAzienda.id.eq(entitaDaCambio.getIdAzienda()))
+                    ).fetchOne();
+
+                strutturaChiusa = OperationsUtils.chiudiStruttura(
+                    strutturaSorgenteDaChiudereR,
                     queryFactory,
                     qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                    qStoricoRelazione);
 
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
-                Struttura strutturaAppenaInserita = OperationsUtils.inserisciStruttura(
+                strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
                     entitaDaCambio.getIdAzienda(),
@@ -116,12 +124,28 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     qStruttura,
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
+                //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
 
-                //spostaStrutture ma va fatto dopo
-                //OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAppenaInserita.getId(), operazione, strutturaAppenaInserita.getDataAttivazione().toString());
+                List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
+                for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
+                    storicoRelazione.setAttivaAl(ZonedDateTime.now());
+
+                    StoricoRelazione storicoRelazioneNew = new StoricoRelazione();
+                    storicoRelazioneNew.setAttivaDal(ZonedDateTime.now());
+                    storicoRelazioneNew.setIdStrutturaFiglia(storicoRelazione.getIdStrutturaFiglia());
+                    storicoRelazioneNew.setIdStrutturaPadre(strutturaNew);
+
+                    getEntityManager().persist(storicoRelazione);
+                    getEntityManager().persist(storicoRelazioneNew);
+                    getEntityManager().flush();
+                }
+                OperationsUtils.attivaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudereR);
+                //OperationsUtils.inserisciStrutturaNewInAziendaUnificata(queryFactory, em, strutturaNew, struttureOld, getAzione());
+                OperationsUtils.spostaStruttura(em, strutturaSorgenteDaChiudereR.getId(), strutturaNew.getId(), operazione, strutturaNew.getDataAttivazione().toString());
                 break;
             default:
                 throw new AssertionError();
+
         }
     }
 
@@ -139,7 +163,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         QStruttura qStruttura = QStruttura.struttura;
         EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
-        QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
+//        QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
         switch (getAzione()) {
             //va inserito il contatto
             case INSERT -> {

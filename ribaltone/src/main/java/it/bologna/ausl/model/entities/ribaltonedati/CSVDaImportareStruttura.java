@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -27,7 +29,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInterface {
+public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInterface, DatiRibaltoneStrutturaInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -81,6 +83,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
     public CSVDaImportareStruttura() {
     }
 
+    @Override
     public Integer getIdCasella() {
         return idCasella;
     }
@@ -220,7 +223,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
         output.setIdCasella(this.idCasella);
         output.setIdPadre(this.idPadre);
-        output.setDescrizione(this.descrizione);
+        output.setDescrizione(WordUtils.capitalizeFully(this.descrizione).trim());
         output.setDatain(this.datain);
         output.setDatafi(this.datafi);
         output.setTipoLegame(this.tipoLegame);
@@ -236,7 +239,7 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
 
         output.setIdCasella(this.idCasella);
         output.setIdPadre(this.idPadre);
-        output.setDescrizione(this.descrizione);
+        output.setDescrizione(WordUtils.capitalizeFully(this.descrizione).trim());
         output.setDatain(this.datain);
         output.setDatafi(this.datafi);
         output.setTipoLegame(this.tipoLegame);
@@ -245,5 +248,15 @@ public class CSVDaImportareStruttura implements Serializable, DatiRibaltoneInter
         output.setIdAzienda(this.idAzienda);
 
         return output;
+    }
+
+    @Override
+    public Integer getIdCasellaPadre() {
+        return idPadre;
+    }
+
+    @Override
+    public void setIdCasellaPadre(Integer idCasellaPadre) {
+        this.idPadre = idCasellaPadre;
     }
 }

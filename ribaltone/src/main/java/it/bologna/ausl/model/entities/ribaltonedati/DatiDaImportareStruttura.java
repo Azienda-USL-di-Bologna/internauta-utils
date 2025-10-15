@@ -17,6 +17,9 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneStrutturaInterface;
+import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -27,7 +30,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @GenerateProjections({})
 @DynamicUpdate
-public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface {
+public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInterface, DatiRibaltoneStrutturaInterface {
 
     private static final long serialVersionUID = 1L;
 
@@ -65,7 +68,8 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     private String codiceAzienda;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_strutture_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_strutture_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_strutture_id_seq", allocationSize = 100)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -81,6 +85,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
     public DatiDaImportareStruttura() {
     }
 
+    @Override
     public Integer getIdCasella() {
         return idCasella;
     }
@@ -97,6 +102,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         this.idPadre = idPadre;
     }
 
+    @Override
     public Integer getIdAzienda() {
         return idAzienda;
     }
@@ -220,7 +226,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
         output.setIdCasella(this.idCasella);
         output.setIdPadre(this.idPadre);
-        output.setDescrizione(this.descrizione);
+        output.setDescrizione(WordUtils.capitalizeFully(this.descrizione).trim());
         output.setDatain(this.datain);
         output.setDatafi(this.datafi);
         output.setTipoLegame(this.tipoLegame);
@@ -229,5 +235,15 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
         output.setIdAzienda(this.idAzienda);
 
         return output;
+    }
+
+    @Override
+    public Integer getIdCasellaPadre() {
+        return idPadre;
+    }
+
+    @Override
+    public void setIdCasellaPadre(Integer idCasellaPadre) {
+        this.idPadre = idCasellaPadre;
     }
 }

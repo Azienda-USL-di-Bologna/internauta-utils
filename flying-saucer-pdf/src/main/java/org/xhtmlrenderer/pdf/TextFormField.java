@@ -19,21 +19,21 @@
  */
 package org.xhtmlrenderer.pdf;
 
-import com.google.errorprone.annotations.CheckReturnValue;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfAnnotation;
-import com.lowagie.text.pdf.PdfAppearance;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfFormField;
-import com.lowagie.text.pdf.PdfWriter;
-import com.lowagie.text.pdf.TextField;
+import org.openpdf.text.DocumentException;
+import org.openpdf.text.Rectangle;
+import org.openpdf.text.pdf.PdfAnnotation;
+import org.openpdf.text.pdf.PdfAppearance;
+import org.openpdf.text.pdf.PdfContentByte;
+import org.openpdf.text.pdf.PdfFormField;
+import org.openpdf.text.pdf.PdfWriter;
+import org.openpdf.text.pdf.TextField;
 import org.w3c.dom.Element;
 import org.xhtmlrenderer.css.parser.FSColor;
 import org.xhtmlrenderer.layout.LayoutContext;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.RenderingContext;
 import org.xhtmlrenderer.util.Util;
+import org.xhtmlrenderer.util.XRRuntimeException;
 
 import java.io.IOException;
 
@@ -51,7 +51,7 @@ public class TextFormField extends AbstractFormField {
 
     float fontSize = box.getStyle().getFSFont(c).getSize2D();
     // FIXME: findbugs possible loss of precision, cf. int / (float)2
-    _baseline = (int) (getHeight() / 2 + (fontSize * 0.3f));
+    _baseline = (int) ((float) getHeight() / 2 + (fontSize * 0.3f));
   }
 
   @Override
@@ -87,7 +87,8 @@ public class TextFormField extends AbstractFormField {
     Element elem = box.getElement();
 
     Rectangle targetArea = outputDevice.createLocalTargetArea(c, box);
-    TextField field = new TextField(writer, targetArea, getFieldName(outputDevice, elem));
+    String fieldName = getFieldName(outputDevice, elem);
+    TextField field = new TextField(writer, targetArea, fieldName);
 
     String value = getValue(elem);
     field.setText(value);
@@ -105,7 +106,7 @@ public class TextFormField extends AbstractFormField {
       }
       writer.addAnnotation(formField);
     } catch (IOException | DocumentException ioe) {
-      System.out.println(ioe);
+      throw new XRRuntimeException("Failed to paint field %s".formatted(fieldName), ioe);
     }
   }
 
@@ -180,7 +181,6 @@ public class TextFormField extends AbstractFormField {
   }
 
   @Override
-  @CheckReturnValue
   protected String getValue(Element e) {
     return e.getAttribute("value");
   }

@@ -73,6 +73,7 @@ public class IdentValue implements FSDerivedValue {
     public static final IdentValue BORDER_BOX = addValue("border-box");
     public static final IdentValue BOTH = addValue("both");
     public static final IdentValue BOTTOM = addValue("bottom");
+    public static final IdentValue BREAK_ALL = addValue("break-all");
     public static final IdentValue CAPITALIZE = addValue("capitalize");
     public static final IdentValue CENTER = addValue("center");
     public static final IdentValue CIRCLE = addValue("circle");
@@ -125,7 +126,8 @@ public class IdentValue implements FSDerivedValue {
     public static final IdentValue LEFT = addValue("left");
     public static final IdentValue LIGHTER = addValue("lighter");
     public static final IdentValue LINE = addValue("line");
-    public static final IdentValue LINE_THROUGH = addValue("line-through");
+    public static final IdentValue LINEAR_GRADIENT = addValue("linear-gradient");
+    public final static IdentValue LINE_THROUGH = addValue("line-through");
     public static final IdentValue LIST_ITEM = addValue("list-item");
     public static final IdentValue LOWER_ALPHA = addValue("lower-alpha");
     public static final IdentValue LOWER_GREEK = addValue("lower-greek");
@@ -186,6 +188,7 @@ public class IdentValue implements FSDerivedValue {
     public static final IdentValue TRANSPARENT = addValue("transparent");
     public static final IdentValue UNDERLINE = addValue("underline");
     public static final IdentValue UPPER_ALPHA = addValue("upper-alpha");
+    public static final IdentValue UPPER_GREEK = addValue("upper-greek");
     public static final IdentValue UPPER_LATIN = addValue("upper-latin");
     public static final IdentValue UPPER_ROMAN = addValue("upper-roman");
     public static final IdentValue UPPERCASE = addValue("uppercase");
