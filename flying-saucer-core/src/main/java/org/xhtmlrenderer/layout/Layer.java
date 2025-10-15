@@ -54,6 +54,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.sort;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Comparator.comparingInt;
+import static org.xhtmlrenderer.layout.Layer.Width.AUTO;
+import static org.xhtmlrenderer.layout.Layer.Width.NEGATIVE;
+import static org.xhtmlrenderer.layout.Layer.Width.POSITIVE;
+import static org.xhtmlrenderer.layout.Layer.Width.ZERO;
 
 /**
  * All positioned content as well as content with an overflow value other
@@ -74,7 +78,7 @@ public final class Layer {
 
     @Nullable
     private final Layer _parent;
-    private boolean _stackingContext;
+    private final boolean _stackingContext;
     @Nullable
     private List<Layer> _children;
     private final Box _master;
@@ -103,15 +107,17 @@ public final class Layer {
     private Map<String, List<BlockBox>> _runningBlocks;
 
     public Layer(Box master) {
-        this(null, master);
-        setStackingContext(true);
+        this(null, master, true);
     }
 
     public Layer(@Nullable Layer parent, Box master) {
+        this(parent, master, master.getStyle().isPositioned() && !master.getStyle().isAutoZIndex());
+    }
+
+    Layer(@Nullable Layer parent, Box master, boolean stackingContext) {
         _parent = parent;
         _master = master;
-        setStackingContext(
-                master.getStyle().isPositioned() && ! master.getStyle().isAutoZIndex());
+        _stackingContext = stackingContext;
         master.setLayer(this);
         master.setContainingLayer(this);
     }
@@ -127,14 +133,15 @@ public final class Layer {
         return _stackingContext;
     }
 
-    private void setStackingContext(boolean stackingContext) {
-        _stackingContext = stackingContext;
-    }
-
     @CheckReturnValue
     public int getZIndex() {
         return (int) _master.getStyle().asFloat(CSSName.Z_INDEX);
     }
+
+    public float getOpacity() {
+    	return _master.getStyle().getOpacity();
+	}
+
 
     @CheckReturnValue
     public Box getMaster() {
@@ -178,13 +185,10 @@ public final class Layer {
         }
     }
 
-    private static final int POSITIVE = 1;
-    private static final int ZERO = 2;
-    private static final int NEGATIVE = 3;
-    private static final int AUTO = 4;
+    enum Width {POSITIVE, ZERO, NEGATIVE, AUTO}
 
     @CheckReturnValue
-    private List<Layer> collectLayers(int which) {
+    private List<Layer> collectLayers(Width which) {
         List<Layer> result = new ArrayList<>();
 
         if (which != AUTO) {
@@ -205,7 +209,7 @@ public final class Layer {
     }
 
     @CheckReturnValue
-    private List<Layer> getStackingContextLayers(int which) {
+    private List<Layer> getStackingContextLayers(Width which) {
         List<Layer> result = new ArrayList<>();
 
         List<Layer> children = getChildren();
@@ -226,7 +230,7 @@ public final class Layer {
     }
 
     @CheckReturnValue
-    private List<Layer> getSortedLayers(int which) {
+	private List<Layer> getSortedLayers(Width which) {
         List<Layer> result = collectLayers(which);
         result.sort(new ZIndexComparator());
         return result;
@@ -747,25 +751,23 @@ public final class Layer {
     }
 
     public void addPage(CssContext c) {
-        String pseudoPage;
         List<PageBox> pages = getPages();
-        if (pages.isEmpty()) {
-            pseudoPage = "first";
-        } else if (pages.size() % 2 == 0) {
-            pseudoPage = "right";
-        } else {
-            pseudoPage = "left";
-        }
-        PageBox pageBox = createPageBox(c, pseudoPage);
-        if (pages.isEmpty()) {
-            pageBox.setTopAndBottom(c, 0);
-        } else {
-            PageBox previous = pages.get(pages.size()-1);
-            pageBox.setTopAndBottom(c, previous.getBottom());
-        }
-
-        pageBox.setPageNo(pages.size());
+        int pagesCount = pages.size();
+        String pseudoPage = pseudoPage(pagesCount);
+        PageBox pageBox = pages.isEmpty() ?
+                createPageBox(c, pseudoPage, 0, pagesCount) :
+                createPageBox(c, pseudoPage, pages.get(pagesCount - 1).getBottom(), pagesCount);
         pages.add(pageBox);
+    }
+
+    private static String pseudoPage(int size) {
+        if (size == 0) {
+            return "first";
+        } else if (size % 2 == 0) {
+            return "right";
+        } else {
+            return "left";
+        }
     }
 
     public void removeLastPage() {
@@ -777,6 +779,11 @@ public final class Layer {
 
     @CheckReturnValue
     public static PageBox createPageBox(CssContext c, String pseudoPage) {
+        return createPageBox(c, pseudoPage, 0, 0);
+    }
+
+    @CheckReturnValue
+    public static PageBox createPageBox(CssContext c, String pseudoPage, int top, int pageNo) {
         String pageName = null;
         // HACK We only create pages during layout, but the OutputDevice
         // queries page positions and since pages are created lazily, changing
@@ -787,7 +794,7 @@ public final class Layer {
 
         PageInfo pageInfo = c.getCss().getPageStyle(pageName, pseudoPage);
         CalculatedStyle cs = new EmptyStyle().deriveStyle(pageInfo.getPageStyle());
-        return new PageBox(pageInfo, c, cs);
+        return new PageBox(pageInfo, c, cs, top, pageNo);
     }
 
     @Nullable

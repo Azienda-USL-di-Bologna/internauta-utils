@@ -71,33 +71,28 @@ public final class InlineLayoutBox extends Box implements InlinePaintable {
     @Nullable
     private List<TextDecoration> _textDecorations;
 
-    private int _containingBlockWidth;
+    private final int _containingBlockWidth;
+
+    private InlineLayoutBox(@Nullable Element elem, @Nullable CalculatedStyle style) {
+        super(elem, style, false);
+        setState(State.DONE);
+        _containingBlockWidth = 0;
+    }
 
     public InlineLayoutBox(LayoutContext c, @Nullable Element elem, @Nullable CalculatedStyle style, int cbWidth) {
-        setElement(elem);
-        setStyle(style);
-        setContainingBlockWidth(cbWidth);
+        super(elem, style, false);
+        _containingBlockWidth = cbWidth;
         setMarginTop(c, 0);
         setMarginBottom(c, 0);
         setPending(true);
         calculateHeight(c);
     }
 
-    private InlineLayoutBox() {
-        setState(State.DONE);
-    }
-
     public InlineLayoutBox copyOf() {
-        InlineLayoutBox result = new InlineLayoutBox();
-        result.setElement(getElement());
-
-        result.setStyle(getStyle());
+        InlineLayoutBox result = new InlineLayoutBox(getElement(), getStyle());
         result.setHeight(getHeight());
-
         result._pending = _pending;
-
         result.setContainingLayer(getContainingLayer());
-
         return result;
     }
 
@@ -298,6 +293,21 @@ public final class InlineLayoutBox extends Box implements InlinePaintable {
         // x, y pins the content area of the box so subtract off top border and padding
         // too
 
+        MarginLeftRight margin = getMarginLeftRight(cssCtx);
+
+        BorderPropertySet border = getBorder(cssCtx);
+        RectPropertySet padding = getPadding(cssCtx);
+
+        return new Rectangle(
+                (int)(left + margin.left),
+                (int)(top - border.top() - padding.top()),
+                (int)(getInlineWidth(cssCtx) - margin.left - margin.right),
+                getHeight());
+    }
+
+    private record MarginLeftRight(float left, float right) {}
+
+    private MarginLeftRight getMarginLeftRight(CssContext cssCtx) {
         float marginLeft = 0;
         float marginRight = 0;
         if (_startsHere || _endsHere) {
@@ -309,36 +319,19 @@ public final class InlineLayoutBox extends Box implements InlinePaintable {
                 marginRight = margin.right();
             }
         }
-        BorderPropertySet border = getBorder(cssCtx);
-        RectPropertySet padding = getPadding(cssCtx);
-
-        return new Rectangle(
-                (int)(left + marginLeft),
-                (int)(top - border.top() - padding.top()),
-                (int)(getInlineWidth(cssCtx) - marginLeft - marginRight),
-                getHeight());
+        return new MarginLeftRight(marginLeft, marginRight);
     }
 
     @Override
     public Rectangle getMarginEdge(int left, int top, CssContext cssCtx, int tx, int ty) {
         Rectangle result = getBorderEdge(left, top, cssCtx);
-        float marginLeft = 0;
-        float marginRight = 0;
-        if (_startsHere || _endsHere) {
-            RectPropertySet margin = getMargin(cssCtx);
-            if (_startsHere) {
-                marginLeft = margin.left();
-            }
-            if (_endsHere) {
-                marginRight = margin.right();
-            }
+        MarginLeftRight margin = getMarginLeftRight(cssCtx);
+        if (margin.right > 0) {
+            result.width += (int) margin.right;
         }
-        if (marginRight > 0) {
-            result.width += marginRight;
-        }
-        if (marginLeft > 0) {
-            result.x -= marginLeft;
-            result.width += marginLeft;
+        if (margin.left > 0) {
+            result.x -= (int) margin.left;
+            result.width += (int) margin.left;
         }
         result.translate(tx, ty);
         return result;
@@ -788,10 +781,6 @@ public final class InlineLayoutBox extends Box implements InlinePaintable {
         return _containingBlockWidth;
     }
 
-    public void setContainingBlockWidth(int containingBlockWidth) {
-        _containingBlockWidth = containingBlockWidth;
-    }
-
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
@@ -840,8 +829,7 @@ public final class InlineLayoutBox extends Box implements InlinePaintable {
                     result.deleteCharAt(result.length()-1);
                 }
             } else {
-                result.append(indent).append("  ");
-                result.append(obj.toString());
+                result.append(indent).append("  ").append(obj);
             }
             if (i.hasNext()) {
                 result.append('\n');

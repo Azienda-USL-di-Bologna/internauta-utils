@@ -45,6 +45,7 @@ import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
@@ -74,6 +75,8 @@ import static org.xhtmlrenderer.util.ImageUtil.loadEmbeddedBase64Image;
 public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
 
     private static final int DEFAULT_IMAGE_CACHE_SIZE = 16;
+    private static final Pattern CLASSPATH_PREFIX = Pattern.compile("classpath:/?");
+
     /**
      * a (simple) LRU cache
      */
@@ -236,8 +239,7 @@ public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
             return createImageResource(null, loadEmbeddedBase64Image(imageLocation));
         }
 
-        final String unresolvedUri = imageLocation;
-        ImageResource cached = _imageCache.get(unresolvedUri);
+        ImageResource cached = _imageCache.get(imageLocation);
         if (cached != null) {
             //TODO: check that cached image is still valid
             return cached;
@@ -251,7 +253,7 @@ public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
                     throw new IOException("ImageIO.read() returned null for URI %s".formatted(uri));
                 }
                 ImageResource ir = createImageResource(uri, img);
-                _imageCache.put(unresolvedUri, ir);
+                _imageCache.put(imageLocation, ir);
                 return ir;
             }
         } catch (FileNotFoundException e) {
@@ -343,14 +345,16 @@ public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
         if (_baseURL == null) {//first try to set a base URL
             try {
                 URI result = new URI(uri);
-                if (result.isAbsolute()) setBaseURL(result.toString());
+                if (result.isAbsolute() && !"file".equals(result.getScheme())) {
+                    setBaseURL(result.toString());
+                }
             } catch (URISyntaxException e) {
                 XRLog.exception("The default NaiveUserAgent could not use the URL as base url: " + uri, e);
             }
 
             if (_baseURL == null) { // still not set -> fallback to current working directory
                 try {
-                    setBaseURL(new File(".").toURI().toURL().toExternalForm());
+                    setBaseURL(new File(System.getProperty("user.dir")).toURI().toURL().toExternalForm());
                 } catch (MalformedURLException e) {
                     XRLog.exception("The default NaiveUserAgent doesn't know how to resolve the base URL for '%s': %s".formatted(uri, e));
                     return null;
@@ -372,7 +376,7 @@ public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
                         // on the implementation below.
                         return result.toURL().toString();
                     } catch (MalformedURLException e) {
-                        URL resource = Thread.currentThread().getContextClassLoader().getResource(uri.substring("classpath".length() + 1));
+                        URL resource = resolveClasspathUrl(uri);
                         if (resource != null) {
                             return resource.toString();
                         }
@@ -398,6 +402,13 @@ public class NaiveUserAgent implements UserAgentCallback, DocumentListener {
         }
         XRLog.exception("The default NaiveUserAgent cannot resolve the URL " + uri + " with base URL " + _baseURL, t);
         return null;
+    }
+
+    @Nullable
+    @CheckReturnValue
+    URL resolveClasspathUrl(String uri) {
+        String path = CLASSPATH_PREFIX.matcher(uri).replaceFirst("");
+        return Thread.currentThread().getContextClassLoader().getResource(path);
     }
 
     /**

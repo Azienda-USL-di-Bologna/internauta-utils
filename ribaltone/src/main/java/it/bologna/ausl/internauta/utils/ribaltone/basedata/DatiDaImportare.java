@@ -91,6 +91,14 @@ public class DatiDaImportare {
         this.idAzienda = idAzienda;
     }
 
+    public Integer getProgressivoTrasformazione() {
+        return progressivoTrasformazione;
+    }
+
+    public void setProgressivoTrasformazione(Integer progressivoTrasformazione) {
+        this.progressivoTrasformazione = progressivoTrasformazione;
+    }
+
     public DatiDaImportare validate() throws RibaltoneHttpException {
         ValidatorStrutture validatorStrutture = new ValidatorStrutture(struttureDaImportare, indexStrutture);
         DatiDaImportare datiDaImportareValidati = null;
@@ -112,6 +120,7 @@ public class DatiDaImportare {
             progressivoTrasformazione = validatorTrasformazioni.getProgressivoTrasformazione();
             if (!validatorTrasformazioni.getDatiInvalidi().isEmpty()) {
                 //posso non controllare altro perche ci sono problemi con le trasformazioni fornite
+                throw new RibaltoneHttpException("errori nella gestione delle trasformazioni");
             } else {
                 ValidatorAppartenenti validatorAppartenenti = new ValidatorAppartenenti(appartenentiDaImportare, indexStrutture, indexAppartenenti);
                 List<DatiDaImportareAppartenente> appartenentiValidiDaImportare = validatorAppartenenti.validate(this.repositoryFactory);

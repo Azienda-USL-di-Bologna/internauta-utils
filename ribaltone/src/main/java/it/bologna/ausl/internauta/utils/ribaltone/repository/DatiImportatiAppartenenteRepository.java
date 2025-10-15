@@ -27,14 +27,17 @@ public interface DatiImportatiAppartenenteRepository extends QuerydslPredicateEx
     @Query(value = "INSERT INTO ribaltone_dati.dati_importati_appartenenti "
         + "(codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda) "
         + "SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda "
-        + "FROM ribaltone_dati.dati_da_importare_appartenenti WHERE codice_azienda =?1 AND  datain < now() AND (datafi IS NULL OR datafi > now())", nativeQuery = true)
+        + "FROM ribaltone_dati.dati_da_importare_appartenenti WHERE codice_azienda =?1", nativeQuery = true)
     public void fromDatiDaImportareToDatiImportati(String codiceAzienda);
 
     @Modifying
     @Query(value = "INSERT INTO ribaltone_dati.dati_importati_appartenenti "
         + "(codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda) "
         + "SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, responsabile, data_assunzione, data_dimissione, codice_azienda, id_azienda "
-        + "FROM ribaltone_dati.csv_da_importare_appartenenti WHERE codice_azienda =?1 AND  datain < now() AND (datafi IS NULL OR datafi > now())", nativeQuery = true)
+        + "FROM ( SELECT distinct a.id,a.version,a.codice_ente, a.codice_matricola, a.cognome, a.nome, a.codice_fiscale, a.id_casella, a.tipo_appartenenza, a.username, a.responsabile, a.codice_azienda, a.id_azienda, a.datain, a.datafi, a.data_assunzione, a.data_dimissione, a.errore "
+        + "FROM ribaltone_dati.csv_da_importare_strutture s "
+        + "JOIN ribaltone_dati.csv_da_importare_appartenenti a ON s.id_casella = a.id_casella "
+        + "WHERE  s.datain < now() AND (s.datafi IS NULL OR s.datafi > now()) AND a.codice_azienda = ?1 AND a.datain < now() AND (a.datafi IS NULL OR a.datafi > now()))", nativeQuery = true)
     public void fromCSVDaImportareToDatiImportati(String codiceAzienda);
 
     @Modifying

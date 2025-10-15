@@ -19,27 +19,27 @@
  */
 package org.xhtmlrenderer.pdf;
 
-import com.google.errorprone.annotations.CheckReturnValue;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Image;
-import com.lowagie.text.pdf.CMYKColor;
-import com.lowagie.text.pdf.PdfAction;
-import com.lowagie.text.pdf.PdfAnnotation;
-import com.lowagie.text.pdf.PdfArray;
-import com.lowagie.text.pdf.PdfBorderArray;
-import com.lowagie.text.pdf.PdfBorderDictionary;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfDestination;
-import com.lowagie.text.pdf.PdfDictionary;
-import com.lowagie.text.pdf.PdfImportedPage;
-import com.lowagie.text.pdf.PdfIndirectReference;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfNumber;
-import com.lowagie.text.pdf.PdfOutline;
-import com.lowagie.text.pdf.PdfReader;
-import com.lowagie.text.pdf.PdfString;
-import com.lowagie.text.pdf.PdfTextArray;
-import com.lowagie.text.pdf.PdfWriter;
+import org.openpdf.text.DocumentException;
+import org.openpdf.text.Image;
+import org.openpdf.text.pdf.CMYKColor;
+import org.openpdf.text.pdf.PdfAction;
+import org.openpdf.text.pdf.PdfAnnotation;
+import org.openpdf.text.pdf.PdfArray;
+import org.openpdf.text.pdf.PdfBorderArray;
+import org.openpdf.text.pdf.PdfBorderDictionary;
+import org.openpdf.text.pdf.PdfContentByte;
+import org.openpdf.text.pdf.PdfDestination;
+import org.openpdf.text.pdf.PdfDictionary;
+import org.openpdf.text.pdf.PdfGState;
+import org.openpdf.text.pdf.PdfImportedPage;
+import org.openpdf.text.pdf.PdfIndirectReference;
+import org.openpdf.text.pdf.PdfName;
+import org.openpdf.text.pdf.PdfNumber;
+import org.openpdf.text.pdf.PdfOutline;
+import org.openpdf.text.pdf.PdfReader;
+import org.openpdf.text.pdf.PdfString;
+import org.openpdf.text.pdf.PdfTextArray;
+import org.openpdf.text.pdf.PdfWriter;
 import org.jspecify.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -50,6 +50,7 @@ import org.xhtmlrenderer.css.parser.FSColor;
 import org.xhtmlrenderer.css.parser.FSRGBColor;
 import org.xhtmlrenderer.css.style.CalculatedStyle.Edge;
 import org.xhtmlrenderer.css.style.CssContext;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient;
 import org.xhtmlrenderer.css.value.FontSpecification;
 import org.xhtmlrenderer.extend.FSImage;
 import org.xhtmlrenderer.extend.NamespaceHandler;
@@ -85,16 +86,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
-import static com.lowagie.text.pdf.PdfObject.TEXT_UNICODE;
+import static org.openpdf.text.pdf.PdfObject.TEXT_UNICODE;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparingInt;
 
 /**
- * This class is largely based on {@link com.lowagie.text.pdf.PdfGraphics2D}.
+ * This class is largely based on {@link org.openpdf.text.pdf.PdfGraphics2D}.
  * See <a href="http://sourceforge.net/projects/itext/">http://sourceforge.net/
  * projects/itext/</a> for license information.
  */
@@ -109,44 +111,58 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
 
     private static final boolean ROUND_RECT_DIMENSIONS_DOWN = Configuration.isTrue("xr.pdf.round.rect.dimensions.down", false);
 
+    @Nullable
     private PdfContentByte _currentPage;
     private float _pageHeight;
 
+    @Nullable
     private ITextFSFont _font;
 
     private AffineTransform _transform = new AffineTransform();
 
     private Color _color = Color.BLACK;
 
+    @Nullable
     private Color _fillColor;
+    @Nullable
     private Color _strokeColor;
 
+    @Nullable
     private Stroke _stroke;
+    @Nullable
     private Stroke _originalStroke;
+    @Nullable
     private Stroke _oldStroke;
 
+    private float _opacity = 1f;
+
+    @Nullable
     private Area _clip;
 
+    @Nullable
     private SharedContext _sharedContext;
     private final float _dotsPerPoint;
 
+    @Nullable
     private PdfWriter _writer;
 
     private final Map<URI, PdfReader> _readerCache = new HashMap<>();
 
+    @Nullable
     private PdfDestination _defaultDestination;
 
     private List<Bookmark> _bookmarks = new ArrayList<>();
 
     private final List<@Nullable Metadata> _metadata = new ArrayList<>();
 
+    @Nullable
     private Box _root;
 
     private int _startPageNo;
 
     private int _nextFormFieldIndex;
 
-    private Set<String> _linkTargetAreas;
+    private final Set<String> _linkTargetAreas = new HashSet<>();
 
     public ITextOutputDevice(float dotsPerPoint) {
         _dotsPerPoint = dotsPerPoint;
@@ -156,6 +172,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         _writer = writer;
     }
 
+    @Nullable
     public PdfWriter getWriter() {
         return _writer;
     }
@@ -184,7 +201,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
             _defaultDestination.addPage(_writer.getPageReference(1));
         }
 
-        _linkTargetAreas = new HashSet<>();
+        _linkTargetAreas.clear();
     }
 
     public void finishPage() {
@@ -204,7 +221,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         processLink(c, box);
     }
 
-    private com.lowagie.text.Rectangle calcTotalLinkArea(RenderingContext c, Box box) {
+    private org.openpdf.text.Rectangle calcTotalLinkArea(RenderingContext c, Box box) {
         Box current = box;
         while (true) {
             Box prev = current.getPreviousSibling();
@@ -215,7 +232,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
             current = prev;
         }
 
-        com.lowagie.text.Rectangle result = createLocalTargetArea(c, current, true);
+        org.openpdf.text.Rectangle result = createLocalTargetArea(c, current, true);
 
         current = current.getNextSibling();
         while (current != null && current.getElement() == box.getElement()) {
@@ -227,27 +244,27 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         return result;
     }
 
-    private com.lowagie.text.Rectangle add(com.lowagie.text.Rectangle r1, com.lowagie.text.Rectangle r2) {
+    private org.openpdf.text.Rectangle add(org.openpdf.text.Rectangle r1, org.openpdf.text.Rectangle r2) {
         float llx = Math.min(r1.getLeft(), r2.getLeft());
         float urx = Math.max(r1.getRight(), r2.getRight());
         float lly = Math.min(r1.getBottom(), r2.getBottom());
         float ury = Math.max(r1.getTop(), r2.getTop());
 
-        return new com.lowagie.text.Rectangle(llx, lly, urx, ury);
+        return new org.openpdf.text.Rectangle(llx, lly, urx, ury);
     }
 
-    private String createRectKey(com.lowagie.text.Rectangle rect) {
+    private String createRectKey(org.openpdf.text.Rectangle rect) {
         return rect.getLeft() + ":" + rect.getBottom() + ":" + rect.getRight() + ":" + rect.getTop();
     }
 
-    private com.lowagie.text.Rectangle checkLinkArea(RenderingContext c, Box box) {
-        com.lowagie.text.Rectangle targetArea = calcTotalLinkArea(c, box);
+    private Optional<org.openpdf.text.Rectangle> checkLinkArea(RenderingContext c, Box box) {
+        org.openpdf.text.Rectangle targetArea = calcTotalLinkArea(c, box);
         String key = createRectKey(targetArea);
         if (_linkTargetAreas.contains(key)) {
-            return null;
+            return Optional.empty();
         }
         _linkTargetAreas.add(key);
-        return targetArea;
+        return Optional.of(targetArea);
     }
 
     private void processLink(RenderingContext c, Box box) {
@@ -263,39 +280,36 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
                         PdfDestination dest = createDestination(c, target);
 
                         if (dest != null) {
-                            PdfAction action = new PdfAction();
-                            if (!"".equals(handler.getAttributeValue(elem, "onclick"))) {
-                                action = PdfAction.javaScript(handler.getAttributeValue(elem, "onclick"), _writer);
-                            } else {
-                                action.put(PdfName.S, PdfName.GOTO);
-                                action.put(PdfName.D, dest);
-                            }
+                            PdfAction action = handler.getAttributeValue(elem, "onclick").isEmpty() ?
+                                    gotoDestination(dest) :
+                                    PdfAction.javaScript(handler.getAttributeValue(elem, "onclick"), _writer);
 
-                            com.lowagie.text.Rectangle targetArea = checkLinkArea(c, box);
-                            if (targetArea == null) {
-                                return;
-                            }
+                            checkLinkArea(c, box).ifPresent(targetArea -> {
+                                targetArea.setBorder(0);
+                                targetArea.setBorderWidth(0);
 
-                            targetArea.setBorder(0);
-                            targetArea.setBorderWidth(0);
-
-                            addLinkAnnotation(action, targetArea);
+                                addLinkAnnotation(action, targetArea);
+                            });
                         }
                     }
                 } else {
                     PdfAction action = new PdfAction(uri);
-
-                    com.lowagie.text.Rectangle targetArea = checkLinkArea(c, box);
-                    if (targetArea == null) {
-                        return;
-                    }
-                    addLinkAnnotation(action, targetArea);
+                    checkLinkArea(c, box).ifPresent(targetArea -> {
+                        addLinkAnnotation(action, targetArea);
+                    });
                 }
             }
         }
     }
 
-    private void addLinkAnnotation(final PdfAction action, final com.lowagie.text.Rectangle targetArea) {
+    private static PdfAction gotoDestination(PdfDestination dest) {
+        PdfAction action = new PdfAction();
+        action.put(PdfName.S, PdfName.GOTO);
+        action.put(PdfName.D, dest);
+        return action;
+    }
+
+    private void addLinkAnnotation(final PdfAction action, final org.openpdf.text.Rectangle targetArea) {
         PdfAnnotation annot = new PdfAnnotation(_writer, targetArea.getLeft(), targetArea.getBottom(),
                 targetArea.getRight(), targetArea.getTop(), action);
         annot.put(PdfName.SUBTYPE, PdfName.LINK);
@@ -306,11 +320,11 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         _writer.addAnnotation(annot);
     }
 
-    public com.lowagie.text.Rectangle createLocalTargetArea(RenderingContext c, Box box) {
+    public org.openpdf.text.Rectangle createLocalTargetArea(RenderingContext c, Box box) {
         return createLocalTargetArea(c, box, false);
     }
 
-    private com.lowagie.text.Rectangle createLocalTargetArea(RenderingContext c, Box box, boolean useAggregateBounds) {
+    private org.openpdf.text.Rectangle createLocalTargetArea(RenderingContext c, Box box, boolean useAggregateBounds) {
         Rectangle bounds;
         if (useAggregateBounds && box.getPaintingInfo() != null) {
             bounds = box.getPaintingInfo().getAggregateBounds();
@@ -323,11 +337,11 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         _transform.transform(docCorner, pdfCorner);
         pdfCorner.setLocation(pdfCorner.getX(), normalizeY((float) pdfCorner.getY()));
 
-        return new com.lowagie.text.Rectangle((float) pdfCorner.getX(), (float) pdfCorner.getY(),
+        return new org.openpdf.text.Rectangle((float) pdfCorner.getX(), (float) pdfCorner.getY(),
                 (float) pdfCorner.getX() + getDeviceLength(bounds.width), (float) pdfCorner.getY() + getDeviceLength(bounds.height));
     }
 
-    public com.lowagie.text.Rectangle createTargetArea(RenderingContext c, Box box) {
+    public org.openpdf.text.Rectangle createTargetArea(RenderingContext c, Box box) {
         PageBox current = c.getPage();
         boolean inCurrentPage = box.getAbsY() > current.getTop() && box.getAbsY() < current.getBottom();
 
@@ -341,7 +355,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
                     + page.getMarginBorderPadding(c, Edge.BOTTOM));
             float left = getDeviceLength(page.getMarginBorderPadding(c, Edge.LEFT) + bounds.x);
 
-            return new com.lowagie.text.Rectangle(left, bottom, left + getDeviceLength(bounds.width), bottom
+            return new org.openpdf.text.Rectangle(left, bottom, left + getDeviceLength(bounds.width), bottom
                     + getDeviceLength(bounds.height));
         }
     }
@@ -350,13 +364,14 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         return length / _dotsPerPoint;
     }
 
+    @Nullable
     private PdfDestination createDestination(RenderingContext c, Box box) {
         PdfDestination result = null;
 
         PageBox page = _root.getLayer().getPage(c, getPageRefY(box));
         if (page != null) {
             int distanceFromTop = page.getMarginBorderPadding(c, Edge.TOP);
-            distanceFromTop += box.getAbsY() + box.getMargin(c).top() - page.getTop();
+            distanceFromTop += (int) (box.getAbsY() + box.getMargin(c).top() - page.getTop());
             result = new PdfDestination(PdfDestination.XYZ, 0, page.getHeight(c) / _dotsPerPoint - distanceFromTop / _dotsPerPoint, 0);
             result.addPage(_writer.getPageReference(_startPageNo + page.getPageNo() + 1));
         }
@@ -400,9 +415,22 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
     }
 
     @Override
+    public void setOpacity(float opacity) {
+    	if (opacity != _opacity) {
+    		PdfGState gs = new PdfGState();
+
+        	gs.setBlendMode(PdfGState.BM_NORMAL);
+        	gs.setFillOpacity(opacity);
+
+        	_currentPage.setGState(gs);
+        	_opacity = opacity;
+    	}
+	}
+
+    @Override
     public void setColor(FSColor color) {
         if (color instanceof FSRGBColor rgb) {
-            _color = new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue());
+            _color = new Color(rgb.getRed(), rgb.getGreen(), rgb.getBlue(), (int) (rgb.getAlpha()*255));
         } else if (color instanceof FSCMYKColor cmyk) {
             _color = new CMYKColor(cmyk.getCyan(), cmyk.getMagenta(), cmyk.getYellow(), cmyk.getBlack());
         } else {
@@ -458,7 +486,6 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
     }
 
     @Nullable
-    @CheckReturnValue
     @Override
     public Object getRenderingHint(RenderingHints.Key key) {
         return null;
@@ -484,7 +511,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         return result;
     }
 
-    public void drawString(String s, float x, float y, JustificationInfo info) {
+    public void drawString(String s, float x, float y, @Nullable JustificationInfo info) {
         if (Configuration.isTrue("xr.renderer.replace-missing-characters", false)) {
             s = replaceMissingCharacters(s);
         }
@@ -574,9 +601,9 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
             if (i != len - 1) {
                 float offset;
                 if (c == ' ' || c == '\u00a0' || c == '\u3000') {
-                    offset = info.getSpaceAdjust();
+                    offset = info.spaceAdjust();
                 } else {
-                    offset = info.getNonSpaceAdjust();
+                    offset = info.nonSpaceAdjust();
                 }
                 array.add((-offset / _dotsPerPoint) * 1000 / (_font.getSize2D() / _dotsPerPoint));
             }
@@ -592,6 +619,10 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         if (!_color.equals(_fillColor)) {
             _fillColor = _color;
             _currentPage.setColorFill(_fillColor);
+
+            if (_fillColor.getAlpha() < 255) {
+            	setOpacity(_fillColor.getAlpha()/255.0f);
+            }
         }
     }
 
@@ -695,7 +726,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         coords[5] = normalizeY(coords[5]);
     }
 
-    private void setStrokeDiff(Stroke newStroke, Stroke oldStroke) {
+    private void setStrokeDiff(Stroke newStroke, @Nullable Stroke oldStroke) {
         PdfContentByte cb = _currentPage;
         if (newStroke == oldStroke)
             return;
@@ -798,7 +829,6 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
     }
 
     @Nullable
-    @CheckReturnValue
     @Override
     public Shape getClip() {
         try {
@@ -833,10 +863,10 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
 
     @Override
     public void drawImage(FSImage fsImage, int x, int y) {
-        if (fsImage instanceof PDFAsImage) {
-            drawPDFAsImage((PDFAsImage) fsImage, x, y);
-        } else {
-            Image image = ((ITextFSImage) fsImage).getImage();
+        if (fsImage instanceof PDFAsImage pdfAsImage) {
+            drawPDFAsImage(pdfAsImage, x, y);
+        } else if (fsImage instanceof ITextFSImage iTextImage) {
+            Image image = iTextImage.getImage();
 
             if (fsImage.getHeight() <= 0 || fsImage.getWidth() <= 0) {
                 return;
@@ -860,6 +890,13 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
                 throw new XRRuntimeException(e.getMessage(), e);
             }
         }
+        else {
+            throw new UnsupportedOperationException("Unsupported image type: " + fsImage.getClass().getName());
+        }
+    }
+
+    @Override
+    public void drawLinearGradient(FSLinearGradient gradient, int x, int y, int width, int height) {
     }
 
     private void drawPDFAsImage(PDFAsImage image, int x, int y) {
@@ -1092,7 +1129,6 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
      *         null.
      */
     @Nullable
-    @CheckReturnValue
     public String getMetadataByName(String name) {
         for (Metadata m : _metadata) {
             if ((m != null) && m.getName().equalsIgnoreCase(name)) {
@@ -1277,6 +1313,7 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
         return result;
     }
 
+    @Nullable
     private PagePosition calcPDFPagePosition(CssContext c, String id, Box box) {
         PageBox page = _root.getLayer().getLastPage(c, box);
         if (page == null) {
@@ -1285,17 +1322,10 @@ public class ITextOutputDevice extends AbstractOutputDevice implements OutputDev
 
         float x = box.getAbsX() + page.getMarginBorderPadding(c, Edge.LEFT);
         float y = (page.getBottom() - (box.getAbsY() + box.getHeight())) + page.getMarginBorderPadding(c, Edge.BOTTOM);
-        x /= _dotsPerPoint;
-        y /= _dotsPerPoint;
 
-        PagePosition result = new PagePosition();
-        result.setId(id);
-        result.setPageNo(page.getPageNo());
-        result.setX(x);
-        result.setY(y);
-        result.setWidth(box.getEffectiveWidth() / _dotsPerPoint);
-        result.setHeight(box.getHeight() / _dotsPerPoint);
-
-        return result;
+        return new PagePosition(id, page.getPageNo(),
+                x / _dotsPerPoint, box.getEffectiveWidth() / _dotsPerPoint,
+                y / _dotsPerPoint, box.getHeight() / _dotsPerPoint
+        );
     }
 }

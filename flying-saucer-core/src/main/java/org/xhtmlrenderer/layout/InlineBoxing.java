@@ -159,12 +159,9 @@ public class InlineBoxing {
                             c, maxAvailableWidth, Edge.RIGHT);
                 }
 
-                LineBreakContext lbContext = new LineBreakContext();
-                lbContext.setMaster(iB.getText());
-                lbContext.setTextNode(iB.getTextNode());
-                if (iB.isDynamicFunction()) {
-                    lbContext.setMaster(iB.getContentFunction().getLayoutReplacementText());
-                }
+                String master = iB.isDynamicFunction() ?
+                        iB.getContentFunction().getLayoutReplacementText() : iB.getText();
+                LineBreakContext lbContext = new LineBreakContext(master, iB.getTextNode());
 
                 int q = 0;
                 do {
@@ -486,9 +483,8 @@ public class InlineBoxing {
             current.setHeight(0);
         } else {
             FSFontMetrics strutM = container.getStyle().getFSFontMetrics(c);
-            VerticalAlignContext vaContext = new VerticalAlignContext();
             InlineBoxMeasurements measurements = getInitialMeasurements(c, container, strutM);
-            vaContext.setInitialMeasurements(measurements);
+            VerticalAlignContext vaContext = new VerticalAlignContext(measurements);
 
             List<TextDecoration> lBDecorations = calculateTextDecorations(container, measurements.getBaseline(), strutM);
             current.setTextDecorations(lBDecorations);
@@ -591,22 +587,21 @@ public class InlineBoxing {
         List<TextDecoration> decorations = calculateTextDecorations(iB, iB.getBaseline(), fm);
         iB.setTextDecorations(decorations);
 
-        InlineBoxMeasurements result = new InlineBoxMeasurements();
-        result.setBaseline(iB.getY() + iB.getBaseline());
-        result.setInlineTop(iB.getY() - halfLeading);
-        result.setInlineBottom(Math.round(result.getInlineTop() + lineHeight));
-        result.setTextTop(iB.getY());
-        result.setTextBottom((int) (result.getBaseline() + fm.getDescent()));
-
         RectPropertySet padding = iB.getPadding(c);
         BorderPropertySet border = iB.getBorder(c);
 
-        result.setPaintingTop((int)Math.floor(iB.getY() - border.top() - padding.top()));
-        result.setPaintingBottom((int)Math.ceil(iB.getY() +
-                fm.getAscent() + fm.getDescent() +
-                border.bottom() + padding.bottom()));
+        int baseline = iB.getY() + iB.getBaseline();
+        int inlineTop = iB.getY() - halfLeading;
 
-        return result;
+        return new InlineBoxMeasurements(
+                baseline,
+                iB.getY(), (int) (baseline + fm.getDescent()),
+                inlineTop, Math.round(inlineTop + lineHeight),
+                (int) Math.floor(iB.getY() - border.top() - padding.top()),
+                (int) Math.ceil(iB.getY() +
+                        fm.getAscent() + fm.getDescent() +
+                        border.bottom() + padding.bottom())
+        );
     }
 
     @CheckReturnValue
@@ -686,7 +681,7 @@ public class InlineBoxing {
                 box.setY(Math.round(measurements.getTextBottom() - descent - ascent));
             } else if (vAlign == IdentValue.MIDDLE) {
                 // FIXME: findbugs, loss of precision, try / (float)2
-                box.setY(Math.round((measurements.getBaseline() - measurements.getTextTop()) / 2
+                box.setY(Math.round((float) (measurements.getBaseline() - measurements.getTextTop()) / 2
                         - (ascent + descent) / 2));
             } else if (vAlign == IdentValue.SUPER) {
                 box.setY(Math.round(measurements.getBaseline() - (3*ascent/2)));
@@ -709,14 +704,12 @@ public class InlineBoxing {
                     (strutM.getDescent() + strutM.getAscent())) / 2);
         }
 
-        InlineBoxMeasurements measurements = new InlineBoxMeasurements();
-        measurements.setBaseline((int) (halfLeading + strutM.getAscent()));
-        measurements.setTextTop(halfLeading);
-        measurements.setTextBottom((int) (measurements.getBaseline() + strutM.getDescent()));
-        measurements.setInlineTop(halfLeading);
-        measurements.setInlineBottom((int) (halfLeading + lineHeight));
-
-        return measurements;
+        int baseline = (int) (halfLeading + strutM.getAscent());
+        return new InlineBoxMeasurements(baseline,
+                halfLeading, (int) (baseline + strutM.getDescent()),
+                halfLeading, (int) (halfLeading + lineHeight),
+                0, 0
+        );
     }
 
     private static void positionInlineChildrenVertically(LayoutContext c, InlineLayoutBox current,
@@ -797,31 +790,38 @@ public class InlineBoxing {
     }
 
     private static void alignLine(final LayoutContext c, final LineBox current, final int maxAvailableWidth) {
-        if (! current.isContainsDynamicFunction() && ! current.getParent().getStyle().isTextJustify()) {
-            current.setFloatDistances(new FloatDistances() {
-                @Override
-                public int getLeftFloatDistance() {
-                    return c.getBlockFormattingContext().getLeftFloatDistance(c, current, maxAvailableWidth);
-                }
-
-                @Override
-                public int getRightFloatDistance() {
-                    return c.getBlockFormattingContext().getRightFloatDistance(c, current, maxAvailableWidth);
-                }
-            });
-        } else {
-            FloatDistances distances = new FloatDistances();
-            distances.setLeftFloatDistance(
-                    c.getBlockFormattingContext().getLeftFloatDistance(
-                            c, current, maxAvailableWidth));
-            distances.setRightFloatDistance(
-                    c.getBlockFormattingContext().getRightFloatDistance(
-                            c, current, maxAvailableWidth));
-            current.setFloatDistances(distances);
-        }
+        FloatDistances distances = (!current.isContainsDynamicFunction() && !current.getParent().getStyle().isTextJustify()) ?
+                new DynamicFloatDistances(c, current, maxAvailableWidth) :
+                new StaticFloatDistances(c, current, maxAvailableWidth);
+        current.setFloatDistances(distances);
         current.align(false);
         if (! current.isContainsDynamicFunction() && ! current.getParent().getStyle().isTextJustify()) {
             current.setFloatDistances(null);
+        }
+    }
+
+    private record StaticFloatDistances(int leftFloatDistance, int rightFloatDistance) implements FloatDistances {
+        private StaticFloatDistances(LayoutContext c, LineBox current, int maxAvailableWidth) {
+            this(
+                    c.getBlockFormattingContext().getLeftFloatDistance(c, current, maxAvailableWidth),
+                    c.getBlockFormattingContext().getRightFloatDistance(c, current, maxAvailableWidth)
+            );
+        }
+    }
+
+    private record DynamicFloatDistances(
+        LayoutContext c,
+        LineBox current,
+        int maxAvailableWidth
+    ) implements FloatDistances {
+        @Override
+        public int leftFloatDistance() {
+            return c.getBlockFormattingContext().getLeftFloatDistance(c, current, maxAvailableWidth);
+        }
+
+        @Override
+        public int rightFloatDistance() {
+            return c.getBlockFormattingContext().getRightFloatDistance(c, current, maxAvailableWidth);
         }
     }
 
@@ -833,7 +833,6 @@ public class InlineBoxing {
 
     private static InlineText layoutText(LayoutContext c, CalculatedStyle style, int remainingWidth,
                                          LineBreakContext lbContext, boolean needFirstLetter) {
-        InlineText result = new InlineText();
         String masterText = lbContext.getMaster();
         if (needFirstLetter) {
             masterText = TextUtil.transformFirstLetterText(masterText, style);
@@ -843,12 +842,9 @@ public class InlineBoxing {
             Breaker.breakText(c, lbContext, remainingWidth, style);
         }
 
-        result.setMasterText(lbContext.getMaster());
-        result.setTextNode(lbContext.getTextNode());
-        result.setSubstring(lbContext.getStart(), lbContext.getEnd());
-        result.setWidth(lbContext.getWidth());
-
-        return result;
+        return new InlineText(lbContext.getMaster(), lbContext.getTextNode(),
+                lbContext.getStart(), lbContext.getEnd(),
+                lbContext.getWidth());
     }
 
     private static int processOutOfFlowContent(

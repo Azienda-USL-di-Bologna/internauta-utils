@@ -1,14 +1,12 @@
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.nextsw.common.data.annotations.GenerateProjections;
 import java.io.Serializable;
-import java.time.ZonedDateTime;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 
 /**
@@ -35,7 +33,6 @@ public class Struttura implements Serializable {
 //    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    private ZonedDateTime datafi;
-
     private String tipoLegame;
 
     private String codiceEnte;
@@ -82,7 +79,6 @@ public class Struttura implements Serializable {
 //    public void setDatafi(ZonedDateTime datafi) {
 //        this.datafi = datafi;
 //    }
-
     public String getTipoLegame() {
         return tipoLegame;
     }
@@ -104,12 +100,12 @@ public class Struttura implements Serializable {
         return "it.bologna.ausl.internauta.model.entities.ribaltone.entita.plugin.gru.oracledata.Struttura[ idCasella=" + idCasella + "_idPadre_" + idPadre + " ]";
     }
 
-    public DatiDaImportareStruttura toFonteIntermedia(String codiceAzienda,Integer idAzienda) {
+    public DatiDaImportareStruttura toFonteIntermedia(String codiceAzienda, Integer idAzienda) {
         DatiDaImportareStruttura fonteIntermediaStruttura = new DatiDaImportareStruttura();
         fonteIntermediaStruttura.setCodiceEnte(codiceEnte);
 //        fonteIntermediaStruttura.setDatain(datain);
 //        fonteIntermediaStruttura.setDatafi(datafi);
-        fonteIntermediaStruttura.setDescrizione(descrizione);
+        fonteIntermediaStruttura.setDescrizione(WordUtils.capitalizeFully(descrizione).trim());
         fonteIntermediaStruttura.setIdCasella(idCasella);
         fonteIntermediaStruttura.setIdPadre(idPadre);
         fonteIntermediaStruttura.setIdAzienda(idAzienda);

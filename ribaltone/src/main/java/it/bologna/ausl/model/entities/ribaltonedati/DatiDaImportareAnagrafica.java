@@ -24,6 +24,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -216,7 +217,7 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
     @JsonIgnore
     @Override
     public String getKey() {
-        return this.codiceFiscale;
+        return this.codiceFiscale + "_" + this.codiceMatricola + "_" + this.codiceAzienda;
     }
 
     @Override
@@ -233,8 +234,8 @@ public class DatiDaImportareAnagrafica implements Serializable, DatiRibaltoneInt
         DatiImportatiAnagrafica anagraficaImportata = new DatiImportatiAnagrafica();
         anagraficaImportata.setCodiceEnte(this.codiceEnte);
         anagraficaImportata.setCodiceMatricola(this.codiceMatricola);
-        anagraficaImportata.setCognome(this.cognome);
-        anagraficaImportata.setNome(this.nome);
+        anagraficaImportata.setCognome(WordUtils.capitalizeFully(this.cognome));
+        anagraficaImportata.setNome(WordUtils.capitalizeFully(this.nome));
         anagraficaImportata.setCodiceFiscale(this.codiceFiscale);
         anagraficaImportata.setEmail(this.email);
         anagraficaImportata.setIdAzienda(this.idAzienda);

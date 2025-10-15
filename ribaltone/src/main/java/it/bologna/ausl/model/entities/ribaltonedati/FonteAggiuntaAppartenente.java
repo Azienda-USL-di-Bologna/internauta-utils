@@ -13,12 +13,15 @@ import java.time.ZonedDateTime;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Size;
+import org.apache.commons.text.WordUtils;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -32,6 +35,11 @@ import org.springframework.format.annotation.DateTimeFormat;
 @GenerateProjections({})
 @DynamicUpdate
 public class FonteAggiuntaAppartenente implements Serializable {
+
+    public static enum ProvenienzaFonteAggiunta {
+        ORGANIGRAMMA,
+        MATRICE_PERMESSI
+    }
 
     private static final long serialVersionUID = 1L;
 
@@ -71,7 +79,7 @@ public class FonteAggiuntaAppartenente implements Serializable {
 
     @Size(max = 2147483647)
     @Column(name = "tipo_appartenenza")
-    private String tipoAppartenenza;
+    private String tipoAppartenenza = "F";
 
     @Size(max = 2147483647)
     @Column(name = "username")
@@ -103,6 +111,10 @@ public class FonteAggiuntaAppartenente implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     private ZonedDateTime version;
+
+    @Column(name = "provenienza")
+    @Enumerated(EnumType.STRING)
+    private ProvenienzaFonteAggiunta provenienza;
 
     public Integer getIdAzienda() {
         return idAzienda;
@@ -180,11 +192,11 @@ public class FonteAggiuntaAppartenente implements Serializable {
     }
 
     public String getTipoAppartenenza() {
-        return tipoAppartenenza;
+        return "F";
     }
 
     public void setTipoAppartenenza(String tipoAppartenenza) {
-        this.tipoAppartenenza = tipoAppartenenza;
+        this.tipoAppartenenza = "F";
     }
 
     public String getUsername() {
@@ -243,6 +255,14 @@ public class FonteAggiuntaAppartenente implements Serializable {
         this.version = version;
     }
 
+    public ProvenienzaFonteAggiunta getProvenienza() {
+        return provenienza;
+    }
+
+    public void setProvenienza(ProvenienzaFonteAggiunta provenienza) {
+        this.provenienza = provenienza;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -275,16 +295,16 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setCodiceEnte(codiceEnte);
         datiDaImportareAppartenente.setCodiceFiscale(codiceFiscale);
         datiDaImportareAppartenente.setCodiceMatricola(codiceMatricola);
-        datiDaImportareAppartenente.setCognome(cognome);
+        datiDaImportareAppartenente.setCognome(WordUtils.capitalizeFully(cognome));
         datiDaImportareAppartenente.setDataAssunzione(dataAssunzione);
         datiDaImportareAppartenente.setDataDimissione(dataDimissione);
         datiDaImportareAppartenente.setDatain(datain);
         datiDaImportareAppartenente.setDatafi(datafi);
         datiDaImportareAppartenente.setIdAzienda(idAzienda);
         datiDaImportareAppartenente.setIdCasella(idCasella);
-        datiDaImportareAppartenente.setNome(nome);
+        datiDaImportareAppartenente.setNome(WordUtils.capitalizeFully(nome));
         datiDaImportareAppartenente.setResponsabile(responsabile);
-        datiDaImportareAppartenente.setTipoAppartenenza(tipoAppartenenza);
+        datiDaImportareAppartenente.setTipoAppartenenza("F");
         datiDaImportareAppartenente.setUsername(username);
         return datiDaImportareAppartenente;
     }

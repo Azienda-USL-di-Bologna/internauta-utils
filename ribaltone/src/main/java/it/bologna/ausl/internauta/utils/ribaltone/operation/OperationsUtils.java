@@ -1,5 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.blackbox.PermissionManager;
 import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
@@ -8,6 +11,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.RINOMINA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
@@ -33,7 +37,12 @@ import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
+import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
+import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -50,9 +59,16 @@ public class OperationsUtils {
     private final static QStruttura qStruttura = QStruttura.struttura;
     private final static QAfferenzaStruttura qffAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
 
+    public static enum KeyMapReplica {
+        ID_CASELLA,
+        ANCESTOR_LIST,
+        HAS_REPLICA,
+        REPLICHE
+    }
+
     /**
      *
-     * @param em
+     * @param entityManager
      * @param queryFactory
      * @param idAzienda
      * @param idCasella
@@ -63,7 +79,7 @@ public class OperationsUtils {
      * @return
      */
     public static Struttura inserisciStruttura(
-        EntityManager em,
+        EntityManager entityManager,
         JPAQueryFactory queryFactory,
         Integer idAzienda,
         Integer idCasella,
@@ -72,7 +88,7 @@ public class OperationsUtils {
         QStruttura qStruttura,
         HashMap<Integer, List<Integer>> struttureDaAggiornareConPadre
     ) {
-        Azienda azienda = em.find(Azienda.class, idAzienda);
+        Azienda azienda = entityManager.find(Azienda.class, idAzienda);
         if (idAzienda != null) {
             Struttura strutturaDaInserire = new Struttura(
                 idCasella,
@@ -105,18 +121,17 @@ public class OperationsUtils {
                 //Inserire su baborg storico relazione
                 if (idStrutturaPadre != null) {
                     strutturaDaInserire.setIdStrutturaPadre(idStrutturaPadre);
-                    em.persist(strutturaDaInserire);
-                    em.refresh(strutturaDaInserire);
+                    entityManager.persist(strutturaDaInserire);
+                    entityManager.flush();
                     StoricoRelazione storicoRelazione = new StoricoRelazione();
                     storicoRelazione.setAttivaDal(ZonedDateTime.now());
                     storicoRelazione.setIdStrutturaPadre(idStrutturaPadre);
                     storicoRelazione.setIdStrutturaFiglia(strutturaDaInserire);
-                    em.persist(storicoRelazione);
-                    em.refresh(storicoRelazione);
+                    entityManager.persist(storicoRelazione);
+                    entityManager.flush();
                 } else {
-                    em.persist(strutturaDaInserire);
-                    em.refresh(strutturaDaInserire);
-                    strutturaDaInserire.getId();
+                    entityManager.persist(strutturaDaInserire);
+                    entityManager.flush();
                     struttureDaAggiornareConPadre = putInMap(struttureDaAggiornareConPadre, strutturaDaInserire, idCasellaPadre);
                 }
                 //ho inserito una struttura quindi cerco se devo collegare qualcosa
@@ -125,12 +140,35 @@ public class OperationsUtils {
                         .update(qStruttura)
                         .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
                         .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
+                    for (Integer idStrutturaFiglia : struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella())) {
+                        Struttura strutturaFiglia = entityManager.find(Struttura.class, idStrutturaFiglia);
+                        if (strutturaFiglia != null) {
+                            StoricoRelazione sr = new StoricoRelazione();
+                            sr.setAttivaDal(ZonedDateTime.now());
+                            sr.setIdStrutturaFiglia(strutturaFiglia);
+                            sr.setIdStrutturaPadre(strutturaDaInserire);
+                            entityManager.persist(sr);
+                            entityManager.flush();
+                        } else {
+                            throw new RibaltoneHttpException("struttura figlia con id_casella_padre" + strutturaDaInserire.getIdCasella() + " non trovata questo non puo accadere");
+                        }
+
+                    }
 
                     struttureDaAggiornareConPadre.remove(strutturaDaInserire.getIdCasella());
                 }
+            } else {
+                //sono la radice
+                StoricoRelazione sr = new StoricoRelazione();
+                sr.setAttivaDal(ZonedDateTime.now());
+                sr.setIdStrutturaFiglia(strutturaDaInserire);
+                entityManager.persist(sr);
+                entityManager.flush();
+                entityManager.persist(strutturaDaInserire);
+                entityManager.flush();
             }
-            em.persist(strutturaDaInserire);
-            em.refresh(strutturaDaInserire);
+
+            entityManager.refresh(strutturaDaInserire);
             return strutturaDaInserire;
         }
         return null;
@@ -145,17 +183,17 @@ public class OperationsUtils {
      * @param idPadre
      * @return mappa
      */
-    private static HashMap<Integer, List<Integer>> putInMap(HashMap<Integer, List<Integer>> mappa, Struttura struttura, Integer idPadre) {
+    private static HashMap<Integer, List<Integer>> putInMap(HashMap<Integer, List<Integer>> mappa, Struttura struttura, Integer idCasellaPadre) {
         if (struttura != null) {
             if (mappa == null) {
                 mappa = new HashMap<>();
                 List<Integer> arrayList = new ArrayList<>();
                 arrayList.add(struttura.getId());
-                mappa.put(idPadre, arrayList);
+                mappa.put(idCasellaPadre, arrayList);
             } else {
                 List<Integer> listaDiFigliDiIdPadre;
-                if (mappa.containsKey(idPadre)) {
-                    listaDiFigliDiIdPadre = mappa.get(idPadre);
+                if (mappa.containsKey(idCasellaPadre)) {
+                    listaDiFigliDiIdPadre = mappa.get(idCasellaPadre);
                     listaDiFigliDiIdPadre.add(struttura.getId());
 
                 } else {
@@ -163,7 +201,7 @@ public class OperationsUtils {
                     listaDiFigliDiIdPadre.add(struttura.getId());
 
                 }
-                mappa.put(idPadre, listaDiFigliDiIdPadre);
+                mappa.put(idCasellaPadre, listaDiFigliDiIdPadre);
             }
         }
         return mappa;
@@ -806,7 +844,11 @@ public class OperationsUtils {
         }
     }
 
-    static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+    public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+        insertUtenteInStruttura(queryFactory, entitaDaInserire, struttura, entityManager, permissionManager, utenteStrutturaDaInserireList, null);
+    }
+
+    public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList, Integer idFonteAggiunta) {
         Persona persona = getPersona(queryFactory, entitaDaInserire);
 
         //inserire in baborg persone se non c'è la persona
@@ -818,9 +860,10 @@ public class OperationsUtils {
                 persona.setNome(entitaDaInserire.getNome());
                 persona.setCognome(entitaDaInserire.getCognome());
                 persona.setCodiceFiscale(entitaDaInserire.getCodiceFiscale());
+                persona.setIdSecondario(entitaDaInserire.getCodiceMatricola());
             }
             persona.setAttiva(Boolean.TRUE);
-
+            persona.setIdSecondario(entitaDaInserire.getCodiceMatricola());
             //inserire in baborg utenti se non c'è l'utente dell'azienda che lancia il ribaltone
             //nel caso si stia trattando una struttura unificata allora controllo che si sia
             //e nel caso inserisco in quelle aziende l'utente nuovo
@@ -850,6 +893,7 @@ public class OperationsUtils {
                 //inserire in baborg utenti_struttura se non c'è l'afferenza ricordandosi di una sola afferenza diretta e n funzionali
                 utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaInserire.getIdAzienda().equals(struttura.getIdAzienda().getId()) ? entitaDaInserire.getTipoAppartenenza() : "U", utente));
                 utenteStruttura.setResponsabile(entitaDaInserire.getResponsabile());
+                utenteStruttura.setIdFonteAggiuntaAppartenente(idFonteAggiunta);
                 log.info("sto creando l'utente struttura username: " + username + " su struttura: " + utenteStruttura.getIdStruttura().getIdCasella());
                 entityManager.persist(utenteStruttura);
                 if (utenteStrutturaDaInserireList != null) {
@@ -1126,6 +1170,59 @@ public class OperationsUtils {
         }
     }
 
+    public static Map<Long, Map<KeyMapReplica, Object>> getMappaReplicheStrutture(RepositoryFactory repositoryFactory, String tabella, Integer idAzienda) {
+        String sql = "";
+        switch (tabella) {
+            case "BABORG":
+                sql = "SELECT * FROM baborg.get_caselle_with_replicas(?)";
+                break;
+            case "DA_IMPORTARE":
+                sql = "SELECT * FROM ribaltone_dati.get_caselle_with_replicas_dati_da_importare(?)";
+                break;
+            case "IMPORTATE":
+                sql = "SELECT * FROM ribaltone_dati.get_caselle_with_replicas_dati_importati(?)";
+                break;
+            default:
+                return null;
+        }
+        return repositoryFactory.getJdbcTemplate().execute(sql, (PreparedStatementCallback<Map<Long, Map<KeyMapReplica, Object>>>) ps -> {
+            ps.setLong(1, Long.valueOf(idAzienda));
+            try (ResultSet rs = ps.executeQuery()) {
+                Map<Long, Map<KeyMapReplica, Object>> result = new HashMap<>();
+                while (rs.next()) {
+                    Long idCasella = rs.getLong("id_casella");
+                    Boolean hasReplica = rs.getBoolean("has_replica");
+                    String replicheJson = rs.getString("repliche");
+                    List<StrutturaUnificata> repliche = new ArrayList<>();
+                    if (replicheJson != null) {
+                        repliche = repositoryFactory.getObjectMapper().readValue(replicheJson, new TypeReference<List<StrutturaUnificata>>() {
+                        });
+                    }
+                    // ancestor_list è un array SQL
+                    java.sql.Array sqlArray = rs.getArray("ancestor_list");
+                    Long[] ancestors = sqlArray != null ? (Long[]) sqlArray.getArray() : new Long[0];
+
+                    Map<KeyMapReplica, Object> row = new HashMap<>();
+//                    row.put("id_casella", idCasella);
+//                    row.put("ancestor_list", Arrays.asList(ancestors));
+//                    row.put("has_replica", hasReplica);
+//                    row.put("su_id", suId);
+
+                    row.put(KeyMapReplica.ID_CASELLA, idCasella);
+                    row.put(KeyMapReplica.ANCESTOR_LIST, Arrays.asList(ancestors));
+                    row.put(KeyMapReplica.HAS_REPLICA, hasReplica);
+                    row.put(KeyMapReplica.REPLICHE, repliche);
+
+                    result.put(idCasella, row);
+                }
+                return result;
+            } catch (JsonProcessingException ex) {
+                throw new RibaltoneHttpException("errore nella conversione delle unificazioni nella funzione getMappaReplicheStrutture");
+            }
+        });
+
+    }
+
     public static void editUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
         if (persona != null && strutturaSuCuiModificare != null) {
@@ -1179,6 +1276,7 @@ public class OperationsUtils {
                     }
                 }
             }
+
         }
     }
 }
