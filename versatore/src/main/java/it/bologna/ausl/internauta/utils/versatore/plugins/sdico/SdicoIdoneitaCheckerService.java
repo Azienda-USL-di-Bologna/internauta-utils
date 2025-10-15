@@ -7,6 +7,7 @@ import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,8 +15,9 @@ import org.springframework.stereotype.Component;
  * @author Andrea
  */
 @Component
-public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
-    
+@Scope("prototype")
+public class SdicoIdoneitaCheckerService extends IdoneitaChecker {
+
     private static final Logger log = LoggerFactory.getLogger(SdicoIdoneitaCheckerService.class);
 
     @Override
@@ -24,8 +26,7 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
         log.debug("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
         //voglio versare solo gli RGPICO
-        if (doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO))
-        {
+        if (doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) {
             idoneo = true;
             log.info("Prendo da versare il documento id: " + id);
         }
@@ -37,5 +38,5 @@ public class SdicoIdoneitaCheckerService extends IdoneitaChecker{
         log.info("Prendo da versare il fasciolo id: " + id);
         return true;
     }
-    
+
 }
