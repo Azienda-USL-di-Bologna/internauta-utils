@@ -451,7 +451,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
             .post(body)
             .build();
         Response response = okHttpClient.newCall(request).execute();
-        log.info("Esito login per l'utente " + username + ": " + response);
+        log.info("Esito login per l'utente " + username + ": " + response.message());
         JSONObject jsonObject = new JSONObject(response.body().string());
 
         return (String) jsonObject.get("token");
