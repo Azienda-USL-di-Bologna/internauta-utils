@@ -139,7 +139,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     getEntityManager().persist(storicoRelazioneNew);
                     getEntityManager().flush();
                 }
-                OperationsUtils.attivaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudereR);
+                OperationsUtils.inserisciSpostaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudereR);
                 //OperationsUtils.inserisciStrutturaNewInAziendaUnificata(queryFactory, em, strutturaNew, struttureOld, getAzione());
                 OperationsUtils.spostaStruttura(em, strutturaSorgenteDaChiudereR.getId(), strutturaNew.getId(), operazione, strutturaNew.getDataAttivazione().toString());
                 break;

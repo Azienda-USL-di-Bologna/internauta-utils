@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -39,6 +40,12 @@ public class RepositoryFactory {
 
     @Autowired
     private DatiDaImportareAnagraficaRepository datiDaImportareAnagraficaRepository;
+
+    @Autowired
+    private RibaltoneValidationCheckRepository ribaltoneValidationCheckRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -117,6 +124,22 @@ public class RepositoryFactory {
 
     public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public RibaltoneValidationCheckRepository getRibaltoneValidationCheckRepository() {
+        return ribaltoneValidationCheckRepository;
+    }
+
+    public void setRibaltoneValidationCheckRepository(RibaltoneValidationCheckRepository ribaltoneValidationCheckRepository) {
+        this.ribaltoneValidationCheckRepository = ribaltoneValidationCheckRepository;
+    }
+
+    public TransactionTemplate getTransactionTemplate() {
+        return transactionTemplate;
+    }
+
+    public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
+        this.transactionTemplate = transactionTemplate;
     }
 
 }
