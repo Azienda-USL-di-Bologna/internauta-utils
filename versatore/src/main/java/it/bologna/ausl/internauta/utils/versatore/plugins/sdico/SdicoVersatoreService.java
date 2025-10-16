@@ -59,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.util.StringUtils;
 
 /**
@@ -66,6 +67,7 @@ import org.springframework.util.StringUtils;
  * @author Andrea
  */
 @Component
+@Scope("prototype")
 public class SdicoVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(SdicoVersatoreService.class);
@@ -237,12 +239,13 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     } else {
                         throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                     }
-                    String codiceFiscaleResponsabileGestioneDocumentale = (String) parametriVersamento.get("codiceFiscaleResponsabileGestioneDocumentale");
-                    log.info("codiceFiscaleResponsabileGestioneDocumentale" + codiceFiscaleResponsabileGestioneDocumentale);
-                    if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
-                        && codiceFiscaleResponsabileGestioneDocumentale != null
-                        && codiceFiscaleResponsabileGestioneDocumentale != "") {
-                        responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
+                    //prendo il responsabile della gestione documentale
+                    String usernameResponsabileGestioneDocumentale = (String) parametriVersamento.get("usernameResponsabileGestioneDocumentale");
+                    log.info("usernameResponsabileGestioneDocumentale" + usernameResponsabileGestioneDocumentale);
+                    if (!usernameResponsabileGestioneDocumentale.isEmpty()
+                        && usernameResponsabileGestioneDocumentale != null
+                        && usernameResponsabileGestioneDocumentale != "") {
+                        responsabileGestioneDocumentale = personaDaUsernameEAzienda(usernameResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
                         log.info("Il responsabile della gestione documentale è: " + responsabileGestioneDocumentale.getCognome() + " " + responsabileGestioneDocumentale.getNome());
                     } else {
                         throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
@@ -451,7 +454,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
             .post(body)
             .build();
         Response response = okHttpClient.newCall(request).execute();
-        JSONObject jsonObject = new JSONObject(response.body().string());
+        String responseBodyString = response.body().string();
+        log.info("Effettuo login per l'utente " + username);
+        log.info("uri: " + sdicoLoginURI);
+        JSONObject jsonObject = new JSONObject(responseBodyString);
 
         return (String) jsonObject.get("token");
     }
@@ -529,12 +535,12 @@ public class SdicoVersatoreService extends VersatoreDocs {
     }
 
     /**
-     * Metodo che dato un codice fiscale ti restituisce la persona
+     * Metodo che dato uno username ti restituisce la persona
      *
      * @param codiceFiscale
      * @return
      */
-    private Persona personaDaCodiceFiscaleEAzienda(String username, Integer idAzienda) {
+    private Persona personaDaUsernameEAzienda(String username, Integer idAzienda) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
         QUtente utente = QUtente.utente;
