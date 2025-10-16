@@ -88,7 +88,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         //TODO la gestione degli errori deve essere provata, in base a cosa poi unimatica restituisce
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
         //Reperisoco i risultati del versamento
-        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation);
+        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, entityManager, versatoreRepositoryConfiguration, objectMapper);
         ResponseUnimatica response = (ResponseUnimatica) mappaResultAndAllegati.get("response");
         String responseJson = (String) mappaResultAndAllegati.get("responseJson");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
@@ -237,7 +237,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                     if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
                         && codiceFiscaleResponsabileGestioneDocumentale != null
                         && codiceFiscaleResponsabileGestioneDocumentale != "") {
-                        responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId(), entityManager);
+                        responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
                     } else {
                         throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
                     }
