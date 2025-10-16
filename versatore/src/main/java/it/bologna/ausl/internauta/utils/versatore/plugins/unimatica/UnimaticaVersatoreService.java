@@ -52,6 +52,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -60,6 +61,7 @@ import org.springframework.util.StringUtils;
  * @author boria
  */
 @Component
+@Scope("prototype")
 public class UnimaticaVersatoreService extends VersatoreDocs {
 
     private static final Logger log = LoggerFactory.getLogger(UnimaticaVersatoreService.class);
@@ -233,14 +235,15 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                     } else {
                         throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                     }
-                    String codiceFiscaleResponsabileGestioneDocumentale = (String) parametriVersamento.get("codiceFiscaleResponsabileGestioneDocumentale");
-                    if (!codiceFiscaleResponsabileGestioneDocumentale.isEmpty()
-                        && codiceFiscaleResponsabileGestioneDocumentale != null
-                        && codiceFiscaleResponsabileGestioneDocumentale != "") {
-                        responsabileGestioneDocumentale = personaDaCodiceFiscaleEAzienda(codiceFiscaleResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
+                    //prendo il responsabile della gestione documentale, inserire se serve
+                    /*String usernameResponsabileGestioneDocumentale = (String) parametriVersamento.get("usernameResponsabileGestioneDocumentale");
+                    if (!usernameResponsabileGestioneDocumentale.isEmpty()
+                        && usernameResponsabileGestioneDocumentale != null
+                        && usernameResponsabileGestioneDocumentale != "") {
+                        responsabileGestioneDocumentale = personaDaUsernameEAzienda(usernameResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
                     } else {
                         throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
-                    }
+                    }*/
                 }
                 log.info("accedo ai dati degli allegati e li inserisco nell'XML");
                 List<Allegato> allegati = doc.getAllegati();
@@ -397,13 +400,12 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
     }
 
     /**
-     * Metodo che dato un codice fiscale ti restituisce la persona
+     * Metodo che dato uno username ti restituisce la persona
      *
      * @param codiceFiscale
      * @return
      */
-    //TODO levare entity manager
-    private Persona personaDaCodiceFiscaleEAzienda(String username, Integer idAzienda) {
+    private Persona personaDaUsernameEAzienda(String username, Integer idAzienda) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
         QUtente utente = QUtente.utente;
