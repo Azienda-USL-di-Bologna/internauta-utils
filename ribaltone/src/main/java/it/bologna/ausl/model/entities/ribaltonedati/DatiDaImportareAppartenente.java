@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -90,7 +92,8 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
     private ZonedDateTime dataDimissione;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "dati_da_importare_appartenenti_id_seq")
+    @SequenceGenerator(name = "dati_da_importare_appartenenti_id_seq", sequenceName = "ribaltone_dati.dati_da_importare_appartenenti_id_seq", allocationSize = 1000)
     @Basic(optional = false)
     @Column(name = "id")
     private Integer id;
@@ -297,8 +300,8 @@ public class DatiDaImportareAppartenente implements Serializable, DatiRibaltoneI
         datiImportatiAppartenente.setCodiceEnte(this.codiceEnte);
         datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
         datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
-        datiImportatiAppartenente.setCognome(this.cognome);
-        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setCognome(WordUtils.capitalizeFully(this.cognome));
+        datiImportatiAppartenente.setNome(WordUtils.capitalizeFully(this.nome));
         datiImportatiAppartenente.setUsername(this.username);
         datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
         datiImportatiAppartenente.setIdCasella(this.idCasella);

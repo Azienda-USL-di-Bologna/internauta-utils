@@ -17,7 +17,8 @@ public interface DatiRibaltoneInterface {
         APPARTENENTI,
         STRUTTURE,
         TRASFORMAZIONI,
-        UNIFICAZIONI
+        UNIFICAZIONI_STRUTTURE,
+        UNIFICAZIONI_APPARTENENTI,
     }
 
     public static <T extends DatiRibaltoneInterface> T getImportazioneCSVRibaltoneImpl(TipologiaCsv tipologia) {
@@ -33,9 +34,6 @@ public interface DatiRibaltoneInterface {
                 res = (T) new CSVDaImportareStruttura();
                 break;
             case TRASFORMAZIONI:
-                res = (T) new CSVDaImportareTrasformazione();
-                break;
-            case UNIFICAZIONI:
                 res = (T) new CSVDaImportareTrasformazione();
                 break;
         }

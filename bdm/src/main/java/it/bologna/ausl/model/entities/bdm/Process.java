@@ -45,7 +45,7 @@ public class Process {
 //    @Type(JsonBinaryType.class)
 //    @Embedded
 //    @JdbcTypeCode(SqlTypes.JSON)
-    @Type(JsonType.class)
+    @Type(JsonBinaryType.class)
 //    private TestJson jsonProcess;
     private BdmProcess jsonProcess;
     

@@ -17,6 +17,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
+import org.apache.commons.text.WordUtils;
 
 /**
  *
@@ -298,8 +299,8 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         datiImportatiAppartenente.setCodiceEnte(this.codiceAzienda.concat("01"));
         datiImportatiAppartenente.setCodiceFiscale(this.codiceFiscale);
         datiImportatiAppartenente.setCodiceMatricola(this.codiceMatricola);
-        datiImportatiAppartenente.setCognome(this.cognome);
-        datiImportatiAppartenente.setNome(this.nome);
+        datiImportatiAppartenente.setCognome(WordUtils.capitalizeFully(this.cognome));
+        datiImportatiAppartenente.setNome(WordUtils.capitalizeFully(this.nome));
         datiImportatiAppartenente.setUsername(this.username);
         datiImportatiAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
         datiImportatiAppartenente.setIdCasella(this.idCasella);
@@ -318,8 +319,8 @@ public class CSVDaImportareAppartenente implements Serializable, DatiRibaltoneIn
         datiDaImportareAppartenente.setCodiceEnte(this.codiceAzienda.concat("01"));
         datiDaImportareAppartenente.setCodiceFiscale(this.codiceFiscale);
         datiDaImportareAppartenente.setCodiceMatricola(this.codiceMatricola);
-        datiDaImportareAppartenente.setCognome(this.cognome);
-        datiDaImportareAppartenente.setNome(this.nome);
+        datiDaImportareAppartenente.setCognome(WordUtils.capitalizeFully(this.cognome));
+        datiDaImportareAppartenente.setNome(WordUtils.capitalizeFully(this.nome));
         datiDaImportareAppartenente.setUsername(this.username);
         datiDaImportareAppartenente.setTipoAppartenenza(this.tipoAppartenenza);
         datiDaImportareAppartenente.setIdCasella(this.idCasella);

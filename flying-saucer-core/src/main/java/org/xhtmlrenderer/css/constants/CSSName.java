@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Objects.requireNonNull;
+
 
 /**
  * A CSSName is a Singleton representing a single CSS property name, like
@@ -780,6 +782,16 @@ public final class CSSName implements Comparable<CSSName> {
                     new PrimitivePropertyBuilders.Orphans()
             );
 
+    public final static CSSName OPACITY =
+    		addProperty(
+    				"opacity",
+    				PRIMITIVE,
+    				"1",
+                    NOT_INHERITED, // PR22 - INHERITS
+    				true,
+    				new PrimitivePropertyBuilders.Opacity()
+    		);
+
     /**
      * Unique CSSName instance for CSS2 property.
      */
@@ -1060,6 +1072,18 @@ public final class CSSName implements Comparable<CSSName> {
                     "normal",
                     INHERITS,
                     new PrimitivePropertyBuilders.WhiteSpace()
+            );
+
+    /**
+     * Unique CSSName instance for CSS3 property.
+     */
+    public static final CSSName WORD_BREAK =
+            addProperty(
+                    "word-break",
+                    PRIMITIVE,
+                    "normal",
+                    INHERITS,
+                    new PrimitivePropertyBuilders.WordBreak()
             );
 
     /**
@@ -1753,6 +1777,11 @@ public final class CSSName implements Comparable<CSSName> {
     @CheckReturnValue
     public static CSSName getByPropertyName(String propName) {
         return ALL_PROPERTY_NAMES.get(propName);
+    }
+
+    @CheckReturnValue
+    public static CSSName cssProperty(String propName) {
+        return requireNonNull(getByPropertyName(propName), () -> "Unknown CSS property: " + propName);
     }
 
     public static CSSName getByID(int id) {

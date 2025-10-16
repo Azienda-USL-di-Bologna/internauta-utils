@@ -625,8 +625,8 @@ public class InfocertVersatoreService extends VersatoreDocs {
         Contatto idContattoMittente = Optional.ofNullable(docDetail.getIdContattoMittente()).orElse(null);
         if (idContattoMittente != null) {
             addContattoRubrica(docAttributes, idContattoMittente, index);
-        } else if (docDetail.getMittente() != null || StringUtils.hasLength(docDetail.getMittente())) {
-            addSoggettoGenerico(docAttributes, docDetail.getMittente(), index);
+        } else if (docDetail.getMittente() != null || StringUtils.hasLength(docDetail.getMittente().getNome())) {
+            addSoggettoGenerico(docAttributes, docDetail.getMittente().getNome(), index);
         } else {
             String message = "Manca il campo mittente";
             log.error(message);

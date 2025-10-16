@@ -9,6 +9,7 @@ import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateExce
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
+import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,11 @@ public class BdmProcessManager {
     public static final String ADDING_PROCESS_TYPE = "process_type";
     public static final String ADDING_PROCESS_PARAMS = "process_params";
     private final ProcessStorageManager psm;
+    private final EntityManager entityManager;
 
-    public BdmProcessManager(ProcessStorageManager psm) {
+    public BdmProcessManager(ProcessStorageManager psm, EntityManager entityManager) {
         this.psm = psm;
+        this.entityManager = entityManager;
     }
 
     public String addProcess(BdmProcess p) {
@@ -62,7 +65,9 @@ public class BdmProcessManager {
 
     public BdmProcess getProcess(String id) {
         try {
-            return psm.loadProcess(id);
+            BdmProcess p = psm.loadProcess(id);
+            p.setEntityManager(entityManager);
+            return p;
         } catch (StorageException ex) {
             String error = String.format("unable to get process %s", id);
             log.error(error, ex);
@@ -72,17 +77,18 @@ public class BdmProcessManager {
 
     public Boolean abortProcess(String id) throws StorageException {
         Objects.requireNonNull(id);
-        BdmProcess process;
+        BdmProcess p;
         try {
-            process = psm.loadProcess(id);
+            p = psm.loadProcess(id);
         } catch (StorageException ex) {
             String error = String.format("unable to load process %s", id);
             log.error(error, ex);
             return false;
         }
-        process.setStatus(BdmStatus.ABORTED);
+        p.setEntityManager(entityManager);
+        p.setStatus(BdmStatus.ABORTED);
         try {
-            psm.saveProcess(process);
+            psm.saveProcess(p);
         } catch (StorageException ex) {
             String error = String.format("unable to abort process %s", id);
             log.error(error, ex);
@@ -124,6 +130,7 @@ public class BdmProcessManager {
             log.error(error, ex);
             return null;
         }
+        p.setEntityManager(entityManager);
         BdmStatus status = p.stepOn(parameters);
         psm.saveProcess(p);
         return status;
@@ -138,6 +145,7 @@ public class BdmProcessManager {
             log.error(error, ex);
             return null;
         }
+        p.setEntityManager(entityManager);
         BdmStatus status = p.stepTo(stepId, parameters);
         psm.saveProcess(p);
         return status.toString();
@@ -150,6 +158,7 @@ public class BdmProcessManager {
         Objects.requireNonNull(stepId);
 
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         Step s = p.getStep(stepId);
         try {
             Task t = (Task) Class.forName("it.bologna.ausl.internauta.utils.bdm.workflows.tasks." + taskType).newInstance();
@@ -168,6 +177,7 @@ public class BdmProcessManager {
         Objects.requireNonNull(processId);
 
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         p.setContext(context);
         psm.saveProcess(p);
     }
@@ -177,6 +187,7 @@ public class BdmProcessManager {
         Objects.requireNonNull(values);
 
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         Bag currentContext = p.getContext();
         
         Map<String, Object> parameters = values.getParameters();
@@ -193,10 +204,11 @@ public class BdmProcessManager {
         Objects.requireNonNull(stepId);
         Objects.requireNonNull(stepLogic);
 
-        BdmProcess process = psm.loadProcess(processId);
-        Step step = process.getStep(stepId);
+        BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
+        Step step = p.getStep(stepId);
         step.setStepLogic(stepLogic);
-        psm.saveProcess(process);
+        psm.saveProcess(p);
     }
 
     public void removeTask(String taskId, String processId, String stepId) throws StorageException, BdmExeption {
@@ -205,6 +217,7 @@ public class BdmProcessManager {
         Objects.nonNull(stepId);
 
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         Step s = null;
         if (stepId != null) {
             s = p.getStep(stepId);
@@ -240,6 +253,7 @@ public class BdmProcessManager {
         Objects.nonNull(stepType);
         Objects.nonNull(stepDescription);
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         Step s = new Step(stepType, stepDescription, stepLogic, allowedStepLogic);
         p.getStepList().add(s);
         psm.saveProcess(p);
@@ -251,6 +265,7 @@ public class BdmProcessManager {
         Objects.nonNull(processId);
 
         BdmProcess p = psm.loadProcess(processId);
+        p.setEntityManager(entityManager);
         p.getStepList().remove(p.getStep(stepId));
         psm.saveProcess(p);
     }

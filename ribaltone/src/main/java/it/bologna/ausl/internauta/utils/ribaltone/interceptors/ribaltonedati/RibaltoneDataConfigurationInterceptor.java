@@ -6,6 +6,7 @@ package it.bologna.ausl.internauta.utils.ribaltone.interceptors.ribaltonedati;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.blackbox.PermissionManager;
+import it.bologna.ausl.internauta.utils.ribaltone.interceptors.RibaltoneBaseInterceptor;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.projections.RibaltoneDatiUtils;
@@ -48,12 +49,10 @@ public class RibaltoneDataConfigurationInterceptor extends RibaltoneBaseIntercep
         return super.afterSelectQueryInterceptor(entities, additionalData, request, mainEntity, projectionClass);
     }
 
-    
-    
     @Override
     public Object afterSelectQueryInterceptor(Object entity, Map<String, String> additionalData, HttpServletRequest request, boolean mainEntity, Class projectionClass) throws AbortLoadInterceptorException {
         RibaltoneDataConfiguration r = (RibaltoneDataConfiguration) entity;
-        
+
         //tolgo dal JSON specifiche le chiavi che contengono dati sensibili
         r.setSpecifiche(ribaltoneDatiUtils.getOnlySpecificheNonSensibili(r));
 

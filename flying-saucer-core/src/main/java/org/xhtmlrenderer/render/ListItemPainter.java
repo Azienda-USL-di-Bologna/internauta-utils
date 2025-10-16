@@ -86,19 +86,31 @@ public class ListItemPainter {
         // calculations for bullets
         MarkerData.GlyphMarker marker = box.getMarkerData().getGlyphMarker();
         int x = getReferenceX(c, box) - marker.getLayoutWidth();
-        int y = getListItemCenterBaseline(c, box) - marker.getDiameter() / 2;
+//        int y = getListItemCenterBaseline(c, box) - marker.getDiameter() / 2;
+
+        StrutMetrics strutMetrics = box.getMarkerData().getStructMetrics();
+        int yOldCalulcation = (int)(getListItemCenterBaselineFixed(c, box)
+                        - strutMetrics.getAscent() / 2 - marker.getDiameter() / 2);
 
         IdentValue listStyle = style.getIdent(LIST_STYLE_TYPE);
         if (listStyle == IdentValue.DISC) {
-            c.getOutputDevice().fillOval(x, y, marker.getDiameter(), marker.getDiameter());
+            c.getOutputDevice().fillOval(x, yOldCalulcation, marker.getDiameter(), marker.getDiameter());
         } else if (listStyle == IdentValue.SQUARE) {
-            c.getOutputDevice().fillRect(x, y, marker.getDiameter(), marker.getDiameter());
+            c.getOutputDevice().fillRect(x, yOldCalulcation, marker.getDiameter(), marker.getDiameter());
         } else if (listStyle == IdentValue.CIRCLE) {
-            c.getOutputDevice().drawOval(x, y, marker.getDiameter(), marker.getDiameter());
+            c.getOutputDevice().drawOval(x, yOldCalulcation, marker.getDiameter(), marker.getDiameter());
         }
 
         // restore the old AntiAliasing setting
         c.getOutputDevice().setRenderingHint(KEY_ANTIALIASING, requireNonNullElse(aa_key, VALUE_ANTIALIAS_DEFAULT));
+    }
+    
+    private static int getListItemCenterBaselineFixed(final RenderingContext c, final BlockBox box) {
+        return getReferenceBaseline(box)
+                + (int) box.getMargin(c).top() / 2
+                - (int) box.getMargin(c).bottom() / 2
+                + (int) box.getPadding(c).top() / 2
+                - (int) box.getPadding(c).bottom() / 2;
     }
 
     private static int getListItemCenterBaseline(final RenderingContext c, final BlockBox box) {

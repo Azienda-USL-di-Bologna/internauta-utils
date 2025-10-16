@@ -12,7 +12,7 @@ import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import it.bologna.ausl.internauta.utils.bdm.utilities.StepLog;
 import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
 import it.bologna.ausl.internauta.utils.bdm.workflows.tasks.SampleTask;
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -64,6 +64,9 @@ public  class BdmProcess implements Dumpable, Serializable {
     // protected String processVersion = null;
     protected BdmStatus status = BdmStatus.NOT_STARTED;
     private int currentStepIndex = 0;
+    
+    @JsonIgnore
+    protected EntityManager entityManager;
     
     private List<StepLog> stepsLog = new ArrayList<>();
 
@@ -155,6 +158,14 @@ public  class BdmProcess implements Dumpable, Serializable {
         return context;
     }
 
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
     public void setContext(Bag c) {
         context = c;
     }
@@ -216,6 +227,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         status = BdmStatus.RUNNING;
         stepOnts = ZonedDateTime.now();
         Step step = stepList.get(currentStepIndex);
+        step.setEntityManager(entityManager);
         runningContext.put(CURRENT_STEP, step);
 
         // inserisco i dati necessari nella lista di StepLog

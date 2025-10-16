@@ -19,6 +19,8 @@
  */
 package org.xhtmlrenderer.render;
 
+import com.google.errorprone.annotations.CheckReturnValue;
+import org.jspecify.annotations.Nullable;
 import org.w3c.dom.css.CSSPrimitiveValue;
 import org.xhtmlrenderer.css.constants.CSSName;
 import org.xhtmlrenderer.css.constants.IdentValue;
@@ -30,6 +32,7 @@ import org.xhtmlrenderer.css.style.BackgroundSize;
 import org.xhtmlrenderer.css.style.CalculatedStyle;
 import org.xhtmlrenderer.css.style.CssContext;
 import org.xhtmlrenderer.css.style.derived.BorderPropertySet;
+import org.xhtmlrenderer.css.style.derived.FSLinearGradient;
 import org.xhtmlrenderer.css.style.derived.LengthValue;
 import org.xhtmlrenderer.css.value.FontSpecification;
 import org.xhtmlrenderer.extend.FSImage;
@@ -174,8 +177,9 @@ public abstract class AbstractOutputDevice implements OutputDevice {
         BorderPainter.paint(edge, sides, style.getBorder(c), c, 0);
     }
 
+    @Nullable
     private FSImage getBackgroundImage(RenderingContext c, CalculatedStyle style) {
-        if (! style.isIdent(CSSName.BACKGROUND_IMAGE, IdentValue.NONE)) {
+    	if (! style.isIdent(CSSName.BACKGROUND_IMAGE, IdentValue.NONE)) {
             String uri = style.getStringProperty(CSSName.BACKGROUND_IMAGE);
             try {
                 return c.getUac().getImageResource(uri).getImage();
@@ -212,8 +216,22 @@ public abstract class AbstractOutputDevice implements OutputDevice {
             return;
         }
 
+        setOpacity(style.getOpacity());
+
         FSColor backgroundColor = style.getBackgroundColor();
-        FSImage backgroundImage = getBackgroundImage(c, style);
+
+        FSLinearGradient backgroundLinearGradient = null;
+        FSImage backgroundImage = null;
+
+        if (style.isLinearGradient())
+        {
+        	// TODO: Is this the correct width to use?
+        	backgroundLinearGradient = style.getLinearGradient(c, bgImageContainer.width, bgImageContainer.height);
+        }
+        else
+        {
+        	backgroundImage = getBackgroundImage(c, style);
+        }
 
         // If the image width or height is zero, then there's nothing to draw.
         // Also prevents infinite loop when trying to tile an image with zero size.
@@ -222,7 +240,7 @@ public abstract class AbstractOutputDevice implements OutputDevice {
         }
 
         if ( (backgroundColor == null || backgroundColor == FSRGBColor.TRANSPARENT) &&
-                backgroundImage == null) {
+                backgroundImage == null && backgroundLinearGradient == null) {
             return;
         }
 
@@ -239,9 +257,8 @@ public abstract class AbstractOutputDevice implements OutputDevice {
             fill(borderBounds);
         }
 
-        if (backgroundImage != null) {
+        if (backgroundImage != null || backgroundLinearGradient != null) {
             setClip(borderBounds);
-
             Rectangle localBGImageContainer = bgImageContainer;
             if (style.isFixedBackground()) {
                 localBGImageContainer = c.getViewportRectangle();
@@ -255,7 +272,20 @@ public abstract class AbstractOutputDevice implements OutputDevice {
                 yoff += (int)border.top();
             }
 
-            scaleBackgroundImage(c, style, localBGImageContainer, backgroundImage);
+            clip(borderBounds);
+
+        	if (backgroundLinearGradient != null)
+        	{
+        		drawLinearGradient(backgroundLinearGradient,
+        		backgroundBounds.x, backgroundBounds.y, backgroundBounds.width, backgroundBounds.height);
+        		setClip(oldclip);
+        		return;
+        	}
+
+            if (backgroundImage != null)
+            {
+                backgroundImage = scaleBackgroundImage(c, style, localBGImageContainer, backgroundImage);
+            }
 
             float imageWidth = backgroundImage.getWidth();
             float imageHeight = backgroundImage.getHeight();
@@ -271,8 +301,9 @@ public abstract class AbstractOutputDevice implements OutputDevice {
 
             if (! hrepeat && ! vrepeat) {
                 Rectangle imageBounds = new Rectangle(xoff, yoff, (int)imageWidth, (int)imageHeight);
-                if (imageBounds.intersects(backgroundBounds)) {
-                    drawImage(backgroundImage, xoff, yoff);
+                if (imageBounds.intersects(backgroundBounds))
+                {
+               		drawImage(backgroundImage, xoff, yoff);
                 }
             } else if (hrepeat && vrepeat) {
                 paintTiles(
@@ -367,7 +398,8 @@ public abstract class AbstractOutputDevice implements OutputDevice {
         }
     }
 
-    private void scaleBackgroundImage(CssContext c, CalculatedStyle style, Rectangle backgroundContainer, FSImage image) {
+    @CheckReturnValue
+    private FSImage scaleBackgroundImage(CssContext c, CalculatedStyle style, Rectangle backgroundContainer, FSImage image) {
         BackgroundSize backgroundSize = style.getBackgroundSize();
 
         if (! backgroundSize.isBothAuto()) {
@@ -375,24 +407,25 @@ public abstract class AbstractOutputDevice implements OutputDevice {
                 int testHeight = (int)((double)image.getHeight() * backgroundContainer.width / image.getWidth());
                 if (backgroundSize.isContain()) {
                     if (testHeight > backgroundContainer.height) {
-                        image.scale(-1, backgroundContainer.height);
+                        return image.scale(-1, backgroundContainer.height);
                     } else {
-                        image.scale(backgroundContainer.width, -1);
+                        return image.scale(backgroundContainer.width, -1);
                     }
                 } else if (backgroundSize.isCover()) {
                     if (testHeight > backgroundContainer.height) {
-                        image.scale(backgroundContainer.width, -1);
+                        return image.scale(backgroundContainer.width, -1);
                     } else {
-                        image.scale(-1, backgroundContainer.height);
+                        return image.scale(-1, backgroundContainer.height);
                     }
                 }
             } else {
                 int scaledWidth = calcBackgroundSizeLength(c, style, backgroundSize.getWidth(), backgroundContainer.width);
                 int scaledHeight = calcBackgroundSizeLength(c, style, backgroundSize.getHeight(), backgroundContainer.height);
 
-                image.scale(scaledWidth, scaledHeight);
+                return image.scale(scaledWidth, scaledHeight);
             }
         }
+        return image;
     }
 
     private int calcBackgroundSizeLength(CssContext c, CalculatedStyle style, PropertyValue value, float boundsDim) {
@@ -419,7 +452,7 @@ public abstract class AbstractOutputDevice implements OutputDevice {
      * @return current FontSpecification.
      */
     public FontSpecification getFontSpecification() {
-    return _fontSpec;
+        return _fontSpec;
     }
 
     /**
@@ -428,6 +461,6 @@ public abstract class AbstractOutputDevice implements OutputDevice {
      * @param fs current FontSpecification.
      */
     public void setFontSpecification(FontSpecification fs) {
-    _fontSpec = fs;
+        _fontSpec = fs;
     }
 }

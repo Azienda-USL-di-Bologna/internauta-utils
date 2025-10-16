@@ -5,6 +5,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
@@ -22,6 +23,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.rubrica.GruppiContatti;
+import it.bologna.ausl.model.entities.rubrica.QDettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Map;
 
 /**
  *
@@ -41,8 +44,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
 
     private static final Logger log = LoggerFactory.getLogger(OperationTrasformazione.class);
 
-    public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager) {
-        super(azione, entitaCoinvolta, entityManager);
+    public OperationTrasformazione(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, Map<String, String> descrizioniAggiuntive) {
+        super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
     }
 
     @Override
@@ -69,9 +72,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaSorgenteDaChiudere,
                     queryFactory,
                     qStruttura,
-                    qStoricoRelazione,
-                    qStrutturaUnificata,
-                    false);
+                    qStoricoRelazione);
 
                 List<Struttura> struttureArrivo = queryFactory
                     .select(qStruttura)
@@ -96,24 +97,24 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
 
             }
             case CAMBIO_PADRE, RINOMINA -> {
-                String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
-                DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
+//                String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
+//                DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
 
-                List<Struttura> struttureCoinvolteInTrasformazione = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
-                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza()))
-                    ).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
-                if (struttureCoinvolteInTrasformazione != null
-                    && struttureCoinvolteInTrasformazione.size() == 2) {
-                    Struttura strutturaChiusa = struttureCoinvolteInTrasformazione.get(1);
-                    Struttura strutturaAperta = struttureCoinvolteInTrasformazione.get(0);
-                    OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAperta.getId(), operazione, strutturaAperta.getDataAttivazione().toString());
-
-                } else {
-                    throw new RibaltoneHttpException("strutture coinvolte in trasformaione di cambio padre o rinomina non trovate");
-                }
+//                List<Struttura> struttureCoinvolteInTrasformazione = queryFactory
+//                    .select(qStruttura)
+//                    .from(qStruttura)
+//                    .where(qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
+//                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza()))
+//                    ).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+//                if (struttureCoinvolteInTrasformazione != null
+//                    && struttureCoinvolteInTrasformazione.size() == 2) {
+//                    Struttura strutturaChiusa = struttureCoinvolteInTrasformazione.get(1);
+//                    Struttura strutturaAperta = struttureCoinvolteInTrasformazione.get(0);
+//                    //OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaAperta.getId(), operazione, strutturaAperta.getDataAttivazione().toString());
+//
+//                } else {
+//                    throw new RibaltoneHttpException("strutture coinvolte in trasformaione di cambio padre o rinomina non trovate");
+//                }
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
             }
@@ -141,6 +142,7 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
         EntityManager em = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
+        QDettaglioContatto qDettaglioContatto = QDettaglioContatto.dettaglioContatto;
         switch (getAzione()) {
             case CONFLUENZA -> {
                 //per le strutture avro gia avuto la insert della struttura e quindi ci sarà gia il contatto della destinzazione
@@ -163,7 +165,18 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 if (strutturaPartenzaList != null && !strutturaPartenzaList.isEmpty() && strutturaDestinazioneList != null && !strutturaDestinazioneList.isEmpty()) {
                     Struttura strutturaPartenza = strutturaPartenzaList.get(0);
                     Struttura strutturaDestinazione = strutturaDestinazioneList.get(0);
-                    List<GruppiContatti> gruppiDelContattoDaRimuovoreList = strutturaPartenza.getIdContatto().getGruppiDelContattoList();
+                    Contatto idContattoPartenza = strutturaPartenza.getIdContatto();
+                    idContattoPartenza.setEliminato(Boolean.TRUE);
+                    idContattoPartenza.setEliminatoDa("ribaltone");
+                    em.persist(idContattoPartenza);
+                    queryFactory
+                        .update(qDettaglioContatto)
+                        .set(qDettaglioContatto.eliminato, true)
+                        .where(qDettaglioContatto.idContatto.id.eq(idContattoPartenza.getId()))
+                        .execute();
+
+                    Contatto idContattoDestinazione = strutturaDestinazione.getIdContatto();
+                    List<GruppiContatti> gruppiDelContattoDaRimuovoreList = idContattoPartenza.getGruppiDelContattoList();
                     //vado nei gruppi e sostituisco il contatto della struttura vecchia con quello nuovo
                     for (GruppiContatti gruppoConContattoDaRimuovere : gruppiDelContattoDaRimuovoreList) {
                         gruppoConContattoDaRimuovere.setEliminato(Boolean.TRUE);
@@ -172,8 +185,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                         GruppiContatti gruppiContatti = new GruppiContatti();
                         gruppiContatti.setEliminato(false);
                         gruppiContatti.setIdGruppo(gruppoConContattoDaRimuovere.getIdGruppo());
-                        gruppiContatti.setIdContatto(strutturaDestinazione.getIdContatto());
-                        gruppiContatti.setIdDettaglioContatto(strutturaDestinazione.getIdContatto().getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale()).toList().get(0));
+                        gruppiContatti.setIdContatto(idContattoDestinazione);
+                        gruppiContatti.setIdDettaglioContatto(idContattoDestinazione.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale()).toList().get(0));
                         em.persist(gruppiContatti);
                     }
                     // 1 cercare contatto utente struttura da morire
@@ -216,31 +229,31 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                                 em.persist(gruppiContatti);
                             }
                         }
-
                     }
+
                 }
 
             }
             case CAMBIO_PADRE -> {
                 //devo cambiare il puntamento
-                DatiDaImportareTrasformazione entitaRinominata = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
+                DatiDaImportareTrasformazione entitaCambioPadre = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                    .where(qStruttura.idCasella.eq(entitaCambioPadre.getIdCasellaPartenza())
+                        .and(qStruttura.idAzienda.codice.eq(entitaCambioPadre.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null) {
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto cDisattivo = strutturaDisattiva.getIdContatto();
-
-                    cDisattivo.setIdStruttura(strutturaAttiva);
-                    strutturaAttiva.setIdContatto(cDisattivo);
-                    strutturaDisattiva.setIdContatto(null);
-
-                    em.persist(cDisattivo);
-                    em.persist(strutturaAttiva);
-                    em.persist(strutturaDisattiva);
+                    if (cDisattivo != null) {
+                        cDisattivo.setIdStruttura(strutturaAttiva);
+                        strutturaAttiva.setIdContatto(cDisattivo);
+                        strutturaDisattiva.setIdContatto(null);
+                        em.persist(cDisattivo);
+                        em.persist(strutturaAttiva);
+                        em.persist(strutturaDisattiva);
+                    }
 
                 }
             }
@@ -257,32 +270,35 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto idContattoStruttura = strutturaDisattiva.getIdContatto();
+                    strutturaDisattiva.setIdContatto(null);
+                    em.persist(strutturaDisattiva);
+                    strutturaAttiva.setIdContatto(idContattoStruttura);
 
-                    String descrizioneContatto = strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "]";
+                    String descrizioneContattoStruttura = strutturaAttiva.getNome() + " [ " + strutturaAttiva.getIdAzienda().getNome() + " - " + strutturaAttiva.getIdCasella().toString() + "]";
                     idContattoStruttura.setNome(strutturaAttiva.getNome());
-                    idContattoStruttura.setDescrizione(descrizioneContatto);
+                    idContattoStruttura.setDescrizione(descrizioneContattoStruttura);
 
                     DettaglioContatto dc = idContattoStruttura.getDettaglioContattoList().get(0);
-                    dc.setDescrizione("Babel degli utenti di " + descrizioneContatto);
+                    dc.setDescrizione(descrizioneContattoStruttura);
 
+                    em.persist(strutturaAttiva);
                     em.persist(idContattoStruttura);
                     em.persist(dc);
 
                     //ora devo pensare a tutti gli utenti struttura
                     List<UtenteStruttura> usAttivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                     List<UtenteStruttura> usDisattivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> !us.getAttivo()).toList();
-                    for (UtenteStruttura us : usAttivi) {
-                        DettaglioContatto idDettaglioContatto = us.getIdDettaglioContatto();
-                        if (idDettaglioContatto == null) {
-                            idDettaglioContatto = new DettaglioContatto();
-                            idDettaglioContatto.setIdContatto(us.getIdUtente().getIdPersona().getIdContatto());
-                            idDettaglioContatto.setEliminato(false);
+                    if (usAttivi != null && !usAttivi.isEmpty()) {
+
+                        DettaglioContatto idDettaglioContatto = usAttivi.get(0).getIdDettaglioContatto();
+                        if (idDettaglioContatto != null) {
+                            idDettaglioContatto.setDescrizione(descrizioneContattoStruttura);
+                        } else {
+                            idDettaglioContatto = usAttivi.get(0).buildDettaglioContatto();
+
                         }
-                        idDettaglioContatto.setIdContattoEsterno(idContattoStruttura);
-                        idDettaglioContatto.setDescrizione(descrizioneContatto + " [" + us.getIdUtente().getIdAzienda().getNome() + "]");
                         em.persist(idDettaglioContatto);
                     }
-
                     for (UtenteStruttura usDis : usDisattivi) {
                         usDis.setIdDettaglioContatto(null);
                         em.persist(usDis);

@@ -1,9 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import java.io.Serializable;
-import java.util.Date;
-import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  *
@@ -24,7 +21,6 @@ public class Responsabile implements Serializable {
 //    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
 //    private Date datafi;
-
     private String tipo;
 
     public Responsabile() {
@@ -69,7 +65,6 @@ public class Responsabile implements Serializable {
 //    public void setDatafi(Date datafi) {
 //        this.datafi = datafi;
 //    }
-
     public String getTipo() {
         return tipo;
     }

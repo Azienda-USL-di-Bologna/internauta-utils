@@ -8,6 +8,7 @@ import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateExce
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
+import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -51,6 +52,8 @@ public class Step implements Dumpable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssZ")
     protected ZonedDateTime stepOnTimeStamp;
 
+    @JsonIgnore
+    protected EntityManager entityManager;
 
     public Step() {
     }
@@ -201,6 +204,7 @@ public class Step implements Dumpable {
             exitTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
+                            t.setEntityManager(entityManager);
                             t.undo(runningContext, context, params);
             });
         }
@@ -209,6 +213,7 @@ public class Step implements Dumpable {
             taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
+                            t.setEntityManager(entityManager);
                             t.undo(runningContext, context, params);
             });
         }
@@ -217,6 +222,7 @@ public class Step implements Dumpable {
             enterTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
+                            t.setEntityManager(entityManager);
                             t.undo(runningContext, context, params);
             });
         }
@@ -228,6 +234,7 @@ public class Step implements Dumpable {
         }
         if (enterTaskList != null) {
             for (Task t : enterTaskList) {
+                t.setEntityManager(entityManager);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
                 }
@@ -243,6 +250,7 @@ public class Step implements Dumpable {
         }
         if (exitTaskList != null) {
             for (Task t : exitTaskList) {
+                t.setEntityManager(entityManager);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
                 }
@@ -255,7 +263,10 @@ public class Step implements Dumpable {
     @JsonIgnore
     Task getCurrentTask() {
         if (taskList != null) {
-            return taskList.get(currentTaskIndex);
+            Task currentTask = taskList.get(currentTaskIndex);
+            currentTask.setEntityManager(entityManager);
+            return currentTask;
+            
         }
         return null;
     }
@@ -371,6 +382,7 @@ public class Step implements Dumpable {
     }
 
     public void addTask(Task task) {
+        task.setEntityManager(entityManager);
         taskList.add(task);
         taskResults.add(null);
 //        taskMap.put(task.getId(), task);
@@ -406,6 +418,7 @@ public class Step implements Dumpable {
             switch (stepLogic) {
                 case SEQ:
                     Task currentTask = taskList.get(currentTaskIndex);
+                    currentTask.setEntityManager(entityManager);
                     currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                     res = currentTask.execute(runningContext, context, params);
 
@@ -438,6 +451,7 @@ public class Step implements Dumpable {
                     // se non è automatico lo eseguo solo se non ne è proceduto già uno
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
+                        t.setEntityManager(entityManager);
                         if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
                             if (t.getAuto() || !finishedOne) {
                                 res = t.execute(runningContext, context, params);
@@ -459,9 +473,10 @@ public class Step implements Dumpable {
                     break;
                 case ALL:
                     int finishedTasks = 0;
-                    int listSize = taskList.size();
+//                    int listSize = taskList.size();
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
+                        t.setEntityManager(entityManager);
                         if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
                             res = t.execute(runningContext, context, params);
                             taskResults.set(i, res);
@@ -504,6 +519,14 @@ public class Step implements Dumpable {
 
     public void setAllowedStepLogic(List<StepLogic> allowedStepLogic) {
         this.allowedStepLogic = allowedStepLogic;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     public List<Task> getNotExecutedAutoTask() {

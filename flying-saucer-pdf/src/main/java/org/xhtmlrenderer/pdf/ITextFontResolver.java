@@ -19,9 +19,8 @@
  */
 package org.xhtmlrenderer.pdf;
 
-import com.google.errorprone.annotations.CheckReturnValue;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.pdf.BaseFont;
+import org.openpdf.text.DocumentException;
+import org.openpdf.text.pdf.BaseFont;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +109,6 @@ public class ITextFontResolver implements FontResolver {
     }
 
     @Nullable
-    @CheckReturnValue
     @Override
     public FSFont resolveFont(SharedContext renderingContext, FontSpecification spec) {
         return resolveFont(spec.families, spec.size, spec.fontWeight, spec.fontStyle);
@@ -205,7 +203,6 @@ public class ITextFontResolver implements FontResolver {
         }
     }
 
-    @CheckReturnValue
     private File[] filesWithExtensions(File f, String... extensions) {
         return requireNonNull(f.listFiles((d, name) -> {
             String lower = name.toLowerCase(ROOT);
@@ -269,11 +266,10 @@ public class ITextFontResolver implements FontResolver {
 
         for (String fontFamilyName : fontFamilyNames) {
             getFontFamily(fontFamilyName)
-                    .addFontDescription(extractDescription(path, font));
+                    .addFontDescription(extractDescription(path, font, null));
         }
     }
 
-    @CheckReturnValue
     private static Collection<String> getFontFamilyNames(BaseFont font, @Nullable String fontFamilyNameOverride) {
         if (fontFamilyNameOverride != null) {
             return singletonList(fontFamilyNameOverride);
@@ -323,8 +319,7 @@ public class ITextFontResolver implements FontResolver {
             String fontFamilyName = font.getFamilyFontName()[0][3];
             FontFamily fontFamily = getFontFamily(fontFamilyName);
 
-            FontDescription description = new FontDescription(font);
-            description.setFromFontFace(true);
+            FontDescription description = new FontDescription(font, true);
             // XXX Need to set weight, underline position, etc.  This information
             // is contained in the AFM file (and even parsed by Type1Font), but
             // unfortunately it isn't exposed to the caller.
@@ -334,28 +329,15 @@ public class ITextFontResolver implements FontResolver {
         }
     }
 
-    @CheckReturnValue
     private static FontDescription fontDescription(@Nullable IdentValue fontWeightOverride, @Nullable IdentValue fontStyleOverride,
                                                    String uri, byte[] ttfAfm, BaseFont font) {
-        FontDescription description = extractDescription(uri, ttfAfm, font);
-        description.setFromFontFace(true);
-
-        if (fontWeightOverride != null) {
-            description.setWeight(convertWeightToInt(fontWeightOverride));
-        }
-
-        if (fontStyleOverride != null) {
-            description.setStyle(fontStyleOverride);
-        }
-        return description;
+        return extractDescription(uri, ttfAfm, font, true, fontWeightOverride, fontStyleOverride);
     }
 
-    @CheckReturnValue
     private byte[] readFile(String path) throws IOException {
         return IOUtil.readBytes(Paths.get(path));
     }
 
-    @CheckReturnValue
     private FontFamily getFontFamily(String fontFamilyName) {
         FontFamily fontFamily = getFonts().get(fontFamilyName);
         if (fontFamily == null) {
@@ -366,7 +348,6 @@ public class ITextFontResolver implements FontResolver {
     }
 
     @Nullable
-    @CheckReturnValue
     private FSFont resolveFont(String @Nullable [] families, float size, IdentValue weight, IdentValue style) {
         if (!(style == IdentValue.NORMAL || style == IdentValue.OBLIQUE
                 || style == IdentValue.ITALIC)) {
@@ -376,7 +357,6 @@ public class ITextFontResolver implements FontResolver {
             for (String family : families) {
                 FSFont font = resolveFont(family, size, weight, style);
                 if (font != null) {
-                    log.debug("Resolved font {}:{}:{} -> {}", family, weight, style, font);
                     return font;
                 }
             }
@@ -424,14 +404,16 @@ public class ITextFontResolver implements FontResolver {
         FontDescription result = _fontCache.get(cacheKey);
 
         if (result != null) {
-            log.debug("Resolved font {}:{}:{} -> {}", fontFamily, weight, style, result);
+            log.debug("Resolved font (from cache) {}:{}:{} -> {}", fontFamily, weight, style, result);
             return new ITextFSFont(result, size);
         }
 
         FontFamily family = getFonts().get(normalizedFontFamily);
         if (family != null) {
-            result = family.match(convertWeightToInt(weight), style);
+            int desiredWeight = convertWeightToInt(weight);
+            result = family.match(desiredWeight, style);
             if (result != null) {
+                log.debug("Resolved font {}:{}({}):{} -> {}", fontFamily, weight, desiredWeight, style, result);
                 _fontCache.put(cacheKey, result);
                 return new ITextFSFont(result, size);
             }
