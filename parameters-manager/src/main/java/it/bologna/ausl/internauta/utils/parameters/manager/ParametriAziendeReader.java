@@ -79,6 +79,14 @@ public class ParametriAziendeReader {
         return this.getParameters(nome.toString(), null, null);
     }
 
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, Integer[] idAziende, String[] idApplicazioni) {
+        return this.getParameters(nome.toString(), idAziende, idApplicazioni);
+    }
+
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, String[] idApplicazioni) {
+        return this.getParameters(nome.toString(), null, idApplicazioni);
+    }
+
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende) {
         return getParameters(nome, idAziende, null);
     }

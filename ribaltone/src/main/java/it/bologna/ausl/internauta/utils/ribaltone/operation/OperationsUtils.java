@@ -741,10 +741,10 @@ public class OperationsUtils {
         }
     }
 
-    public static void attivaUtentiStruttura(JPAQueryFactory queryFactory, EntityManager entityManager, Struttura idStrutturaNuova, Struttura idStrutturaVecchia) {
+    public static void inserisciSpostaUtentiStruttura(JPAQueryFactory queryFactory, EntityManager entityManager, Struttura idStrutturaNuova, Struttura idStrutturaVecchia) {
         QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
         Azienda idAziendaNew = idStrutturaNuova.getIdAzienda();
-
+        //prendo gli utenti della struttura vecchia
         List<UtenteStruttura> utentiStrutturaDaAggiornare = queryFactory
             .select(qUtenteStruttura)
             .from(qUtenteStruttura)
@@ -755,6 +755,7 @@ public class OperationsUtils {
                         .and(qUtenteStruttura.attivoDal.before(ZonedDateTime.now()))
                 )
             ).fetch();
+        //per ogniuno di loro creo sulla struttura nuova utenza se non c'è (caso di unificazione) e afferenza
         for (UtenteStruttura utenteStrutturaDaAggiornare : utentiStrutturaDaAggiornare) {
             Persona idPersona = utenteStrutturaDaAggiornare.getIdUtente().getIdPersona();
             List<Utente> utentiList = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(idStrutturaNuova.getIdAzienda().getId())).toList();
@@ -785,6 +786,7 @@ public class OperationsUtils {
                 //altrimenti sto facendo una unificazione quindi devo "copiare" gli utenti struttura
                 utenteStrutturaDaAggiornare.setAttivoAl(ZonedDateTime.now());
                 utenteStrutturaDaAggiornare.setAttivo(Boolean.FALSE);
+                utenteStrutturaDaAggiornare.setIdDettaglioContatto(null);
                 entityManager.persist(utenteStrutturaDaAggiornare);
             }
         }
@@ -837,7 +839,7 @@ public class OperationsUtils {
                 strutturaNuovaPerAziendaUnificata.setIdContatto(buildContattoAndDettaglio);
                 em.persist(strutturaNuovaPerAziendaUnificata);
                 OperationsUtils.gestisciStoricoRelazione(queryFactory, em, strutturaNuovaPerAziendaUnificata, strutturaOld);
-                OperationsUtils.attivaUtentiStruttura(queryFactory, em, strutturaNuovaPerAziendaUnificata, strutturaOld);
+                OperationsUtils.inserisciSpostaUtentiStruttura(queryFactory, em, strutturaNuovaPerAziendaUnificata, strutturaOld);
 
                 OperationsUtils.spostaStruttura(em, strutturaOld.getId(), strutturaNuovaPerAziendaUnificata.getId(), azione.equals(RINOMINA) ? "R" : "T", strutturaNuovaPerAziendaUnificata.getDataAttivazione().toString());
             }

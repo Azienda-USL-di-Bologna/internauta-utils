@@ -5,8 +5,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
-import it.nextsw.common.data.annotations.NextSdrRepository;
-import it.nextsw.common.repositories.NextSdrQueryDslRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
