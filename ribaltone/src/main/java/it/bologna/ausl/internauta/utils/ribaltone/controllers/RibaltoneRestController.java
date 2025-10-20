@@ -404,13 +404,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree
-    ) throws RibaltoneHttpException {
+    ) throws RibaltoneHttpException, JsonProcessingException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         ribaltoneCache.cleanDataCache();
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
         Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
         realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+        ribaltoneCache.setExecuting(Boolean.FALSE, realUser);
         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache");
     }
 
