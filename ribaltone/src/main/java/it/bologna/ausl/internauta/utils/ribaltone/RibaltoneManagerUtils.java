@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,23 +241,24 @@ public class RibaltoneManagerUtils {
     public static void updateProgressivoUltimaTrasformazione(String fonte, String codiceEnte, RepositoryFactory repositoryFactory) {
         List<DatiDaImportareTrasformazione> trasformazioniEseguite = repositoryFactory.getDatiDaImportareTrasformazioneRepository().findAll();
         if (trasformazioniEseguite != null && !trasformazioniEseguite.isEmpty()) {
+            Integer max = trasformazioniEseguite.stream().mapToInt(DatiDaImportareTrasformazione::getId).max().orElse(0);
+            if (max != 0) {
+                String sql = """
+                    UPDATE ribaltone_dati.configuration t
+                    SET specifiche = jsonb_set(
+                            t.specifiche,
+                            '{queryRecuperoDati,progressivoUltimaTrasformazione}',
+                            to_jsonb(
+                               ?
+                            ),
+                            false
+                        )
+                    WHERE t.id = ?;
+                    """;
+                repositoryFactory.getJdbcTemplate()
+                    .update(sql, max, fonte);
 
-            String sql = """
-                UPDATE ribaltone_dati.configuration t
-                SET specifiche = jsonb_set(
-                        t.specifiche,
-                        '{progressivoUltimaTrasformazione}',
-                        to_jsonb((
-                            SELECT max(d.progressivo_riga)
-                            FROM ribaltone_dati.dati_da_importare_trasformazioni d
-                            WHERE d.codice_ente = ?
-                        )),
-                        false
-                    )
-                WHERE t.id = ?;
-                """;
-            repositoryFactory.getJdbcTemplate()
-                .update(sql, codiceEnte, fonte);
+            }
         }
 
     }

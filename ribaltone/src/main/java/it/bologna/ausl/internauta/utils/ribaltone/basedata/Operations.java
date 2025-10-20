@@ -85,6 +85,7 @@ public class Operations implements Serializable {
 //        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
         for (OperationAppartenente operation : listOfOperationAppartenente) {
+            log.info(operation.toString());
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenente(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
