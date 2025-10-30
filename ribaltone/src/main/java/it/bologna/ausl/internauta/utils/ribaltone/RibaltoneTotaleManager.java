@@ -153,6 +153,7 @@ public class RibaltoneTotaleManager {
             case "ribaltaDeleteCache" -> {
                 ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("ANNULLATO");
+                ribaltoneDaLanciare.setGestito(Boolean.TRUE);
             }
             default -> {
                 throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");

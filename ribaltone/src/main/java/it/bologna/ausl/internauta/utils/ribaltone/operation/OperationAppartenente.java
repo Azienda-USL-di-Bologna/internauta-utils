@@ -193,29 +193,38 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 Utente utente = repositoryFactory.getEntityManager().find(Utente.class, utentiList.get(0).getId());
                                 if (trasformazioniInerenti.isEmpty()) {
 //                                    List<UtenteStruttura> usList1 = utente.getUtenteStrutturaList().stream().filter(us -> us.getIdStruttura().getId().equals(strutturaAttiva.getId())).toList();
-                                    List<UtenteStruttura> usList = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idUtente.id.eq(utente.getId()).and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId()))).fetch();
+                                    List<UtenteStruttura> usList = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.attivo.and(qUtenteStruttura.idUtente.id.eq(utente.getId()).and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId())))).fetch();
                                     if (!usList.isEmpty()) {
                                         UtenteStruttura utenteStruttura = usList.get(0);
-                                        DettaglioContatto dc = new DettaglioContatto();
+                                        if (utenteStruttura.getIdDettaglioContatto() == null) {
+                                            DettaglioContatto dc = new DettaglioContatto();
 
-                                        dc.setIdContatto(c);
-                                        dc.setDescrizione(strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "] [" + strutturaAttiva.getIdAzienda().getNome() + "]");
-                                        if (c.getId() != null) {
-                                            DettaglioContatto dcOnDb = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(qDettaglioContatto.idContatto.id.eq(c.getId()).and(qDettaglioContatto.descrizione.eq(dc.getDescrizione()))).fetchOne();
-                                            if (dcOnDb != null) {
-                                                dc = dcOnDb;
+                                            dc.setIdContatto(c);
+                                            dc.setDescrizione(strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "] [" + strutturaAttiva.getIdAzienda().getNome() + "]");
+                                            if (c.getId() != null) {
+                                                DettaglioContatto dcOnDb = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(qDettaglioContatto.idContatto.id.eq(c.getId()).and(qDettaglioContatto.descrizione.eq(dc.getDescrizione()))).fetchOne();
+                                                if (dcOnDb != null) {
+                                                    dc = dcOnDb;
+                                                    UtenteStruttura utenteStrutturaOld = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idDettaglioContatto.id.eq(dc.getId()).and(qUtenteStruttura.attivo.isFalse())).fetchOne();
+                                                    if (utenteStrutturaOld != null) {
+                                                        utenteStrutturaOld.setIdDettaglioContatto(null);
+                                                        entityManager.persist(utenteStrutturaOld);
+                                                        entityManager.flush();
+                                                    }
+                                                }
                                             }
+                                            dc.setUtenteStruttura(utenteStruttura);
+                                            dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
+                                            dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
+                                            dc.setEliminato(false);
+                                            utenteStruttura.setIdDettaglioContatto(dc);
+                                            entityManager.persist(utenteStruttura);
+                                            entityManager.flush();
                                         }
-                                        dc.setUtenteStruttura(utenteStruttura);
-                                        dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
-                                        dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
-                                        dc.setEliminato(false);
-                                        utenteStruttura.setIdDettaglioContatto(dc);
-                                        entityManager.persist(utenteStruttura);
-                                        entityManager.persist(dc);
                                     }
                                     p.setIdContatto(c);
                                     entityManager.persist(p);
+                                    entityManager.flush();
                                 } else {
 //                                    //ci sono trasformazioni quindi sono qui per via di una confluenza
 //                                    //nel caso di una rinomina della struttura l'utente non cambia codice casella
@@ -274,6 +283,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     gc.setEliminato(Boolean.TRUE);
                                     gc.setEliminatoDa("ribaltone");
                                     entityManager.persist(gc);
+                                    entityManager.flush();
                                 }
                                 Contatto idContatto = idDettaglioContatto.getIdContatto();
                                 if (idContatto.getDettaglioContattoList() == null
@@ -281,6 +291,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     || idContatto.getDettaglioContattoList().stream().filter(dc -> dc.getEliminato() == false).toList().isEmpty()) {
                                     idContatto.setEliminato(Boolean.TRUE);
                                     entityManager.persist(idContatto);
+                                    entityManager.flush();
                                 }
                             }
                         } else {
@@ -320,6 +331,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                             DettaglioContatto dc = dcList.get(0);
                                             dc.setPrincipale(entitaDaInserire.getTipoAppartenenza().equalsIgnoreCase("T"));
                                             entityManager.persist(dc);
+                                            entityManager.flush();
                                         }
                                     }
                                     case "responsabile" -> {
@@ -340,5 +352,25 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 
     private List<UtenteStruttura> getUtentiStruttureVeicolati(JPAQueryFactory queryFactory, Struttura strutturaAppartenteOriginale) {
         return queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idStrutturaVeicolante.id.eq(strutturaAppartenteOriginale.getId()).and(qUtenteStruttura.attivo)).fetch();
+    }
+
+    @Override
+    public String toString() {
+        String stringToReturn = "Azione " + getAzione().toString();
+        switch (getAzione()) {
+            case INSERT -> {
+                DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
+                stringToReturn = stringToReturn + " cf " + entitaDaInserire.getCodiceFiscale() + " idCasella " + entitaDaInserire.getIdCasella().toString();
+            }
+            case CHIUSURA -> {
+                DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
+                stringToReturn = stringToReturn + " cf " + entitaDaChiudere.getCodiceFiscale() + " idCasella " + entitaDaChiudere.getIdCasella().toString();
+            }
+            case EDIT -> {
+                DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
+                stringToReturn = stringToReturn + " cf " + entitaDaInserire.getCodiceFiscale() + " idCasella " + entitaDaInserire.getIdCasella().toString();
+            }
+        }
+        return stringToReturn;
     }
 }
