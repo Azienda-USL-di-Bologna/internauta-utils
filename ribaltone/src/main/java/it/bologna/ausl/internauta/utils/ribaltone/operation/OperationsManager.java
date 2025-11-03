@@ -522,17 +522,23 @@ public class OperationsManager {
         Integer nStruttureImportate = this.struttureImportate.size();
         Integer nStruttureDaImportare = nStruttureImportate - this.struttureChiuse;
         if (nStruttureImportate > 0) {
-            Integer percentualeStruttureValide = (nStruttureDaImportare * 100) / nStruttureImportate;
-            if (tolleranzaStrutture > percentualeStruttureValide) {
+            Integer percentualeStruttureValide = 100 - ((nStruttureDaImportare * 100) / nStruttureImportate);
+            if (!(tolleranzaStrutture >= percentualeStruttureValide)) {
                 throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di strutture che si vogliono importare non supera la tolleranza minima richiesta");
             }
         }
 
-        Integer nAppartenentiImportati = this.appartenentiImportati.size();
-        Integer nAppartenenti = nAppartenentiImportati - this.utentiStrutturaChiusi;
-        if (nAppartenentiImportati > 0) {
-            Integer percentualeAppartenentiValidi = (nAppartenenti * 100) / nAppartenentiImportati;
-            if (tolleranzaAppartenenti > percentualeAppartenentiValidi) {
+        Integer nAppartenentiImportatiPrecedenti = this.appartenentiImportati.size();
+        log.info("nAppartenentiImportati" + nAppartenentiImportatiPrecedenti);
+        Integer nAppartenentiTotaliAggiornati = nAppartenentiImportatiPrecedenti - this.utentiStrutturaChiusi;
+        log.info("this.utentiStrutturaChiusi" + this.utentiStrutturaChiusi);
+        log.info("nAppartenentiAttivi" + nAppartenentiTotaliAggiornati);
+        if (nAppartenentiImportatiPrecedenti > 0) {
+            log.info("Integer percentualeAppartenentiValidi = (nAppartenenti * 100) / nAppartenentiImportati;" + ((nAppartenentiTotaliAggiornati * 100) / nAppartenentiImportatiPrecedenti));
+            Integer differenzaPercentualeTraAppartenentiFuturiEPrecedenti = 100 - ((nAppartenentiTotaliAggiornati * 100) / nAppartenentiImportatiPrecedenti);
+            log.info("tolleranzaAppartenenti " + tolleranzaAppartenenti + " >= " + differenzaPercentualeTraAppartenentiFuturiEPrecedenti);
+            if (!(tolleranzaAppartenenti >= differenzaPercentualeTraAppartenentiFuturiEPrecedenti)) {
+
                 throw new RibaltoneHttpException("Errore nell'importazione bloccante. Il numero di afferenze utente-struttura che si vogliono importare non supera la tolleranza minima richiesta");
             }
         }

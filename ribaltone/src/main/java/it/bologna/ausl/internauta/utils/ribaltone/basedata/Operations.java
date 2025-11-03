@@ -119,6 +119,7 @@ public class Operations implements Serializable {
             operation.menageContattoAppartenenteUnificato(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
+        RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
     }
 

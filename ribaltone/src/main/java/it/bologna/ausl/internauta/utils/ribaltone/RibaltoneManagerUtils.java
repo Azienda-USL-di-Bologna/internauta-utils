@@ -262,4 +262,18 @@ public class RibaltoneManagerUtils {
         }
 
     }
+
+    public static void setOmonimiaOnUtentiOmonimi(RepositoryFactory repositoryFactory, String codiceAzienda) {
+        String updateOmonimia = "UPDATE baborg.utenti u "
+            + "SET omonimia = TRUE  "
+            + "WHERE u.id_inquadramento != '99' AND u.attivo AND u.id_persona IN ( "
+            + "    SELECT p1.id "
+            + "    FROM baborg.persone p1 "
+            + "    JOIN baborg.persone p2 "
+            + "      ON p1.descrizione = p2.descrizione "
+            + "     AND p1.codice_fiscale <> p2.codice_fiscale "
+            + "     AND p1.attiva AND p2.attiva "
+            + ")";
+        repositoryFactory.getEntityManager().createQuery(updateOmonimia);
+    }
 }
