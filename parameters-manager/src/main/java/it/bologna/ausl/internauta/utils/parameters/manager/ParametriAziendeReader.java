@@ -58,7 +58,8 @@ public class ParametriAziendeReader {
         usaNuovoRibaltoneVeloce,
         abilitaGestioneMassivaArchiviPerResponsabiliAndVicari,
         maxSchedePerFiltriEdiEfiWithAutoMode,
-        notificaGestioneMassivaArchiviPerUtentiCoinvolti
+        notificaGestioneMassivaArchiviPerUtentiCoinvolti,
+        alwaysReplaceHostWithCurrentHost
     }
 
     @Autowired

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -34,6 +35,15 @@ public class QueryChecks {
                         ribaltoneValidationCheck.setRisultatiErrati(risultatiErrati);
                     }
                     if (res != null && !res.isEmpty()) {
+                        String querySanante = ribaltoneValidationCheck.getQuerySanante();
+                        if (StringUtils.hasText(querySanante)) {
+                            querySanante = querySanante.replaceAll(":codiceAzienda", "'" + codiceAzienda + "'");
+                            repositoryFactory.getJdbcTemplate().execute(querySanante);
+                            res = repositoryFactory.getJdbcTemplate().queryForList(query);
+                        }
+                    }
+
+                    if (res != null && !res.isEmpty()) {
                         risultatiErrati.addRisultatiAzienda(codiceAzienda, res);
                     } else {
                         risultatiErrati.removeRisultatiAzienda(codiceAzienda);
@@ -47,12 +57,10 @@ public class QueryChecks {
                             .set(qRibaltoneValidationCheck.risultatiErrati, ribaltoneValidationCheck.getRisultatiErrati())
                             .where(qRibaltoneValidationCheck.id.eq(ribaltoneValidationCheck.getId()))
                             .execute();
-
                     });
                     if (res != null && !res.isEmpty()) {
                         throw new RibaltoneHttpException("query di controllo ha ritornato dei risultati " + query);
                     }
-
                 }
 
                 default ->

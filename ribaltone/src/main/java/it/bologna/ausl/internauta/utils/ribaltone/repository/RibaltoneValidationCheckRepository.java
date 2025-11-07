@@ -19,7 +19,7 @@ public interface RibaltoneValidationCheckRepository extends QuerydslPredicateExe
 
     @Query(value = "SELECT r.* FROM ribaltone_dati.ribaltone_validation_checks r "
         + "JOIN baborg.aziende a ON a.id = ANY(r.id_aziende) "
-        + "WHERE r.attivo = true AND a.codice_azienda = :codiceAzienda",
+        + "WHERE r.attivo = true AND a.codice = :codiceAzienda",
         nativeQuery = true)
     List<RibaltoneValidationCheck> findCheckActiveByCodiceAzienda(@Param("codiceAzienda") String codiceAzienda);
 

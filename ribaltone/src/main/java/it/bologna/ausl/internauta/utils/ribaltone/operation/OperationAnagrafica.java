@@ -86,8 +86,12 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                             ).fetchOne();
                         if (anagraficaVecchia != null && anagraficaVecchia.getEmail() != null) {
                             String oldEmail = anagraficaVecchia.getEmail();
+                            if (utente.getEmails() == null) {
+                                String[] arrayList = new String[1];
+                                utente.setEmails(arrayList);
+                            }
                             utente.setEmails(
-                                Stream.concat(Arrays.stream(utente.getEmails()).filter(e -> !e.equals(oldEmail)), // rimuove il vecchio elemento
+                                Stream.concat(Arrays.stream(utente.getEmails()).filter(e -> e != null && !e.equals(oldEmail)), // rimuove il vecchio elemento
                                     Stream.of(nuovaEmail) // aggiunge in coda il nuovo
                                 ).toArray(String[]::new));
                         }
@@ -170,15 +174,17 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                             if (utentiList.size() == 1) {
                                 Utente u = utentiList.get(0);
                                 List<DettaglioContatto> dc = u.buildDettagliContattoEmail(c);
-                                for (DettaglioContatto dettaglioContatto : dc) {
-                                    List<DettaglioContatto> doppione = c.getDettaglioContattoList().stream().filter(dec -> dec.getDescrizione().equalsIgnoreCase(dettaglioContatto.getDescrizione())).toList();
-                                    if (doppione != null && doppione.isEmpty()) {
-                                        c.getDettaglioContattoList().add(dettaglioContatto);
+                                if (dc != null) {
+                                    for (DettaglioContatto dettaglioContatto : dc) {
+                                        List<DettaglioContatto> doppione = c.getDettaglioContattoList().stream().filter(dec -> dec.getDescrizione().equalsIgnoreCase(dettaglioContatto.getDescrizione())).toList();
+                                        if (doppione != null && doppione.isEmpty()) {
+                                            c.getDettaglioContattoList().add(dettaglioContatto);
+                                        }
                                     }
+                                    log.info("sto salvando il contatto con descrizione" + c.getDescrizione() + "con dettaglio contatto " + dc.get(0).getDescrizione());
+                                    entityManager.persist(c);
+                                    entityManager.flush();
                                 }
-                                log.info("sto salvando il contatto con descrizione" + c.getDescrizione() + "con dettaglio contatto " + dc.get(0).getDescrizione());
-                                entityManager.persist(c);
-                                entityManager.flush();
                             }
                         }
                     }
@@ -194,14 +200,18 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                     if (p != null) {
                         Contatto c = p.getIdContatto();
                         log.info("gestisco la persona " + p.getDescrizione() + " con cf: " + p.getCodiceFiscale());
+
                         if (c != null && c.getDettaglioContattoList() != null && p.getUtenteList() != null) {
                             //List<DettaglioContatto> dcList = c.getDettaglioContattoList().stream().filter(dc -> dc.getDescrizione().equals(entitaDaInserire.getEmail())).toList();
                             List<Utente> utentiList = p.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())).toList();
                             if (utentiList.size() == 1) {
                                 Utente u = utentiList.get(0);
                                 List<DettaglioContatto> dc = u.buildDettagliContattoEmail(c);
-                                c.getDettaglioContattoList().addAll(dc);
-                                entityManager.persist(c);
+                                if (dc != null) {
+
+                                    c.getDettaglioContattoList().addAll(dc);
+                                    entityManager.persist(c);
+                                }
                             }
 
                         }

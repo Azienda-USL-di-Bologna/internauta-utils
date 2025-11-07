@@ -26,6 +26,9 @@ public class RibaltoneValidationCheck implements Serializable {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String query;
 
+    @Column(name = "query_sanante", nullable = true, columnDefinition = "TEXT")
+    private String querySanante;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "risultati_errati", columnDefinition = "jsonb")
     private RisultatiErrati risultatiErrati;
@@ -71,6 +74,14 @@ public class RibaltoneValidationCheck implements Serializable {
 
     public void setQuery(String query) {
         this.query = query;
+    }
+
+    public String getQuerySanante() {
+        return querySanante;
+    }
+
+    public void setQuerySanante(String querySanante) {
+        this.querySanante = querySanante;
     }
 
     public RisultatiErrati getRisultatiErrati() {

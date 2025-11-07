@@ -19,12 +19,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Top
  */
 public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneInterface> implements Serializable {
+
+    private static final Logger log = LoggerFactory.getLogger(OperationAppartenente.class);
 
     public static class UnificazionePair implements Serializable {
 
@@ -149,14 +153,21 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
         for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
-            DettaglioContatto idDettaglioContatto = utenteStrutturaNew.getIdDettaglioContatto();
+            log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale());
+            List<DettaglioContatto> dettaglioContattoList = utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getDettaglioContattoList();
+            List<DettaglioContatto> dettagliContattiDellaPersona = dettaglioContattoList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+            DettaglioContatto idDettaglioContatto = null;
+            if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
+                idDettaglioContatto = dettagliContattiDellaPersona.get(0);
+            }
             if (idDettaglioContatto != null) {
                 idDettaglioContatto.setDescrizione(utenteStrutturaNew.getIdStruttura().getNome() + " [" + utenteStrutturaNew.getIdStruttura().getIdCasella().toString() + "] [" + utenteStrutturaNew.getIdStruttura().getIdAzienda().getNome() + "]");
                 idDettaglioContatto.setPrincipale(utenteStrutturaNew.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
-                for (DettaglioContatto dettaglioContatto : idDettaglioContatto.getIdContatto().getDettaglioContattoList()) {
-                    dettaglioContatto.setPrincipale(dettaglioContatto.getUtenteStruttura().getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
-                    getEntityManager().persist(dettaglioContatto);
-                }
+                idDettaglioContatto.setEliminato(false);
+//                for (DettaglioContatto dettaglioContatto : idDettaglioContatto.getIdContatto().getDettaglioContattoList()) {
+//                    dettaglioContatto.setPrincipale(dettaglioContatto.getUtenteStruttura().getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
+//                    getEntityManager().persist(dettaglioContatto);
+//                }
                 getEntityManager().persist(idDettaglioContatto);
             } else {
                 //devo creare il dettaglio contatto
