@@ -204,7 +204,7 @@ public class RibaltoneTotaleManager {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .setParameter("codice", codiceAzienda)
             .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {

@@ -97,7 +97,7 @@ public class RibaltoneManagerUtils {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .setParameter("codice", codiceAzienda)
             .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
@@ -261,5 +261,35 @@ public class RibaltoneManagerUtils {
             }
         }
 
+    }
+
+    public static void setOmonimiaOnUtentiOmonimi(RepositoryFactory repositoryFactory, String codiceAzienda) {
+        String updateOmonimiaTrue = """
+            UPDATE baborg.persone p
+            SET omonimia = true
+            WHERE p.attiva = true
+              AND p.omonimia = false
+              AND EXISTS (
+                SELECT 1
+                FROM baborg.persone p2
+                WHERE p2.id != p.id
+                  AND p2.attiva = true
+                  AND p2.descrizione = p.descrizione
+              )
+        """;
+        String updateOmonimiaFalse = """
+            UPDATE baborg.persone p
+              SET omonimia = false
+              WHERE p.omonimia = true
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM baborg.persone p2
+                  WHERE p2.id != p.id
+                    AND p2.attiva = true
+                    AND p2.descrizione = p.descrizione
+                )
+        """;
+        repositoryFactory.getEntityManager().createQuery(updateOmonimiaTrue);
+        repositoryFactory.getEntityManager().createQuery(updateOmonimiaFalse);
     }
 }
