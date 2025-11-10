@@ -48,7 +48,6 @@ public class QueryChecks {
                     } else {
                         risultatiErrati.removeRisultatiAzienda(codiceAzienda);
                     }
-
                     repositoryFactory.getTransactionTemplate().setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     repositoryFactory.getTransactionTemplate().executeWithoutResult(action -> {
                         QRibaltoneValidationCheck qRibaltoneValidationCheck = QRibaltoneValidationCheck.ribaltoneValidationCheck;
@@ -58,9 +57,7 @@ public class QueryChecks {
                             .set(qRibaltoneValidationCheck.risultatiErrati, ribaltoneValidationCheck.getRisultatiErrati())
                             .where(qRibaltoneValidationCheck.id.eq(ribaltoneValidationCheck.getId()))
                             .execute();
-
-                    }
-                    );
+                    });
                     if (res != null && !res.isEmpty()) {
                         throw new RibaltoneHttpException("query di controllo ha ritornato dei risultati " + query);
                     }

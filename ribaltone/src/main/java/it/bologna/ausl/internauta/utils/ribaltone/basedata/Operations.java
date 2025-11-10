@@ -120,6 +120,7 @@ public class Operations implements Serializable {
             repositoryFactory.getEntityManager().flush();
         }
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
+
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
     }
 
