@@ -214,7 +214,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @RequestMapping(value = "sincronizzaDatiImportati", method = RequestMethod.POST)
     public ResponseEntity<?> sincronizzaDatiImportati(
-        @RequestBody Integer idAzienda,
+        @RequestParam Integer idAzienda,
         @RequestParam Boolean anteprima,
         HttpServletRequest request) throws RibaltoneHttpException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
@@ -226,8 +226,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
                 // Esegui la function con native query
                 String sql = String.format(
-                    "SELECT * FROM ribaltone_dati.sync_dati_importati(%d, %b)",
-                    idAzienda, anteprima);
+                    "SELECT * FROM ribaltone_dati.sincronizza_dati_importati(%d, %b)",
+                    idAzienda, !anteprima);
 
                 List<Object[]> results = entityManager.createNativeQuery(sql).getResultList();
 
