@@ -701,7 +701,12 @@ public class EmlHandlerUtils {
             LOG.info("New disp: " + disp);
 
             part.setHeader("Content-Disposition", disp);
-
+            try {
+                return part.getDisposition();
+            } catch (MessagingException e) {
+                disp = disp.replaceAll("(?i)filename\\s*=\\s*([^\";\\r\\n]+)(;?)", "filename=\"$1\";");
+                part.setHeader("Content-Disposition", disp);
+            }
             return part.getDisposition();
 
         } catch (MessagingException | UnsupportedEncodingException e) {
