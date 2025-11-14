@@ -174,15 +174,17 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                             if (utentiList.size() == 1) {
                                 Utente u = utentiList.get(0);
                                 List<DettaglioContatto> dc = u.buildDettagliContattoEmail(c);
-                                for (DettaglioContatto dettaglioContatto : dc) {
-                                    List<DettaglioContatto> doppione = c.getDettaglioContattoList().stream().filter(dec -> dec.getDescrizione().equalsIgnoreCase(dettaglioContatto.getDescrizione())).toList();
-                                    if (doppione != null && doppione.isEmpty()) {
-                                        c.getDettaglioContattoList().add(dettaglioContatto);
+                                if (dc != null) {
+                                    for (DettaglioContatto dettaglioContatto : dc) {
+                                        List<DettaglioContatto> doppione = c.getDettaglioContattoList().stream().filter(dec -> dec.getDescrizione().equalsIgnoreCase(dettaglioContatto.getDescrizione())).toList();
+                                        if (doppione != null && doppione.isEmpty()) {
+                                            c.getDettaglioContattoList().add(dettaglioContatto);
+                                        }
                                     }
+                                    log.info("sto salvando il contatto con descrizione" + c.getDescrizione() + "con dettaglio contatto " + dc.get(0).getDescrizione());
+                                    entityManager.persist(c);
+                                    entityManager.flush();
                                 }
-                                log.info("sto salvando il contatto con descrizione" + c.getDescrizione() + "con dettaglio contatto " + dc.get(0).getDescrizione());
-                                entityManager.persist(c);
-                                entityManager.flush();
                             }
                         }
                     }
@@ -205,8 +207,11 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                             if (utentiList.size() == 1) {
                                 Utente u = utentiList.get(0);
                                 List<DettaglioContatto> dc = u.buildDettagliContattoEmail(c);
-                                c.getDettaglioContattoList().addAll(dc);
-                                entityManager.persist(c);
+                                if (dc != null) {
+
+                                    c.getDettaglioContattoList().addAll(dc);
+                                    entityManager.persist(c);
+                                }
                             }
 
                         }

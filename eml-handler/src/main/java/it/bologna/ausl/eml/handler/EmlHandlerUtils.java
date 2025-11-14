@@ -42,7 +42,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 public class EmlHandlerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmlHandlerUtils.class);
-    
+
     public static MimeMessage BuildMailMessageFromString(String s) throws EmlHandlerException {
 
         ByteArrayInputStream bais = null;
@@ -97,7 +97,7 @@ public class EmlHandlerUtils {
         }
         if (p.isMimeType(mime) && (mime.equals("text/html") || mime.equals("text/plain"))) {
             return (String) getTextPartProcessingByteArray(p, mime);
-        }else if (p.isMimeType(mime)) {
+        } else if (p.isMimeType(mime)) {
             if (String.class.isAssignableFrom(p.getContent().getClass())) {
                 return (String) p.getContent();
             } else if (InputStream.class.isAssignableFrom(p.getContent().getClass())) {
@@ -136,7 +136,7 @@ public class EmlHandlerUtils {
         return null;
 
     }
-    
+
     private static String getTextPartProcessingByteArray(Part p, String mime) throws MessagingException, IOException {
         Charset charSet = StandardCharsets.UTF_8;
         String[] splitArray = p.getContentType().split(" *(,|=>| ) *");
@@ -157,7 +157,7 @@ public class EmlHandlerUtils {
                 }
             }
         }
-            //la codifica dei caratteri funziona meglio mettendo fisso utf 8
+        //la codifica dei caratteri funziona meglio mettendo fisso utf 8
         InputStream in = new ByteArrayInputStream(p.getContent().toString().getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int reads = in.read();
@@ -197,8 +197,7 @@ public class EmlHandlerUtils {
                         try {
                             BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
                             imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
-                        }
-                        catch(ClassCastException e) {
+                        } catch (ClassCastException e) {
                             QPDecoderStream b64ds = (QPDecoderStream) attachmentContent;
                             imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
                         }
@@ -264,7 +263,7 @@ public class EmlHandlerUtils {
             fname = MimeUtility.decodeText(fname);
         } catch (Exception e) {
         }
-        
+
         if (fname != null || (!mime.startsWith("text/html") && !mime.startsWith("text/plain"))) {
             EmlHandlerAttachment a = new EmlHandlerAttachment();
             if (fname == null) {
@@ -317,7 +316,7 @@ public class EmlHandlerUtils {
             } catch (jakarta.mail.internet.ParseException e) {
                 // Pattern rp= Pattern.compile("^.*filename=(.*);?$",Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
                 disposition = cleanHeaderAndGetDisposition(part.getHeader("Content-Disposition")[0], part);
-  
+
             }
 //tolto                                                                           ||(disposition.equals(Part.INLINE))
             if (((disposition != null) && ((disposition.equals(Part.ATTACHMENT)))) || (part.getFileName() != null)) {
@@ -365,7 +364,7 @@ public class EmlHandlerUtils {
 
     public static EmlHandlerAttachment[] getAttachments(Part p, File dirPath, Boolean setAttachmentsStream, Boolean saveAttachments) throws MessagingException, IOException {
         ArrayList<EmlHandlerAttachment> res;
-//forse qui 
+//forse qui
         if (!p.isMimeType("multipart/*")) {
             if (saveAttachments) {
                 res = getEmlAttachment(p, setAttachmentsStream, true, dirPath);
@@ -435,15 +434,15 @@ public class EmlHandlerUtils {
             } catch (jakarta.mail.internet.ParseException e) {
 //                String disp = part.getHeader("Content-Disposition")[0];
 //                LOG.info("Original disp: " + disp);
-////                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
+                ////                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
 //                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
 //                Matcher matcher = pattern.matcher(disp);
 //                disp = matcher.replaceAll("$1name=\"$2\";");
-//                
+//
 //                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
 //                matcher = pattern.matcher(disp);
 //                disp = matcher.replaceAll(";");
-//                
+//
 //                LOG.info("New disp disp: " + disp);
 //                part.setHeader("Content-Disposition", disp);
                 disposition = cleanHeaderAndGetDisposition(part.getHeader("Content-Disposition")[0], part);
@@ -483,7 +482,7 @@ public class EmlHandlerUtils {
                 Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(disp);
                 disp = matcher.replaceAll("$1name=\"$2\"");
-                
+
                 pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
                 matcher = pattern.matcher(disp);
                 disp = matcher.replaceAll(";");
@@ -527,7 +526,7 @@ public class EmlHandlerUtils {
                 Pattern pattern = Pattern.compile("^(.*)name=\"?(.*?)\"?$", Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(disp);
                 disp = matcher.replaceAll("$1name=\"$2\"");
-                
+
                 pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
                 matcher = pattern.matcher(disp);
                 disp = matcher.replaceAll(";");
@@ -558,7 +557,7 @@ public class EmlHandlerUtils {
     }
 
     public static MimeMessage buildDraftMessage(String message, String subject, Address from, Address[] to, Address[] cc,
-            ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException, IOException {
+        ArrayList<EmlHandlerAttachment> attachments, Properties props) throws MessagingException, IOException {
 
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
@@ -604,7 +603,7 @@ public class EmlHandlerUtils {
                     source = new ByteArrayDataSource(attachment.getFileBytes(), attachment.getMimeType());
                 }
                 messageBodyPart.setDataHandler(
-                        new DataHandler(source));
+                    new DataHandler(source));
                 messageBodyPart.setFileName(attachmentName);
                 multipart.addBodyPart(messageBodyPart);
             }
@@ -614,26 +613,111 @@ public class EmlHandlerUtils {
         return m;
     }
 
-    private static String cleanHeaderAndGetDisposition(String disp, Part part) throws MessagingException {
+    private static String cleanHeaderAndGetDispositionOld(String disp, Part part) throws MessagingException {
         LOG.info("Original disp: " + disp);
-                
-                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
-                Matcher matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll("$1name=\"$2\";");
-                
-                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
-                matcher = pattern.matcher(disp);
-                disp = matcher.replaceAll(";");
-                
+
+        Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(disp);
+        disp = matcher.replaceAll("$1name=\"$2\";");
+
+        pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+        matcher = pattern.matcher(disp);
+        disp = matcher.replaceAll(";");
+
 //                pattern =Pattern.compile(";\\s*?.*=.*\"?;\\s*.*\\s.*",Pattern.MULTILINE);
 //                matcher = pattern.matcher(disp);
 //                disp = matcher.replaceAll(";");
-                
 //                disp = disp.replaceAll("^(.*)name=\"?(.*?)\"?$", "$1name=\"$2\"");
-                LOG.info("New disp disp: " + disp);
-                
-                part.setHeader("Content-Disposition", disp);
-                
-                return part.getDisposition();
+        LOG.info("New disp disp: " + disp);
+
+        part.setHeader("Content-Disposition", disp);
+
+        return part.getDisposition();
     }
+
+    private static String cleanHeaderAndGetDisposition(String disp, Part part) throws MessagingException {
+        LOG.info("Original disp: " + disp);
+
+        try {
+            // Normalizza le newline
+            String normalizedDisp = disp.replaceAll("\\r\\n\\s+", " ").trim();
+
+            // Controlla se ci sono parametri RFC 2231
+            Pattern rfc2231Pattern = Pattern.compile("FileName\\*\\d+\\*?=", Pattern.CASE_INSENSITIVE);
+            Matcher rfc2231Matcher = rfc2231Pattern.matcher(normalizedDisp);
+
+            if (rfc2231Matcher.find()) {
+                // CASO RFC 2231: usa la nuova logica
+                LOG.info("Detected RFC 2231 format, reconstructing filename");
+
+                Pattern paramPattern = Pattern.compile("FileName\\*\\d+\\*?=([^;]+)", Pattern.CASE_INSENSITIVE);
+                Matcher paramMatcher = paramPattern.matcher(normalizedDisp);
+
+                StringBuilder reconstructedFilename = new StringBuilder();
+                String charset = "utf-8";
+
+                while (paramMatcher.find()) {
+                    String value = paramMatcher.group(1).trim();
+
+                    if (reconstructedFilename.length() == 0 && value.contains("''")) {
+                        String[] parts = value.split("''", 2);
+                        charset = parts[0];
+                        value = parts.length > 1 ? parts[1] : "";
+                    }
+
+                    reconstructedFilename.append(value);
+                }
+
+                // Rimuovi i parametri RFC 2231
+                disp = normalizedDisp.replaceAll("FileName\\*\\d+\\*?=[^;]+;?", "").trim();
+
+                // Decodifica e aggiungi il filename
+                String decodedFilename = java.net.URLDecoder.decode(
+                    reconstructedFilename.toString(),
+                    charset
+                );
+
+                if (!disp.endsWith(";")) {
+                    disp += ";";
+                }
+                disp += " filename=\"" + decodedFilename + "\";";
+
+            } else {
+                // CASO STANDARD: usa la logica originale
+                LOG.info("Standard format, applying original cleaning");
+
+                Pattern pattern = Pattern.compile("^(.*)name=\"*(.*[^\"*])(\"*;)$", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll("$1name=\"$2\";");
+
+                pattern = Pattern.compile(";\\s*?=.*?\"?;?", Pattern.MULTILINE);
+                matcher = pattern.matcher(disp);
+                disp = matcher.replaceAll(";");
+            }
+
+            // Pulizia finale comune
+            disp = disp.replaceAll(";\\s*;", ";").replaceAll(";\\s*$", "");
+
+            LOG.info("New disp: " + disp);
+
+            part.setHeader("Content-Disposition", disp);
+            try {
+                return part.getDisposition();
+            } catch (MessagingException e) {
+                disp = disp.replaceAll("(?i)filename\\s*=\\s*([^\";\\r\\n]+)(;?)", "filename=\"$1\";");
+                part.setHeader("Content-Disposition", disp);
+            }
+            return part.getDisposition();
+
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            LOG.error("Error cleaning disposition header", e);
+            if (disp.toLowerCase().startsWith("attachment")) {
+                return Part.ATTACHMENT;
+            } else if (disp.toLowerCase().startsWith("inline")) {
+                return Part.INLINE;
+            }
+            throw new MessagingException("Cannot parse Content-Disposition", e);
+        }
+    }
+
 }

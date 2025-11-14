@@ -185,6 +185,8 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 Integer[] idAziende = new Integer[1];
                                 idAziende[0] = entitaDaInserire.getIdAzienda();
                                 c = p.buildContatto(idAziende, ribaltone, ribaltoneUser);
+                                entityManager.persist(c);
+                                entityManager.flush();
                             }
                             log.info("persona " + p.getDescrizione() + " con utenti n ");
                             List<Utente> utentiList = queryFactory.select(qUtente).from(qUtente).where(qUtente.idPersona.id.eq(p.getId())).fetch();
@@ -193,30 +195,43 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 Utente utente = repositoryFactory.getEntityManager().find(Utente.class, utentiList.get(0).getId());
                                 if (trasformazioniInerenti.isEmpty()) {
 //                                    List<UtenteStruttura> usList1 = utente.getUtenteStrutturaList().stream().filter(us -> us.getIdStruttura().getId().equals(strutturaAttiva.getId())).toList();
-                                    List<UtenteStruttura> usList = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.attivo.and(qUtenteStruttura.idUtente.id.eq(utente.getId()).and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId())))).fetch();
-                                    if (!usList.isEmpty()) {
-                                        UtenteStruttura utenteStruttura = usList.get(0);
+                                    UtenteStruttura utenteStruttura
+                                        = queryFactory.select(qUtenteStruttura)
+                                            .from(qUtenteStruttura)
+                                            .where(
+                                                qUtenteStruttura.attivo.and(qUtenteStruttura.idUtente.id.eq(utente.getId())
+                                                    .and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId())))).fetchOne();
+                                    if (utenteStruttura != null) {
                                         if (utenteStruttura.getIdDettaglioContatto() == null) {
-                                            DettaglioContatto dc = new DettaglioContatto();
-
-                                            dc.setIdContatto(c);
-                                            dc.setDescrizione(strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "] [" + strutturaAttiva.getIdAzienda().getNome() + "]");
-                                            if (c.getId() != null) {
-                                                DettaglioContatto dcOnDb = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(qDettaglioContatto.idContatto.id.eq(c.getId()).and(qDettaglioContatto.descrizione.eq(dc.getDescrizione()))).fetchOne();
-                                                if (dcOnDb != null) {
-                                                    dc = dcOnDb;
-                                                    UtenteStruttura utenteStrutturaOld = queryFactory.select(qUtenteStruttura).from(qUtenteStruttura).where(qUtenteStruttura.idDettaglioContatto.id.eq(dc.getId()).and(qUtenteStruttura.attivo.isFalse())).fetchOne();
-                                                    if (utenteStrutturaOld != null) {
-                                                        utenteStrutturaOld.setIdDettaglioContatto(null);
-                                                        entityManager.persist(utenteStrutturaOld);
-                                                        entityManager.flush();
-                                                    }
+                                            Integer idContattoStruttura = utenteStruttura.getIdStruttura().getIdContatto().getId();
+                                            DettaglioContatto dc
+                                                = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(
+                                                    qDettaglioContatto.idContatto.id.eq(c.getId()).and(qDettaglioContatto.idContattoEsterno.id.eq(idContattoStruttura))).fetchOne();
+                                            if (dc == null) {
+                                                dc = new DettaglioContatto();
+                                                String descrizione = strutturaAttiva.getNome() + " [" + strutturaAttiva.getIdCasella().toString() + "] [" + strutturaAttiva.getIdAzienda().getNome() + "]";
+                                                dc.setDescrizione(descrizione);
+                                                dc.setIdContatto(c);
+                                                dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
+                                            } else {
+                                                UtenteStruttura utenteStrutturaOld
+                                                    = queryFactory
+                                                        .select(qUtenteStruttura)
+                                                        .from(qUtenteStruttura)
+                                                        .where(qUtenteStruttura.idDettaglioContatto.id.eq(dc.getId())
+                                                            .and(qUtenteStruttura.attivo.isFalse()))
+                                                        .fetchOne();
+                                                if (utenteStrutturaOld != null) {
+                                                    utenteStrutturaOld.setIdDettaglioContatto(null);
+                                                    entityManager.persist(utenteStrutturaOld);
+                                                    entityManager.flush();
                                                 }
                                             }
                                             dc.setUtenteStruttura(utenteStruttura);
                                             dc.setPrincipale(utenteStruttura.getIdAfferenzaStruttura().getCodice().equals(CodiciAfferenzaStruttura.DIRETTA));
-                                            dc.setTipo(DettaglioContatto.TipoDettaglio.UTENTE_STRUTTURA);
                                             dc.setEliminato(false);
+                                            entityManager.persist(dc);
+                                            entityManager.flush();
                                             utenteStruttura.setIdDettaglioContatto(dc);
                                             entityManager.persist(utenteStruttura);
                                             entityManager.flush();
