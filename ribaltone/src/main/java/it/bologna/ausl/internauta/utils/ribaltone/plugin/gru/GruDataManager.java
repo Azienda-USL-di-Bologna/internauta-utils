@@ -59,7 +59,7 @@ public class GruDataManager extends SourceDataManager {
                 String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
                 codiceEnteStr = "codice_ente in (" + codiciEntiValidiStr + ") ";
             } else {
-                codiceEnteStr = "codice_ente LIKE '" + codiceAzienda + "'|| '%' ";
+                codiceEnteStr = "codice_ente = '" + codiceAzienda + "'|| '01' ";
             }
 
             //prendo gli appartenenti
