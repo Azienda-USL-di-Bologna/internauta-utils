@@ -13,6 +13,7 @@ import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
+import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
@@ -154,14 +155,21 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
         for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
             log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale());
-            List<DettaglioContatto> dettaglioContattoList = utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getDettaglioContattoList();
+            Contatto contattoDB = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
+            repositoryFactory.getEntityManager().refresh(contattoDB);
+            List<DettaglioContatto> dettaglioContattoList = contattoDB.getDettaglioContattoList();
             List<DettaglioContatto> dettagliContattiDellaPersona = dettaglioContattoList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
             DettaglioContatto idDettaglioContatto = null;
             if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
                 idDettaglioContatto = dettagliContattiDellaPersona.get(0);
             }
             if (idDettaglioContatto != null) {
-                idDettaglioContatto.setDescrizione(utenteStrutturaNew.getIdStruttura().getNome() + " [" + utenteStrutturaNew.getIdStruttura().getIdCasella().toString() + "] [" + utenteStrutturaNew.getIdStruttura().getIdAzienda().getNome() + "]");
+                String descrizione = utenteStrutturaNew.getIdStruttura().getNome();
+                if (utenteStrutturaNew.getIdStruttura().getIdCasella() != null) {
+                    descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdCasella().toString() + "]";
+                }
+                descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdAzienda().getNome() + "]";
+                idDettaglioContatto.setDescrizione(descrizione);
                 idDettaglioContatto.setPrincipale(utenteStrutturaNew.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
                 idDettaglioContatto.setEliminato(false);
 //                for (DettaglioContatto dettaglioContatto : idDettaglioContatto.getIdContatto().getDettaglioContattoList()) {
