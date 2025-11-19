@@ -101,7 +101,7 @@ public class RibaltoneTotaleManager {
                 OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
                 operationsCacheManager.dump(buildedOperations);
                 return buildedOperations;
-            } catch (RibaltoneHttpException | JsonProcessingException ex) {
+            } catch (Exception ex) {
                 throw new RibaltoneHttpException(ex);
             }
         });
