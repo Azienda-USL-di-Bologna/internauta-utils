@@ -84,6 +84,7 @@
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
             <version>3.0.0</version>
+            <scope>provided</scope>
         </dependency>
         
 <!--        <dependency>
