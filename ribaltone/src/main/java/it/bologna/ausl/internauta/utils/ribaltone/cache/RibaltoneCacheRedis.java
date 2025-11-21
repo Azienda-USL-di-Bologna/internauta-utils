@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,11 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         //vogliamo che vada un solo ribaltone alla volta
         this.keyExecuting = "RIBALTONE_KeyExecuting";
         this.entityManager = entityManager;
+    }
+
+    @Override
+    public Boolean isExecuting() {
+        return redisTemplate.hasKey(keyExecuting) || redisTemplate.hasKey(keyImportingCSV);
     }
 
     @Override
@@ -202,15 +208,14 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
-    public Boolean isExecuting() {
-        return redisTemplate.hasKey(keyExecuting);
-    }
-
-    @Override
-    public void setExecuting(Boolean executing, Utente user) throws JsonProcessingException {
+    public void setExecuting(Boolean executing, Utente user) {
         if (executing) {
-            String userStr = objectMapper.writeValueAsString(user.getId());
-            redisTemplate.opsForValue().set(keyExecuting, userStr, 60, TimeUnit.MINUTES);
+            try {
+                String userStr = objectMapper.writeValueAsString(user.getId());
+                redisTemplate.opsForValue().set(keyExecuting, userStr, 60, TimeUnit.MINUTES);
+            } catch (JsonProcessingException ex) {
+                log.error("non sono riuscito a inserire l'utente con id " + user.getId() + " nella chiave di redis per bloccare il ribaltone", ex);
+            }
         } else {
             redisTemplate.delete(keyExecuting);
         }
@@ -218,11 +223,11 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
     @Override
     public Boolean isImportingCSV() {
-        return redisTemplate.hasKey(keyImportingCSV);
+        return redisTemplate.hasKey(keyImportingCSV) || redisTemplate.hasKey(keyExecuting);
     }
 
     @Override
-    public void setImportingCSV(Boolean executing, Utente user) throws JsonProcessingException {
+    public void setImportingCSV(Boolean executing, Utente user) {
         if (executing) {
             redisTemplate.opsForValue().set(keyImportingCSV, user.getId().toString(), 60, TimeUnit.MINUTES);
         } else {

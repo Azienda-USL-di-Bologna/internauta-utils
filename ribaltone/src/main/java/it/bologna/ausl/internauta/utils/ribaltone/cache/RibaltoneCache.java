@@ -34,13 +34,13 @@ public abstract class RibaltoneCache {
 
     public abstract Boolean isExecuting();
 
-    public abstract void setExecuting(Boolean executing, Utente user) throws JsonProcessingException;
+    public abstract void setExecuting(Boolean executing, Utente user);
 
     public abstract Integer getIdUserExecuting() throws RibaltoneHttpException, JsonProcessingException;
 
     public abstract Boolean isImportingCSV();
 
-    public abstract void setImportingCSV(Boolean executing, Utente user) throws JsonProcessingException;
+    public abstract void setImportingCSV(Boolean executing, Utente user);
 
     public abstract Integer getIdUserImportingCSV() throws RibaltoneHttpException, JsonProcessingException;
 
