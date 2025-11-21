@@ -101,7 +101,7 @@ public class RibaltoneTotaleManager {
                 OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
                 operationsCacheManager.dump(buildedOperations);
                 return buildedOperations;
-            } catch (RibaltoneHttpException | JsonProcessingException ex) {
+            } catch (Exception ex) {
                 throw new RibaltoneHttpException(ex);
             }
         });
@@ -153,6 +153,7 @@ public class RibaltoneTotaleManager {
             case "ribaltaDeleteCache" -> {
                 ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("ANNULLATO");
+                ribaltoneDaLanciare.setGestito(Boolean.TRUE);
             }
             default -> {
                 throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");
@@ -203,7 +204,7 @@ public class RibaltoneTotaleManager {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .setParameter("codice", codiceAzienda)
             .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {

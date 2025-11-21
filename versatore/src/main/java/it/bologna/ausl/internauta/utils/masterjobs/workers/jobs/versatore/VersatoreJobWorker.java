@@ -32,6 +32,7 @@ import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersament
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO_CON_ERRORI;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.VERSATO;
+import it.nextsw.common.configurations.jackson.ZoneDateTimeDeserializer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -809,6 +810,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 List<VersamentoDocInformation> versamentiDoc = versamentiDaProcessare.get(docIdDaProcessare);
                 if (versamentiDoc == null) {
                     versamentiDoc = new ArrayList<>();
+                    
                     versamentiDaProcessare.put(docIdDaProcessare, versamentiDoc);
                 }
                 versamentiDoc.add(versamentoDocInformation);
@@ -833,6 +835,7 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
         versamentoDocInformation.setIdDoc(idDoc);
         versamentoDocInformation.setIdArchivio(idArchivio);
         versamentoDocInformation.setParams(getWorkerData().getParams());
+        versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
         return versamentoDocInformation;
     }
 }

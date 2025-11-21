@@ -58,7 +58,8 @@ public class ParametriAziendeReader {
         usaNuovoRibaltoneVeloce,
         abilitaGestioneMassivaArchiviPerResponsabiliAndVicari,
         maxSchedePerFiltriEdiEfiWithAutoMode,
-        notificaGestioneMassivaArchiviPerUtentiCoinvolti
+        notificaGestioneMassivaArchiviPerUtentiCoinvolti,
+        alwaysReplaceHostWithCurrentHost
     }
 
     @Autowired
@@ -77,6 +78,14 @@ public class ParametriAziendeReader {
 
     public List<ParametroAziende> getParameters(ParametriAzienda nome) {
         return this.getParameters(nome.toString(), null, null);
+    }
+
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, Integer[] idAziende, String[] idApplicazioni) {
+        return this.getParameters(nome.toString(), idAziende, idApplicazioni);
+    }
+
+    public List<ParametroAziende> getParameters(ParametriAzienda nome, String[] idApplicazioni) {
+        return this.getParameters(nome.toString(), null, idApplicazioni);
     }
 
     public List<ParametroAziende> getParameters(String nome, Integer[] idAziende) {

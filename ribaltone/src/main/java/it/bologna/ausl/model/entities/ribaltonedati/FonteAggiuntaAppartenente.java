@@ -38,7 +38,8 @@ public class FonteAggiuntaAppartenente implements Serializable {
 
     public static enum ProvenienzaFonteAggiunta {
         ORGANIGRAMMA,
-        MATRICE_PERMESSI
+        MATRICE_PERMESSI,
+        SANATORIA_BIT_RUOLI_128
     }
 
     private static final long serialVersionUID = 1L;
@@ -304,9 +305,8 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setIdCasella(idCasella);
         datiDaImportareAppartenente.setNome(WordUtils.capitalizeFully(nome));
         datiDaImportareAppartenente.setResponsabile(responsabile);
-        datiDaImportareAppartenente.setTipoAppartenenza("F");
+        datiDaImportareAppartenente.setTipoAppartenenza(tipoAppartenenza);
         datiDaImportareAppartenente.setUsername(username);
         return datiDaImportareAppartenente;
     }
-
 }

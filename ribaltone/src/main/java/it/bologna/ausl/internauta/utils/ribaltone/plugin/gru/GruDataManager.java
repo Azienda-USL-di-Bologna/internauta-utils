@@ -59,7 +59,7 @@ public class GruDataManager extends SourceDataManager {
                 String codiciEntiValidiStr = RibaltoneUtils.formatStringsWithCommasAndQuotes(gruSpecificData.getCodiciEntiValidi());
                 codiceEnteStr = "codice_ente in (" + codiciEntiValidiStr + ") ";
             } else {
-                codiceEnteStr = "codice_ente LIKE '" + codiceAzienda + "'|| '%' ";
+                codiceEnteStr = "codice_ente = '" + codiceAzienda + "'|| '01' ";
             }
 
             //prendo gli appartenenti
@@ -207,6 +207,8 @@ public class GruDataManager extends SourceDataManager {
                 fonteIntermediaAppartenente.setCodiceFiscale(appartenenteData.get("codiceFiscale").toString());
                 fonteIntermediaAppartenente.setCognome(WordUtils.capitalizeFully(appartenenteData.get("cognome").toString()));
                 fonteIntermediaAppartenente.setNome(WordUtils.capitalizeFully(appartenenteData.get("nome").toString()));
+                fonteIntermediaAppartenente.setIdCasella(responsabileTotale.getIdCasella());
+                fonteIntermediaAppartenente.setIdAzienda(idAzienda);
                 if (appartenenteData.get("username") != null) {
                     fonteIntermediaAppartenente.setUsername(appartenenteData.get("username").toString());
                 }

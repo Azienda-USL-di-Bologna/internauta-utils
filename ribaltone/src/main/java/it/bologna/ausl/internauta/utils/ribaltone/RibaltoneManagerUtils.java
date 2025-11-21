@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class RibaltoneManagerUtils {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda.substring(0, 3))
+            .setParameter("codice", codiceAzienda)
             .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
@@ -146,21 +147,20 @@ public class RibaltoneManagerUtils {
     }
 
     public static List<DatiDaImportareAppartenente> unisciListeUnichePerCodiceFiscaleIdCasella(
-        List<DatiDaImportareAppartenente> lista1,
-        List<DatiDaImportareAppartenente> lista2) {
+        List<DatiDaImportareAppartenente> appartenenti,
+        List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti) {
 
         // Mappa con chiave composta: codiceFiscale_idCasella
         Map<String, DatiDaImportareAppartenente> mappa = new HashMap<>();
 
         // Aggiungiamo prima tutti gli elementi della lista1
-        for (DatiDaImportareAppartenente item : lista1) {
+        for (DatiDaImportareAppartenente item : appartenenti) {
             mappa.putIfAbsent(item.getKey(), item);  // non sovrascrive se già presente
         }
 
         // Aggiungiamo (sovrascrivendo) gli elementi della lista2
-        for (DatiDaImportareAppartenente item : lista2) {
+        for (DatiDaImportareAppartenente item : fonteAggiuntaAppartenenti) {
             mappa.put(item.getKey(), item);  // sovrascrive
-
         }
 
         return new ArrayList<>(mappa.values());
@@ -240,24 +240,55 @@ public class RibaltoneManagerUtils {
     public static void updateProgressivoUltimaTrasformazione(String fonte, String codiceEnte, RepositoryFactory repositoryFactory) {
         List<DatiDaImportareTrasformazione> trasformazioniEseguite = repositoryFactory.getDatiDaImportareTrasformazioneRepository().findAll();
         if (trasformazioniEseguite != null && !trasformazioniEseguite.isEmpty()) {
+            Integer max = trasformazioniEseguite.stream().mapToInt(DatiDaImportareTrasformazione::getId).max().orElse(0);
+            if (max != 0) {
+                String sql = """
+                    UPDATE ribaltone_dati.configuration t
+                    SET specifiche = jsonb_set(
+                            t.specifiche,
+                            '{queryRecuperoDati,progressivoUltimaTrasformazione}',
+                            to_jsonb(
+                               ?
+                            ),
+                            false
+                        )
+                    WHERE t.id = ?;
+                    """;
+                repositoryFactory.getJdbcTemplate()
+                    .update(sql, max, fonte);
 
-            String sql = """
-                UPDATE ribaltone_dati.configuration t
-                SET specifiche = jsonb_set(
-                        t.specifiche,
-                        '{progressivoUltimaTrasformazione}',
-                        to_jsonb((
-                            SELECT max(d.progressivo_riga)
-                            FROM ribaltone_dati.dati_da_importare_trasformazioni d
-                            WHERE d.codice_ente = ?
-                        )),
-                        false
-                    )
-                WHERE t.id = ?;
-                """;
-            repositoryFactory.getJdbcTemplate()
-                .update(sql, codiceEnte, fonte);
+            }
         }
 
+    }
+
+    public static void setOmonimiaOnUtentiOmonimi(RepositoryFactory repositoryFactory, String codiceAzienda) {
+        String updateOmonimiaTrue = """
+            UPDATE baborg.persone p
+            SET omonimia = true
+            WHERE p.attiva = true
+              AND p.omonimia = false
+              AND EXISTS (
+                SELECT 1
+                FROM baborg.persone p2
+                WHERE p2.id != p.id
+                  AND p2.attiva = true
+                  AND p2.descrizione = p.descrizione
+              )
+        """;
+        String updateOmonimiaFalse = """
+            UPDATE baborg.persone p
+              SET omonimia = false
+              WHERE p.omonimia = true
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM baborg.persone p2
+                  WHERE p2.id != p.id
+                    AND p2.attiva = true
+                    AND p2.descrizione = p.descrizione
+                )
+        """;
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue);
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse);
     }
 }

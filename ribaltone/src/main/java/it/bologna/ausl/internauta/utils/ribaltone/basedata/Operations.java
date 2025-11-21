@@ -5,6 +5,7 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.finalChecks.QueryChecks;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
@@ -79,12 +80,15 @@ public class Operations implements Serializable {
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
 //        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
         for (OperationAppartenente operation : listOfOperationAppartenente) {
+            log.info(operation.toString());
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenente(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
         //qui bisogna scrivere una funzione che va sul db e per ogni afferenza di utenti in listofOperation
         //deve risistemare afferenze funzionali e dirette e mettere il dettaglio principare corretto
@@ -93,78 +97,31 @@ public class Operations implements Serializable {
         for (OperationTrasformazione operation : listOfOperationTrasformazione) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattiTrasformati(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
         risistemaAfferenze(repositoryFactory, codiceAzienda);
         workToDo = null;
         for (OperationAnagrafica operation : listOfOperationAnagrafica) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
 
         workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationUnificazioneStruttura operation : listOfOperationUnificazioneStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStutturaUnificata(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
         workToDo = null;
         for (OperationUnificazioneAppartenente operation : listOfOperationUnificazioneAppartenente) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenenteUnificato(repositoryFactory);
+            repositoryFactory.getEntityManager().flush();
         }
-//        finalOperations(repositoryFactory, codiceAzienda);
-    }
+        RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
 
-    /**
-     * funzione che si occupa di gestire la parte finale delle operazioni
-     * fa i vari check per verificare che il ribaltone sia andato a buon fine
-     *
-     * @param repositoryFactory
-     * @throws RibaltoneHttpException
-     */
-    private void finalOperations(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
-        //1) generazione e manutenzione dei contatti
-        EntityManager entityManager = repositoryFactory.getEntityManager();
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        QPersona qPersona = QPersona.persona;
-        Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
-        if (p == null) {
-            throw new RibaltoneHttpException("peronsa Ribaltone non trovata va inserita sul db");
-        }
-        QContatto qContatto = QContatto.contatto;
-        //contatti struttura
-        QStruttura qStruttura = QStruttura.struttura;
-
-        List<Tuple> strutturaContatto = queryFactory
-            .select(qStruttura, qContatto)
-            .from(qStruttura)
-            .leftJoin(qContatto).on(qContatto.idEsterno.eq(qStruttura.id.toString()))
-            .where(qStruttura.attiva.and(qStruttura.idAzienda.codice.eq(codiceAzienda))).fetch();
-        for (Tuple tuple : strutturaContatto) {
-            Struttura struttura = tuple.get(0, Struttura.class);
-            Contatto contattoDellaStruttuta = tuple.get(1, Contatto.class);
-            if (struttura != null) {
-                if (contattoDellaStruttuta == null) {
-                    //creo contatto della struttura col suo dettaglio e lo salvo
-                    Integer[] idAziende = new Integer[0];
-                    idAziende[0] = struttura.getIdAzienda().getId();
-                    contattoDellaStruttuta = struttura.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
-                    entityManager.persist(contattoDellaStruttuta);
-                } else {
-                    //aggiorno il dato e lo salvo
-                    contattoDellaStruttuta.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
-                    DettaglioContatto dettaglioPrincipale = contattoDellaStruttuta.getDettaglioContattoList().stream().filter(dc -> dc.getPrincipale() && !dc.getEliminato()).toList().get(0);
-                    if (dettaglioPrincipale != null) {
-                        dettaglioPrincipale.setDescrizione(struttura.getNome() + " [" + struttura.getIdCasella() + "]");
-                        dettaglioPrincipale.setIdContatto(contattoDellaStruttuta);
-                    }
-                    entityManager.persist(dettaglioPrincipale);
-                }
-            }
-        }
-        //contatti utenteStruttura
-
-        //elimino tutti i contatti eliminati logicamente di tipo organigramma
-        //se ne trovo alcuni che sono ancora dentro ai gruppi li segnalo
+        QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
     }
 
     public UserReportManager generateUserReport(UserReportType userReportType) {
