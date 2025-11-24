@@ -64,6 +64,11 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
+    public Boolean isExecuting() {
+        return redisTemplate.hasKey(keyExecuting) || redisTemplate.hasKey(keyImportingCSV);
+    }
+
+    @Override
     public void dump(Operations operations) throws RibaltoneHttpException {
 
         try {
@@ -203,11 +208,6 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
-    public Boolean isExecuting() {
-        return redisTemplate.hasKey(keyExecuting) || redisTemplate.hasKey(keyImportingCSV);
-    }
-
-    @Override
     public void setExecuting(Boolean executing, Utente user) {
         if (executing) {
             try {
@@ -223,7 +223,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
 
     @Override
     public Boolean isImportingCSV() {
-        return redisTemplate.hasKey(keyImportingCSV) || redisTemplate.hasKey(keyRibaltoneDati);
+        return redisTemplate.hasKey(keyImportingCSV) || redisTemplate.hasKey(keyExecuting);
     }
 
     @Override

@@ -147,21 +147,20 @@ public class RibaltoneManagerUtils {
     }
 
     public static List<DatiDaImportareAppartenente> unisciListeUnichePerCodiceFiscaleIdCasella(
-        List<DatiDaImportareAppartenente> lista1,
-        List<DatiDaImportareAppartenente> lista2) {
+        List<DatiDaImportareAppartenente> appartenenti,
+        List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti) {
 
         // Mappa con chiave composta: codiceFiscale_idCasella
         Map<String, DatiDaImportareAppartenente> mappa = new HashMap<>();
 
         // Aggiungiamo prima tutti gli elementi della lista1
-        for (DatiDaImportareAppartenente item : lista1) {
+        for (DatiDaImportareAppartenente item : appartenenti) {
             mappa.putIfAbsent(item.getKey(), item);  // non sovrascrive se già presente
         }
 
         // Aggiungiamo (sovrascrivendo) gli elementi della lista2
-        for (DatiDaImportareAppartenente item : lista2) {
+        for (DatiDaImportareAppartenente item : fonteAggiuntaAppartenenti) {
             mappa.put(item.getKey(), item);  // sovrascrive
-
         }
 
         return new ArrayList<>(mappa.values());
@@ -289,7 +288,7 @@ public class RibaltoneManagerUtils {
                     AND p2.descrizione = p.descrizione
                 )
         """;
-        repositoryFactory.getEntityManager().createQuery(updateOmonimiaTrue);
-        repositoryFactory.getEntityManager().createQuery(updateOmonimiaFalse);
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue);
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse);
     }
 }

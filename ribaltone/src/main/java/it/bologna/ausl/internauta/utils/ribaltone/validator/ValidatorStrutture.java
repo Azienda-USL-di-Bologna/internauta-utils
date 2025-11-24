@@ -51,7 +51,7 @@ public class ValidatorStrutture extends AbstractValidator {
                 //caso della non radice che deve avere tutti gli antenati vivi
             } else {
                 Integer antenatoMorto = getAntenatoMorto(indexStrutture, datiDaImportareStrutture, strutturaDaImportare);
-                if (antenatoMorto != null) {
+                if (antenatoMorto != null && !antenatoMorto.equals(0)) {
 
                     isValida = false;
                     motivoInvalidita = "la struttura " + getDatiAntenatoMorto(antenatoMorto, repositoryFactory)

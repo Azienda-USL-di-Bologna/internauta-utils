@@ -42,6 +42,7 @@ public class CacheUtils {
             RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
             RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
             ribaltoneCache.setExecuting(Boolean.FALSE, null);
+            ribaltoneCache.setImportingCSV(false, null);
         });
     }
 
@@ -61,11 +62,11 @@ public class CacheUtils {
         });
     }
 
-    public static void setImportazioneCSVFinito(String idSelectedConfiguration, Utente utente, RepositoryFactory repositoryFactory, ObjectMapper objectMapper, TransactionTemplate transactionTemplate) throws RibaltoneHttpException, JsonProcessingException {
+    public static void setImportazioneCSVFinito(String idSelectedConfiguration, RepositoryFactory repositoryFactory, ObjectMapper objectMapper, TransactionTemplate transactionTemplate) throws RibaltoneHttpException, JsonProcessingException {
         transactionTemplate.executeWithoutResult(action -> {
             RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
             RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
-            ribaltoneCache.setImportingCSV(false, utente);
+            ribaltoneCache.setImportingCSV(false, null);
         });
     }
 }
