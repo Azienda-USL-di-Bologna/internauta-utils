@@ -642,6 +642,7 @@ public class OperationsManager {
         if (coinvoltoInReplicheFuture != null && coinvoltoInReplichePassate == null) {
             List<UnificazioneDaGestire> unificazioniEseguite = new ArrayList<>();
             for (StrutturaUnificata strutturaUnificata : coinvoltoInReplicheFuture) {
+
                 log.info("inizio a gestire questa unificazione" + strutturaUnificata.getId() + "con questa struttura " + strutturaUnificata.getIdStruttura());
                 unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
             }
