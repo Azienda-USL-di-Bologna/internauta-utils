@@ -1,29 +1,25 @@
 package it.bologna.ausl.internauta.utils.sendintegration.authorization;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import it.bologna.ausl.internauta.model.entities.sendintegration.ApiKeyStoreEntry;
-import it.bologna.ausl.internauta.model.entities.sendintegration.QApiKeyStoreEntry;
+import it.bologna.ausl.model.entities.sendintegration.ApiKeyStoreEntry;
+import it.bologna.ausl.model.entities.sendintegration.QApiKeyStoreEntry;
 import it.bologna.ausl.internauta.utils.sendintegration.authorization.exceptions.NotValidJwtException;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.RuntimeExceptionContainer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.security.interfaces.RSAKey;
 import java.text.ParseException;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.logging.Level;
-import javax.crypto.SecretKey;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,15 +40,8 @@ public class SendIntegrationAuthorizationUtils {
     private TransactionTemplate transactionTemplate;
     
     @Transactional(rollbackFor = Throwable.class)
-    public ApiKeyStoreEntry getApiKeyEntry(String apiKey, ZonedDateTime now) throws NotValidJwtException {
+    public ApiKeyStoreEntry getApiKeyEntry(UUID apiKey, ZonedDateTime now) throws NotValidJwtException {
         QApiKeyStoreEntry qApiKeyStore = QApiKeyStoreEntry.apiKeyStoreEntry;
-        
-        BooleanExpression attivoOra = Expressions.booleanTemplate(
-            "{0} @> {1}",
-            qApiKeyStore.intervallo,
-//            Expressions.constant("@>"),
-            now
-        );
         
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         ApiKeyStoreEntry apiKeyStoreEntry = queryFactory
@@ -62,7 +51,9 @@ public class SendIntegrationAuthorizationUtils {
                 qApiKeyStore.apiKey.eq(apiKey).and(
                     qApiKeyStore.tipoChiamante.eq(ApiKeyStoreEntry.TipoChiamante.FRUITORE).and(
                         qApiKeyStore.chiamante.eq(ApiKeyStoreEntry.Chiamante.Lepida).and(
-                            attivoOra
+                            qApiKeyStore.dataInizio.before(now).and(
+                                (qApiKeyStore.dataFine.isNull().or(qApiKeyStore.dataFine.after(now)))
+                            )
                         )
                     )
                 )
@@ -75,21 +66,23 @@ public class SendIntegrationAuthorizationUtils {
     }
     
     public void verifyTokenAndSetContext(String token, ZonedDateTime now) throws NotValidJwtException {
-        JWSObject signedToken;
+        SignedJWT signedToken;
+        JWTClaimsSet claims;
         try {
-            signedToken = JWSObject.parse(token);
+            signedToken = SignedJWT.parse(token);
+            claims = signedToken.getJWTClaimsSet();
         } catch (ParseException ex) {
             throw new NotValidJwtException("errore nel parsing del token", ex);
         }
-        Payload payload = signedToken.getPayload();
-        Map<String, Object> payloadMap = payload.toJSONObject();
-        String apyKey = (String) payloadMap.get("iss");
+        
+//        Map<String, Object> payloadMap = payload.toJSONObject();
+        String apyKey = (String) claims.getIssuer();
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         ApiKeyStoreEntry apiKeyStoreEntry = null;
         try {
             apiKeyStoreEntry = transactionTemplate.execute(a -> {
                 try {
-                    return getApiKeyEntry(apyKey, now);
+                    return getApiKeyEntry(UUID.fromString(apyKey), now);
                 } catch (NotValidJwtException ex) {
                     throw new RuntimeExceptionContainer(ex);
                 }
@@ -99,41 +92,24 @@ public class SendIntegrationAuthorizationUtils {
                 throw notValidJwtException;
             }
         } catch (Throwable ex) {
-            throw new NotValidJwtException("errore nella lettura dell'ApiKeyEntry ");
+            throw new NotValidJwtException("errore nella lettura dell'ApiKeyEntry");
         }
         try {
-            String apiSecret = apiKeyStoreEntry.getApiSecret();
+            String apiSecret = apiKeyStoreEntry.getApiSecret().toString();
             JWSVerifier verifier = new MACVerifier(apiSecret);
             if (!signedToken.verify(verifier)) {
-                
+                throw new NotValidJwtException("il token non è valido");
             }
         } catch (JOSEException ex) {
-            
+            throw new NotValidJwtException("errore nel parsing del token");
         }
-//        RSAKey rsaJWK = new RSAKey.Builder(pub)
-//        .privateKey(priv)
-//        .keyUse(KeyUse.SIGNATURE)
-//        .algorithm(JWSAlgorithm.PS256)
-//        .keyID("KeyID")
-//        .build();
-//        
-//        byte[] bytes = Decoders.BASE64.decode(secretKey);
-//        SecretKey key = Keys.hmacShaKeyFor(bytes);
-//        new RSASSAVerifier(rsak);
-//        if (!signedToken.verify(new RSASSAVerifier((RSAPublicKey) cert.getPublicKey()))) {
-//            
-//        }
-//            // Controllo la firma con la chiave pubblica estratta sopra
-//            if (!signedToken.verify(new RSASSAVerifier((RSAPublicKey) cert.getPublicKey()))) {
-//                String errorMessage = "la firma del token non è valida";
-//                logger.error(errorMessage);
-//                throw new AuthorizationUtilsException(errorMessage);
-//            }
-//            
-//            // lo estraggo e lo uso per trovare la chiave pubblica nella mia mappa "hashPublicKeyMap"
-//            String cn = AuthorizationUtilityFunctions.getCommonNameFromX509Certificate(cert);
-//        
-//            JWTClaimsSet jWTClaimsSet = JWTClaimsSet.parse(signedToken.getPayload().toJSONObject());
-        return;
+        
+        ZonedDateTime issuedTime = ZonedDateTime.ofInstant(claims.getIssueTime().toInstant(), ZoneId.systemDefault());
+        if (now.isAfter(issuedTime.plusSeconds(apiKeyStoreEntry.getSecondiValidita()))) {
+            throw new NotValidJwtException("il token è scaduto");
+        }
+        
+        TokenBasedAuthentication authentication = new TokenBasedAuthentication(signedToken, apiKeyStoreEntry.getChiamante());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

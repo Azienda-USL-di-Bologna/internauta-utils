@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class SendIntegrationJwtFilter extends OncePerRequestFilter {
 
-    private SendIntegrationAuthorizationUtils authorizationUtils;
+    private final SendIntegrationAuthorizationUtils authorizationUtils;
     
     public SendIntegrationJwtFilter(SendIntegrationAuthorizationUtils authorizationUtils) {
         this.authorizationUtils = authorizationUtils;
@@ -29,9 +29,7 @@ public class SendIntegrationJwtFilter extends OncePerRequestFilter {
 
         if (!request.getMethod().equalsIgnoreCase("OPTIONS")) {
             ZonedDateTime now = ZonedDateTime.now();
-            //String path = request.getRequestURI();
             final String authHeader = request.getHeader("Authorization");
-            //final String applicazione = request.getHeader("Application");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 setResponseError(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Authorization header mancante o non valido");
@@ -43,20 +41,9 @@ public class SendIntegrationJwtFilter extends OncePerRequestFilter {
             try  {
                 authorizationUtils.verifyTokenAndSetContext(token, now);
             } catch (Exception ex) {
-                setResponseError(request, response, HttpServletResponse.SC_UNAUTHORIZED, "errore nella verifica del token");
+                setResponseError(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Accesso non autorizzato");
                 return;
             }
-            
-//            try {
-//                Claims claims = authorizationUtils.setInSecurityContext(token, secretKey, applicazione);
-//                request.setAttribute("claims", claims);
-//            } catch (ClassNotFoundException | BlackBoxPermissionException ex) {
-//                throw new ServletException("Invalid token", ex);
-//            } catch (ExpiredJwtException ex) {
-//                logger.warn("token scaduto", ex);
-//                setResponseError(request, response, HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage());
-//                return;
-//            }
         }
 
         filterChain.doFilter(request, response);

@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.model.entities.sendintegration;
+package it.bologna.ausl.model.entities.sendintegration;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -7,6 +7,8 @@ import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.UUID;
 import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.GrantedAuthority;
@@ -66,12 +69,14 @@ public class ApiKeyStoreEntry implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 250)
+    @Enumerated(EnumType.STRING)
     @Column(name = "chiamante")
     private Chiamante chiamante;
     
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 250)
+    @Enumerated(EnumType.STRING)
     @Column(name = "tipo_chiamante")
     private TipoChiamante tipoChiamante;
     
@@ -79,13 +84,13 @@ public class ApiKeyStoreEntry implements Serializable {
     @NotNull
     @Size(min = 1, max = 250)
     @Column(name = "api_key")
-    private String apiKey;
+    private UUID apiKey;
     
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 250)
     @Column(name = "api_secret")
-    private String apiSecret;
+    private UUID apiSecret;
     
     @Basic(optional = false)
     @NotNull
@@ -104,6 +109,11 @@ public class ApiKeyStoreEntry implements Serializable {
     @Column(name = "intervallo", columnDefinition = "tstzrange")
     @ReadOnlyProperty
     private Range<ZonedDateTime> intervallo;
+    
+    @NotNull
+    @Basic(optional = false)
+    @Column(name = "secondi_validita")
+    private Integer secondiValidita = 300;
     
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
@@ -137,19 +147,19 @@ public class ApiKeyStoreEntry implements Serializable {
         this.tipoChiamante = tipoChiamante;
     }
 
-    public String getApiKey() {
+    public UUID getApiKey() {
         return apiKey;
     }
 
-    public void setApiKey(String apiKey) {
+    public void setApiKey(UUID apiKey) {
         this.apiKey = apiKey;
     }
 
-    public String getApiSecret() {
+    public UUID getApiSecret() {
         return apiSecret;
     }
 
-    public void setApiSecret(String apiSecret) {
+    public void setApiSecret(UUID apiSecret) {
         this.apiSecret = apiSecret;
     }
 
@@ -175,6 +185,14 @@ public class ApiKeyStoreEntry implements Serializable {
 
     public void setIntervallo(Range<ZonedDateTime> intervallo) {
         this.intervallo = intervallo;
+    }
+
+    public Integer getSecondiValidita() {
+        return secondiValidita;
+    }
+
+    public void setSecondiValidita(Integer secondiValidita) {
+        this.secondiValidita = secondiValidita;
     }
 
     public ZonedDateTime getCreatedAt() {

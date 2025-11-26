@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.sendintegration.authorization;
 
 import com.nimbusds.jwt.SignedJWT;
-import it.bologna.ausl.internauta.model.entities.sendintegration.ApiKeyStoreEntry;
+import it.bologna.ausl.model.entities.sendintegration.ApiKeyStoreEntry;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 
