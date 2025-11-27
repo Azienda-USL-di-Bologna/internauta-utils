@@ -16,6 +16,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SendIntegrationRegistrationBean {
 
+    @Value("${openapi.send-integration.active:false}")
+    private Boolean sendIntegrationActive;
+    
     // i path da proteggere sono inseriti all'interno del parametro openapi.send-integration.base-path dell'application.properties dell'applicazione
     @Value("${openapi.send-integration.start-nodes-protection}")
     private String sendIntegrationStartProtection;
@@ -27,12 +30,12 @@ public class SendIntegrationRegistrationBean {
     public FilterRegistrationBean sendIntegrationJwtFilter() throws CertificateException, IOException {
 
         final FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+        if (sendIntegrationActive) {
+            // intercetta le chiamate che arrivano da Send
+            registrationBean.addUrlPatterns(sendIntegrationStartProtection.split(","));
 
-        // intercetta le chiamate che arrivano da Send
-        registrationBean.addUrlPatterns(sendIntegrationStartProtection.split(","));
-        
-        registrationBean.setFilter(new SendIntegrationJwtFilter(authorizationUtils));
-
+            registrationBean.setFilter(new SendIntegrationJwtFilter(authorizationUtils));
+        }
         return registrationBean;
     }
 }

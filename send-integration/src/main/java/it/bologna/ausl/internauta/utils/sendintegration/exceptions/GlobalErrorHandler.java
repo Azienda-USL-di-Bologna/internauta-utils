@@ -1,12 +1,11 @@
 package it.bologna.ausl.internauta.utils.sendintegration.exceptions;
 
 
-import it.bologna.ausl.internauta.utils.send_integration.model.Errore;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBaseConEventualiErrori;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import org.springframework.http.HttpStatus;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,8 +21,8 @@ public class GlobalErrorHandler {
      * @return 
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Errore> handleValidationException(MethodArgumentNotValidException ex) {
-        LottoBaseConEventualiErrori errorResponse = new LottoBaseConEventualiErrori();
+    public ResponseEntity<?> handleValidationException(MethodArgumentNotValidException ex) {
+//        LottoBaseConEventualiErrori errorResponse = new LottoBaseConEventualiErrori();
         String code = null;
         if (ex.getBindingResult().getFieldErrors() != null && !ex.getBindingResult().getFieldErrors().isEmpty()) {
             if (ex.getBindingResult().getFieldErrors().stream().anyMatch(f -> f.getCode() != null && f.getCode().equals("NotNull"))) {
@@ -37,7 +36,7 @@ public class GlobalErrorHandler {
                 }
             }
         }
-        Errore errore = new Errore(null, code);
+//        Errore errore = new Errore(null, code);
 
         List<String> dettagli = ex.getBindingResult()
                 .getAllErrors()
@@ -49,30 +48,33 @@ public class GlobalErrorHandler {
                     return err.getDefaultMessage();
                 })
                 .toList();
-        errore.setDetail(dettagli.toString());
-        errorResponse.setNumeroDocumenti(1);
-        errorResponse.setErrori(Arrays.asList(errore));
-        return ResponseEntity.badRequest().body(errore);
+//        errore.setDetail(dettagli.toString());
+//        errorResponse.setNumeroDocumenti(1);
+//        errorResponse.setErrori(Arrays.asList(errore));
+        Map<String, String> resp = new HashMap<>();
+        resp.put("descrizione", "Richiesta malformata");
+        resp.put("code", code);
+        resp.put("detail", dettagli.toString());
+        return ResponseEntity.badRequest().body(resp);
     }
 
     /**
      * Gestisce gli errori manualmente lanciati con ResponseStatusException
+     * @param ex
+     * @return 
      */
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<LottoBaseConEventualiErrori> handleResponseStatusException(
-            ResponseStatusException ex
-    ) {
-        if (ex.getStatusCode() == HttpStatus.BAD_REQUEST) {
-            LottoBaseConEventualiErrori errorResponse = new LottoBaseConEventualiErrori();
-            Errore errore = new Errore(null, "RICHIESTA_MALFORMATA");
-
-        errore.setDetail(ex.getMessage());
-        errorResponse.setNumeroDocumenti(1);
-        errorResponse.setErrori(Arrays.asList(errore));
-            return ResponseEntity.badRequest().body(errorResponse);
+    public ResponseEntity<?> handleResponseStatusException(ResponseStatusException ex) {
+        Map<String, String> resp = new HashMap<>();
+        resp.put("descrizione", ex.getReason());
+        if (ex instanceof SendResponseStatusException sendEx) {
+            if (StringUtils.hasText(sendEx.getCode())) {
+                resp.put("code", sendEx.getCode());
+            }
+            if (StringUtils.hasText(sendEx.getDetail())) {
+                resp.put("detail", sendEx.getDetail());
+            }
         }
-
-        // Lascia passare altri status
-        return ResponseEntity.status(ex.getStatusCode()).build();
+        return ResponseEntity.status(ex.getStatusCode()).body(resp);
     }
 }

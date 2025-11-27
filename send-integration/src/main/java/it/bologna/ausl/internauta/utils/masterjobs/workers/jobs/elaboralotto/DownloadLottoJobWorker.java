@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
  * @author gusgus
  */
 @MasterjobsWorker
-public class ElaboraLottoJobWorker extends JobWorker<ElaboraLottoJobWorkerData, JobWorkerResult> {
-    private static final Logger log = LoggerFactory.getLogger(ElaboraLottoJobWorker.class);
-    private final String name = ElaboraLottoJobWorker.class.getSimpleName();
+public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData, JobWorkerResult> {
+    private static final Logger log = LoggerFactory.getLogger(DownloadLottoJobWorker.class);
+    private final String name = DownloadLottoJobWorker.class.getSimpleName();
     
     @Override
     public String getName() {
