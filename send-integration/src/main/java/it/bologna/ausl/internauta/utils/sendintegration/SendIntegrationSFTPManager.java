@@ -4,13 +4,16 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendIntegrationException;
-import it.bologna.ausl.model.entities.sendintegration.Parameter;
+import it.bologna.ausl.model.entities.sendintegration.SendIntegrationParameter;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.File;
+import java.io.InputStream;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,8 +26,8 @@ import org.springframework.util.StringUtils;
  * @author gdm
  */
 @Component
-public class SendSFTPManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SendSFTPManager.class);
+public class SendIntegrationSFTPManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SendIntegrationSFTPManager.class);
     
     @Value("${openapi.send-integration.active:false}")
     private Boolean sendIntegrationActive;
@@ -40,9 +43,9 @@ public class SendSFTPManager {
     @PostConstruct
     public void init() throws SendIntegrationException {
         if (sendIntegrationActive) {
-            Parameter lepidaSFTPConfiguration = entityManager.find(Parameter.class, SendIntegrationConstants.Parameters.lepidaSFTPConfiguration.toString());
+            SendIntegrationParameter lepidaSFTPConfiguration = entityManager.find(SendIntegrationParameter.class, SendIntegrationConstants.Parameters.lepidaSFTPConfiguration.toString());
             this.SFTPConnectionParams = lepidaSFTPConfiguration.getValue();
-            this.sftpKeyFile = (File) this.SFTPConnectionParams.get("keyPath");
+            this.sftpKeyFile = new File((String) this.SFTPConnectionParams.get("keyPath"));
             if (!this.sftpKeyFile.exists()) {
                 String error = String.format("il file della chiave per la connessione al servizio SFTP non esiste nel percorso indicato: %s", sftpKeyFile);
                 throw new SendIntegrationException(error);
@@ -50,7 +53,7 @@ public class SendSFTPManager {
         }
     }
     
-    public ChannelSftp connectOnSFTP() throws JSchException {
+    public ChannelSftp connect() throws JSchException {
     
         LOGGER.info("connecting to sftp...");
         JSch jSch = new JSch();        
@@ -82,25 +85,44 @@ public class SendSFTPManager {
         return channelSftp;
     }
     
-    public void disconnectFromSFTP() {
-        Pair<Session, ChannelSftp> sftpConnectionTriple = sftpConnection.get();
-        if (sftpConnectionTriple != null) {
-            if (sftpConnectionTriple.getFirst()!= null) {
+    public void disconnect() {
+        Pair<Session, ChannelSftp> sftpConnectionPair = sftpConnection.get();
+        if (sftpConnectionPair != null) {
+            if (sftpConnectionPair.getFirst()!= null) {
                 try {
-                    sftpConnectionTriple.getFirst().disconnect();
+                    sftpConnectionPair.getFirst().disconnect();
                     LOGGER.info("disconnected from SFTP session.");
                 } catch (Exception ex) {
                     LOGGER.error("erron on disconneting from SFTP session", ex);
                 }
             }
-            if (sftpConnectionTriple.getSecond()!= null) {
+            if (sftpConnectionPair.getSecond()!= null) {
                 try {
-                    sftpConnectionTriple.getSecond().disconnect();
+                    sftpConnectionPair.getSecond().disconnect();
                     LOGGER.info("disconnected from SFTP channel.");
                 } catch (Exception ex) {
                     LOGGER.error("erron on disconneting from SFTP Channel", ex);
                 }
             }
         }
-    }    
+    }
+    
+    public boolean existsPath(String path) throws SftpException {
+        ChannelSftp sftpChannel = sftpConnection.get().getSecond();
+        try {
+            sftpChannel.stat(path);
+            return true;
+        } catch (SftpException ex) {
+            if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                return false;
+            } else {
+                throw ex;
+            }
+        }
+    }
+    
+    public InputStream retriveFile(String filePath) throws SftpException {
+        ChannelSftp sftpChannel = sftpConnection.get().getSecond();
+        return sftpChannel.get(filePath);
+    }
 }

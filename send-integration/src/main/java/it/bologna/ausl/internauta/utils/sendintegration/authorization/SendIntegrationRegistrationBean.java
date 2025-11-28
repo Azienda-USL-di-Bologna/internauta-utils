@@ -34,8 +34,10 @@ public class SendIntegrationRegistrationBean {
             // intercetta le chiamate che arrivano da Send
             registrationBean.addUrlPatterns(sendIntegrationStartProtection.split(","));
 
-            registrationBean.setFilter(new SendIntegrationJwtFilter(authorizationUtils));
+        } else {
+            registrationBean.setEnabled(false);
         }
+            registrationBean.setFilter(new SendIntegrationJwtFilter(authorizationUtils));
         return registrationBean;
     }
 }

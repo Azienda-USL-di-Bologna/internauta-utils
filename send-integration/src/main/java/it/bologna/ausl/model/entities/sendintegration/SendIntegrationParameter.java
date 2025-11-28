@@ -23,7 +23,7 @@ import org.hibernate.annotations.Type;
 @Cacheable(false)
 //@GenerateProjections({})
 @DynamicUpdate
-public class Parameter implements Serializable {
+public class SendIntegrationParameter implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -39,7 +39,7 @@ public class Parameter implements Serializable {
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 
-    public Parameter() {
+    public SendIntegrationParameter() {
     }
 
     public String getId() {
@@ -69,10 +69,10 @@ public class Parameter implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof Parameter)) {
+        if (!(object instanceof SendIntegrationParameter)) {
             return false;
         }
-        Parameter other = (Parameter) object;
+        SendIntegrationParameter other = (SendIntegrationParameter) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
     }
 
