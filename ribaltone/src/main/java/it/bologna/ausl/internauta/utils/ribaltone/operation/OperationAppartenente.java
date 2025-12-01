@@ -229,6 +229,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                                     .and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId())))).fetchOne();
                                     if (utenteStruttura != null) {
                                         if (utenteStruttura.getIdDettaglioContatto() == null) {
+                                            entityManager.refresh(utenteStruttura.getIdStruttura());
                                             Integer idContattoStruttura = utenteStruttura.getIdStruttura().getIdContatto().getId();
                                             DettaglioContatto dc
                                                 = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(

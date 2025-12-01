@@ -329,18 +329,18 @@ public class OperationsManager {
                     editString.add("afferenza");
                     azione = Operation.Azione.EDIT;
                 }
-                if (!appartenentiImportati.get(posizione).getCodiceMatricola().equals(datiDaImportareAppartenente.getCodiceMatricola())) {
-                    editString.add("codice_matricola");
-                    azione = Operation.Azione.EDIT;
-                }
-                if (appartenentiImportati.get(posizione).getDataAssunzione() != null && !appartenentiImportati.get(posizione).getDataAssunzione().equals(datiDaImportareAppartenente.getDataAssunzione())) {
-                    editString.add("dataAssunzione");
-                    azione = Operation.Azione.EDIT;
-                }
-                if (appartenentiImportati.get(posizione).getDataDimissione() != null && !appartenentiImportati.get(posizione).getDataDimissione().equals(datiDaImportareAppartenente.getDataDimissione())) {
-                    editString.add("dataDimissione");
-                    azione = Operation.Azione.EDIT;
-                }
+//                if (!appartenentiImportati.get(posizione).getCodiceMatricola().equals(datiDaImportareAppartenente.getCodiceMatricola())) {
+//                    editString.add("codice_matricola");
+//                    azione = Operation.Azione.EDIT;
+//                }
+//                if (appartenentiImportati.get(posizione).getDataAssunzione() != null && !appartenentiImportati.get(posizione).getDataAssunzione().equals(datiDaImportareAppartenente.getDataAssunzione())) {
+//                    editString.add("dataAssunzione");
+//                    azione = Operation.Azione.EDIT;
+//                }
+//                if (appartenentiImportati.get(posizione).getDataDimissione() != null && !appartenentiImportati.get(posizione).getDataDimissione().equals(datiDaImportareAppartenente.getDataDimissione())) {
+//                    editString.add("dataDimissione");
+//                    azione = Operation.Azione.EDIT;
+//                }
                 if (appartenentiImportati.get(posizione).getUsername() != null && !appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
                     editString.add("username");
                     azione = Operation.Azione.EDIT;
@@ -353,8 +353,8 @@ public class OperationsManager {
                     log.info("INIIZO is utente unificato?");
                     Boolean inerenteAReplica = false;
                     if (!idCaselleReplicateMap.containsKey(datiDaImportareAppartenente.getIdCasella())) {
-                        List<StrutturaUnificata> coinvoltoInReplicaFutura = isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare);
-                        List<StrutturaUnificata> coinvoltoInReplicapassata = isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate);
+                        List<StrutturaUnificata> coinvoltoInReplicaFutura = isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare, DirezioneReplica.FUTURO);
+                        List<StrutturaUnificata> coinvoltoInReplicapassata = isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate, DirezioneReplica.PASSATO);
 
                         if (coinvoltoInReplicaFutura != null || coinvoltoInReplicapassata != null) {
                             operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
@@ -370,7 +370,7 @@ public class OperationsManager {
                         operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                     } else if (isCoinvoltoInFusione(datiDaImportareAppartenente.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                         List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(datiDaImportareAppartenente.getIdCasella());
-                        UnificazionePair unificazionePair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
+                        UnificazionePair unificazionePair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList, DirezioneReplica.FUTURO);
                         operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), unificazionePair, null));
                     }
                     log.info("FINE is utente unificato?");
@@ -390,13 +390,13 @@ public class OperationsManager {
                 log.info("INIZIO is utente unificato?");
                 DatiDaImportareStruttura struttura = datiDaImportare.getStruttureDaImportare().get(indexStruttureDaImportare.get(datiDaImportareAppartenente.getIdCasella().toString()));
                 if (idCaselleReplicateMap.containsKey(datiDaImportareAppartenente.getIdCasella())
-                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare) != null
-                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate) != null) {
+                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare, DirezioneReplica.FUTURO) != null
+                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate, DirezioneReplica.PASSATO) != null) {
                     operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                 } else if (isCoinvoltoInFusione(datiDaImportareAppartenente.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                     List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(datiDaImportareAppartenente.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(datiDaImportareAppartenente.getIdCasella());
                     //Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> pair = Pair.of(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
-                    UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
+                    UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList, DirezioneReplica.FUTURO);
                     operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), pair, null));
                 } else if (!idCaselleReplicateMap.containsKey(datiDaImportareAppartenente.getIdCasella())) {
                     log.info("marchio la casella con id " + struttura.getIdCasella() + " come NON coinvolta in replica");
@@ -425,13 +425,13 @@ public class OperationsManager {
                 this.utentiStrutturaChiusi++;
                 log.info("INIZIO is utente unificato?");
                 if (idCaselleReplicateMap.containsKey(appartenenteImportato.getIdCasella())
-                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare) != null
-                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate) != null) {
+                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare, DirezioneReplica.FUTURO) != null
+                    || isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate, DirezioneReplica.PASSATO) != null) {
                     operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(appartenenteImportato.getIdCasella()), null));
                 } else if (isCoinvoltoInFusione(appartenenteImportato.getIdCasella(), mappaFusioniPerIdCasellaSorgente, mappaFusioniPerIdCasellaDestinazione)) {
                     List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.get(appartenenteImportato.getIdCasella()) != null ? mappaFusioniPerIdCasellaSorgente.get(appartenenteImportato.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(appartenenteImportato.getIdCasella());
                     //Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> paira = Pair.of(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
-                    UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
+                    UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList, DirezioneReplica.PASSATO);
                     operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(Operation.Azione.CHIUSURA, appartenenteImportato, repositoryFactory.getEntityManager(), pair, null));
                 } else if (!idCaselleReplicateMap.containsKey(appartenenteImportato.getIdCasella())) {
                     log.info("marchio la casella con id " + struttura.getIdCasella() + " come NON coinvolta in replica");
@@ -548,7 +548,8 @@ public class OperationsManager {
     //funzione che serve a capire se sono replicato o se ho un antenato che è replicato
     //sia nel vecchio organigramma che nel nuovo
     private List<StrutturaUnificata> isCoinvoltoInReplica(DatiRibaltoneStrutturaInterface struttura,
-        Map<Long, Map<OperationsUtils.KeyMapReplica, Object>> mappaUnificazioniPerIdCasellaSorgente
+        Map<Long, Map<OperationsUtils.KeyMapReplica, Object>> mappaUnificazioniPerIdCasellaSorgente,
+        DirezioneReplica direzione
     ) {
 
         if (struttura == null) {
@@ -558,7 +559,7 @@ public class OperationsManager {
             Map<OperationsUtils.KeyMapReplica, Object> mappaUnificazione = mappaUnificazioniPerIdCasellaSorgente.get(Long.valueOf(struttura.getIdCasella()));
             List<StrutturaUnificata> coinvoltoInReplica = (List<StrutturaUnificata>) mappaUnificazione.get(OperationsUtils.KeyMapReplica.REPLICHE);
 
-            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, coinvoltoInReplica);
+            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.REPLICA, coinvoltoInReplica, direzione);
             idCaselleReplicateMap.put(struttura.getIdCasella(), pair);
             return coinvoltoInReplica;
         } else {
@@ -634,8 +635,8 @@ public class OperationsManager {
 
     private <T extends DatiRibaltoneStrutturaInterface> void manageOperationUnificazioniStruttura(T struttura, Operation.Azione azione, JPAQueryFactory queryFactory) {
 
-        List<StrutturaUnificata> coinvoltoInReplicheFuture = isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare);
-        List<StrutturaUnificata> coinvoltoInReplichePassate = isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate);
+        List<StrutturaUnificata> coinvoltoInReplicheFuture = isCoinvoltoInReplica(struttura, mappaReplicheStruttureDaImportare, DirezioneReplica.FUTURO);
+        List<StrutturaUnificata> coinvoltoInReplichePassate = isCoinvoltoInReplica(struttura, mappaReplicheStruttureImportate, DirezioneReplica.PASSATO);
         if (coinvoltoInReplicheFuture == null && coinvoltoInReplichePassate == null) {
             idCaselleNonReplicateSet.add(struttura.getIdCasella());
         }
@@ -679,7 +680,7 @@ public class OperationsManager {
             List<UnificazioneDaGestire> unificazioniEseguite = new ArrayList<>();
             List<StrutturaUnificata> strutturaUnificataList = mappaFusioniPerIdCasellaSorgente.containsKey(struttura.getIdCasella()) ? mappaFusioniPerIdCasellaSorgente.get(struttura.getIdCasella()) : mappaFusioniPerIdCasellaDestinazione.get(struttura.getIdCasella());
 //            Pair<StrutturaUnificata.TipoUnificazione, List<StrutturaUnificata>> paiar = Pair.of(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
-            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList);
+            UnificazionePair pair = new UnificazionePair(StrutturaUnificata.TipoUnificazione.FUSIONE, strutturaUnificataList, DirezioneReplica.FUTURO);
             for (StrutturaUnificata strutturaUnificata : strutturaUnificataList) {
                 unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
             }
