@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.elaboralotto;
+package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
 import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;

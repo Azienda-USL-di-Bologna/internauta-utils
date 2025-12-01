@@ -6,6 +6,6 @@ package it.bologna.ausl.internauta.utils.sendintegration;
  */
 public class SendIntegrationConstants {
     public static enum Parameters {
-        lepidaSFTPConfiguration
+        lepidaSFTPConfiguration, lepidaAziendaConfiguration
     }
 }

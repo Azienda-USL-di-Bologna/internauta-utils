@@ -10,6 +10,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 
@@ -18,12 +20,12 @@ import org.hibernate.annotations.Type;
  * @author gdm
  */
 @Entity
-@Table(name = "parameters", schema = "send_integration", catalog = "internauta")
+@Table(name = "configuration", schema = "send_integration", catalog = "internauta")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 //@GenerateProjections({})
 @DynamicUpdate
-public class SendIntegrationParameter implements Serializable {
+public class SendIntegrationConfiguration implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -31,6 +33,7 @@ public class SendIntegrationParameter implements Serializable {
     @Column(name = "id")
     private String id;   
 
+    @NotNull
     @Basic(optional = false)
     @Column(name = "description", columnDefinition = "text")
     private String nome;
@@ -39,7 +42,7 @@ public class SendIntegrationParameter implements Serializable {
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 
-    public SendIntegrationParameter() {
+    public SendIntegrationConfiguration() {
     }
 
     public String getId() {
@@ -69,11 +72,19 @@ public class SendIntegrationParameter implements Serializable {
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
-        if (!(object instanceof SendIntegrationParameter)) {
+        if (!(object instanceof SendIntegrationConfiguration)) {
             return false;
         }
-        SendIntegrationParameter other = (SendIntegrationParameter) object;
+        SendIntegrationConfiguration other = (SendIntegrationConfiguration) object;
         return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 17 * hash + Objects.hashCode(this.id);
+        hash = 17 * hash + Objects.hashCode(this.nome);
+        return hash;
     }
 
     @Override

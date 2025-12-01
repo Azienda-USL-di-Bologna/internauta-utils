@@ -6,14 +6,13 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendIntegrationException;
-import it.bologna.ausl.model.entities.sendintegration.SendIntegrationParameter;
+import it.bologna.ausl.model.entities.sendintegration.SendIntegrationConfiguration;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,8 +41,9 @@ public class SendIntegrationSFTPManager {
     
     @PostConstruct
     public void init() throws SendIntegrationException {
-        if (sendIntegrationActive) {
-            SendIntegrationParameter lepidaSFTPConfiguration = entityManager.find(SendIntegrationParameter.class, SendIntegrationConstants.Parameters.lepidaSFTPConfiguration.toString());
+        //TODO: devo mettere il false altrumenti non parte, poi si deve rimuovuore quando abbiamo il file per la connessione al server sftp
+        if (false && sendIntegrationActive) {
+            SendIntegrationConfiguration lepidaSFTPConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConstants.Parameters.lepidaSFTPConfiguration.toString());
             this.SFTPConnectionParams = lepidaSFTPConfiguration.getValue();
             this.sftpKeyFile = new File((String) this.SFTPConnectionParams.get("keyPath"));
             if (!this.sftpKeyFile.exists()) {
