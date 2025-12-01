@@ -51,11 +51,11 @@ public class DSSValidatorManager {
     @Autowired
     private ObjectMapper objectMapper;
     
-    public Map<String, String> getReportCertificateValidationMap(MultipartFile file, LocalDateTime validationDate, HttpServletRequest request) throws DssResponseException {
+    public Map<String, String> getReportCertificateValidationMap(MultipartFile file, LocalDateTime validationDate) throws DssResponseException {
         log.info("charset: " + System.getProperty("file.encoding"));
         Map<String, String> res;
         try {
-            res = validateCertificate(request, validationDate, file.getBytes());
+            res = validateCertificate( validationDate, file.getBytes());
         } catch (DssResponseException ex) {
             res = new HashMap<>();
             res.put("Errors", ex.getMessage());
@@ -81,14 +81,10 @@ public class DSSValidatorManager {
         return res;
     }
 
-    public DSSValidatorReponse callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey paramKey, HttpServletRequest request, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
-        String scheme = request.getScheme();
-        String hostname = CommonUtils.getHostname(request);
-        Integer port = request.getServerPort();
+    public DSSValidatorReponse callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey paramKey, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
         
-        log.info(String.format("scheme: %s, hostname: %s, port: %s", scheme, hostname, port));
         
-        String url = configParams.getExternalSignAndCertificateValidator(paramKey, scheme, hostname, port);
+        String url = configParams.getExternalSignAndCertificateValidator(paramKey);
 //        url = "http://localhost:10008/dss-validator-api/validator/validateDocument";
         log.info(String.format("url: %s", url));
         
@@ -135,18 +131,18 @@ public class DSSValidatorManager {
         }
     }
     
-    public List<Map<String, Object>> getSignsReport(HttpServletRequest request, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
-        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl, request, validationDate, file);
+    public List<Map<String, Object>> getSignsReport( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl,  validationDate, file);
         return dSSValidatorReponse.getSignaturesReport();
     }
     
-    public String validateSignedDocument(HttpServletRequest request, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
-        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl, request, validationDate, file);
+    public String validateSignedDocument( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl, validationDate, file);
         return dSSValidatorReponse.getSignReportString();
     }
     
-    public Map<String, String> validateCertificate(HttpServletRequest request, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
-        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateCertificateUrl, request, validationDate, file);
+    public Map<String, String> validateCertificate( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+        DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateCertificateUrl, validationDate, file);
         return dSSValidatorReponse.getCertificateReportMap();
     }
 }
