@@ -154,6 +154,7 @@
                 <version>7.17.0</version>
                 <executions>
                     <execution>
+                        <id>erogatore</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -177,6 +178,44 @@
                             <supportingFilesToGenerate>
                                 ApiUtil.java
                             </supportingFilesToGenerate>
+                            <output>target/generated-sources/java</output>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>fruitore</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            
+                            <!--<project>sendintegration</project>-->
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+                            <inputSpec>
+                                ${project.basedir}/src/main/resources/fruitore.yaml
+                            </inputSpec>
+                            <configOptions>
+                                <title>send-integration</title>
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <!--<delegatePattern>true</delegatePattern>-->
+                                <sourceFolder>/</sourceFolder>
+                                <!--<testOutput>/</testOutput>-->
+                                <library>resttemplate</library>
+                                <generateClientAsBean>true</generateClientAsBean>
+                                <!--<library>webclient</library>-->
+                                <useJakartaEe>true</useJakartaEe>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                            <!--<library>spring-boot</library>-->
+                            <generatorName>java</generatorName>
+                            
+                            <apiPackage>it.bologna.ausl.internauta.service.send-integration.api</apiPackage>
+                            <modelPackage>it.bologna.ausl.internauta.utils.send-integration.model</modelPackage>
+                            <invokerPackage>it.bologna.ausl.internauta.utils.send-integration.invoker</invokerPackage>
+<!--                            <supportingFilesToGenerate>
+                                ApiUtil.java
+                            </supportingFilesToGenerate>-->
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
                             <output>target/generated-sources/java</output>
                         </configuration>
                     </execution>

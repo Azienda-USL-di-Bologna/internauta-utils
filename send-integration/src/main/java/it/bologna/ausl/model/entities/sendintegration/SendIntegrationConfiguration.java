@@ -2,12 +2,15 @@ package it.bologna.ausl.model.entities.sendintegration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import it.bologna.ausl.internauta.utils.sendintegration.SendIntegrationConstants;
 import java.io.Serializable;
 import java.util.Map;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -26,17 +29,21 @@ import org.hibernate.annotations.Type;
 //@GenerateProjections({})
 @DynamicUpdate
 public class SendIntegrationConfiguration implements Serializable {
-
+    public static enum Ids {
+        lepidaSFTPConfiguration, lepidaAziendaConfiguration
+    }
+    
     private static final long serialVersionUID = 1L;
     @Id
     @Basic(optional = false)
     @Column(name = "id")
-    private String id;   
+    @Enumerated(EnumType.STRING)
+    private Ids id;   
 
     @NotNull
     @Basic(optional = false)
     @Column(name = "description", columnDefinition = "text")
-    private String nome;
+    private String description;
 
     @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
@@ -45,11 +52,11 @@ public class SendIntegrationConfiguration implements Serializable {
     public SendIntegrationConfiguration() {
     }
 
-    public String getId() {
+    public Ids getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Ids id) {
         this.id = id;
     }
 
@@ -61,12 +68,12 @@ public class SendIntegrationConfiguration implements Serializable {
         this.value = value;
     }
 
-    public String getNome() {
-        return nome;
+    public String getDescription() {
+        return description;
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     @Override
@@ -83,7 +90,7 @@ public class SendIntegrationConfiguration implements Serializable {
     public int hashCode() {
         int hash = 7;
         hash = 17 * hash + Objects.hashCode(this.id);
-        hash = 17 * hash + Objects.hashCode(this.nome);
+        hash = 17 * hash + Objects.hashCode(this.description);
         return hash;
     }
 

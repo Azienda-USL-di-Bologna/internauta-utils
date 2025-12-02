@@ -43,7 +43,7 @@ public class SendIntegrationSFTPManager {
     public void init() throws SendIntegrationException {
         //TODO: devo mettere il false altrumenti non parte, poi si deve rimuovuore quando abbiamo il file per la connessione al server sftp
         if (false && sendIntegrationActive) {
-            SendIntegrationConfiguration lepidaSFTPConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConstants.Parameters.lepidaSFTPConfiguration.toString());
+            SendIntegrationConfiguration lepidaSFTPConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaSFTPConfiguration);
             this.SFTPConnectionParams = lepidaSFTPConfiguration.getValue();
             this.sftpKeyFile = new File((String) this.SFTPConnectionParams.get("keyPath"));
             if (!this.sftpKeyFile.exists()) {

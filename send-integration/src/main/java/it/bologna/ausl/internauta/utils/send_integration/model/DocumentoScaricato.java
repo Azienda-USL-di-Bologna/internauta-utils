@@ -12,7 +12,11 @@ public class DocumentoScaricato extends Documento {
     }
     
     public DocumentoScaricato(Documento documento, String repositoryId) {
-        super(documento.getDocumentoId(), documento.getInputFileName(), documento.getInputFileHash());
+        super();
+        this
+            .documentoId(documento.getDocumentoId())
+            .inputFileName(documento.getInputFileName())
+            .inputFileHash(documento.getInputFileHash());
         this.repositoryId = repositoryId;
     }
 

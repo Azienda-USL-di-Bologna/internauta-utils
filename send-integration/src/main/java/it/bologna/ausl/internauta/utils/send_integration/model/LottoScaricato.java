@@ -14,7 +14,16 @@ public class LottoScaricato extends Lotto {
     }
     
     public LottoScaricato(Lotto lotto, List<DocumentoScaricato> documentiScaricati) {
-        super(lotto.getPaId(), lotto.getLottoId(), lotto.getTimestamp(), lotto.getNumeroDocumenti(), lotto.getFirmatario(), lotto.getOutputBasePath(), lotto.getInputBasePath(), lotto.getDocumenti());
+        super();
+        this
+            .paId(lotto.getPaId())
+            .lottoId(lotto.getLottoId())
+            .timestamp(lotto.getTimestamp())
+            .numeroDocumenti(lotto.getNumeroDocumenti())
+            .firmatario(lotto.getFirmatario())
+            .outputBasePath(lotto.getOutputBasePath())
+            .inputBasePath(lotto.getInputBasePath())
+            .documenti(lotto.getDocumenti());
         this.documentiScaricati = documentiScaricati;
     }
 

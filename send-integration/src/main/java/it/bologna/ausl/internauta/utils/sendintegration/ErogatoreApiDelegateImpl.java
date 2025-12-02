@@ -54,7 +54,7 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
     @Override
     public ResponseEntity<LottoBase> elaboraLotto(Lotto lotto) {
         if (sendIntegrationActive) {
-            SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConstants.Parameters.lepidaAziendaConfiguration.toString());
+            SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
             LOGGER.info("Richiesta di elaborazione del lotto ricevuta: paId={}, lottoId={}",
                 lotto != null ? lotto.getPaId() : "n/d",
                 lotto != null ? lotto.getLottoId() : "n/d");
