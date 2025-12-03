@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.elaboralotto;
+package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
 import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;
@@ -7,10 +7,10 @@ import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;
  *
  * @author gsugus
  */
-public class ElaboraLottoJobWorkerData extends JobWorkerData{
+public class DownloadLottoJobWorkerData extends JobWorkerData{
     private Lotto lotto;
 
-    public ElaboraLottoJobWorkerData(Lotto lotto) {
+    public DownloadLottoJobWorkerData(Lotto lotto) {
         this.lotto = lotto;
     }
 

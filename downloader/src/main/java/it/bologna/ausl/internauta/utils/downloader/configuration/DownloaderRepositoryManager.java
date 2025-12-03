@@ -10,7 +10,7 @@ import it.bologna.ausl.mongowrapper.MongoWrapper;
  *  setRepositoryManager della classe it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryConfiguration
  * @author gdm
  */
-public abstract class RepositoryManager {
+public abstract class DownloaderRepositoryManager {
     
     public abstract MinIOWrapper getMinIOWrapper();
     
