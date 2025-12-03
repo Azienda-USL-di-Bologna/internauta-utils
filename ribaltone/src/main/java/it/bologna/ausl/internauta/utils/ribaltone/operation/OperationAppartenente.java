@@ -117,23 +117,49 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 
                 // è il caso di utente che diventa o non è più responsabile,
                 // quindi verificare i permessi di flusso
-                strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
-                OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+                for (String edit : listOfEdit) {
+                    switch (edit) {
+                        case "cognome" -> {
+                        }
+                        case "nome" -> {
+
+                        }
+                        case "afferenza" -> {
+                        }
+                        case "responsabile" -> {
+                            strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+                            OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+                        }
+                        case "codice_matricola" -> {
+                        }
+                        case "dataAssunzione" -> {
+                        }
+                        case "dataDimissione" -> {
+                        }
+                        case "username" -> {
+                        }
+                        default -> {
+                            log.info(edit);
+                            throw new RibaltoneHttpException("caso operazione su contatto non trovato");
+                        }
+                    }
+
+                }
             }
         }
     }
+    //    private Boolean personaHasOtherUtenti(JPAQueryFactory queryFactory, Persona persona) {
+    //        if (persona != null) {
+    //            return queryFactory
+    //                .select(qUtente.id)
+    //                .from(qUtente)
+    //                .where(qUtente.idPersona.id.eq(persona.getId()).and(qUtente.attivo))
+    //                .fetchFirst() != null;
+    //        } else {
+    //            return null;
+    //        }
+    //    }
 
-//    private Boolean personaHasOtherUtenti(JPAQueryFactory queryFactory, Persona persona) {
-//        if (persona != null) {
-//            return queryFactory
-//                .select(qUtente.id)
-//                .from(qUtente)
-//                .where(qUtente.idPersona.id.eq(persona.getId()).and(qUtente.attivo))
-//                .fetchFirst() != null;
-//        } else {
-//            return null;
-//        }
-//    }
     /**
      * in questa funzione mi occupero solo dell'inserimento e della rimozione
      * dei contatti di tipo utente struttura che NON riguardano le
@@ -203,6 +229,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                                     .and(qUtenteStruttura.idStruttura.id.eq(strutturaAttiva.getId())))).fetchOne();
                                     if (utenteStruttura != null) {
                                         if (utenteStruttura.getIdDettaglioContatto() == null) {
+                                            entityManager.refresh(utenteStruttura.getIdStruttura());
                                             Integer idContattoStruttura = utenteStruttura.getIdStruttura().getIdContatto().getId();
                                             DettaglioContatto dc
                                                 = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(
@@ -351,9 +378,17 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                     }
                                     case "responsabile" -> {
                                     }
+                                    case "codice_matricola" -> {
+                                    }
+                                    case "dataAssunzione" -> {
+                                    }
+                                    case "dataDimissione" -> {
+                                    }
+                                    case "username" -> {
+                                    }
                                     default -> {
                                         log.info(edit);
-                                        throw new AssertionError();
+                                        throw new RibaltoneHttpException("caso operazione su contatto non trovato");
                                     }
                                 }
                                 entityManager.persist(idContatto);

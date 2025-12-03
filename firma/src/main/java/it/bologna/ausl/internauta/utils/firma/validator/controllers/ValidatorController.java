@@ -77,7 +77,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         try (InputStream fileIs = StringUtils.hasText(fileRepoFileId)? minIOWrapper.getByFileId(fileRepoFileId): minIOWrapper.getByUuid(fileRepoMongoUuid)) {
             if (fileIs != null) {
                 byte[] file = IOUtils.toByteArray(fileIs);
-                res = dSSValidatorManager.validateSignedDocument(request, validationDate, file);
+                res = dSSValidatorManager.validateSignedDocument( validationDate, file);
             } else {
                 String error = "il file non è stato trovato nel repository";
                 log.error(error);
@@ -110,7 +110,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         log.info("charset: " + System.getProperty("file.encoding"));
         String res;
         try {
-            res = dSSValidatorManager.validateSignedDocument(request, validationDate, file.getBytes());
+            res = dSSValidatorManager.validateSignedDocument( validationDate, file.getBytes());
         } catch (DssResponseException ex) {
             return ResponseEntity.internalServerError().body(ex.getMessage());
         } catch (IOException ex) {
@@ -132,7 +132,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
             HttpServletRequest request) throws JsonProcessingException, DssResponseException {
             
             SignParams.CertificateStatus res = SignParams.CertificateStatus.UNKNOWN;
-            Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate, request);
+            Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate);
             if (reportCertificateValidationMap != null && ! reportCertificateValidationMap.isEmpty()) {
                 String indication = reportCertificateValidationMap.get("Indication");
                 String subIndication = reportCertificateValidationMap.get("SubIndication");
@@ -175,7 +175,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
             HttpServletRequest request) throws JsonProcessingException {
         
         try {
-            Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate, request);
+            Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate);
             return ResponseEntity.ok(reportCertificateValidationMap);
         } catch (DssResponseException ex) {
             if (ex.getResponseMap() != null) {
@@ -213,7 +213,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         try (InputStream fileIs = StringUtils.hasText(fileRepoFileId)? minIOWrapper.getByFileId(fileRepoFileId): minIOWrapper.getByUuid(fileRepoMongoUuid)) {
             if (fileIs != null) {
                 byte[] file = IOUtils.toByteArray(fileIs);
-                signsReport = dSSValidatorManager.getSignsReport(request, validationDate, file);
+                signsReport = dSSValidatorManager.getSignsReport( validationDate, file);
                 if (signsReport == null) {
                     throw new NoSignException("eccezione lanciata nel caso il validatore non ha riconosciuto il formato del file, probabilmente non è fiomato");
                 }

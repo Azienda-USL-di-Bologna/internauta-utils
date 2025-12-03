@@ -89,6 +89,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                         qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
                         qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
                     ).fetchOne();
+
                 strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
                 break;
 
@@ -111,7 +112,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     queryFactory,
                     qStruttura,
                     qStoricoRelazione);
-
+                getEntityManager().refresh(strutturaChiusa);
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
                 strutturaNew = OperationsUtils.inserisciStruttura(
@@ -124,6 +125,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     qStruttura,
                     struttureDaAggiornareConPadreNonAncoraInserito
                 );
+                getEntityManager().refresh(strutturaNew);
                 //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
 
                 List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
