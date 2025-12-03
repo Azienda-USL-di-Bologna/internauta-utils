@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
-import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
+import it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
@@ -24,7 +24,7 @@ public class DefaultUploader extends MinIOUploader {
     
     private final String DEFAULT_PATH = "/uploader";;
     
-    public DefaultUploader(Map<String, Object> params, RepositoryManager repositoryManager) {
+    public DefaultUploader(Map<String, Object> params, DownloaderRepositoryManager repositoryManager) {
         super(params, repositoryManager);
     }
     

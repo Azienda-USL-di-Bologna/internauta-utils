@@ -54,6 +54,10 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.web.bind.annotation.RequestBody;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
 import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.ANAGRAFICHE;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.APPARTENENTI;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.STRUTTURE;
+import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONI;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.cache.utils.CacheUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
@@ -190,8 +194,12 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     ) throws RibaltoneHttpException, JsonProcessingException {
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
         Utente utente = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
-        utente = repositoryFactory.getEntityManager().find(Utente.class, utente.getId());
-        Integer idUtente = utente.getId();
+        Utente utenteReloaded;
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        utenteReloaded = transactionTemplate.execute(action -> {
+            return repositoryFactory.getEntityManager().find(Utente.class, utente.getId());
+        });
+        Integer idUtente = utenteReloaded.getId();
         JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
         if (!CacheUtils.isImportazioneCSVInCorsoFromCache(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate)) {
@@ -219,62 +227,61 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 }
                 return null;
             });
+
             try {
 
-                CacheUtils.setImportazioneCSVInCorso(idSelectedConfiguration, utente, repositoryFactory, objectMapper, transactionTemplate);
+                CacheUtils.setImportazioneCSVInCorso(idSelectedConfiguration, utenteReloaded, repositoryFactory, objectMapper, transactionTemplate);
+
                 if (idImportazioneOrganigramma == null) {
                     return new ResponseEntity("Utente non trovato", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
-                File csvFile = null;
+                transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                return transactionTemplate.execute(action -> {
 
-                switch (tipologia) {
-                    case APPARTENENTI ->
-                        jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
-                            QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
-                    case STRUTTURE ->
-                        jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
-                            QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
-                    case ANAGRAFICHE ->
-                        jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
-                            QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
-                    case TRASFORMAZIONI ->
-                        jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
-                            QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
-                    default ->
-                        throw new AssertionError();
-                }
-                try {
-                    // creo il csv come file temporaneo e lo cancello al termine
-                    csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
-                    csvFile.deleteOnExit();
-                    try (FileOutputStream fos = new FileOutputStream(csvFile);) {
-                        try (InputStream csvIs = csv.getInputStream()) {
-                            IOUtils.copy(csvIs, fos);
+                    File csvFile = null;
+                    try {
+                        // creo il csv come file temporaneo e lo cancello al termine
+                        csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
+                        csvFile.deleteOnExit();
+                        try (FileOutputStream fos = new FileOutputStream(csvFile);) {
+                            try (InputStream csvIs = csv.getInputStream()) {
+                                IOUtils.copy(csvIs, fos);
+                            }
+                        }
+                        switch (tipologia) {
+                            case APPARTENENTI ->
+                                jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
+                                    QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
+                            case STRUTTURE ->
+                                jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
+                                    QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
+                            case ANAGRAFICHE ->
+                                jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
+                                    QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
+                            case TRASFORMAZIONI ->
+                                jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
+                                    QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
+                            default ->
+                                throw new AssertionError();
+                        }
+                        CsvImportManager csvImportManager = new CsvImportManager(objectMapper, repositoryFactory.getEntityManager(), conversionService);
+                        csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
+                        setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
+                        return new ResponseEntity(true, HttpStatus.OK);
+                    } catch (RibaltoneHttpException | IOException ex) {
+                        LOGGER.error("", ex);
+                        CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
+                        setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
+                        return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+                    } finally {
+                        CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
+                        if (csvFile != null) {
+                            csvFile.delete();
                         }
                     }
-                    CsvImportManager csvImportManager = new CsvImportManager(objectMapper, repositoryFactory.getEntityManager(), conversionService);
-                    csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
-                    setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
-                } catch (RibaltoneHttpException | IOException ex) {
-                    LOGGER.error("", ex);
-                    CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-//                    ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
-                    setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
-                    return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-//                    throw new RibaltoneHttpException("errore nell'importazione", ex);
-                } finally {
-                    CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-//                    ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
-                    if (csvFile != null) {
-                        csvFile.delete();
-                    }
-
-                }
-                setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
-                return new ResponseEntity(true, HttpStatus.OK);
-            } catch (RibaltoneHttpException | JsonProcessingException ex) {
+                });
+            } catch (Exception ex) {
                 setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
-//                ribaltoneCache.setImportingCSV(Boolean.FALSE, utente);
                 CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
                 LOGGER.error("", ex);
                 return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -715,8 +722,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     }
 
     private void setImportazioneOrganigrammaFinito(Integer idImportazioneOgranigramma, String esito) {
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.executeWithoutResult(action -> {
+            JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
             QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
             jPAQueryFactory
                 .update(qImportazioniOrganigramma)
