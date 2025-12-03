@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.service.send_integration.api.FruitoreApi;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.elaboralotto.lottosignerandregister.LottiSignerAndRegisterJobWorker;
-import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.elaboralotto.lottosignerandregister.LottiSignerAndRegisterJobWorkerData;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.lottosignerandregister.LottiSignerAndRegisterJobWorker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.lottosignerandregister.LottiSignerAndRegisterJobWorkerData;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend.RestCallToSendJobWorker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend.RestCallToSendJobWorkerData;
 import it.bologna.ausl.internauta.utils.send_integration.model.Documento;
 import it.bologna.ausl.internauta.utils.send_integration.model.Errore;
 import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;
@@ -49,6 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  *
@@ -199,13 +204,22 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
         if (!internalError) {
             try {
                 entityManager.persist(documentoLottoEntityList);
-                LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(lotto.getPaId(), lotto.getLottoId());
-                LottiSignerAndRegisterJobWorker jobWorker = masterjobsObjectsFactory.getJobWorker(LottiSignerAndRegisterJobWorker.class,  lottiSignerAndRegisterJobWorkerData, false);
-                masterjobsJobsQueuer.queueOnCommit(Arrays.asList(jobWorker), String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()), "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
-                entityManager.flush();
+                LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(
+                    lotto.getPaId(), lotto.getLottoId()
+                );
+                LottiSignerAndRegisterJobWorker lottiSignerAndRegisterJobWorker = masterjobsObjectsFactory
+                    .getJobWorker(LottiSignerAndRegisterJobWorker.class,  lottiSignerAndRegisterJobWorkerData, false
+                );
                 
-                ZonedDateTime now = ZonedDateTime.now();
-                sendElaboraLottoRicevutoRequest(basePath, lotto, errori, now);
+                RestCallToSendJobWorkerData  restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildElaboraLottoRicevuto(
+                    getLottoBaseConEventualiErrori(lotto, errori, ZonedDateTime.now())
+                );
+                RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
+                    .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
+                );
+                
+                masterjobsJobsQueuer.queueOnCommit(Arrays.asList(lottiSignerAndRegisterJobWorker, restCallToSendJobWorker), String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()), "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                entityManager.flush();
             } catch (Exception ex) {
                 String error = "Errore nella chiamata finale del job";
                 throw new MasterjobsWorkerException(error);
@@ -229,8 +243,7 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
         return docLotto;
     }
     
-    @Deprecated // usa sendElaboraLottoRicevutoRequest
-    private LottoBase sendElaboraLottoRicevutoRequestOkHttp(String url, Lotto lotto, List<Errore> errori, ZonedDateTime now) throws JsonProcessingException, IOException, SendIntegrationException {
+    private LottoBaseConEventualiErrori getLottoBaseConEventualiErrori(Lotto lotto, List<Errore> errori, ZonedDateTime now) {
         LottoBaseConEventualiErrori lottoBaseConEventualiErrori = new LottoBaseConEventualiErrori()
             .paId(lotto.getPaId())
             .lottoId(lotto.getLottoId())
@@ -238,58 +251,8 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
             .numeroDocumenti(lotto.getNumeroDocumenti())
             .numeroErrori(errori.size())
             .errori(errori);
-        OkHttpClient okHttpClient = httpClientConfiguration.getHttpClientManager().getOkHttpClient();
-        
-        RequestBody body = RequestBody.create(
-                objectMapper.writeValueAsString(lottoBaseConEventualiErrori),
-                MediaType.parse("application/json")
-        );
-
-        Request request = new Request.Builder().url(url).post(body).build();
-
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                String error = String.format("Errore nella chiamata POST all'url %s: ha tornato %s" + url, response.code());
-                log.error(error);
-                if (response.body() != null) {
-                    try {
-                        log.error("response body:");
-                        log.error(response.body().string());
-                    } catch (Exception ex) {
-                    }
-                }
-                throw new SendIntegrationException(error);
-            }
-            LottoBase resp = objectMapper.readValue(response.body().string(), LottoBase.class);
-            return resp;
-        }
-        
-    }
-    
-    private LottoBase sendElaboraLottoRicevutoRequest(String basePath, Lotto lotto, List<Errore> errori, ZonedDateTime now) throws NotValidJwtException, SendIntegrationException {
-        LottoBaseConEventualiErrori lottoBaseConEventualiErrori = new LottoBaseConEventualiErrori()
-            .paId(lotto.getPaId())
-            .lottoId(lotto.getLottoId())
-            .timestamp(now.toOffsetDateTime())
-            .numeroDocumenti(lotto.getNumeroDocumenti())
-            .numeroErrori(errori.size())
-            .errori(errori);
-        String token = authorizationUtils.generateTokenForFruitore(now);
-        fruitoreApi.getApiClient().setBasePath(basePath).setBearerToken(token);
-        ResponseEntity<LottoBase> resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(lottoBaseConEventualiErrori);
-        if (!resp.getStatusCode().is2xxSuccessful()) {
-            String error = String.format("Errore nella chiamata POST al %s: ha tornato %s", "elaboraLottoRicevuto", resp.getStatusCode().value());
-            log.error(error);
-            log.error(resp.toString());
-            throw new SendIntegrationException(error);
-        }
-        if (resp.hasBody()) {
-            return resp.getBody();
-        } else {
-            String error = String.format("La risposta della chiamata POST al %s: non ha body", "elaboraLottoRicevuto");
-            log.error(error);
-            throw new SendIntegrationException(error);
-        }
+         
+        return lottoBaseConEventualiErrori;
     }
     
     /**

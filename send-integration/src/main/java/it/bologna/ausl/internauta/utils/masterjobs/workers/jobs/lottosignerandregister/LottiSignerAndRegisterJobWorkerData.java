@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.elaboralotto.lottosignerandregister;
+package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.lottosignerandregister;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
 
