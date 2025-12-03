@@ -41,18 +41,6 @@ public class UsersNotifiesManager {
 
     @Autowired
     private EntityManager entityManager;
-
-    /*
-     * Genera e invia le notifiche/mail agli utenti interessati per le operazioni ribaltone
-     * Metodo di compatibilità: chiama il metodo completo con parametri null
-     * @param buildedOperations le operazioni ribaltone
-     * @param codiceAzienda il codice dell'azienda
-     */
-    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda) {
-        // Metodo di compatibilità: chiama il metodo completo senza specificare utenti
-        // In questo caso non verranno inviate notifiche (comportamento precedente)
-        generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, null);
-    }
     
     /*
      * Genera e invia le notifiche/mail agli utenti interessati per le operazioni ribaltone
@@ -61,7 +49,7 @@ public class UsersNotifiesManager {
      * @param idPersonaLanciante l'ID della persona che ha lanciato il ribaltone (null se automatico)
      * @param idPersoneDaNotificare lista di ID persone da notificare (per ribaltone automatico, null se manuale)
      */
-    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, Integer idPersonaLanciante, List<Integer> idPersoneDaNotificare) {
+    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAzienda qAzienda = QAzienda.azienda;
         Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
@@ -76,13 +64,8 @@ public class UsersNotifiesManager {
         List<Persona> personeDaNotificareTeamiteMail = new ArrayList<>();
         
         QPersona qPersona = QPersona.persona;
-        if (idPersonaLanciante != null) {
-            // Ribaltone manuale: notificare la persona che ha lanciato
-            Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.id.eq(idPersonaLanciante)).fetchOne();
-            if (persona != null) {
-                personeDaNotificareSuScrivania.add(persona);
-            }
-        } else if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty()) {
+        
+        if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty()) {
             // Ribaltone automatico: notificare le persone dalla configurazione
             List<Persona> persone = queryFactory.select(qPersona).from(qPersona).where(qPersona.id.in(idPersoneDaNotificare)).fetch();
             personeDaNotificareSuScrivania.addAll(persone);

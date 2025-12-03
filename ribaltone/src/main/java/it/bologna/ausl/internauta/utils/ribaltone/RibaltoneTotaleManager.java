@@ -31,6 +31,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazion
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class RibaltoneTotaleManager {
         buildedOperations.execute(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
         fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda);
+        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare());
     }
 
     public Operations ribaltaWithUserReportAndCacheOperation(
@@ -112,7 +113,7 @@ public class RibaltoneTotaleManager {
         });
     }
 
-    public void ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
+    public void ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration, Utente utenteLanciatore) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idConfiguration);
         RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
@@ -120,7 +121,8 @@ public class RibaltoneTotaleManager {
         buildedOperations.execute(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
         fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda);
+        //configRibaltoneView.getIdPersoneDaNotificare();
+        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, Arrays.asList(utenteLanciatore.getIdPersona().getId()));
         //return buildOperations;
     }
 
