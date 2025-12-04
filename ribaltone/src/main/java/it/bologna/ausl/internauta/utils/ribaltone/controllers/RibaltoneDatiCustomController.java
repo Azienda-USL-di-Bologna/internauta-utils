@@ -9,6 +9,8 @@ import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReade
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
+import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
@@ -33,6 +35,9 @@ import java.util.logging.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -55,6 +60,12 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @Autowired
     private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+
+    @Autowired
+    private RepositoryFactory repositoryFactory;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @RequestMapping(value = "downloadCSVFileFromIdAzienda", method = RequestMethod.GET)
     public void downloadCSVFileFromIdAzienda(
@@ -201,10 +212,158 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         return new ResponseEntity(om.writeValueAsString(configRibaltoneViewDaSalvareObject), HttpStatus.OK);
     }
 
-    private static class TypeReferenceImpl extends TypeReference<Map<String, Object>> {
+    @RequestMapping(value = "sincronizzaDatiImportati", method = RequestMethod.POST)
+    public ResponseEntity<?> sincronizzaDatiImportati(
+        @RequestParam Integer idAzienda,
+        @RequestParam Boolean anteprima,
+        HttpServletRequest request) throws RibaltoneHttpException {
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        return ResponseEntity.ok(transactionTemplate.execute(status -> {
+            SyncResult result = new SyncResult();
 
-        public TypeReferenceImpl() {
-        }
+            try {
+                JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+
+                // Esegui la function con native query
+                String sql = String.format(
+                    "SELECT * FROM ribaltone_dati.sincronizza_dati_importati(%d, %b)",
+                    idAzienda, !anteprima);
+
+                List<Object[]> results = entityManager.createNativeQuery(sql).getResultList();
+
+                if (!results.isEmpty()) {
+                    Object[] row = results.get(0);
+                    result.setEseguito((Boolean) row[0]);
+                    result.setAziendaId((Integer) row[1]);
+                    result.setCodiceAzienda((String) row[2]);
+                    result.setNomeAzienda((String) row[3]);
+                    result.setStrutturePrima((Integer) row[4]);
+                    result.setStruttureDopo((Integer) row[5]);
+                    result.setStruttureDifferenza((Integer) row[6]);
+                    result.setAppartenentiPrima((Integer) row[7]);
+                    result.setAppartenentiDopo((Integer) row[8]);
+                    result.setAppartenentiDifferenza((Integer) row[9]);
+                    result.setMessaggio((String) row[10]);
+                }
+                result.setNotices(new ArrayList<>());
+
+            } catch (Exception e) {
+                throw new RibaltoneHttpException("Errore durante la sincronizzazione", e);
+            }
+            return result;
+        }));
     }
 
+    public class SyncResult {
+
+        private boolean eseguito;
+        private int aziendaId;
+        private String codiceAzienda;
+        private String nomeAzienda;
+        private int strutturePrima;
+        private int struttureDopo;
+        private int struttureDifferenza;
+        private int appartenentiPrima;
+        private int appartenentiDopo;
+        private int appartenentiDifferenza;
+        private String messaggio;
+        private List<String> notices; // I messaggi NOTICE
+
+        public boolean isEseguito() {
+            return eseguito;
+        }
+
+        public void setEseguito(boolean eseguito) {
+            this.eseguito = eseguito;
+        }
+
+        public int getAziendaId() {
+            return aziendaId;
+        }
+
+        public void setAziendaId(int aziendaId) {
+            this.aziendaId = aziendaId;
+        }
+
+        public String getCodiceAzienda() {
+            return codiceAzienda;
+        }
+
+        public void setCodiceAzienda(String codiceAzienda) {
+            this.codiceAzienda = codiceAzienda;
+        }
+
+        public String getNomeAzienda() {
+            return nomeAzienda;
+        }
+
+        public void setNomeAzienda(String nomeAzienda) {
+            this.nomeAzienda = nomeAzienda;
+        }
+
+        public int getStrutturePrima() {
+            return strutturePrima;
+        }
+
+        public void setStrutturePrima(int strutturePrima) {
+            this.strutturePrima = strutturePrima;
+        }
+
+        public int getStruttureDopo() {
+            return struttureDopo;
+        }
+
+        public void setStruttureDopo(int struttureDopo) {
+            this.struttureDopo = struttureDopo;
+        }
+
+        public int getStruttureDifferenza() {
+            return struttureDifferenza;
+        }
+
+        public void setStruttureDifferenza(int struttureDifferenza) {
+            this.struttureDifferenza = struttureDifferenza;
+        }
+
+        public int getAppartenentiPrima() {
+            return appartenentiPrima;
+        }
+
+        public void setAppartenentiPrima(int appartenentiPrima) {
+            this.appartenentiPrima = appartenentiPrima;
+        }
+
+        public int getAppartenentiDopo() {
+            return appartenentiDopo;
+        }
+
+        public void setAppartenentiDopo(int appartenentiDopo) {
+            this.appartenentiDopo = appartenentiDopo;
+        }
+
+        public int getAppartenentiDifferenza() {
+            return appartenentiDifferenza;
+        }
+
+        public void setAppartenentiDifferenza(int appartenentiDifferenza) {
+            this.appartenentiDifferenza = appartenentiDifferenza;
+        }
+
+        public String getMessaggio() {
+            return messaggio;
+        }
+
+        public void setMessaggio(String messaggio) {
+            this.messaggio = messaggio;
+        }
+
+        public List<String> getNotices() {
+            return notices;
+        }
+
+        public void setNotices(List<String> notices) {
+            this.notices = notices;
+        }
+
+    }
 }
