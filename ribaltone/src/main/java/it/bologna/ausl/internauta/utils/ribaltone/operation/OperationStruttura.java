@@ -131,15 +131,17 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
                 for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
                     storicoRelazione.setAttivaAl(ZonedDateTime.now());
+                    //lo sposta struttura si occupa anche di spostare gli uffici
+                    if (!storicoRelazione.getIdStrutturaFiglia().getUfficio()) {
+                        StoricoRelazione storicoRelazioneNew = new StoricoRelazione();
+                        storicoRelazioneNew.setAttivaDal(ZonedDateTime.now());
+                        storicoRelazioneNew.setIdStrutturaFiglia(storicoRelazione.getIdStrutturaFiglia());
+                        storicoRelazioneNew.setIdStrutturaPadre(strutturaNew);
 
-                    StoricoRelazione storicoRelazioneNew = new StoricoRelazione();
-                    storicoRelazioneNew.setAttivaDal(ZonedDateTime.now());
-                    storicoRelazioneNew.setIdStrutturaFiglia(storicoRelazione.getIdStrutturaFiglia());
-                    storicoRelazioneNew.setIdStrutturaPadre(strutturaNew);
-
-                    getEntityManager().persist(storicoRelazione);
-                    getEntityManager().persist(storicoRelazioneNew);
-                    getEntityManager().flush();
+                        getEntityManager().persist(storicoRelazione);
+                        getEntityManager().persist(storicoRelazioneNew);
+                        getEntityManager().flush();
+                    }
                 }
                 OperationsUtils.inserisciSpostaUtentiStruttura(queryFactory, em, strutturaNew, strutturaSorgenteDaChiudereR);
                 //OperationsUtils.inserisciStrutturaNewInAziendaUnificata(queryFactory, em, strutturaNew, struttureOld, getAzione());
