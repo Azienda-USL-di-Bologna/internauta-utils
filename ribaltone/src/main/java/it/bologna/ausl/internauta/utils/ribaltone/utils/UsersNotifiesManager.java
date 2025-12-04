@@ -19,6 +19,10 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import it.bologna.ausl.model.entities.scrivania.Attivita;
 import it.bologna.ausl.model.entities.scrivania.DettaglioAttivita;
 import jakarta.persistence.EntityManager;
@@ -55,7 +59,7 @@ public class UsersNotifiesManager {
         Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
         
         QApplicazione qApplicazione = QApplicazione.applicazione;
-        Applicazione app = queryFactory.select(qApplicazione).from(qApplicazione).where(qApplicazione.nome.eq(Applicazione.Applicazioni.ribaltorg.toString())).fetchOne();
+        Applicazione app = queryFactory.select(qApplicazione).from(qApplicazione).where(qApplicazione.id.eq(Applicazione.Applicazioni.ribaltorg.toString())).fetchOne();
         
         // Ricavare le persone da notificare: 
         // in caso di ribaltone manuale è la persona che ha lanciato il ribaltone manuale, 
@@ -117,52 +121,40 @@ public class UsersNotifiesManager {
         // ANAGRAFICHE
         if (buildedOperations.getListOfOperationAnagrafica() != null) {
             for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
-                DatiDaImportareAnagrafica entita = (DatiDaImportareAnagrafica) operation.getEntitaCoinvolta();
-                // Ricarica la persona dal DB per ottenere l'ID (le operazioni sono detached dalla cache)
-                Persona persona = queryFactory.select(qPersona)
-                    .from(qPersona)
-                    .where(qPersona.codiceFiscale.eq(entita.getCodiceFiscale())
-                        .and(qPersona.attiva.isTrue()))
-                    .fetchOne();
-                
-                if (persona != null) {
-                    String descrizione = buildDescrizioneAnagrafica(operation, entita);
-                    DettaglioAttivita dettaglio = new DettaglioAttivita(
-                        idAttivita,
-                        DettaglioAttivita.SottosezioneDettaglioAttivita.ANAGRAFICHE,
-                        descrizione,
-                        persona.getId(),
-                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                        false
-                    );
-                    list.add(dettaglio);
+                AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
+                if (entita == null) {
+                    continue;
                 }
+                String descrizione = buildDescrizioneAnagrafica(operation, entita);
+                DettaglioAttivita dettaglio = new DettaglioAttivita(
+                    idAttivita,
+                    DettaglioAttivita.SottosezioneDettaglioAttivita.ANAGRAFICHE,
+                    descrizione,
+                    null,
+                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                    false
+                );
+                list.add(dettaglio);
             }
         }
         
         // APPARTENENTI
         if (buildedOperations.getListOfOperationAppartenente() != null) {
             for (OperationAppartenente operation : buildedOperations.getListOfOperationAppartenente()) {
-                DatiDaImportareAppartenente entita = (DatiDaImportareAppartenente) operation.getEntitaCoinvolta();
-                // Ricarica la persona dal DB per ottenere l'ID
-                Persona persona = queryFactory.select(qPersona)
-                    .from(qPersona)
-                    .where(qPersona.codiceFiscale.eq(entita.getCodiceFiscale())
-                        .and(qPersona.attiva.isTrue()))
-                    .fetchOne();
-                
-                if (persona != null) {
-                    String descrizione = buildDescrizioneAppartenente(operation, entita);
-                    DettaglioAttivita dettaglio = new DettaglioAttivita(
-                        idAttivita,
-                        DettaglioAttivita.SottosezioneDettaglioAttivita.APPARTENENTI,
-                        descrizione,
-                        persona.getId(),
-                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                        false
-                    );
-                    list.add(dettaglio);
+                AppartenenteFields entita = resolveAppartenenteFields(operation.getEntitaCoinvolta());
+                if (entita == null) {
+                    continue;
                 }
+                String descrizione = buildDescrizioneAppartenente(operation, entita);
+                DettaglioAttivita dettaglio = new DettaglioAttivita(
+                    idAttivita,
+                    DettaglioAttivita.SottosezioneDettaglioAttivita.APPARTENENTI,
+                    descrizione,
+                    null,
+                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                    false
+                );
+                list.add(dettaglio);
             }
         }
         
@@ -175,65 +167,43 @@ public class UsersNotifiesManager {
                     continue;
                 }
                 
-                DatiDaImportareStruttura entita = (DatiDaImportareStruttura) operation.getEntitaCoinvolta();
-                // Ricarica la struttura dal DB per ottenere l'ID
-                Struttura struttura = queryFactory.select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entita.getIdCasella())
-                        .and(qStruttura.attiva.isTrue())
-                        .and(qStruttura.idAzienda.id.eq(entita.getIdAzienda())))
-                    .fetchOne();
-                
-                if (struttura != null) {
-                    String descrizione = buildDescrizioneStruttura(operation, entita);
-                    DettaglioAttivita dettaglio = new DettaglioAttivita(
-                        idAttivita,
-                        DettaglioAttivita.SottosezioneDettaglioAttivita.STRUTTURE,
-                        descrizione,
-                        struttura.getId(),
-                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                        false
-                    );
-                    list.add(dettaglio);
+                StrutturaFields entita = resolveStrutturaFields(operation.getEntitaCoinvolta());
+                if (entita == null) {
+                    continue;
                 }
+
+                String descrizione = buildDescrizioneStruttura(operation, entita);
+                DettaglioAttivita dettaglio = new DettaglioAttivita(
+                    idAttivita,
+                    DettaglioAttivita.SottosezioneDettaglioAttivita.STRUTTURE,
+                    descrizione,
+                    null,
+                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                    false
+                );
+                list.add(dettaglio);
+                
             }
         }
         
         // TRASFORMAZIONI (include CAMBIO_PADRE e RINOMINA dalle strutture)
         if (buildedOperations.getListOfOperationTrasformazione() != null) {
             for (OperationTrasformazione operation : buildedOperations.getListOfOperationTrasformazione()) {
-                DatiDaImportareTrasformazione entita = (DatiDaImportareTrasformazione) operation.getEntitaCoinvolta();
-                // Per le trasformazioni, usa la struttura di partenza
-                Struttura struttura = queryFactory.select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entita.getIdCasellaPartenza())
-                        .and(qStruttura.attiva.isTrue())
-                        .and(qStruttura.idAzienda.id.eq(entita.getIdAzienda())))
-                    .fetchOne();
-                
-                // Se non trovata attiva, cerca quella disattivata più recente
-                if (struttura == null) {
-                    struttura = queryFactory.select(qStruttura)
-                        .from(qStruttura)
-                        .where(qStruttura.idCasella.eq(entita.getIdCasellaPartenza())
-                            .and(qStruttura.idAzienda.id.eq(entita.getIdAzienda())))
-                        .orderBy(qStruttura.dataCessazione.desc())
-                        .limit(1)
-                        .fetchOne();
+                TrasformazioneFields entita = resolveTrasformazioneFields(operation.getEntitaCoinvolta());
+                if (entita == null) {
+                    continue;
                 }
-                
-                if (struttura != null) {
-                    String descrizione = buildDescrizioneTrasformazione(operation, entita);
-                    DettaglioAttivita dettaglio = new DettaglioAttivita(
-                        idAttivita,
-                        DettaglioAttivita.SottosezioneDettaglioAttivita.TRASFORMAZIONI,
-                        descrizione,
-                        struttura.getId(),
-                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                        false
-                    );
-                    list.add(dettaglio);
-                }
+
+                String descrizione = buildDescrizioneTrasformazione(operation, entita);
+                DettaglioAttivita dettaglio = new DettaglioAttivita(
+                    idAttivita,
+                    DettaglioAttivita.SottosezioneDettaglioAttivita.TRASFORMAZIONI,
+                    descrizione,
+                    null,
+                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                    false
+                );
+                list.add(dettaglio);
             }
         }
         
@@ -247,9 +217,9 @@ public class UsersNotifiesManager {
     /**
      * Costruisce la descrizione per un'operazione anagrafica
      */
-    private String buildDescrizioneAnagrafica(OperationAnagrafica operation, DatiDaImportareAnagrafica entita) {
+    private String buildDescrizioneAnagrafica(OperationAnagrafica operation, AnagraficaFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
-        String nomeCompleto = entita.getCognome() + " " + entita.getNome();
+        String nomeCompleto = entita.getNomeCompleto();
         String cf = entita.getCodiceFiscale();
         String email = entita.getEmail();
         
@@ -268,9 +238,9 @@ public class UsersNotifiesManager {
     /**
      * Costruisce la descrizione per un'operazione appartenente
      */
-    private String buildDescrizioneAppartenente(OperationAppartenente operation, DatiDaImportareAppartenente entita) {
+    private String buildDescrizioneAppartenente(OperationAppartenente operation, AppartenenteFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
-        String nomeCompleto = entita.getCognome() + " " + entita.getNome();
+        String nomeCompleto = entita.getNomeCompleto();
         String cf = entita.getCodiceFiscale();
         String tipoAppartenenza = "T".equals(entita.getTipoAppartenenza()) ? "direttamente" : "funzionalmente";
         String nomeCasella = descrizioniAggiuntive != null ? descrizioniAggiuntive.get("nomeCasella") : null;
@@ -278,7 +248,7 @@ public class UsersNotifiesManager {
             nomeCasella = descrizioniAggiuntive != null ? descrizioniAggiuntive.get("descrizioneCasella") : "struttura";
         }
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
-        String responsabile = entita.getResponsabile() != null && entita.getResponsabile() ? " come responsabile" : "";
+        String responsabile = entita.isResponsabile() ? " come responsabile" : "";
         
         switch (operation.getAzione()) {
             case INSERT:
@@ -287,7 +257,7 @@ public class UsersNotifiesManager {
             case EDIT:
                 String descrizioneCasella = descrizioniAggiuntive != null ? descrizioniAggiuntive.get("descrizioneCasella") : nomeCasella;
                 String tipoAppartenenzaFormattato = "T".equals(entita.getTipoAppartenenza()) ? "diretta" : "funzionale";
-                String ruoloResponsabile = entita.getResponsabile() != null && entita.getResponsabile() ? 
+                String ruoloResponsabile = entita.isResponsabile() ? 
                     "con ruolo di responsabile" : "senza ruolo di responsabile";
                 return String.format("L'utente %s (%s) della struttura %s (%s) è stato aggiornato con afferenza %s %s", 
                     nomeCompleto, cf, descrizioneCasella, idCasella, tipoAppartenenzaFormattato, ruoloResponsabile);
@@ -302,7 +272,7 @@ public class UsersNotifiesManager {
     /**
      * Costruisce la descrizione per un'operazione struttura
      */
-    private String buildDescrizioneStruttura(OperationStruttura operation, DatiDaImportareStruttura entita) {
+    private String buildDescrizioneStruttura(OperationStruttura operation, StrutturaFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
         String descrizione = entita.getDescrizione();
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
@@ -326,7 +296,7 @@ public class UsersNotifiesManager {
     /**
      * Costruisce la descrizione per un'operazione trasformazione
      */
-    private String buildDescrizioneTrasformazione(OperationTrasformazione operation, DatiDaImportareTrasformazione entita) {
+    private String buildDescrizioneTrasformazione(OperationTrasformazione operation, TrasformazioneFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
         
         switch (operation.getAzione()) {
@@ -367,7 +337,7 @@ public class UsersNotifiesManager {
     /**
      * Costruisce la descrizione per un'operazione trasformazione da struttura (CAMBIO_PADRE o RINOMINA)
      */
-    private String buildDescrizioneTrasformazioneStruttura(OperationStruttura operation, DatiDaImportareStruttura entita) {
+    private String buildDescrizioneTrasformazioneStruttura(OperationStruttura operation, StrutturaFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
         String descrizione = entita.getDescrizione();
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
@@ -391,6 +361,182 @@ public class UsersNotifiesManager {
                 descrizioneCasellaVecchia, idCasella, descrizione);
         }
         return String.format("Trasformazione struttura %s (%s)", descrizione, idCasella);
+    }
+    
+    private AnagraficaFields resolveAnagraficaFields(Object entita) {
+        if (entita instanceof DatiDaImportareAnagrafica) {
+            DatiDaImportareAnagrafica datiDaImportare = (DatiDaImportareAnagrafica) entita;
+            return new AnagraficaFields(datiDaImportare.getNome(), datiDaImportare.getCognome(), datiDaImportare.getCodiceFiscale(), datiDaImportare.getEmail());
+        }
+        if (entita instanceof DatiImportatiAnagrafica) {
+            DatiImportatiAnagrafica datiImportati = (DatiImportatiAnagrafica) entita;
+            return new AnagraficaFields(datiImportati.getNome(), datiImportati.getCognome(), datiImportati.getCodiceFiscale(), datiImportati.getEmail());
+        }
+        log.warn("Entità anagrafica non gestita ({})", entita != null ? entita.getClass() : "null");
+        return null;
+    }
+    
+    private AppartenenteFields resolveAppartenenteFields(Object entita) {
+        if (entita instanceof DatiDaImportareAppartenente) {
+            DatiDaImportareAppartenente datiDaImportare = (DatiDaImportareAppartenente) entita;
+            return new AppartenenteFields(
+                datiDaImportare.getNome(),
+                datiDaImportare.getCognome(),
+                datiDaImportare.getCodiceFiscale(),
+                datiDaImportare.getTipoAppartenenza(),
+                datiDaImportare.getIdCasella(),
+                datiDaImportare.getResponsabile()
+            );
+        }
+        if (entita instanceof DatiImportatiAppartenente) {
+            DatiImportatiAppartenente datiImportati = (DatiImportatiAppartenente) entita;
+            return new AppartenenteFields(
+                datiImportati.getNome(),
+                datiImportati.getCognome(),
+                datiImportati.getCodiceFiscale(),
+                datiImportati.getTipoAppartenenza(),
+                datiImportati.getIdCasella(),
+                datiImportati.getResponsabile()
+            );
+        }
+        log.warn("Entità appartenente non gestita ({})", entita != null ? entita.getClass() : "null");
+        return null;
+    }
+    
+    private StrutturaFields resolveStrutturaFields(Object entita) {
+        if (entita instanceof DatiDaImportareStruttura) {
+            DatiDaImportareStruttura datiDaImportare = (DatiDaImportareStruttura) entita;
+            return new StrutturaFields(datiDaImportare.getDescrizione(), datiDaImportare.getIdCasella(), datiDaImportare.getIdPadre());
+        }
+        if (entita instanceof DatiImportatiStruttura) {
+            DatiImportatiStruttura datiImportati = (DatiImportatiStruttura) entita;
+            return new StrutturaFields(datiImportati.getDescrizione(), datiImportati.getIdCasella(), datiImportati.getIdPadre());
+        }
+        log.warn("Entità struttura non gestita ({})", entita != null ? entita.getClass() : "null");
+        return null;
+    }
+    
+    private TrasformazioneFields resolveTrasformazioneFields(Object entita) {
+        if (entita instanceof DatiDaImportareTrasformazione) {
+            DatiDaImportareTrasformazione datiDaImportare = (DatiDaImportareTrasformazione) entita;
+            return new TrasformazioneFields(datiDaImportare.getIdCasellaPartenza(), datiDaImportare.getIdCasellaArrivo());
+        }
+        if (entita instanceof DatiImportatiTrasformazione) {
+            DatiImportatiTrasformazione datiImportati = (DatiImportatiTrasformazione) entita;
+            return new TrasformazioneFields(datiImportati.getIdCasellaPartenza(), datiImportati.getIdCasellaArrivo());
+        }
+        log.warn("Entità trasformazione non gestita ({})", entita != null ? entita.getClass() : "null");
+        return null;
+    }
+    
+    private static String safe(String value) {
+        return value != null ? value : "";
+    }
+    
+    private static final class AnagraficaFields {
+        private final String nome;
+        private final String cognome;
+        private final String codiceFiscale;
+        private final String email;
+
+        private AnagraficaFields(String nome, String cognome, String codiceFiscale, String email) {
+            this.nome = nome;
+            this.cognome = cognome;
+            this.codiceFiscale = codiceFiscale;
+            this.email = email;
+        }
+        
+        private String getNomeCompleto() {
+            return (safe(cognome) + " " + safe(nome)).trim();
+        }
+        
+        private String getCodiceFiscale() {
+            return codiceFiscale;
+        }
+        
+        private String getEmail() {
+            return email;
+        }
+    }
+    
+    private static final class AppartenenteFields {
+        private final String nome;
+        private final String cognome;
+        private final String codiceFiscale;
+        private final String tipoAppartenenza;
+        private final Integer idCasella;
+        private final Boolean responsabile;
+
+        private AppartenenteFields(String nome, String cognome, String codiceFiscale, String tipoAppartenenza, Integer idCasella, Boolean responsabile) {
+            this.nome = nome;
+            this.cognome = cognome;
+            this.codiceFiscale = codiceFiscale;
+            this.tipoAppartenenza = tipoAppartenenza;
+            this.idCasella = idCasella;
+            this.responsabile = responsabile;
+        }
+        
+        private String getNomeCompleto() {
+            return (safe(cognome) + " " + safe(nome)).trim();
+        }
+        
+        private String getCodiceFiscale() {
+            return codiceFiscale;
+        }
+        
+        private String getTipoAppartenenza() {
+            return tipoAppartenenza;
+        }
+        
+        private Integer getIdCasella() {
+            return idCasella;
+        }
+        
+        private boolean isResponsabile() {
+            return Boolean.TRUE.equals(responsabile);
+        }
+    }
+    
+    private static final class StrutturaFields {
+        private final String descrizione;
+        private final Integer idCasella;
+        private final Integer idPadre;
+
+        private StrutturaFields(String descrizione, Integer idCasella, Integer idPadre) {
+            this.descrizione = descrizione;
+            this.idCasella = idCasella;
+            this.idPadre = idPadre;
+        }
+        
+        private String getDescrizione() {
+            return descrizione;
+        }
+        
+        private Integer getIdCasella() {
+            return idCasella;
+        }
+        
+        private Integer getIdPadre() {
+            return idPadre;
+        }
+    }
+    
+    private static final class TrasformazioneFields {
+        private final Integer idCasellaPartenza;
+        private final Integer idCasellaArrivo;
+
+        private TrasformazioneFields(Integer idCasellaPartenza, Integer idCasellaArrivo) {
+            this.idCasellaPartenza = idCasellaPartenza;
+            this.idCasellaArrivo = idCasellaArrivo;
+        }
+        
+        private Integer getIdCasellaPartenza() {
+            return idCasellaPartenza;
+        }
+        
+        private Integer getIdCasellaArrivo() {
+            return idCasellaArrivo;
+        }
     }
     
     /**
