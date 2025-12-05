@@ -1,0 +1,515 @@
+openapi: 3.0.3
+info:
+  title: |
+    Firma digitale e protocollazione di lotti di documenti PDF: 
+    endpoint delle API REST esposti dall'erogatore (invocati dal fruitore)
+  version: 1.0.0
+  contact:
+    name: Lepida ScpA
+    url: https://www.lepida.net
+components:
+  schemas:
+    DocumentoBase:
+      type: object
+      title: Documento base
+      description: |
+        Singolo documento base.
+        Questo oggetto contiene 
+        - l'identificativo del documento o di un suo caricamento
+      properties:
+        documentoId:
+          type: string
+          pattern: '^[a-zA-Z0-9-]+$'
+          example: 02770891204-17245-0-1208385-0
+          title: Documento ID
+          description: |
+            Identificativo alfanumerico globalmente univoco del documento da firmare digitalmente e protocollare.
+            Tale identificativo deve essere univoco globalmente, non solo all'interno del lotto, 
+            e può essere composto da lettere, numeri e trattino.
+            Si suggerisce di usare un valore che contenga il codice fiscale della PA, 
+            l'identificativo del lotto con un eventuale progressivo di caricamento,
+            l'identificativo del documento all'interno del lotto con un eventuale progressivo di caricamento,
+            (utile per caricamenti successivi in caso di errore),
+            concatenati dal carattere di separazione '-'.
+      required: [documentoId]
+    Documento:
+      type: object
+      title: Documento da elaborare
+      description: |
+        Singolo documento da firmare digitalmente e protocollare. Questo oggetto contiene:
+        - l'identificativo del documento o di un suo caricamento;
+        - il nome del relativo file PDF da firmare digitalmente e protocollare, che si trova nel percorso specificato nel campo inputBasePath del lotto;
+        - l'hash del file PDF da firmare digitalmente e protocollare.
+      allOf:
+        - $ref: "#/components/schemas/DocumentoBase"
+        - properties:
+            inputFileName:
+              type: string
+              pattern: '^[a-zA-Z0-9-]+\.pdf$'
+              maxLength: 255
+              title: Nome del file PDF da firmare digitalmente e protocollare
+              description: |
+                Nome del file PDF da firmare digitalmente e protocollare.
+                Il file PDF deve essere presente nel percorso specificato nel campo inputBasePath del lotto.
+                Il nome del file deve essere universalmente univoco. 
+                Si suggerisce di usare come nome il valore di documentoId, seguito da '.pdf'.
+                Ad esempio, se documentoId è '02770891204-17245-0-1208385-0', 
+                il nome del file può essere '02770891204-17245-0-1208385-0.pdf'.
+              example: 02770891204-17245-0-1208385-0.pdf
+            inputFileHash:
+              type: string
+              minLength: 44
+              maxLength: 44
+              pattern: ^[A-Za-z0-9+\/]{43}=|[A-Za-z0-9+\/]{44}$
+              title: Hash SHA256 del file PDF da firmare digitalmente e protocollare
+              description: |
+                Hash SHA256, codificato in base64, del contenuto binario del file PDF da firmare digitalmente e protocollare
+              example: Imk7hUKQe0FU0MWSptI12nfNlKE0DyCXM9jpzpgp+t4=
+      required: [documentoId, inputFileName, inputFileHash]
+      example:
+        documentoId: 02770891204-17245-0-1208385-0
+        inputFileName: 02770891204-17245-0-1208385-0.pdf
+        inputFileHash: Imk7hUKQe0FU0MWSptI12nfNlKE0DyCXM9jpzpgp+t4=
+    DocumentoElaborato:
+      type: object
+      title: Documento elaborato
+      description: |
+        Singolo documento firmato digitalmente e protocollato. Questo oggetto contiene:
+        - l'identificativo del documento o di un suo caricamento;
+        - il nome del relativo file PDF firmato digitalmente e protocollato, che si trova nel percorso specificato nel campo outputBasePath del lotto;
+        - l'hash del file PDF firmato digitalmente e protocollato.
+      allOf:
+        - $ref: "#/components/schemas/DocumentoBase"
+        - properties:
+            outputFileName:
+              type: string
+              pattern: '^[a-zA-Z0-9-]+\.output\.pdf$'
+              maxLength: 255
+              title: Nome del file PDF firmato digitalmente e protocollato
+              description: |
+                Nome del file PDF firmato digitalmente e protocollato.
+                Il file PDF deve essere presente nel percorso specificato nel campo outputBasePath del lotto.
+                Il nome del file deve essere universalmente univoco. 
+                Si suggerisce di usare come nome il valore di documentoId, seguito da '.output.pdf'.
+                Ad esempio, se documentoId è '02770891204-17245-0-1208385-0', 
+                il nome del file può essere '02770891204-17245-0-1208385-0.output.pdf'.
+              example: 02770891204-17245-0-1208385-0.output.pdf
+            outputFileHash:
+              type: string
+              minLength: 44
+              maxLength: 44
+              pattern: ^[A-Za-z0-9+\/]{43}=|[A-Za-z0-9+\/]{44}$
+              title: Hash SHA256 del file PDF firmato digitalmente e protocollato
+              description: |
+                Hash SHA256, codificato in base64, del contenuto binario del file PDF firmato digitalmente e protocollato
+              example: jezIVxlG1M1woCSUngM6KipUN3/p8cG5RMIPnuEanlE=
+      required: [documentoId, outputFileName, outputFileHash]
+      example:
+        documentoId: 02770891204-17245-0-1208385-0
+        outputFileName: 02770891204-17245-0-1208385-0.output.pdf
+        outputFileHash: jezIVxlG1M1woCSUngM6KipUN3/p8cG5RMIPnuEanlE=
+    LottoBase:
+      type: object
+      title: Lotto base
+      description: |
+        Lotto base. Questo oggetto contiene:
+        - il codice fiscale della PA fruitrice del servizio;
+        - l'identificativo del lotto o di un suo caricamento;
+        - il timestamp significativo per la richiesta o la risposta;
+        - il numero totale dei documenti del lotto.
+      properties:
+        paId:
+          type: string
+          pattern: '^\d{11}$'
+          title: Codice fiscale della PA fruitrice del servizio
+          description: |
+            Codice fiscale della PA (ente o azienda sanitaria) fruitrice del servizio di firma digitale e protocollazione dei file PDF.
+            Tale codice fiscale è univoco per ogni ente o azienda sanitaria.
+          example: 02770891204
+        lottoId:
+          type: string
+          pattern: '^[a-zA-Z0-9-]+$'
+          title: Lotto ID
+          description: |
+            Identificativo alfanumerico univoco del lotto di documenti o di un suo caricamento.
+            Tale identificativo può essere composto da lettere, numeri e trattino.
+            Si suggerisce di usare un identificativo che contenga 
+            l'identificativo del lotto ed il progressivo del caricamento (utile per caricamenti successivi in caso di errore), 
+            concatenati da un carattere di separazione, ad esempio '-'.
+            Ad esempio, se l'id del lotto è '17245' ed il progressivo del caricamento è '0', l'id del lotto può essere '17245-0'.
+          example: 17245-0
+        timestamp:
+          type: string
+          format: date-time
+#          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
+          title: Timestamp significativo
+          description: |
+            Timestamp significativo per la richiesta o la risposta, 
+            in formato ISO 8601, cioè YYYY-MM-DDTHH:mm:ssZ, 
+            dove YYYY è l'anno, MM è il mese, DD è il giorno, 
+            HH è l'ora, mm sono i minuti e ss sono i secondi.
+            Ad esempio, il 21° gennaio 2024 alle ore 10:30:00 UTC 
+            si scrive 2024-01-21T10:30:00Z.
+          example: 2024-01-21T10:30:00Z
+        numeroDocumenti:
+          type: integer
+          minimum: 1
+          title: Numero totale dei documenti del lotto
+          description: |
+            Numero totale dei documenti del lotto.
+            Tale numero è pari al numero di file PDF da firmare digitalmente e protocollare.
+          example: 5
+      required: [paId, lottoId, timestamp, numeroDocumenti]
+    Errore:
+      type: object
+      title: Errore
+      description: |
+        Errore restituito in caso di un'anomalia nella chiamata. Questo oggetto contiene:
+        - l'identificativo del documento o di un suo caricamento;
+        - il codice di errore;
+        - l'eventuale elemento che ha generato l'errore;
+        - l'eventuale dettaglio del problema.
+      allOf:
+        - properties:
+            code:
+              type: string
+              pattern: '^[A-Z0-9_]+$'
+              title: Codice di errore
+              description: |
+                Codice di errore che identifica il tipo di errore.
+                I codici di errore sono in formato leggibile dall'uomo e possono essere composti da lettere maiuscole, numeri e underscore.
+              example: PATTERN_NON_VALIDO
+            element:
+              type: string
+              pattern: '^([a-zA-Z_]\w*)(\[(\d+)\])?(?:\.([a-zA-Z_]\w*)(\[(\d+)\])?)*$'
+              title: Elemento che ha generato l'errore
+              description: |
+                Elemento che ha generato l'errore.
+                Viene identificato tramite il nome del parametro oppure il path dell'elemento.
+              example: documenti[2].inputFileName
+            detail:
+              type: string
+              maxLength: 1024
+              title: Dettaglio dell'errore
+              description: |
+                Dettaglio dell'errore che specifica il problema.
+                Il dettaglio dell'errore è una spiegazione leggibile dall'uomo specifica per l'occorrenza del problema.
+              example: "Il valore del campo 'inputFileName' non rispetta il pattern '^[a-zA-Z0-9-]+\\.[pP][dD][fF]$'"
+        - $ref: "#/components/schemas/DocumentoBase"
+      required: [code]
+      example:
+        code: PATTERN_NON_VALIDO
+        element: documenti[2].inputFileName
+        detail: "Il valore del campo 'inputFileName' non rispetta il pattern '^[a-zA-Z0-9-]+\\.[pP][dD][fF]$'"
+        documentoId: 17245-0-1208385-0
+    ErroriLotto:
+      type: object
+      title: Lista di errori riscontrati nel lotto
+      description: |
+        Lista di errori riscontrati nel lotto. Questo oggetto contiene:
+        - il numero di documenti in errore;
+        - l'eventuale lista degli errori riscontrati nel lotto.
+      properties:
+        numeroErrori:
+          type: integer
+          minimum: 0
+          title: Numero di documenti in errore
+          description: |
+            Numero di documenti in errore.
+            Tale numero è pari al numero di file PDF da firmare digitalmente e protocollare che hanno generato errori.
+          example: 2
+        errori:
+          type: array
+          items:
+            $ref: "#/components/schemas/Errore"
+          minItems: 1
+          title: Lista di errori
+          description: |
+            Array di oggetti Errore restituiti in caso di anomalie.
+            Ogni elemento identifica un singolo errore riscontrato.
+          example:
+            - code: FORMATO_FILE_ERRATO
+              element: documenti[3].inputFileName
+              detail: "Il formato del file non è corretto."
+              documentoId: 17245-0-1208385-0
+            - code: FILE_NON_LEGGIBILE    
+              element: documenti[4].inputFileName
+              detail: "Il file PDF non è leggibile."
+              documentoId: 17245-0-1208386-0
+      required: [numeroErrori]
+    AltriDatiLotto:
+      type: object
+      title: Altri dati del lotto
+      description: |
+        Altri dati del lotto, presenti sia nell'oggetto Lotto che nell'oggetto LottoElaborato. Questo oggetto contiene:
+        - il codice fiscale dell'utente designato per la firma digitale e la protocollazione;
+        - il path base dei file PDF elaborati.
+      properties:
+        firmatario:
+          type: string
+          pattern: '^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$'
+          title: Codice fiscale dell'utente designato per la firma digitale e la protocollazione
+          description: |
+            Codice fiscale dell'utente designato per la firma digitale e la protocollazione dei file PDF del lotto.
+            L'utente designato è la persona fisica identificata tramite codice fiscale che firma digitalmente e protocolla i documenti del lotto attraverso il sistema dell'erogatore.
+          example: LFNLNS05A01A944P
+        outputBasePath:
+          type: string
+          pattern: '^([a-zA-Z0-9-]+/)*$'
+          title: Percorso base dei file PDF del lotto elaborati
+          description: |
+            Path base dei file PDF del lotto firmati digitalmente e protocollati. 
+            Tale path è relativo allo spazio SFTP condiviso tra erogatore e fruitore.
+            Questo path è in sola lettura per il fruitore, mentre l'erogatore ha anche i diritti di scrittura.
+          example: 02770891204/17245-0/output/
+    LottoBaseConEventualiErrori:
+      type: object
+      title: Lotto base con eventuali errori
+      description: |
+        Lotto base con eventuali errori. Questo oggetto contiene:
+        - il codice fiscale della PA fruitrice del servizio;
+        - l'identificativo del lotto o di un suo caricamento;
+        - il timestamp significativo per la richiesta o la risposta;
+        - il numero totale dei documenti del lotto;
+        - il numero di documenti in errore;
+        - l'eventuale lista degli errori riscontrati nel lotto.
+      allOf:
+        - $ref: "#/components/schemas/LottoBase"
+        - $ref: "#/components/schemas/ErroriLotto"
+      required: [paId, lottoId, timestamp, numeroDocumenti, numeroErrori]
+      example:
+        paId: 02770891204
+        lottoId: 17245-0
+        timestamp: 2024-01-21T10:30:00Z
+        numeroDocumenti: 12
+        numeroErrori: 5
+        errori:
+          - code: FILE_NON_TROVATO
+            element: documenti[0].inputFileName
+            detail: "Il file PDF non è presente sul server SFTP nella posizione indicata nella richiesta."
+            documentoId: 02770891204-17245-0-1208385-0
+          - code: HASH_NON_VALIDO
+            element: documenti[1].inputFileHash
+            detail: "L'hash inviato nella richiesta non corrisponde all'hash calcolato sul relativo file PDF (originale o firmato) presente sull'SFTP."
+            documentoId: 02770891204-17245-0-1208386-0
+          - code: FORMATO_FILE_ERRATO
+            element: documenti[2].inputFileName
+            detail: "Il formato del file non è corretto."
+            documentoId: 02770891204-17245-0-1208387-0
+          - code: FILE_NON_LEGGIBILE    
+            element: documenti[3].inputFileName
+            detail: "Il file PDF non è leggibile."
+            documentoId: 02770891204-17245-0-1208388-0
+          - code: PATH_NON_TROVATO 
+            element: documenti[4].inputFileName
+            detail: "Il path non è presente sul server SFTP nella posizione indicata nella richiesta."
+            documentoId: 02770891204-17245-0-1208389-0
+    Lotto:
+      type: object
+      title: Lotto da elaborare
+      description: |
+        Lotto di documenti da firmare digitalmente e protocollare. Questo oggetto contiene:
+        - il codice fiscale della PA fruitrice del servizio;
+        - l'identificativo del lotto o di un suo caricamento;
+        - il timestamp significativo per la richiesta o la risposta;
+        - il codice fiscale dell'utente designato per la firma digitale e la protocollazione;
+        - il numero totale dei documenti del lotto;
+        - il path base dei file PDF elaborati;
+        - il path base dei file PDF da elaborare;
+        - la lista dei documenti da elaborare.
+      allOf:
+        - $ref: "#/components/schemas/LottoBase"
+        - $ref: "#/components/schemas/AltriDatiLotto"
+        - properties:
+            inputBasePath:
+              type: string
+              pattern: '^([a-zA-Z0-9-]+/)*$'
+              title: Percorso base dei file PDF del lotto da elaborare
+              description: |
+                Path base dei file PDF del lotto da firmare digitalmente e protocollare. 
+                Tale path è relativo allo spazio SFTP condiviso tra erogatore e fruitore.
+                Questo path è in sola lettura per l'erogatore, mentre il fruitore ha anche i diritti di scrittura.
+              example: 02770891204/17245-0/input/
+            documenti:
+              type: array
+              items:
+                $ref: "#/components/schemas/Documento"
+              minItems: 1
+              title: Lista di documenti da firmare digitalmente e protocollare
+              description: |
+                Array di oggetti Documento.
+                Ogni elemento identifica un file PDF da firmare digitalmente e protocollare.
+              example:
+                - documentoId: 02770891204-17245-0-1208385-0
+                  inputFileName: 02770891204-17245-0-1208385-0.pdf
+                  inputFileHash: 3e7c3b9e8f4d5a6c2b1e7f8a9d6c4e3b2a1f7e8c9d5b4a6c3e7f8a9d6c4e3b2a
+                - documentoId: 02770891204-17245-0-1208386-0
+                  inputFileName: 02770891204-17245-0-1208386-0.pdf
+                  inputFileHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                - documentoId: 02770891204-17245-0-1208387-0
+                  inputFileName: 02770891204-17245-0-1208387-0.pdf
+                  inputFileHash: f1e2d3c4b5a6f7e8d9c0b1a2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2
+                - documentoId: 02770891204-17245-0-1208388-0
+                  inputFileName: 02770891204-17245-0-1208388-0.pdf
+                  inputFileHash: a3b1c2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+                - documentoId: 02770891204-17245-0-1208389-0
+                  inputFileName: 02770891204-17245-0-1208389-0.pdf
+                  inputFileHash: f4d6f1e2c3b5a7f8e9d0c1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2
+      required: [paId, lottoId, timestamp, numeroDocumenti, firmatario, outputBasePath, inputBasePath, documenti]
+    LottoElaborato:
+      type: object
+      title: Lotto elaborato
+      description: |
+        Lotto di documenti firmati digitalmente e protocollati. Questo oggetto contiene:
+        - il codice fiscale della PA fruitrice del servizio;
+        - l'identificativo del lotto o di un suo caricamento;
+        - il timestamp significativo per la richiesta o la risposta;
+        - il codice fiscale dell'utente designato per la firma digitale e la protocollazione;
+        - il numero totale dei documenti del lotto;
+        - il numero di documenti firmati digitalmente e protocollati;
+        - il numero di documenti in errore;
+        - il path base dei file PDF elaborati;
+        - la lista dei documenti elaborati;
+        - il numero di protocollo del lotto;
+        - la data e ora di protocollazione del lotto;
+        - l'eventuale lista degli errori riscontrati.
+      allOf:
+        - $ref: "#/components/schemas/LottoBase"
+        - $ref: "#/components/schemas/AltriDatiLotto"
+        - properties:
+            numeroProtocollo:
+              type: string
+              pattern: '^[0-9]{7}$'
+              title: Numero di protocollo del lotto
+              description: |
+                Numero di protocollo del lotto.
+                Tale numero è univoco per ogni lotto ed è composto da 7 cifre.
+              example: 0123456
+            dataProtocollo:
+              type: string
+              format: date
+              title: Data di protocollazione del lotto
+              description: |
+                Data di protocollazione rappresenta la data in cui il lotto è stato protocollato.
+                Tale data è in formato ISO 8601, cioè YYYY-MM-DD, dove YYYY è l'anno, MM è il mese e DD è il giorno.
+                Ad esempio, il 21° gennaio 2024 si scrive 2024-01-21.
+              example: 2024-01-21
+            numeroElaborati:
+              type: integer
+              minimum: 0
+              title: Numero di documenti firmati digitalmente e protocollati
+              description: |
+                Numero di documenti firmati digitalmente e protocollati.
+                Tale numero è pari al numero di file PDF firmati digitalmente e protocollati.
+              example: 3
+            documentiElaborati:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentoElaborato"
+              minItems: 1
+              title: Lista di documenti firmati digitalmente e protocollati
+              description: |
+                Array di oggetti DocumentoElaborato.
+                Ogni elemento identifica un file PDF firmati digitalmente e protocollati.
+              example:
+                - documentoId: 02770891204-17245-0-1208385-0
+                  outputFileName: 02770891204-17245-0-1208385-0.output.pdf
+                  outputFileHash: 3e7c3b9e8f4d5a6c2b1e7f8a9d6c4e3b2a1f7e8c9d5b4a6c3e7f8a9d6c4e3b2a
+                - documentoId: 02770891204-17245-0-1208386-0
+                  outputFileName: 02770891204-17245-0-1208386-0.output.pdf
+                  outputFileHash: c5b4a3f2e1d9c8b7a6f5e4d3c2b1a9f8e7d6c5b4a3f2e1d9c8b7a6f5e4d3c2b1
+                - documentoId: 02770891204-17245-0-1208387-0
+                  outputFileName: 02770891204-17245-0-1208387-0.output.pdf
+                  outputFileHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        - $ref: "#/components/schemas/ErroriLotto"
+      required: [paId, lottoId, timestamp, numeroDocumenti, firmatario, outputBasePath, numeroElaborati, numeroErrori]
+  responses:
+    RichiestaAccettata:
+      description: Richiesta accettata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LottoBase'
+    RichiestaMalformata:
+      description: Richiesta malformata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LottoBaseConEventualiErrori'
+    AccessoNonAutorizzato:
+      description: Accesso non autorizzato
+    RisorsaNonTrovata:
+      description: Risorsa non trovata
+    MetodoNonPermesso:
+      description: Metodo non permesso
+    ErroreInterno:
+      description: Errore interno
+    ServizioNonDisponibile:
+      description: Servizio non disponibile
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+tags:
+  - name: Erogatore 
+    description: Endpoint esposti dall'erogatore e invocati dal fruitore
+paths:
+  /erogatore/api/v1/elabora-lotto:
+    post:
+      summary: Richiesta di elaborazione lotto (passo 1)
+      description: |
+        Il fruitore (es. Lepida) invia al erogatore (es. Babel) la richiesta di firma digitale e protocollazione per un lotto di documenti.
+      tags:
+        - Erogatore
+      operationId: elaboraLotto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lotto'
+      responses:
+        '200':
+          $ref: '#/components/responses/RichiestaAccettata'
+        '400':
+          $ref: '#/components/responses/RichiestaMalformata'
+        '401':
+          $ref: '#/components/responses/AccessoNonAutorizzato'
+        '405':
+          $ref: '#/components/responses/MetodoNonPermesso'
+        '500':
+          $ref: '#/components/responses/ErroreInterno'
+        '503':
+          $ref: '#/components/responses/ServizioNonDisponibile'
+  /erogatore/api/v1/lotto-elaborato-ricevuto:
+    post:
+      summary: Notifica della ricezione del lotto elaborato (passo 4)
+      description: |
+        Il fruitore (es. Lepida) notifica al erogatore (es. Babel) che ha scaricato e verificato i file PDF firmati digitalmente e protocollati ed i dati del lotto elaborato.
+      tags:
+        - Erogatore
+      operationId: lottoElaboratoRicevuto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LottoBaseConEventualiErrori'
+      responses:
+        '200':
+          $ref: '#/components/responses/RichiestaAccettata'
+        '400':
+          $ref: '#/components/responses/RichiestaMalformata'
+        '401':
+          $ref: '#/components/responses/AccessoNonAutorizzato'
+        '404':
+          $ref: '#/components/responses/RisorsaNonTrovata'
+        '405':
+          $ref: '#/components/responses/MetodoNonPermesso'
+        '500':
+          $ref: '#/components/responses/ErroreInterno'
+        '503':
+          $ref: '#/components/responses/ServizioNonDisponibile'

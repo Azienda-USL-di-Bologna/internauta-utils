@@ -25,6 +25,7 @@
       
     <!-- sub modules -->
     <modules>
+        <module>send-integration</module>
         <module>jpa-tools</module>
         <module>parameters-manager</module>
         <module>minIO-manager</module>
