@@ -30,6 +30,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,7 +60,7 @@ public class RibaltoneTotaleManager {
 
     @Autowired
     private RepositoryFactory repositoryFactory;
-    
+
     @Autowired
     private UsersNotifiesManager usersNotifiesManager;
 
@@ -142,14 +143,17 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setNote(note);
                 ribaltoneDaLanciare.setIdAzienda(idAzienda);
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
+                ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
             }
             case "ribaltaPostUserReport" -> {
                 ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("DA_LANCIARE");
+                ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
             }
             case "ribaltaAndGetUserReport" -> {
                 ribaltoneDaLanciare = new RibaltoneDaLanciare();
                 ribaltoneDaLanciare.setStato("LANCIATO");
+                ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
                 ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
                 ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
                 ribaltoneDaLanciare.setIdUtente(utente);
@@ -161,6 +165,7 @@ public class RibaltoneTotaleManager {
             case "ribaltaDeleteCache" -> {
                 ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
                 ribaltoneDaLanciare.setStato("ANNULLATO");
+                ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
                 ribaltoneDaLanciare.setGestito(Boolean.TRUE);
             }
             default -> {
