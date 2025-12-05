@@ -76,7 +76,7 @@ public class RibaltoneTotaleManager {
         buildedOperations.execute(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
         fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare());
+        //usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare());
     }
 
     public Operations ribaltaWithUserReportAndCacheOperation(
@@ -122,7 +122,7 @@ public class RibaltoneTotaleManager {
         RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
         fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
         //configRibaltoneView.getIdPersoneDaNotificare();
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, Arrays.asList(utenteLanciatore.getIdPersona().getId()));
+        //usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, Arrays.asList(utenteLanciatore.getIdPersona().getId()));
         //return buildOperations;
     }
 
