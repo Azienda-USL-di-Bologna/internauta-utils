@@ -1,11 +1,17 @@
 package it.bologna.ausl.internauta.utils.authorizationutils;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.KeyLengthException;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.X509CertUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -193,6 +200,32 @@ public class AuthorizationUtilityFunctions {
             String errorMessage = "errore nella lettura del certificato";
             logger.error(errorMessage);
             throw new AuthorizationUtilsException(errorMessage, ex);
+        }
+    }
+    
+    /**
+     * genera un token JWT con i claims passati e il secret passato
+     * @param secret
+     * @param claims
+     * @return
+     * @throws AuthorizationUtilsException 
+     */
+    public static String generateJWT(String secret, JWTClaimsSet claims) throws AuthorizationUtilsException {
+        try {
+            JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
+            
+            SignedJWT signedJWT = new SignedJWT(header, claims);
+
+            JWSSigner signer = new MACSigner(secret);
+            signedJWT.sign(signer);
+
+            // Serializza il token
+            String token = signedJWT.serialize();
+            return token;
+        } catch (Exception ex) {
+            String error = "errore nella generazione del token JWT";
+            logger.error(error, ex);
+            throw new AuthorizationUtilsException(error, ex);
         }
     }
 }
