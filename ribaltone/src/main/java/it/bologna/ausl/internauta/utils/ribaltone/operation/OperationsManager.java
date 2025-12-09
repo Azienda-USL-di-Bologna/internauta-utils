@@ -266,7 +266,7 @@ public class OperationsManager {
         for (DatiImportatiStruttura strutturaImportata : struttureImportate) {
             if (!indexStruttureDaImportare.containsKey(strutturaImportata.getKey())
                 && !indexIdCasellaPartenzaTrasformazioni.containsKey(strutturaImportata.getIdCasella().toString())) {
-                log.info("struttura importata");
+                log.info("struttura importata id casella " + strutturaImportata.getIdCasella().toString() + " id " + strutturaImportata.getId());
                 DatiImportatiStruttura casellaPadre = struttureImportate.get(indexStruttureImportate.get(strutturaImportata.getIdPadre().toString()));
                 HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                 descrizioniAggiuntive.put("descrizioneCasellaPadre", casellaPadre.getDescrizione());
