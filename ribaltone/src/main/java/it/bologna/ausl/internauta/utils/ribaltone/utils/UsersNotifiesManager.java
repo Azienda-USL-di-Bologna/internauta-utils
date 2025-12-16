@@ -1,18 +1,24 @@
 package it.bologna.ausl.internauta.utils.ribaltone.utils;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.common.utils.SimpleMailSenderUtility;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
+import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
+
 import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
+import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.model.entities.configurazione.QApplicazione;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
@@ -26,9 +32,13 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import it.bologna.ausl.model.entities.scrivania.Attivita;
 import it.bologna.ausl.model.entities.scrivania.DettaglioAttivita;
 import jakarta.persistence.EntityManager;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.print.attribute.HashAttributeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +56,9 @@ public class UsersNotifiesManager {
     @Autowired
     private EntityManager entityManager;
     
+    @Autowired
+    private SimpleMailSenderUtility simpleMailSenderUtility;
+    
     /*
      * Genera e invia le notifiche/mail agli utenti interessati per le operazioni ribaltone
      * @param buildedOperations le operazioni ribaltone
@@ -53,7 +66,7 @@ public class UsersNotifiesManager {
      * @param idPersonaLanciante l'ID della persona che ha lanciato il ribaltone (null se automatico)
      * @param idPersoneDaNotificare lista di ID persone da notificare (per ribaltone automatico, null se manuale)
      */
-    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare) {
+    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare, String descrizioneErrore) throws IOException {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAzienda qAzienda = QAzienda.azienda;
         Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
@@ -69,18 +82,31 @@ public class UsersNotifiesManager {
         
         QPersona qPersona = QPersona.persona;
         
-        if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty()) {
+        if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty() && descrizioneErrore != null) {
             // Ribaltone automatico: notificare le persone dalla configurazione
             List<Persona> persone = queryFactory.select(qPersona).from(qPersona).where(qPersona.id.in(idPersoneDaNotificare)).fetch();
             personeDaNotificareSuScrivania.addAll(persone);
+        } else {
+            log.info("Nessuna persona da notificare");
         }
         
         // Genera le attività per ogni persona
         for (Persona p : personeDaNotificareSuScrivania) {
-            insertAttivita(azienda, p, app, buildedOperations, queryFactory);
+            insertAttivita(azienda, p, app, buildedOperations, queryFactory, descrizioneErrore);
         }
         for (Persona p : personeDaNotificareTeamiteMail) {
-            sendEmail(p, buildedOperations);
+            QUtente qUtente = QUtente.utente;
+            Utente utente = null;
+            if(azienda != null) {
+               utente = queryFactory.select(qUtente).from(qUtente).where(qPersona.id.eq(p.getId()).and(qAzienda.id.eq(azienda.getId()))).fetchOne();
+
+            }
+            if(utente != null ) {
+                String[] mails = utente.getEmails();
+                sendEmail(mails, azienda, buildedOperations, descrizioneErrore);
+ 
+            }
+
         }
     }
     
@@ -92,8 +118,12 @@ public class UsersNotifiesManager {
      * @param buildedOperations le operazioni ribaltone
      * @param queryFactory il query factory per le query
      */
-    private void insertAttivita(Azienda azienda, Persona persona, Applicazione app, Operations buildedOperations, JPAQueryFactory queryFactory) {
+    private void insertAttivita(Azienda azienda, Persona persona, Applicazione app, Operations buildedOperations, JPAQueryFactory queryFactory,String descrizioneErrore) {
+        
         String oggetto = "E' stato aggiornato l'organigramma aziendale. Clicca per visualizzare il riepilogo delle operazioni effettuate.";
+        if(descrizioneErrore != null) {
+            oggetto = "Il tentivo di aggiornamento dell'organigranigramma aziendale è fallito. Clicca per visualizzare l'errore.";
+        }
         Attivita a = new Attivita();
         a.setIdAzienda(azienda);
         a.setIdPersona(persona);
@@ -104,7 +134,7 @@ public class UsersNotifiesManager {
         a.setProvenienza("Ribaltone");
         entityManager.persist(a);
         entityManager.flush();
-        insertDettagliAttivita(a.getId(), buildedOperations, queryFactory);
+        insertDettagliAttivita(a.getId(), buildedOperations, queryFactory, descrizioneErrore);
     }
     
     /**
@@ -113,100 +143,112 @@ public class UsersNotifiesManager {
      * @param buildedOperations le operazioni ribaltone
      * @param queryFactory il query factory per le query
      */
-    private void insertDettagliAttivita(Integer idAttivita, Operations buildedOperations, JPAQueryFactory queryFactory) {
+    private void insertDettagliAttivita(Integer idAttivita, Operations buildedOperations, JPAQueryFactory queryFactory, String descrizioneErrore) {
         List<DettaglioAttivita> list = new ArrayList<>();
         QPersona qPersona = QPersona.persona;
         QStruttura qStruttura = QStruttura.struttura;
         
+        
+        if (buildedOperations == null && descrizioneErrore != null) {
+            DettaglioAttivita dettaglio = new DettaglioAttivita(
+                        idAttivita,
+                        DettaglioAttivita.SottosezioneDettaglioAttivita.ERRORE,
+                        descrizioneErrore,
+                        null,
+                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                        false
+                    );
+            list.add(dettaglio);
+        } else if (buildedOperations != null ) {
         // ANAGRAFICHE
-        if (buildedOperations.getListOfOperationAnagrafica() != null) {
-            for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
-                AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
-                if (entita == null) {
-                    continue;
+            if (buildedOperations.getListOfOperationAnagrafica() != null) {
+                for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
+                    AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+                    String descrizione = buildDescrizioneAnagrafica(operation, entita);
+                    DettaglioAttivita dettaglio = new DettaglioAttivita(
+                        idAttivita,
+                        DettaglioAttivita.SottosezioneDettaglioAttivita.ANAGRAFICHE,
+                        descrizione,
+                        null,
+                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                        false
+                    );
+                    list.add(dettaglio);
                 }
-                String descrizione = buildDescrizioneAnagrafica(operation, entita);
-                DettaglioAttivita dettaglio = new DettaglioAttivita(
-                    idAttivita,
-                    DettaglioAttivita.SottosezioneDettaglioAttivita.ANAGRAFICHE,
-                    descrizione,
-                    null,
-                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                    false
-                );
-                list.add(dettaglio);
             }
-        }
-        
-        // APPARTENENTI
-        if (buildedOperations.getListOfOperationAppartenente() != null) {
-            for (OperationAppartenente operation : buildedOperations.getListOfOperationAppartenente()) {
-                AppartenenteFields entita = resolveAppartenenteFields(operation.getEntitaCoinvolta());
-                if (entita == null) {
-                    continue;
-                }
-                String descrizione = buildDescrizioneAppartenente(operation, entita);
-                DettaglioAttivita dettaglio = new DettaglioAttivita(
-                    idAttivita,
-                    DettaglioAttivita.SottosezioneDettaglioAttivita.APPARTENENTI,
-                    descrizione,
-                    null,
-                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                    false
-                );
-                list.add(dettaglio);
-            }
-        }
-        
-        // STRUTTURE (escludendo CAMBIO_PADRE e RINOMINA che vanno nelle trasformazioni)
-        if (buildedOperations.getListOfOperationStruttura() != null) {
-            for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
-                // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
-                if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE || 
-                    operation.getAzione() == Operation.Azione.RINOMINA) {
-                    continue;
-                }
-                
-                StrutturaFields entita = resolveStrutturaFields(operation.getEntitaCoinvolta());
-                if (entita == null) {
-                    continue;
-                }
 
-                String descrizione = buildDescrizioneStruttura(operation, entita);
-                DettaglioAttivita dettaglio = new DettaglioAttivita(
-                    idAttivita,
-                    DettaglioAttivita.SottosezioneDettaglioAttivita.STRUTTURE,
-                    descrizione,
-                    null,
-                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                    false
-                );
-                list.add(dettaglio);
-                
-            }
-        }
-        
-        // TRASFORMAZIONI (include CAMBIO_PADRE e RINOMINA dalle strutture)
-        if (buildedOperations.getListOfOperationTrasformazione() != null) {
-            for (OperationTrasformazione operation : buildedOperations.getListOfOperationTrasformazione()) {
-                TrasformazioneFields entita = resolveTrasformazioneFields(operation.getEntitaCoinvolta());
-                if (entita == null) {
-                    continue;
+            // APPARTENENTI
+            if (buildedOperations.getListOfOperationAppartenente() != null) {
+                for (OperationAppartenente operation : buildedOperations.getListOfOperationAppartenente()) {
+                    AppartenenteFields entita = resolveAppartenenteFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+                    String descrizione = buildDescrizioneAppartenente(operation, entita);
+                    DettaglioAttivita dettaglio = new DettaglioAttivita(
+                        idAttivita,
+                        DettaglioAttivita.SottosezioneDettaglioAttivita.APPARTENENTI,
+                        descrizione,
+                        null,
+                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                        false
+                    );
+                    list.add(dettaglio);
                 }
+            }
 
-                String descrizione = buildDescrizioneTrasformazione(operation, entita);
-                DettaglioAttivita dettaglio = new DettaglioAttivita(
-                    idAttivita,
-                    DettaglioAttivita.SottosezioneDettaglioAttivita.TRASFORMAZIONI,
-                    descrizione,
-                    null,
-                    DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                    false
-                );
-                list.add(dettaglio);
+            // STRUTTURE (escludendo CAMBIO_PADRE e RINOMINA che vanno nelle trasformazioni)
+            if (buildedOperations.getListOfOperationStruttura() != null) {
+                for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
+                    // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
+                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE || 
+                        operation.getAzione() == Operation.Azione.RINOMINA) {
+                        continue;
+                    }
+
+                    StrutturaFields entita = resolveStrutturaFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+
+                    String descrizione = buildDescrizioneStruttura(operation, entita);
+                    DettaglioAttivita dettaglio = new DettaglioAttivita(
+                        idAttivita,
+                        DettaglioAttivita.SottosezioneDettaglioAttivita.STRUTTURE,
+                        descrizione,
+                        null,
+                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                        false
+                    );
+                    list.add(dettaglio);
+
+                }
+            }
+
+            // TRASFORMAZIONI (include CAMBIO_PADRE e RINOMINA dalle strutture)
+            if (buildedOperations.getListOfOperationTrasformazione() != null) {
+                for (OperationTrasformazione operation : buildedOperations.getListOfOperationTrasformazione()) {
+                    TrasformazioneFields entita = resolveTrasformazioneFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+
+                    String descrizione = buildDescrizioneTrasformazione(operation, entita);
+                    DettaglioAttivita dettaglio = new DettaglioAttivita(
+                        idAttivita,
+                        DettaglioAttivita.SottosezioneDettaglioAttivita.TRASFORMAZIONI,
+                        descrizione,
+                        null,
+                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                        false
+                    );
+                    list.add(dettaglio);
+                }
             }
         }
-        
         // Salva tutti i dettagli usando entityManager
         for (DettaglioAttivita dettaglio : list) {
             entityManager.persist(dettaglio);
@@ -544,9 +586,117 @@ public class UsersNotifiesManager {
      * @param p la persona
      * @param buildedOperations le operazioni ribaltone (per generare il rapporto)
      */
-    private void sendEmail(Persona p, Operations buildedOperations) {
+    private void sendEmail(String[] mails,Azienda a, Operations buildedOperations,String descrizioneErrore) throws IOException {
         // TODO: Da fare in altra storia
         // Questo metodo sarà implementato in futuro per inviare una mail con lo stesso contenuto
         // delle attività create. Il codice è già strutturato per essere generico e riutilizzabile.
+        String esito = "ESEGUITO RIBALTONE";
+        if(descrizioneErrore != null) {
+            esito = "ERRORE";
+        }
+        String subject = "Risultato aggiornamento organigramma: " + esito;
+        
+        String fromAlias = "Esito Aggiornamento Organigramma" ;
+        List<String> to = Arrays.asList(mails);
+        String body = buildMailBody(buildedOperations, descrizioneErrore);
+        AziendaParametriJson.MailParams mailParams = a.getParametri().getMailParams();
+        simpleMailSenderUtility.sendMail(
+                    fromAlias,
+                    subject,
+                    to,
+                    body,
+                    null,
+                    null,
+                    null,
+                    null,
+                    mailParams,
+                    true
+        );
+        
+    }
+    
+    
+    private String buildMailBody(Operations buildedOperations,String descrizioneErrore){
+        Map<String,String> mappa = new HashMap<String,String>();
+
+        if (buildedOperations == null && descrizioneErrore != null) {
+            
+            mappa.put("Dettaglio Errore", descrizioneErrore);
+        } else if (buildedOperations != null ) {
+        // ANAGRAFICHE
+            if (buildedOperations.getListOfOperationAnagrafica() != null) {
+                for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
+                    AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+                    String descrizione = buildDescrizioneAnagrafica(operation, entita);
+                    
+                    mappa.put("Modifiche Anagrafica",descrizione);
+                }
+            }
+
+            // APPARTENENTI
+            if (buildedOperations.getListOfOperationAppartenente() != null) {
+                for (OperationAppartenente operation : buildedOperations.getListOfOperationAppartenente()) {
+                    AppartenenteFields entita = resolveAppartenenteFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+                    String descrizione = buildDescrizioneAppartenente(operation, entita);
+                    
+                    mappa.put("Modifiche Appartenenti",descrizione);
+                }
+            }
+
+            // STRUTTURE (escludendo CAMBIO_PADRE e RINOMINA che vanno nelle trasformazioni)
+            if (buildedOperations.getListOfOperationStruttura() != null) {
+                for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
+                    // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
+                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE || 
+                        operation.getAzione() == Operation.Azione.RINOMINA) {
+                        continue;
+                    }
+
+                    StrutturaFields entita = resolveStrutturaFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+
+                    String descrizione = buildDescrizioneStruttura(operation, entita);
+                    
+                    mappa.put("Modifiche Strutture",descrizione);
+
+                }
+            }
+
+            // TRASFORMAZIONI (include CAMBIO_PADRE e RINOMINA dalle strutture)
+            if (buildedOperations.getListOfOperationTrasformazione() != null) {
+                for (OperationTrasformazione operation : buildedOperations.getListOfOperationTrasformazione()) {
+                    TrasformazioneFields entita = resolveTrasformazioneFields(operation.getEntitaCoinvolta());
+                    if (entita == null) {
+                        continue;
+                    }
+
+                    String descrizione = buildDescrizioneTrasformazione(operation, entita);
+                    
+                    mappa.put("Modifiche Trasformazioni",descrizione);
+                }
+            }
+        }
+        StringBuilder html = new StringBuilder();
+
+        for (Map.Entry<String, String> entry : mappa.entrySet()) {
+            html.append("<b>")
+                .append(entry.getKey())
+                .append("</b><br>")
+                .append(entry.getValue())
+                .append("<br><br>");
+        }
+
+        String result = html.toString();
+        
+        
+        return result;
     }
 }

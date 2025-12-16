@@ -49,6 +49,7 @@
         <module>PDFToolkit</module>
         <module>ribaltone</module>
         <module>bdm</module>
+        <module>common-utils</module>
     </modules>
     <profiles>
         <profile>

@@ -30,6 +30,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,17 +68,25 @@ public class RibaltoneTotaleManager {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JsonProcessingException {
+    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JsonProcessingException, IOException {
+        Operations buildedOperations = null;
+        String errorDescription = null;
+        try {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
         DatiDaImportare validateSourceData = RibaltoneManagerUtils.getAndValidateSourceData(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
         OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
-        Operations buildedOperations = operationsManager.buildOperations();
+        buildedOperations = operationsManager.buildOperations();
         operationsManager.isQuantitaDatiOk();
         buildedOperations.execute(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
         fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        //usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare());
+        } catch(Exception ex) {
+            errorDescription = ex.getMessage();
+        } finally {
+            usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare(), errorDescription);
+
+        }
     }
 
     public Operations ribaltaWithUserReportAndCacheOperation(
