@@ -211,7 +211,10 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                                 Integer[] idAziende = new Integer[1];
                                 idAziende[0] = entitaDaInserire.getIdAzienda();
                                 c = p.buildContatto(idAziende, ribaltone, ribaltoneUser);
+
                                 entityManager.persist(c);
+                                p.setIdContatto(c);
+                                entityManager.persist(p);
                                 entityManager.flush();
                             }
                             log.info("persona " + p.getDescrizione() + " con utenti n ");

@@ -44,26 +44,26 @@ public class RibaltoneManagerUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneManagerUtils.class);
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
-        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-
-        DatiDaImportare datiDaImportareValidated = getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
-        OperationsManager operationsManager = new OperationsManager(
-            datiDaImportareValidated,
-            codiceAzienda,
-            configRibaltoneView.getTolleranzaAppartenenti(),
-            configRibaltoneView.getTolleranzaStrutture(),
-            repositoryFactory);
-        Operations operations = operationsManager.buildOperations();
-        //controllo sul numero minimo di dati
-        operationsManager.isQuantitaDatiOk();
-        operationsCacheManager.dump(operations);
-
-        return operations.generateUserReport(UserReport.UserReportType.HTML);
-    }
-
+//    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
+//        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
+//        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+//        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
+//
+//        DatiDaImportare datiDaImportareValidated = getSourceDataAndValidateAndTransfer(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+//        datiDaImportareValidated.transfer();
+//        OperationsManager operationsManager = new OperationsManager(
+//            datiDaImportareValidated,
+//            codiceAzienda,
+//            configRibaltoneView.getTolleranzaAppartenenti(),
+//            configRibaltoneView.getTolleranzaStrutture(),
+//            repositoryFactory);
+//        Operations operations = operationsManager.buildOperations();
+//        //controllo sul numero minimo di dati
+//        operationsManager.isQuantitaDatiOk();
+//        operationsCacheManager.dump(operations);
+//
+//        return operations.generateUserReport(UserReport.UserReportType.HTML);
+//    }
     public static RibaltoneDataConfiguration getRibaltoneConf(EntityManager entityManager, String idConfiguration) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = entityManager.find(RibaltoneDataConfiguration.class, idConfiguration);
         if (ribaltoneConf == null) {
@@ -80,7 +80,7 @@ public class RibaltoneManagerUtils {
         return ribaltoneCache;
     }
 
-    public static DatiDaImportare getAndValidateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+    public static DatiDaImportare getSourceDataAndValidateAndTransfer(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //recupero i dati da dove dice la conf
         DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
