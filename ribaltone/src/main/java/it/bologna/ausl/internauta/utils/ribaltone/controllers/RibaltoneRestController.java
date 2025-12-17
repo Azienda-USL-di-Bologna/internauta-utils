@@ -68,8 +68,10 @@ import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.Ruolo;
 import static it.bologna.ausl.model.entities.baborg.StrutturaUnificata.TipoUnificazione.FUSIONE;
 import static it.bologna.ausl.model.entities.baborg.StrutturaUnificata.TipoUnificazione.REPLICA;
+import static it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView.ConfigKeys.mailDaNotificare;
 import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.hibernate.StaleObjectStateException;
@@ -167,6 +169,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta");
                     } catch (RibaltoneHttpException | JsonProcessingException ex) {
                         throw new RibaltoneHttpException(ex);
+                    } catch (IOException ex) {
+                        LOGGER.error(ex.getMessage());
                     }
                 });
             } catch (RibaltoneHttpException ex) {
@@ -377,9 +381,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     public Object ribaltaPostUserReport(
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) String idSelectedConfiguration,
-        @RequestParam(required = true) Integer idRibaltTree
+        @RequestParam(required = true) Integer idRibaltTree,
+        @RequestParam(required = true) String mailDaNotificare
     ) throws RibaltoneHttpException, JsonProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        List<String> mailDaNotificareList = Arrays.asList(mailDaNotificare.split(","));
         if (hoPermessoPerLanciareRibaltone()) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             try {
@@ -388,7 +394,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
                     try {
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
-                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser);
+                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser,mailDaNotificareList);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());

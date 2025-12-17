@@ -66,7 +66,7 @@ public class UsersNotifiesManager {
      * @param idPersonaLanciante l'ID della persona che ha lanciato il ribaltone (null se automatico)
      * @param idPersoneDaNotificare lista di ID persone da notificare (per ribaltone automatico, null se manuale)
      */
-    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare, String descrizioneErrore) throws IOException {
+    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare,List<String> mailDaNotificare, String descrizioneErrore) throws IOException {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAzienda qAzienda = QAzienda.azienda;
         Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
@@ -78,7 +78,7 @@ public class UsersNotifiesManager {
         // in caso di ribaltone manuale è la persona che ha lanciato il ribaltone manuale, 
         // in caso di ribaltone automatico sono le persone scritte nella configurazione di ribaltone
         List<Persona> personeDaNotificareSuScrivania = new ArrayList<>();
-        List<Persona> personeDaNotificareTeamiteMail = new ArrayList<>();
+        //List<Persona> personeDaNotificareTeamiteMail = new ArrayList<>();
         
         QPersona qPersona = QPersona.persona;
         
@@ -94,20 +94,11 @@ public class UsersNotifiesManager {
         for (Persona p : personeDaNotificareSuScrivania) {
             insertAttivita(azienda, p, app, buildedOperations, queryFactory, descrizioneErrore);
         }
-        for (Persona p : personeDaNotificareTeamiteMail) {
-            QUtente qUtente = QUtente.utente;
-            Utente utente = null;
-            if(azienda != null) {
-               utente = queryFactory.select(qUtente).from(qUtente).where(qPersona.id.eq(p.getId()).and(qAzienda.id.eq(azienda.getId()))).fetchOne();
-
-            }
-            if(utente != null ) {
-                String[] mails = utente.getEmails();
-                sendEmail(mails, azienda, buildedOperations, descrizioneErrore);
- 
-            }
-
+        
+        if(!mailDaNotificare.isEmpty()) {
+            sendEmail(mailDaNotificare, azienda, buildedOperations, descrizioneErrore);
         }
+           
     }
     
     /**
@@ -586,7 +577,7 @@ public class UsersNotifiesManager {
      * @param p la persona
      * @param buildedOperations le operazioni ribaltone (per generare il rapporto)
      */
-    private void sendEmail(String[] mails,Azienda a, Operations buildedOperations,String descrizioneErrore) throws IOException {
+    private void sendEmail(List<String> mails,Azienda a, Operations buildedOperations,String descrizioneErrore) throws IOException {
         // TODO: Da fare in altra storia
         // Questo metodo sarà implementato in futuro per inviare una mail con lo stesso contenuto
         // delle attività create. Il codice è già strutturato per essere generico e riutilizzabile.
@@ -597,13 +588,12 @@ public class UsersNotifiesManager {
         String subject = "Risultato aggiornamento organigramma: " + esito;
         
         String fromAlias = "Esito Aggiornamento Organigramma" ;
-        List<String> to = Arrays.asList(mails);
         String body = buildMailBody(buildedOperations, descrizioneErrore);
         AziendaParametriJson.MailParams mailParams = a.getParametri().getMailParams();
         simpleMailSenderUtility.sendMail(
                     fromAlias,
                     subject,
-                    to,
+                    mails,
                     body,
                     null,
                     null,
