@@ -16,5 +16,5 @@ import org.springframework.stereotype.Component;
 @RepositoryRestResource(collectionResourceRel = "datidaimportareappartenente", path = "datidaimportareappartenente", exported = false)
 public interface DatiDaImportareAppartenenteRepository extends QuerydslPredicateExecutor<DatiDaImportareAppartenente>, JpaRepository<DatiDaImportareAppartenente, Integer> {
 
-    public void deleteByIdAzienda(Integer idAzienda);
+    //public void deleteByIdAzienda(Integer idAzienda);
 }

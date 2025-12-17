@@ -167,6 +167,7 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
         for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
             log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
                 + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
+            repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
             Contatto contattoDB = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
             repositoryFactory.getEntityManager().refresh(contattoDB);
             List<DettaglioContatto> dettaglioContattoList = contattoDB.getDettaglioContattoList();

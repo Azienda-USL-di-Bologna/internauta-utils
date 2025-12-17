@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.RibaltoneUtils;
@@ -11,6 +12,10 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareAnagrafica;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareTrasformazione;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -127,7 +132,7 @@ public class DatiDaImportare {
 
                 List<DatiDaImportareAnagrafica> anagraficheValideDaImportare = (new ValidatorAnagrafiche(anagraficheDaImportare)).validate(this.repositoryFactory);
                 datiDaImportareValidati = new DatiDaImportare(anagraficheValideDaImportare, struttureValideDaImportare, appartenentiValidiDaImportare, trasformazioniValideDaImportare, progressivoTrasformazione, this.repositoryFactory, idAzienda);
-                datiDaImportareValidati.transfer();
+                //datiDaImportareValidati.transfer();
             }
 
         }
@@ -135,19 +140,28 @@ public class DatiDaImportare {
     }
 
     public void transfer() {
-        repositoryFactory.getDatiDaImportareAnagraficaRepository().deleteByIdAzienda(idAzienda);
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QDatiDaImportareAnagrafica qDatiDaImportareAnagrafica = QDatiDaImportareAnagrafica.datiDaImportareAnagrafica;
+        queryFactory.delete(qDatiDaImportareAnagrafica).where(qDatiDaImportareAnagrafica.idAzienda.eq(idAzienda)).execute();
+        //repositoryFactory.getDatiDaImportareAnagraficaRepository().deleteByIdAzienda(idAzienda);
         repositoryFactory.getEntityManager().flush();
         repositoryFactory.getEntityManager().clear();
         repositoryFactory.getDatiDaImportareAnagraficaRepository().saveAll(anagraficheDaImportare);
-        repositoryFactory.getDatiDaImportareAppartenenteRepository().deleteByIdAzienda(idAzienda);
+        QDatiDaImportareAppartenente qDatiDaImportareAppartenente = QDatiDaImportareAppartenente.datiDaImportareAppartenente;
+        queryFactory.delete(qDatiDaImportareAppartenente).where(qDatiDaImportareAppartenente.idAzienda.eq(idAzienda)).execute();
+//        repositoryFactory.getDatiDaImportareAppartenenteRepository().deleteByIdAzienda(idAzienda);
         repositoryFactory.getEntityManager().flush();
         repositoryFactory.getEntityManager().clear();
         repositoryFactory.getDatiDaImportareAppartenenteRepository().saveAll(appartenentiDaImportare);
-        repositoryFactory.getDatiDaImportareStrutturaRepository().deleteByIdAzienda(idAzienda);
+        QDatiDaImportareStruttura qDatiDaImportareStruttura = QDatiDaImportareStruttura.datiDaImportareStruttura;
+        queryFactory.delete(qDatiDaImportareStruttura).where(qDatiDaImportareStruttura.idAzienda.eq(idAzienda)).execute();
+//        repositoryFactory.getDatiDaImportareStrutturaRepository().deleteByIdAzienda(idAzienda);
         repositoryFactory.getEntityManager().flush();
         repositoryFactory.getEntityManager().clear();
         repositoryFactory.getDatiDaImportareStrutturaRepository().saveAll(struttureDaImportare);
-        repositoryFactory.getDatiDaImportareTrasformazioneRepository().deleteByIdAzienda(idAzienda);
+        QDatiDaImportareTrasformazione qDatiDaImportareTrasfrormazioni = QDatiDaImportareTrasformazione.datiDaImportareTrasformazione;
+        queryFactory.delete(qDatiDaImportareTrasfrormazioni).where(qDatiDaImportareTrasfrormazioni.idAzienda.eq(idAzienda)).execute();
+        //repositoryFactory.getDatiDaImportareTrasformazioneRepository().deleteByIdAzienda(idAzienda);
         repositoryFactory.getEntityManager().flush();
         repositoryFactory.getEntityManager().clear();
         repositoryFactory.getDatiDaImportareTrasformazioneRepository().saveAll(trasformazioniDaImportare);

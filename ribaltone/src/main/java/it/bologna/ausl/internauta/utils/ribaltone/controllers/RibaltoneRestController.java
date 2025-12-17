@@ -152,7 +152,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
+        @RequestBody(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException, JsonProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (!CacheUtils.isRibaltoneInCorsoFromCache(configRibaltoneView.getFonteSelezionata(), repositoryFactory, objectMapper, transactionTemplate)) {
