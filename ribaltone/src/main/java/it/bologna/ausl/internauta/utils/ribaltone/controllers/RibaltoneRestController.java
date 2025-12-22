@@ -152,7 +152,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
         @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) ConfigRibaltoneView configRibaltoneView
+        @RequestBody(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException, JsonProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (!CacheUtils.isRibaltoneInCorsoFromCache(configRibaltoneView.getFonteSelezionata(), repositoryFactory, objectMapper, transactionTemplate)) {
@@ -388,7 +388,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
                     try {
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
-                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration);
+                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());

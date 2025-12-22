@@ -46,9 +46,10 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
         public UnificazionePair() {
         }
 
-        public UnificazionePair(StrutturaUnificata.TipoUnificazione tipo, List<StrutturaUnificata> strutture) {
+        public UnificazionePair(StrutturaUnificata.TipoUnificazione tipo, List<StrutturaUnificata> strutture, DirezioneReplica direzioneReplica) {
             this.tipo = tipo;
             this.strutture = strutture;
+            this.direzioneReplica = direzioneReplica;
         }
 
         public StrutturaUnificata.TipoUnificazione getTipo() {
@@ -66,6 +67,15 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
         public void setStrutture(List<StrutturaUnificata> strutture) {
             this.strutture = strutture;
         }
+
+        public DirezioneReplica getDirezioneReplica() {
+            return direzioneReplica;
+        }
+
+        public void setDirezioneReplica(DirezioneReplica direzioneReplica) {
+            this.direzioneReplica = direzioneReplica;
+        }
+
     }
     private UnificazionePair pair;
     private List<UtenteStruttura> utenteStrutturaDaInserireList = new ArrayList();
@@ -138,11 +148,12 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 // quindi verificare i permessi di flusso
                 for (StrutturaUnificata sU : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
+                    getEntityManager().refresh(strutturaUnificata);
                     Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
                     Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                        qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
+                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
                             .and(qStruttura.attiva)
-                            .and(qStruttura.idAzienda.id.eq(strutturaSorgenteDiAziendaInCuiModicare.getIdAzienda().getId()))
+                            .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
                     ).orderBy(qStruttura.id.desc()).fetchOne();
                     OperationsUtils.editUtenteStruttura(strutturaDaModificare, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
                 }
@@ -154,10 +165,13 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
         for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
-            log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale());
+            log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
+                + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
+            repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
             Contatto contattoDB = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
             repositoryFactory.getEntityManager().refresh(contattoDB);
             List<DettaglioContatto> dettaglioContattoList = contattoDB.getDettaglioContattoList();
+            repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
             List<DettaglioContatto> dettagliContattiDellaPersona = dettaglioContattoList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
             DettaglioContatto idDettaglioContatto = null;
             if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {

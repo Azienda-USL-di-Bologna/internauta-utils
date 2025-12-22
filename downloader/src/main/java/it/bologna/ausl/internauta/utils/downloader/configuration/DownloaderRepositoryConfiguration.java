@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DownloaderRepositoryConfiguration {
     
-    private RepositoryManager repositoryManager;
+    private DownloaderRepositoryManager repositoryManager;
 
-    public RepositoryManager getRepositoryManager() {
+    public DownloaderRepositoryManager getRepositoryManager() {
         return repositoryManager;
     }
 
-    public void setRepositoryManager(RepositoryManager repositoryManager) {
+    public void setRepositoryManager(DownloaderRepositoryManager repositoryManager) {
         this.repositoryManager = repositoryManager;
     }
 }

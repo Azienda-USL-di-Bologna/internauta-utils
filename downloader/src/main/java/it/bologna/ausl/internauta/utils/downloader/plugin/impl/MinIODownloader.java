@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
-import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
+import it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderDownloadException;
 import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderDownloadPlugin;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -19,7 +19,7 @@ public class MinIODownloader extends DownloaderDownloadPlugin {
     private static Logger logger = LoggerFactory.getLogger(MinIODownloader.class);
     public static final String FILE_ID = "fileId";
 
-    public MinIODownloader(Map<String, Object> params, RepositoryManager repositoryManager) {
+    public MinIODownloader(Map<String, Object> params, DownloaderRepositoryManager repositoryManager) {
         super(params, repositoryManager);
     }
     

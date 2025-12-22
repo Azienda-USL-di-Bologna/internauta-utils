@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin;
 
-import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
+import it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderPluginException;
 import it.bologna.ausl.internauta.utils.downloader.plugin.impl.DefaultUploader;
 import it.bologna.ausl.internauta.utils.downloader.plugin.impl.MinIODownloader;
@@ -42,14 +42,14 @@ public class DownloaderPluginFactory {
      * @return il corretto download plugin
      * @throws DownloaderPluginException 
      */
-    public static DownloaderDownloadPlugin getDownloadPlugin(TargetRepository source, Map<String, Object> params, RepositoryManager repositoryManager) throws DownloaderPluginException {
+    public static DownloaderDownloadPlugin getDownloadPlugin(TargetRepository source, Map<String, Object> params, DownloaderRepositoryManager repositoryManager) throws DownloaderPluginException {
         try {
 //            String currPackage = DonwloaderPluginFactory.class.getPackage().getName();
             // reperisco la classe che implementa il downloader plugin corretto in base al source
             Class<? extends DownloaderDownloadPlugin> downloadPluginClass = downloadPluginMap.get(source);
             
             // tramite reflection reperisco il cotruttore e ne creo un'istanza
-            DownloaderDownloadPlugin downloadPluginInstance = downloadPluginClass.getConstructor(Map.class, RepositoryManager.class).newInstance(params, repositoryManager);
+            DownloaderDownloadPlugin downloadPluginInstance = downloadPluginClass.getConstructor(Map.class, DownloaderRepositoryManager.class).newInstance(params, repositoryManager);
             return downloadPluginInstance;
         } catch (Exception ex) {
             String errorMessage = String.format("errore nell'instanziare il plugin con source %s", source.toString());
@@ -66,12 +66,12 @@ public class DownloaderPluginFactory {
      * @return il corretto upload plugin
      * @throws DownloaderPluginException 
      */
-    public static DownloaderUploadPlugin getUploadPlugin(TargetRepository target, Map<String, Object> params, RepositoryManager repositoryManager) throws DownloaderPluginException {
+    public static DownloaderUploadPlugin getUploadPlugin(TargetRepository target, Map<String, Object> params, DownloaderRepositoryManager repositoryManager) throws DownloaderPluginException {
         try {
             Class<? extends DownloaderUploadPlugin> uploadPluginClass = uploadPluginMap.get(target);
             
             // tramite reflection reperisco il cotruttore e ne creo un'istanza
-            DownloaderUploadPlugin uploadPluginInstance = uploadPluginClass.getConstructor(Map.class, RepositoryManager.class).newInstance(params, repositoryManager);
+            DownloaderUploadPlugin uploadPluginInstance = uploadPluginClass.getConstructor(Map.class, DownloaderRepositoryManager.class).newInstance(params, repositoryManager);
             return uploadPluginInstance;
         } catch (Exception ex) {
             String errorMessage = String.format("errore nell'instanziare il plugin con target %s", target.toString());

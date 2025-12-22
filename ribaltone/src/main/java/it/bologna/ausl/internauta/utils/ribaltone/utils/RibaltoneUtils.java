@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import java.util.ArrayList;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -259,6 +260,10 @@ public class RibaltoneUtils {
         Map<String, Integer> indexToImport = new HashMap<>();
         for (int i = 0; i < datiDaImportare.size(); i++) {
             T datiRibaltoneInterface = (T) datiDaImportare.get(i);
+            if (datiRibaltoneInterface instanceof DatiDaImportareAppartenente) {
+                DatiDaImportareAppartenente appartenente = (DatiDaImportareAppartenente) datiRibaltoneInterface;
+                System.out.println("Codice Fiscale: " + appartenente.getCodiceFiscale() + " - Index: " + i);
+            }
             indexToImport.put(String.valueOf(fn.apply(datiRibaltoneInterface)), i);
         }
         return indexToImport;
@@ -281,5 +286,4 @@ public class RibaltoneUtils {
         return result;
     }
 
-    
 }
