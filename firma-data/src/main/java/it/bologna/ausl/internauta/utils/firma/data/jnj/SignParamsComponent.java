@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -21,17 +22,28 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class EndSign {
+    public static class EndSign implements Serializable {
         public static enum EndSignResults {
             ALL_SIGNED, PARTIALLY_SIGNED, ERROR, ABORT
         }
         
+        private boolean clientMode = false;
         private String callBackUrl;
+        private Map<String, String> callBackHeaders;
         private Map<String, Object> endSignParams;
         private List<SignDocument> signedFileList;
         private EndSignResults endSignResult;
 
         public EndSign() {
+        }
+        
+        public EndSign(boolean clientMode) {
+            this.clientMode = clientMode;
+        }
+
+        @JsonIgnore
+        public boolean isClientMode() {
+            return clientMode;
         }
         
         public String getCallBackUrl() {
@@ -40,6 +52,14 @@ public class SignParamsComponent {
 
         public void setCallBackUrl(String callBackUrl) {
             this.callBackUrl = callBackUrl;
+        }
+
+        public Map<String, String> getCallBackHeaders() {
+            return callBackHeaders;
+        }
+
+        public void setCallBackHeaders(Map<String, String> callBackheaders) {
+            this.callBackHeaders = callBackheaders;
         }
 
         public Map<String, Object> getEndSignParams() {
@@ -80,10 +100,10 @@ public class SignParamsComponent {
     } 
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignDocument {
+    public static class SignDocument implements Serializable {
         public static enum SignTypes {CADES, PADES, XADES}
         public static enum Sources {URI, FILE_SYSTEM, BASE_64}
-         public static enum SignDocumentResults {
+        public static enum SignDocumentResults {
             SIGNED, ERROR, SKIPPED
         }
         private String file;
@@ -100,6 +120,14 @@ public class SignParamsComponent {
 
         public SignDocument() {
         }
+
+        public SignDocument(String file, Sources source, String name) {
+            this.file = file;
+            this.source = source;
+            this.name = name;
+        }
+        
+        
 
         public String getFile() {
             return file;
@@ -191,7 +219,7 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignFileAttributes {
+    public static class SignFileAttributes implements Serializable {
         private Boolean visible;
         private String textTemplate;
         private SignFileAttributesPosition position;
@@ -225,7 +253,7 @@ public class SignParamsComponent {
     }
     
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class SignFileAttributesPosition {
+    public static class SignFileAttributesPosition implements Serializable {
         public static enum AlignmentVerticalPositions {TOP, BOTTOM, MIDDLE, NONE}
         public static enum AlignmentHorizontalPositions {LEFT, RIGHT, CENTER, NONE}
         private AlignmentVerticalPositions alignmentVertical;

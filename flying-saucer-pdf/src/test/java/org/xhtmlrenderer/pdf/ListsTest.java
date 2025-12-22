@@ -23,8 +23,8 @@ import static java.util.Objects.requireNonNull;
 public class ListsTest {
     private static final Logger log = LoggerFactory.getLogger(ListsTest.class);
 
-//    @ParameterizedTest
-//    @ValueSource(strings = {"page-with-lists.html", "list-sample.xhtml"})
+    @ParameterizedTest
+    @ValueSource(strings = {"page-with-lists.html", "list-sample.xhtml"})
     void pageWithLists(String fileName) throws IOException, ParserConfigurationException, SAXException {
         try (InputStream htmlStream = requireNonNull(getClass().getClassLoader().getResourceAsStream(fileName))) {
             String htmlContent = new String(htmlStream.readAllBytes(), UTF_8);

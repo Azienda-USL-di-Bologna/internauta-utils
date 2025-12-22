@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.openpdf;
 
-import com.lowagie.text.pdf.PdfObject;
+import org.openpdf.text.pdf.PdfObject;
 import java.io.File;
 import java.io.FileInputStream;
 import org.slf4j.Logger;
@@ -16,32 +16,32 @@ public class OpenPdfMetadataUtils {
     
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenPdfMetadataUtils.class);
 
-    public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, File iccProfileStream) throws IOException {
+    public static void writeExtraCatalog(org.openpdf.text.pdf.PdfWriter writer, File iccProfileStream) throws IOException {
                         
         try (InputStream is = new FileInputStream(iccProfileStream)) {
             writeExtraCatalog(writer, is);
         }
     }
     
-    public static void writeExtraCatalog(com.lowagie.text.pdf.PdfWriter writer, InputStream iccProfileStream) throws IOException {
+    public static void writeExtraCatalog(org.openpdf.text.pdf.PdfWriter writer, InputStream iccProfileStream) throws IOException {
                         
-        com.lowagie.text.pdf.PdfDictionary structureTreeRoot = new com.lowagie.text.pdf.PdfDictionary();
-        structureTreeRoot.put(com.lowagie.text.pdf.PdfName.TYPE, com.lowagie.text.pdf.PdfName.STRUCTTREEROOT);
-        writer.getExtraCatalog().put(com.lowagie.text.pdf.PdfName.STRUCTTREEROOT, structureTreeRoot);
+        org.openpdf.text.pdf.PdfDictionary structureTreeRoot = new org.openpdf.text.pdf.PdfDictionary();
+        structureTreeRoot.put(org.openpdf.text.pdf.PdfName.TYPE, org.openpdf.text.pdf.PdfName.STRUCTTREEROOT);
+        writer.getExtraCatalog().put(org.openpdf.text.pdf.PdfName.STRUCTTREEROOT, structureTreeRoot);
 
-        com.lowagie.text.pdf.PdfDictionary markInfo = new com.lowagie.text.pdf.PdfDictionary(com.lowagie.text.pdf.PdfName.MARKINFO);
-        markInfo.put(com.lowagie.text.pdf.PdfName.MARKED, new com.lowagie.text.pdf.PdfBoolean(true));
-        writer.getExtraCatalog().put(com.lowagie.text.pdf.PdfName.MARKINFO, markInfo);
+        org.openpdf.text.pdf.PdfDictionary markInfo = new org.openpdf.text.pdf.PdfDictionary(org.openpdf.text.pdf.PdfName.MARKINFO);
+        markInfo.put(org.openpdf.text.pdf.PdfName.MARKED, new org.openpdf.text.pdf.PdfBoolean(true));
+        writer.getExtraCatalog().put(org.openpdf.text.pdf.PdfName.MARKINFO, markInfo);
 
-        com.lowagie.text.pdf.PdfDictionary l = new com.lowagie.text.pdf.PdfDictionary(com.lowagie.text.pdf.PdfName.LANG);
-        l.put(com.lowagie.text.pdf.PdfName.LANG, new com.lowagie.text.pdf.PdfBoolean("true"));
-        writer.getExtraCatalog().put(com.lowagie.text.pdf.PdfName.LANG, l);
+        org.openpdf.text.pdf.PdfDictionary l = new org.openpdf.text.pdf.PdfDictionary(org.openpdf.text.pdf.PdfName.LANG);
+        l.put(org.openpdf.text.pdf.PdfName.LANG, new org.openpdf.text.pdf.PdfBoolean("true"));
+        writer.getExtraCatalog().put(org.openpdf.text.pdf.PdfName.LANG, l);
 
         java.awt.color.ICC_Profile icc = java.awt.color.ICC_Profile.getInstance(iccProfileStream);
         writer.setOutputIntents("Custom", "", "http://www.color.org", "sRGB IEC61966-2.1", icc);
     }
     
-    public static void writeXmpMetadata(com.lowagie.text.pdf.PdfWriter writer) {
+    public static void writeXmpMetadata(org.openpdf.text.pdf.PdfWriter writer) {
         try {
             java.text.SimpleDateFormat dateFormatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
             String modifyDatePlaceHolder = "xmp:ModifyDate=\"[ModifyDate]\"";
@@ -76,14 +76,14 @@ public class OpenPdfMetadataUtils {
             xmpMetadata = xmpMetadata.replace("[id]", generateRandomString(24));
 
             // CreateDate
-            Date creationDate = com.lowagie.text.pdf.PdfDate.decode(writer.getInfo().get(com.lowagie.text.pdf.PdfName.CREATIONDATE).toString()).getTime();
+            Date creationDate = org.openpdf.text.pdf.PdfDate.decode(writer.getInfo().get(org.openpdf.text.pdf.PdfName.CREATIONDATE).toString()).getTime();
             String creationDateString = dateFormatter.format(creationDate);
             xmpMetadata = xmpMetadata.replace("[CreateDate]", creationDateString);
 
             // ModifyDate
-            com.lowagie.text.pdf.PdfObject modifyDateObj = writer.getInfo().get(com.lowagie.text.pdf.PdfName.MODDATE);
+            org.openpdf.text.pdf.PdfObject modifyDateObj = writer.getInfo().get(org.openpdf.text.pdf.PdfName.MODDATE);
             if (modifyDateObj != null) {
-                com.lowagie.text.pdf.PdfDate.decode(modifyDateObj.toString()).getTime();
+                org.openpdf.text.pdf.PdfDate.decode(modifyDateObj.toString()).getTime();
                 String modifyDateString = dateFormatter.format(modifyDateObj);
                 xmpMetadata = xmpMetadata
                     .replace("[ModifyDatePlaceHolder]", modifyDatePlaceHolder)
@@ -94,12 +94,12 @@ public class OpenPdfMetadataUtils {
             }
 
             // title
-            PdfObject titleObject = writer.getInfo().get(com.lowagie.text.pdf.PdfName.TITLE);
+            PdfObject titleObject = writer.getInfo().get(org.openpdf.text.pdf.PdfName.TITLE);
             String title = titleObject != null ? titleObject.toString(): "NO TITLE";
             xmpMetadata = xmpMetadata.replace("[title]", title);
 
             // producer
-            PdfObject producerObject = writer.getInfo().get(com.lowagie.text.pdf.PdfName.PRODUCER);
+            PdfObject producerObject = writer.getInfo().get(org.openpdf.text.pdf.PdfName.PRODUCER);
             String producer = producerObject != null ? producerObject.toString(): "OpenPdf";
             xmpMetadata = xmpMetadata.replace("[Producer]", producer);
 

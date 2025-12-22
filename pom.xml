@@ -15,14 +15,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>3.5.3</version>
     </parent>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
     </properties>
-   
+      
     <!-- sub modules -->
     <modules>
         <module>jpa-tools</module>
@@ -46,6 +46,8 @@
         <module>flying-saucer-core</module>
         <module>flying-saucer-pdf</module>
         <module>PDFToolkit</module>
+        <module>ribaltone</module>
+        <module>bdm</module>
     </modules>
     <profiles>
         <profile>
@@ -61,7 +63,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.5.0</version>
+                        <version>3.5.3</version>
                         <configuration>
                             <skipTests>true</skipTests>
                         </configuration>

@@ -38,76 +38,181 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.w3c.dom.css.CSSValue.CSS_INHERIT;
+import static org.xhtmlrenderer.css.constants.IdentValue.ABSOLUTE;
+import static org.xhtmlrenderer.css.constants.IdentValue.ALWAYS;
+import static org.xhtmlrenderer.css.constants.IdentValue.ARMENIAN;
+import static org.xhtmlrenderer.css.constants.IdentValue.AUTO;
+import static org.xhtmlrenderer.css.constants.IdentValue.AVOID;
+import static org.xhtmlrenderer.css.constants.IdentValue.BASELINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.BLOCK;
+import static org.xhtmlrenderer.css.constants.IdentValue.BOLD;
+import static org.xhtmlrenderer.css.constants.IdentValue.BOLDER;
+import static org.xhtmlrenderer.css.constants.IdentValue.BORDER_BOX;
+import static org.xhtmlrenderer.css.constants.IdentValue.BOTH;
+import static org.xhtmlrenderer.css.constants.IdentValue.BOTTOM;
+import static org.xhtmlrenderer.css.constants.IdentValue.BREAK_ALL;
+import static org.xhtmlrenderer.css.constants.IdentValue.BREAK_WORD;
+import static org.xhtmlrenderer.css.constants.IdentValue.CAPITALIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.CENTER;
+import static org.xhtmlrenderer.css.constants.IdentValue.CIRCLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.COLLAPSE;
+import static org.xhtmlrenderer.css.constants.IdentValue.CONTAIN;
+import static org.xhtmlrenderer.css.constants.IdentValue.CONTENT_BOX;
+import static org.xhtmlrenderer.css.constants.IdentValue.COVER;
+import static org.xhtmlrenderer.css.constants.IdentValue.CREATE;
+import static org.xhtmlrenderer.css.constants.IdentValue.CROSSHAIR;
+import static org.xhtmlrenderer.css.constants.IdentValue.DASHED;
+import static org.xhtmlrenderer.css.constants.IdentValue.DECIMAL;
+import static org.xhtmlrenderer.css.constants.IdentValue.DECIMAL_LEADING_ZERO;
+import static org.xhtmlrenderer.css.constants.IdentValue.DEFAULT;
+import static org.xhtmlrenderer.css.constants.IdentValue.DISC;
+import static org.xhtmlrenderer.css.constants.IdentValue.DOTTED;
+import static org.xhtmlrenderer.css.constants.IdentValue.DOUBLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.DYNAMIC;
+import static org.xhtmlrenderer.css.constants.IdentValue.EMBED;
+import static org.xhtmlrenderer.css.constants.IdentValue.E_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.FIXED;
+import static org.xhtmlrenderer.css.constants.IdentValue.GEORGIAN;
+import static org.xhtmlrenderer.css.constants.IdentValue.GROOVE;
+import static org.xhtmlrenderer.css.constants.IdentValue.HELP;
+import static org.xhtmlrenderer.css.constants.IdentValue.HIDDEN;
+import static org.xhtmlrenderer.css.constants.IdentValue.HIDE;
+import static org.xhtmlrenderer.css.constants.IdentValue.INLINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.INLINE_BLOCK;
+import static org.xhtmlrenderer.css.constants.IdentValue.INLINE_TABLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.INSET;
+import static org.xhtmlrenderer.css.constants.IdentValue.INSIDE;
+import static org.xhtmlrenderer.css.constants.IdentValue.ITALIC;
+import static org.xhtmlrenderer.css.constants.IdentValue.JUSTIFY;
+import static org.xhtmlrenderer.css.constants.IdentValue.KEEP;
+import static org.xhtmlrenderer.css.constants.IdentValue.LANDSCAPE;
+import static org.xhtmlrenderer.css.constants.IdentValue.LARGE;
+import static org.xhtmlrenderer.css.constants.IdentValue.LARGER;
+import static org.xhtmlrenderer.css.constants.IdentValue.LEFT;
+import static org.xhtmlrenderer.css.constants.IdentValue.LIGHTER;
+import static org.xhtmlrenderer.css.constants.IdentValue.LINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.LINEAR_GRADIENT;
+import static org.xhtmlrenderer.css.constants.IdentValue.LINE_THROUGH;
+import static org.xhtmlrenderer.css.constants.IdentValue.LIST_ITEM;
+import static org.xhtmlrenderer.css.constants.IdentValue.LOWERCASE;
+import static org.xhtmlrenderer.css.constants.IdentValue.LOWER_ALPHA;
+import static org.xhtmlrenderer.css.constants.IdentValue.LOWER_GREEK;
+import static org.xhtmlrenderer.css.constants.IdentValue.LOWER_LATIN;
+import static org.xhtmlrenderer.css.constants.IdentValue.LOWER_ROMAN;
+import static org.xhtmlrenderer.css.constants.IdentValue.MANUAL;
+import static org.xhtmlrenderer.css.constants.IdentValue.MEDIUM;
+import static org.xhtmlrenderer.css.constants.IdentValue.MIDDLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.MOVE;
+import static org.xhtmlrenderer.css.constants.IdentValue.NE_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.NONE;
+import static org.xhtmlrenderer.css.constants.IdentValue.NORMAL;
+import static org.xhtmlrenderer.css.constants.IdentValue.NOWRAP;
+import static org.xhtmlrenderer.css.constants.IdentValue.NO_REPEAT;
+import static org.xhtmlrenderer.css.constants.IdentValue.NW_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.N_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.OBLIQUE;
+import static org.xhtmlrenderer.css.constants.IdentValue.OUTSET;
+import static org.xhtmlrenderer.css.constants.IdentValue.OUTSIDE;
+import static org.xhtmlrenderer.css.constants.IdentValue.OVERLINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.PAGINATE;
+import static org.xhtmlrenderer.css.constants.IdentValue.POINTER;
+import static org.xhtmlrenderer.css.constants.IdentValue.PORTRAIT;
+import static org.xhtmlrenderer.css.constants.IdentValue.PRE;
+import static org.xhtmlrenderer.css.constants.IdentValue.PRE_LINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.PRE_WRAP;
+import static org.xhtmlrenderer.css.constants.IdentValue.PROGRESS;
+import static org.xhtmlrenderer.css.constants.IdentValue.RELATIVE;
+import static org.xhtmlrenderer.css.constants.IdentValue.REPEAT;
+import static org.xhtmlrenderer.css.constants.IdentValue.REPEAT_X;
+import static org.xhtmlrenderer.css.constants.IdentValue.REPEAT_Y;
+import static org.xhtmlrenderer.css.constants.IdentValue.RIDGE;
+import static org.xhtmlrenderer.css.constants.IdentValue.RIGHT;
+import static org.xhtmlrenderer.css.constants.IdentValue.SCROLL;
+import static org.xhtmlrenderer.css.constants.IdentValue.SEPARATE;
+import static org.xhtmlrenderer.css.constants.IdentValue.SE_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.SHOW;
+import static org.xhtmlrenderer.css.constants.IdentValue.SMALL;
+import static org.xhtmlrenderer.css.constants.IdentValue.SMALLER;
+import static org.xhtmlrenderer.css.constants.IdentValue.SMALL_CAPS;
+import static org.xhtmlrenderer.css.constants.IdentValue.SOLID;
+import static org.xhtmlrenderer.css.constants.IdentValue.SQUARE;
+import static org.xhtmlrenderer.css.constants.IdentValue.START;
+import static org.xhtmlrenderer.css.constants.IdentValue.STATIC;
+import static org.xhtmlrenderer.css.constants.IdentValue.SUB;
+import static org.xhtmlrenderer.css.constants.IdentValue.SUPER;
+import static org.xhtmlrenderer.css.constants.IdentValue.SW_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.S_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_CAPTION;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_CELL;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_COLUMN;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_COLUMN_GROUP;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_FOOTER_GROUP;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_HEADER_GROUP;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_ROW;
+import static org.xhtmlrenderer.css.constants.IdentValue.TABLE_ROW_GROUP;
+import static org.xhtmlrenderer.css.constants.IdentValue.TEXT;
+import static org.xhtmlrenderer.css.constants.IdentValue.TEXT_BOTTOM;
+import static org.xhtmlrenderer.css.constants.IdentValue.TEXT_TOP;
+import static org.xhtmlrenderer.css.constants.IdentValue.THICK;
+import static org.xhtmlrenderer.css.constants.IdentValue.THIN;
+import static org.xhtmlrenderer.css.constants.IdentValue.TOP;
+import static org.xhtmlrenderer.css.constants.IdentValue.TRANSPARENT;
+import static org.xhtmlrenderer.css.constants.IdentValue.UNDERLINE;
+import static org.xhtmlrenderer.css.constants.IdentValue.UPPERCASE;
+import static org.xhtmlrenderer.css.constants.IdentValue.UPPER_ALPHA;
+import static org.xhtmlrenderer.css.constants.IdentValue.UPPER_LATIN;
+import static org.xhtmlrenderer.css.constants.IdentValue.UPPER_ROMAN;
+import static org.xhtmlrenderer.css.constants.IdentValue.VISIBLE;
+import static org.xhtmlrenderer.css.constants.IdentValue.WAIT;
+import static org.xhtmlrenderer.css.constants.IdentValue.W_RESIZE;
+import static org.xhtmlrenderer.css.constants.IdentValue.XX_LARGE;
+import static org.xhtmlrenderer.css.constants.IdentValue.XX_SMALL;
+import static org.xhtmlrenderer.css.constants.IdentValue.X_LARGE;
+import static org.xhtmlrenderer.css.constants.IdentValue.X_SMALL;
 import static org.xhtmlrenderer.css.parser.PropertyValue.Type.VALUE_TYPE_FUNCTION;
 
 public class PrimitivePropertyBuilders {
     // none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset
     public static final BitSet BORDER_STYLES = setFor(
-            new IdentValue[] { IdentValue.NONE, IdentValue.HIDDEN, IdentValue.DOTTED,
-                    IdentValue.DASHED, IdentValue.SOLID, IdentValue.DOUBLE,
-                    IdentValue.GROOVE, IdentValue.RIDGE, IdentValue.INSET,
-                    IdentValue.OUTSET });
+        NONE, HIDDEN, DOTTED, DASHED, SOLID, DOUBLE, GROOVE, RIDGE, INSET, OUTSET);
 
     // thin | medium | thick
-    public static final BitSet BORDER_WIDTHS = setFor(
-            new IdentValue[] { IdentValue.THIN, IdentValue.MEDIUM, IdentValue.THICK });
+    public static final BitSet BORDER_WIDTHS = setFor(THIN, MEDIUM, THICK);
 
     // normal | small-caps | inherit
-    public static final BitSet FONT_VARIANTS = setFor(
-            new IdentValue[] { IdentValue.NORMAL, IdentValue.SMALL_CAPS });
+    public static final BitSet FONT_VARIANTS = setFor(NORMAL, SMALL_CAPS);
 
     // normal | italic | oblique | inherit
-    public static final BitSet FONT_STYLES = setFor(
-            new IdentValue[] { IdentValue.NORMAL, IdentValue.ITALIC, IdentValue.OBLIQUE });
+    public static final BitSet FONT_STYLES = setFor(NORMAL, ITALIC, OBLIQUE);
 
-    public static final BitSet FONT_WEIGHTS = setFor(
-            new IdentValue[] { IdentValue.NORMAL, IdentValue.BOLD, IdentValue.BOLDER, IdentValue.LIGHTER });
+    public static final BitSet FONT_WEIGHTS = setFor(NORMAL, BOLD, BOLDER, LIGHTER);
 
-    public static final BitSet PAGE_ORIENTATIONS = setFor(
-            new IdentValue[] { IdentValue.AUTO, IdentValue.PORTRAIT, IdentValue.LANDSCAPE });
+    public static final BitSet PAGE_ORIENTATIONS = setFor(AUTO, PORTRAIT, LANDSCAPE);
 
     // inside | outside | inherit
-    public static final BitSet LIST_STYLE_POSITIONS = setFor(new IdentValue[] {
-            IdentValue.INSIDE, IdentValue.OUTSIDE });
+    public static final BitSet LIST_STYLE_POSITIONS = setFor(INSIDE, OUTSIDE);
 
     // disc | circle | square | decimal
     // | decimal-leading-zero | lower-roman | upper-roman
     // | lower-greek | lower-latin | upper-latin | armenian
     // | georgian | lower-alpha | upper-alpha | none | inherit
-    public static final BitSet LIST_STYLE_TYPES = setFor(new IdentValue[] {
-            IdentValue.DISC, IdentValue.CIRCLE, IdentValue.SQUARE,
-            IdentValue.DECIMAL, IdentValue.DECIMAL_LEADING_ZERO,
-            IdentValue.LOWER_ROMAN, IdentValue.UPPER_ROMAN,
-            IdentValue.LOWER_GREEK, IdentValue.LOWER_LATIN,
-            IdentValue.UPPER_LATIN, IdentValue.ARMENIAN,
-            IdentValue.GEORGIAN, IdentValue.LOWER_ALPHA,
-            IdentValue.UPPER_ALPHA, IdentValue.NONE });
+    public static final BitSet LIST_STYLE_TYPES = setFor(DISC, CIRCLE, SQUARE,
+        DECIMAL, DECIMAL_LEADING_ZERO, LOWER_ROMAN, UPPER_ROMAN, LOWER_GREEK,
+        LOWER_LATIN, UPPER_LATIN, ARMENIAN, GEORGIAN, LOWER_ALPHA, UPPER_ALPHA, NONE);
 
     // repeat | repeat-x | repeat-y | no-repeat | inherit
-    public static final BitSet BACKGROUND_REPEATS = setFor(
-            new IdentValue[] {
-                    IdentValue.REPEAT, IdentValue.REPEAT_X,
-                    IdentValue.REPEAT_Y, IdentValue.NO_REPEAT });
+    public static final BitSet BACKGROUND_REPEATS = setFor(REPEAT, REPEAT_X, REPEAT_Y, NO_REPEAT);
 
     // scroll | fixed | inherit
-    public static final BitSet BACKGROUND_ATTACHMENTS = setFor(
-            new IdentValue[] { IdentValue.SCROLL, IdentValue.FIXED });
+    public static final BitSet BACKGROUND_ATTACHMENTS = setFor(SCROLL, FIXED);
 
     // left | right | top | bottom | center
-    public static final BitSet BACKGROUND_POSITIONS = setFor(
-            new IdentValue[] {
-                    IdentValue.LEFT, IdentValue.RIGHT, IdentValue.TOP,
-                    IdentValue.BOTTOM, IdentValue.CENTER });
+    public static final BitSet BACKGROUND_POSITIONS = setFor(LEFT, RIGHT, TOP, BOTTOM, CENTER);
 
-    public static final BitSet ABSOLUTE_FONT_SIZES = setFor(
-            new IdentValue[] {
-                    IdentValue.XX_SMALL, IdentValue.X_SMALL, IdentValue.SMALL,
-                    IdentValue.MEDIUM, IdentValue.LARGE, IdentValue.X_LARGE,
-                    IdentValue.XX_LARGE });
+    public static final BitSet ABSOLUTE_FONT_SIZES = setFor(XX_SMALL, X_SMALL, SMALL, MEDIUM, LARGE, X_LARGE, XX_LARGE);
 
-    public static final BitSet RELATIVE_FONT_SIZES = setFor(
-            new IdentValue[] {
-                    IdentValue.SMALLER, IdentValue.LARGER });
+    public static final BitSet RELATIVE_FONT_SIZES = setFor(SMALLER, LARGER);
 
     public static final PropertyBuilder COLOR = new GenericColor();
     public static final PropertyBuilder BORDER_STYLE = new GenericBorderStyle();
@@ -116,7 +221,7 @@ public class PrimitivePropertyBuilders {
     public static final PropertyBuilder MARGIN = new LengthLikeWithAuto();
     public static final PropertyBuilder PADDING = new NonNegativeLengthLike();
 
-    private static BitSet setFor(IdentValue[] values) {
+    private static BitSet setFor(IdentValue... values) {
         BitSet result = new BitSet(IdentValue.getIdentCount());
         for (IdentValue ident : values) {
             result.set(ident.FS_ID);
@@ -154,8 +259,7 @@ public class PrimitivePropertyBuilders {
     }
 
     private static class GenericColor extends AbstractPropertyBuilder {
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.TRANSPARENT });
+        private static final BitSet ALLOWED = setFor(TRANSPARENT);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(
@@ -462,7 +566,7 @@ public class PrimitivePropertyBuilders {
 
     /*
     private static class SingleStringWithNone extends SingleStringWithIdent {
-        private static final BitSet ALLOWED = setFor(new IdentValue[] { IdentValue.NONE });
+        private static final BitSet ALLOWED = setFor( NONE );
 
         protected BitSet getAllowed() {
             return ALLOWED;
@@ -473,7 +577,7 @@ public class PrimitivePropertyBuilders {
     private static class LengthLikeWithAuto extends LengthLikeWithIdent {
         // <length> | <percentage> | auto | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.AUTO });
+            AUTO);
 
         @Override
         protected BitSet getAllowed() {
@@ -484,7 +588,7 @@ public class PrimitivePropertyBuilders {
     private static class LengthWithNormal extends LengthWithIdent {
         // <length> | normal | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.NORMAL });
+            NORMAL);
 
         @Override
         protected BitSet getAllowed() {
@@ -495,7 +599,7 @@ public class PrimitivePropertyBuilders {
     private static class LengthLikeWithNone extends LengthLikeWithIdent {
         // <length> | <percentage> | none | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.NONE });
+            NONE);
 
         @Override
         protected BitSet getAllowed() {
@@ -505,7 +609,7 @@ public class PrimitivePropertyBuilders {
 
     private static class GenericURIWithNone extends AbstractPropertyBuilder {
         // <uri> | none | inherit
-        private static final BitSet ALLOWED = setFor(new IdentValue[] { IdentValue.NONE });
+        private static final BitSet ALLOWED = setFor(NONE);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(
@@ -537,12 +641,24 @@ public class PrimitivePropertyBuilders {
     }
 
     public static class BackgroundImage extends GenericURIWithNone {
+        @Override
+        public List<PropertyDeclaration> buildDeclarations(
+            CSSName cssName, List<? extends CSSPrimitiveValue> values, Origin origin, boolean important, boolean inheritAllowed) {
+
+            assertFoundSingleValue(cssName, values);
+            PropertyValue value = (PropertyValue)values.get(0);
+
+            if (!value.toString().startsWith(LINEAR_GRADIENT.asString())) {
+                return super.buildDeclarations(cssName, values, origin, important, inheritAllowed);
+            }
+
+            BuilderUtil.checkFunctionsAllowed(value.getFunction(), "linear-gradient");
+            return singletonList(new PropertyDeclaration(cssName, value, important, origin));
+        }
     }
 
     public static class BackgroundSize extends AbstractPropertyBuilder {
-        private static final BitSet ALL_ALLOWED = setFor(new IdentValue[] {
-                IdentValue.AUTO, IdentValue.CONTAIN, IdentValue.COVER
-        });
+        private static final BitSet ALL_ALLOWED = setFor(AUTO, CONTAIN, COVER);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(CSSName cssName, List<? extends CSSPrimitiveValue> values,
@@ -572,21 +688,21 @@ public class PrimitivePropertyBuilders {
                     IdentValue firstIdent = checkIdent(first);
                     checkValidity(cssName, ALL_ALLOWED, firstIdent);
 
-                    if (firstIdent == IdentValue.CONTAIN || firstIdent == IdentValue.COVER) {
+                    if (firstIdent == CONTAIN || firstIdent == COVER) {
                         return singletonList(
                                 new PropertyDeclaration(cssName, first, important, origin));
                     } else {
                         return createTwoValueResponse(CSSName.BACKGROUND_SIZE, first, first, origin, important);
                     }
                 } else {
-                    return createTwoValueResponse(CSSName.BACKGROUND_SIZE, first, new PropertyValue(IdentValue.AUTO), origin, important);
+                    return createTwoValueResponse(CSSName.BACKGROUND_SIZE, first, new PropertyValue(AUTO), origin, important);
                 }
             } else {
                 checkIdentLengthOrPercentType(cssName, second);
 
                 if (first.getPrimitiveType() == CSSPrimitiveValue.CSS_IDENT) {
                     IdentValue firstIdent = checkIdent(first);
-                    if (firstIdent != IdentValue.AUTO) {
+                    if (firstIdent != AUTO) {
                         throw new CSSParseException("The only ident value allowed here is 'auto'", -1);
                     }
                 } else if (((PropertyValue)first).getFloatValue() < 0.0f) {
@@ -595,7 +711,7 @@ public class PrimitivePropertyBuilders {
 
                 if (second.getPrimitiveType() == CSSPrimitiveValue.CSS_IDENT) {
                     IdentValue secondIdent = checkIdent(second);
-                    if (secondIdent != IdentValue.AUTO) {
+                    if (secondIdent != AUTO) {
                         throw new CSSParseException("The only ident value allowed here is 'auto'", -1);
                     }
                 } else if (((PropertyValue)second).getFloatValue() < 0.0f) {
@@ -605,7 +721,6 @@ public class PrimitivePropertyBuilders {
                 return createTwoValueResponse(CSSName.BACKGROUND_SIZE, first, second, origin, important);
             }
         }
-
     }
 
     public static class BackgroundPosition extends AbstractPropertyBuilder {
@@ -655,7 +770,7 @@ public class PrimitivePropertyBuilders {
 
             IdentValue secondIdent = null;
             if (second == null) {
-                secondIdent = IdentValue.CENTER;
+                secondIdent = CENTER;
             } else if (second.getPrimitiveType() == CSSPrimitiveValue.CSS_IDENT) {
                 secondIdent = checkIdent(second);
                 checkValidity(cssName, getAllowed(), secondIdent);
@@ -665,8 +780,8 @@ public class PrimitivePropertyBuilders {
                 return singletonList(new PropertyDeclaration(
                         CSSName.BACKGROUND_POSITION, new PropertyValue(values), important, origin));
             } else if (firstIdent != null && secondIdent != null) {
-                if (firstIdent == IdentValue.TOP || firstIdent == IdentValue.BOTTOM ||
-                        secondIdent == IdentValue.LEFT || secondIdent == IdentValue.RIGHT) {
+                if (firstIdent == TOP || firstIdent == BOTTOM ||
+                        secondIdent == LEFT || secondIdent == RIGHT) {
                     IdentValue temp = firstIdent;
                     firstIdent = secondIdent;
                     secondIdent = temp;
@@ -699,8 +814,8 @@ public class PrimitivePropertyBuilders {
         }
 
         private void checkIdentPosition(CSSName cssName, IdentValue firstIdent, IdentValue secondIdent) {
-            if (firstIdent == IdentValue.TOP || firstIdent == IdentValue.BOTTOM ||
-                    secondIdent == IdentValue.LEFT || secondIdent == IdentValue.RIGHT) {
+            if (firstIdent == TOP || firstIdent == BOTTOM ||
+                    secondIdent == LEFT || secondIdent == RIGHT) {
                 throw new CSSParseException("Invalid combination of keywords in " + cssName, -1);
             }
         }
@@ -708,9 +823,9 @@ public class PrimitivePropertyBuilders {
         private float getPercentForIdent(IdentValue ident) {
             float percent = 0.0f;
 
-            if (ident == IdentValue.CENTER) {
+            if (ident == CENTER) {
                 percent = 50.0f;
-            } else if (ident == IdentValue.BOTTOM || ident == IdentValue.RIGHT) {
+            } else if (ident == BOTTOM || ident == RIGHT) {
                 percent = 100.0f;
             }
 
@@ -755,8 +870,7 @@ public class PrimitivePropertyBuilders {
 
     public static class BorderCollapse extends SingleIdent {
         // collapse | separate | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.COLLAPSE, IdentValue.SEPARATE });
+        private static final BitSet ALLOWED = setFor(COLLAPSE, SEPARATE);
 
         @Override
         protected BitSet getAllowed() {
@@ -818,7 +932,7 @@ public class PrimitivePropertyBuilders {
     public static class CaptionSide extends SingleIdent {
         // top | bottom | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.TOP, IdentValue.BOTTOM });
+            TOP, BOTTOM);
 
         @Override
         protected BitSet getAllowed() {
@@ -828,8 +942,7 @@ public class PrimitivePropertyBuilders {
 
     public static class Clear extends SingleIdent {
         // none | left | right | both | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.NONE, IdentValue.LEFT, IdentValue.RIGHT, IdentValue.BOTH });
+        private static final BitSet ALLOWED = setFor(NONE, LEFT, RIGHT, BOTH);
 
         @Override
         protected BitSet getAllowed() {
@@ -845,16 +958,15 @@ public class PrimitivePropertyBuilders {
         // | ne-resize | nw-resize | n-resize | se-resize | sw-resize | s-resize
         // | w-resize | text | wait | help | progress ] ] | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.AUTO, IdentValue.CROSSHAIR,
-                        IdentValue.DEFAULT, IdentValue.POINTER,
-                        IdentValue.MOVE, IdentValue.E_RESIZE,
-                        IdentValue.NE_RESIZE, IdentValue.NW_RESIZE,
-                        IdentValue.N_RESIZE, IdentValue.SE_RESIZE,
-                        IdentValue.SW_RESIZE, IdentValue.S_RESIZE,
-                        IdentValue.W_RESIZE, IdentValue.TEXT,
-                        IdentValue.WAIT, IdentValue.HELP,
-                        IdentValue.PROGRESS});
+            AUTO, CROSSHAIR,
+            DEFAULT, POINTER,
+            MOVE, E_RESIZE,
+            NE_RESIZE, NW_RESIZE,
+            N_RESIZE, SE_RESIZE,
+            SW_RESIZE, S_RESIZE,
+            W_RESIZE, TEXT,
+            WAIT, HELP,
+            PROGRESS);
 
         @Override
         protected BitSet getAllowed() {
@@ -868,15 +980,14 @@ public class PrimitivePropertyBuilders {
         // | table-footer-group | table-row | table-column-group | table-column
         // | table-cell | table-caption | none | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.INLINE, IdentValue.BLOCK,
-                        IdentValue.LIST_ITEM, /* IdentValue.RUN_IN, */
-                        IdentValue.INLINE_BLOCK, IdentValue.TABLE,
-                        IdentValue.INLINE_TABLE, IdentValue.TABLE_ROW_GROUP,
-                        IdentValue.TABLE_HEADER_GROUP, IdentValue.TABLE_FOOTER_GROUP,
-                        IdentValue.TABLE_ROW, IdentValue.TABLE_COLUMN_GROUP,
-                        IdentValue.TABLE_COLUMN, IdentValue.TABLE_CELL,
-                        IdentValue.TABLE_CAPTION, IdentValue.NONE });
+            INLINE, BLOCK,
+            LIST_ITEM, /* RUN_IN, */
+            INLINE_BLOCK, TABLE,
+            INLINE_TABLE, TABLE_ROW_GROUP,
+            TABLE_HEADER_GROUP, TABLE_FOOTER_GROUP,
+            TABLE_ROW, TABLE_COLUMN_GROUP,
+            TABLE_COLUMN, TABLE_CELL,
+            TABLE_CAPTION, NONE);
 
         @Override
         protected BitSet getAllowed() {
@@ -886,8 +997,7 @@ public class PrimitivePropertyBuilders {
 
     public static class EmptyCells extends SingleIdent {
         // show | hide | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.SHOW, IdentValue.HIDE });
+        private static final BitSet ALLOWED = setFor(SHOW, HIDE);
 
         @Override
         protected BitSet getAllowed() {
@@ -898,7 +1008,7 @@ public class PrimitivePropertyBuilders {
     public static class Float extends SingleIdent {
         // left | right | none | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.LEFT, IdentValue.RIGHT, IdentValue.NONE });
+            LEFT, RIGHT, NONE);
 
         @Override
         protected BitSet getAllowed() {
@@ -962,7 +1072,7 @@ public class PrimitivePropertyBuilders {
 
             String text = concat(normalized, ',');
             PropertyValue result = new PropertyValue(
-                    CSSPrimitiveValue.CSS_STRING, text, text, normalized.toArray(new String[normalized.size()]), null);  // HACK cssText can be wrong
+                    CSSPrimitiveValue.CSS_STRING, text, text, normalized.toArray(new String[0]), null);  // HACK cssText can be wrong
 
             return singletonList(
                     new PropertyDeclaration(cssName, result, important, origin));
@@ -1094,8 +1204,7 @@ public class PrimitivePropertyBuilders {
 
     public static class FSPageSequence extends SingleIdent {
         // start | auto
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.START, IdentValue.AUTO });
+        private static final BitSet ALLOWED = setFor(START, AUTO);
 
         @Override
         protected BitSet getAllowed() {
@@ -1112,8 +1221,7 @@ public class PrimitivePropertyBuilders {
 
     public static class FSPDFFontEmbed extends SingleIdent {
         // auto | embed
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.AUTO, IdentValue.EMBED });
+        private static final BitSet ALLOWED = setFor(AUTO, EMBED);
 
         @Override
         protected BitSet getAllowed() {
@@ -1157,8 +1265,7 @@ public class PrimitivePropertyBuilders {
     }
 
     public static class FSTablePaginate extends SingleIdent {
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.PAGINATE, IdentValue.AUTO });
+        private static final BitSet ALLOWED = setFor(PAGINATE, AUTO);
 
         @Override
         protected BitSet getAllowed() {
@@ -1167,8 +1274,7 @@ public class PrimitivePropertyBuilders {
      }
 
     public static class FSTextDecorationExtent extends SingleIdent {
-       private static final BitSet ALLOWED = setFor(
-               new IdentValue[] { IdentValue.LINE, IdentValue.BLOCK });
+       private static final BitSet ALLOWED = setFor(LINE, BLOCK);
 
        @Override
        protected BitSet getAllowed() {
@@ -1191,8 +1297,7 @@ public class PrimitivePropertyBuilders {
     }
 
     public static class FSDynamicAutoWidth extends SingleIdent {
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.DYNAMIC, IdentValue.STATIC });
+        private static final BitSet ALLOWED = setFor(DYNAMIC, STATIC);
 
         @Override
         protected BitSet getAllowed() {
@@ -1202,8 +1307,7 @@ public class PrimitivePropertyBuilders {
 
     public static class FSKeepWithInline extends SingleIdent {
         // auto | keep
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.AUTO, IdentValue.KEEP });
+        private static final BitSet ALLOWED = setFor(AUTO, KEEP);
 
         @Override
         protected BitSet getAllowed() {
@@ -1213,8 +1317,7 @@ public class PrimitivePropertyBuilders {
 
     public static class FSNamedDestination extends SingleIdent {
         // none | create
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.NONE, IdentValue.CREATE });
+        private static final BitSet ALLOWED = setFor(NONE, CREATE);
 
         @Override
         protected BitSet getAllowed() {
@@ -1231,7 +1334,7 @@ public class PrimitivePropertyBuilders {
     public static class LineHeight extends AbstractPropertyBuilder {
         // normal | <number> | <length> | <percentage> | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.NORMAL });
+            NORMAL);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(
@@ -1310,12 +1413,24 @@ public class PrimitivePropertyBuilders {
         }
     }
 
+    public static class Opacity extends AbstractPropertyBuilder {
+        @Override
+        public List<PropertyDeclaration> buildDeclarations(CSSName cssName, List<? extends CSSPrimitiveValue> values,
+                                                           Origin origin, boolean important, boolean inheritAllowed) {
+            assertFoundSingleValue(cssName, values);
+            PropertyValue value = (PropertyValue) values.get(0);
+            checkInheritAllowed(value, inheritAllowed);
+            checkNumberType(cssName, value);
+            checkValueBetween(cssName, value.getFloatValue(), 0, 1);
+
+            return singletonList(new PropertyDeclaration(cssName, value, important, origin));
+        }
+
+    }
+
     public static class Overflow extends SingleIdent {
         // visible | hidden | scroll | auto | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.VISIBLE, IdentValue.HIDDEN,
-                        /* IdentValue.SCROLL, IdentValue.AUTO, */ });
+        private static final BitSet ALLOWED = setFor(VISIBLE, HIDDEN/* SCROLL, AUTO, */);
 
         // We only support visible or hidden for now
 
@@ -1339,11 +1454,7 @@ public class PrimitivePropertyBuilders {
 
     public static class PageBreakBefore extends SingleIdent {
         // auto | always | avoid | left | right | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.AUTO, IdentValue.ALWAYS,
-                        IdentValue.AVOID, IdentValue.LEFT,
-                        IdentValue.RIGHT });
+        private static final BitSet ALLOWED = setFor(AUTO, ALWAYS, AVOID, LEFT, RIGHT);
 
         @Override
         protected BitSet getAllowed() {
@@ -1378,10 +1489,9 @@ public class PrimitivePropertyBuilders {
     public static class PageBreakAfter extends SingleIdent {
         // auto | always | avoid | left | right | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.AUTO, IdentValue.ALWAYS,
-                        IdentValue.AVOID, IdentValue.LEFT,
-                        IdentValue.RIGHT });
+            AUTO, ALWAYS,
+            AVOID, LEFT,
+            RIGHT);
 
         @Override
         protected BitSet getAllowed() {
@@ -1392,8 +1502,7 @@ public class PrimitivePropertyBuilders {
     public static class PageBreakInside extends SingleIdent {
         // avoid | auto | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.AVOID, IdentValue.AUTO });
+            AVOID, AUTO);
 
         @Override
         protected BitSet getAllowed() {
@@ -1403,10 +1512,7 @@ public class PrimitivePropertyBuilders {
 
     public static class Position extends AbstractPropertyBuilder {
         // static | relative | absolute | fixed | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.STATIC, IdentValue.RELATIVE,
-                        IdentValue.ABSOLUTE, IdentValue.FIXED });
+        private static final BitSet ALLOWED = setFor(STATIC, RELATIVE, ABSOLUTE, FIXED);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(
@@ -1469,8 +1575,7 @@ public class PrimitivePropertyBuilders {
     public static class TableLayout extends SingleIdent {
         // auto | fixed | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.AUTO, IdentValue.FIXED });
+            AUTO, FIXED);
 
         @Override
         protected BitSet getAllowed() {
@@ -1480,10 +1585,7 @@ public class PrimitivePropertyBuilders {
 
     public static class TextAlign extends SingleIdent {
         // left | right | center | justify | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.LEFT, IdentValue.RIGHT,
-                        IdentValue.CENTER, IdentValue.JUSTIFY });
+        private static final BitSet ALLOWED = setFor(LEFT, RIGHT, CENTER, JUSTIFY);
 
         @Override
         protected BitSet getAllowed() {
@@ -1494,10 +1596,9 @@ public class PrimitivePropertyBuilders {
     public static class TextDecoration extends AbstractPropertyBuilder {
         // none | [ underline || overline || line-through || blink ] | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        /* IdentValue.NONE, */ IdentValue.UNDERLINE,
-                        IdentValue.OVERLINE, IdentValue.LINE_THROUGH,
-                        /* IdentValue.BLINK */ });
+            /* NONE, */ UNDERLINE,
+            OVERLINE, LINE_THROUGH
+            /* BLINK */);
 
         private BitSet getAllowed() {
             return ALLOWED;
@@ -1514,7 +1615,7 @@ public class PrimitivePropertyBuilders {
                 } else {
                     checkIdentType(CSSName.TEXT_DECORATION, value);
                     IdentValue ident = checkIdent(value);
-                    if (ident == IdentValue.NONE) {
+                    if (ident == NONE) {
                         goWithSingle = true;
                     }
                 }
@@ -1530,7 +1631,7 @@ public class PrimitivePropertyBuilders {
                 checkInheritAllowed(value, false);
                 checkIdentType(cssName, value);
                 IdentValue ident = checkIdent(value);
-                if (ident == IdentValue.NONE) {
+                if (ident == NONE) {
                     throw new CSSParseException("Value none may not be used in this position", -1);
                 }
                 checkValidity(cssName, getAllowed(), ident);
@@ -1546,11 +1647,8 @@ public class PrimitivePropertyBuilders {
     }
 
     public static class TextTransform extends SingleIdent {
-       // capitalize | uppercase | lowercase | none | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.CAPITALIZE, IdentValue.UPPERCASE,
-                        IdentValue.LOWERCASE, IdentValue.NONE });
+        // capitalize | uppercase | lowercase | none | inherit
+        private static final BitSet ALLOWED = setFor(CAPITALIZE, UPPERCASE, LOWERCASE, NONE);
 
         @Override
         protected BitSet getAllowed() {
@@ -1561,12 +1659,7 @@ public class PrimitivePropertyBuilders {
     public static class VerticalAlign extends LengthLikeWithIdent {
         // baseline | sub | super | top | text-top | middle
         // | bottom | text-bottom | <percentage> | <length> | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.BASELINE, IdentValue.SUB,
-                        IdentValue.SUPER, IdentValue.TOP,
-                        IdentValue.TEXT_TOP, IdentValue.MIDDLE,
-                        IdentValue.BOTTOM, IdentValue.TEXT_BOTTOM });
+        private static final BitSet ALLOWED = setFor(BASELINE, SUB, SUPER, TOP, TEXT_TOP, MIDDLE, BOTTOM, TEXT_BOTTOM);
 
         @Override
         protected BitSet getAllowed() {
@@ -1577,8 +1670,7 @@ public class PrimitivePropertyBuilders {
     public static class Visibility extends SingleIdent {
         // visible | hidden | collapse | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.VISIBLE, IdentValue.HIDDEN, IdentValue.COLLAPSE });
+            VISIBLE, HIDDEN, COLLAPSE);
 
         @Override
         protected BitSet getAllowed() {
@@ -1588,10 +1680,17 @@ public class PrimitivePropertyBuilders {
 
     public static class WhiteSpace extends SingleIdent {
         // normal | pre | nowrap | pre-wrap | pre-line | inherit
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.NORMAL, IdentValue.PRE, IdentValue.NOWRAP,
-                        IdentValue.PRE_WRAP, IdentValue.PRE_LINE});
+        private static final BitSet ALLOWED = setFor(NORMAL, PRE, NOWRAP, PRE_WRAP, PRE_LINE);
+
+        @Override
+        protected BitSet getAllowed() {
+            return ALLOWED;
+        }
+    }
+
+    public static class WordBreak extends SingleIdent {
+        // normal | break-all
+        private static final BitSet ALLOWED = setFor(NORMAL, BREAK_ALL);
 
         @Override
         protected BitSet getAllowed() {
@@ -1601,9 +1700,7 @@ public class PrimitivePropertyBuilders {
 
     public static class WordWrap extends SingleIdent {
         // normal | break-word
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.NORMAL, IdentValue.BREAK_WORD});
+        private static final BitSet ALLOWED = setFor(NORMAL, BREAK_WORD);
 
         @Override
         protected BitSet getAllowed() {
@@ -1613,9 +1710,7 @@ public class PrimitivePropertyBuilders {
 
     public static class Hyphens extends SingleIdent {
         // none | manual | auto
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.NONE, IdentValue.MANUAL, IdentValue.AUTO});
+        private static final BitSet ALLOWED = setFor(NONE, MANUAL, AUTO);
 
         @Override
         protected BitSet getAllowed() {
@@ -1625,9 +1720,7 @@ public class PrimitivePropertyBuilders {
 
     public static class BoxSizing extends SingleIdent {
         // border-box | content-box
-        private static final BitSet ALLOWED = setFor(
-                new IdentValue[] {
-                        IdentValue.BORDER_BOX, IdentValue.CONTENT_BOX});
+        private static final BitSet ALLOWED = setFor(BORDER_BOX, CONTENT_BOX);
 
         @Override
         protected BitSet getAllowed() {
@@ -1655,7 +1748,7 @@ public class PrimitivePropertyBuilders {
     public static class ZIndex extends AbstractPropertyBuilder {
         // auto | <integer> | inherit
         private static final BitSet ALLOWED = setFor(
-                new IdentValue[] { IdentValue.AUTO });
+            AUTO);
 
         @Override
         public List<PropertyDeclaration> buildDeclarations(
@@ -1679,14 +1772,13 @@ public class PrimitivePropertyBuilders {
 
 
     private static List<PropertyDeclaration> createTwoValueResponse(
-            CSSName cssName,
-            CSSPrimitiveValue value1, CSSPrimitiveValue value2,
-            Origin origin, boolean important) {
+        CSSName cssName, CSSPrimitiveValue value1,
+        CSSPrimitiveValue value2,
+        Origin origin, boolean important) {
 
-        PropertyDeclaration result = new PropertyDeclaration(
-                cssName,
-                new PropertyValue(asList(value1, value2)), important, origin);
-
-        return singletonList(result);
+        return singletonList(
+            new PropertyDeclaration(cssName,
+                new PropertyValue(asList(value1, value2)), important, origin)
+        );
     }
 }

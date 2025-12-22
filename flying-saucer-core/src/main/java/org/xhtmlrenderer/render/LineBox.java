@@ -44,6 +44,8 @@ import java.util.List;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Collections.emptyList;
+import static org.xhtmlrenderer.css.constants.CSSName.LETTER_SPACING;
+import static org.xhtmlrenderer.css.constants.IdentValue.NORMAL;
 import static org.xhtmlrenderer.render.Box.Dump.RENDER;
 
 /**
@@ -190,21 +192,21 @@ public class LineBox extends Box implements InlinePaintable {
         int calcX = 0;
 
         if (align == IdentValue.LEFT || align == IdentValue.JUSTIFY) {
-            int floatDistance = getFloatDistances().getLeftFloatDistance();
+            int floatDistance = getFloatDistances().leftFloatDistance();
             calcX = getContentStart() + floatDistance;
             if (align == IdentValue.JUSTIFY && dynamic) {
                 justify();
             }
         } else if (align == IdentValue.CENTER) {
-            int leftFloatDistance = getFloatDistances().getLeftFloatDistance();
-            int rightFloatDistance = getFloatDistances().getRightFloatDistance();
+            int leftFloatDistance = getFloatDistances().leftFloatDistance();
+            int rightFloatDistance = getFloatDistances().rightFloatDistance();
 
             int midpoint = leftFloatDistance +
                 (getParent().getContentWidth() - leftFloatDistance - rightFloatDistance) / 2;
 
             calcX = midpoint - (getContentWidth() + getContentStart()) / 2;
         } else if (align == IdentValue.RIGHT) {
-            int floatDistance = getFloatDistances().getRightFloatDistance();
+            int floatDistance = getFloatDistances().rightFloatDistance();
             calcX = getParent().getContentWidth() - floatDistance - getContentWidth();
         }
 
@@ -217,8 +219,8 @@ public class LineBox extends Box implements InlinePaintable {
 
     public void justify() {
         if (! isLastLineWithContent()) {
-            int leftFloatDistance = getFloatDistances().getLeftFloatDistance();
-            int rightFloatDistance = getFloatDistances().getRightFloatDistance();
+            int leftFloatDistance = getFloatDistances().leftFloatDistance();
+            int rightFloatDistance = getFloatDistances().rightFloatDistance();
 
             int available = getParent().getContentWidth() -
                 leftFloatDistance - rightFloatDistance - getContentStart();
@@ -228,29 +230,26 @@ public class LineBox extends Box implements InlinePaintable {
 
                 CharCounts counts = countJustifiableChars();
 
-                JustificationInfo info = new JustificationInfo();
-                if (! getParent().getStyle().isIdent(CSSName.LETTER_SPACING, IdentValue.NORMAL)) {
-                    info.setNonSpaceAdjust(0.0f);
-                    info.setSpaceAdjust((float)toAdd / counts.getSpaceCount());
-                } else {
-                    if (counts.getNonSpaceCount() > 1) {
-                        info.setNonSpaceAdjust(toAdd * JUSTIFY_NON_SPACE_SHARE / (counts.getNonSpaceCount()-1));
-                    } else {
-                        info.setNonSpaceAdjust(0.0f);
-                    }
-
-                    if (counts.getSpaceCount() > 0) {
-                        info.setSpaceAdjust(toAdd * JUSTIFY_SPACE_SHARE / counts.getSpaceCount());
-                    } else {
-                        info.setSpaceAdjust(0.0f);
-                    }
-                }
+                JustificationInfo info = !getParent().getStyle().isIdent(LETTER_SPACING, NORMAL) ?
+                        new JustificationInfo(0.0f, (float) toAdd / counts.getSpaceCount()) :
+                        justificationInfo(counts, toAdd);
 
                 adjustChildren(info);
-
                 setJustificationInfo(info);
             }
         }
+    }
+
+    private static JustificationInfo justificationInfo(CharCounts counts, int toAdd) {
+        float nonSpaceAdjust = counts.getNonSpaceCount() > 1 ?
+                toAdd * JUSTIFY_NON_SPACE_SHARE / (counts.getNonSpaceCount() - 1) :
+                0.0f;
+
+        float spaceAdjust = counts.getSpaceCount() > 0 ?
+                toAdd * JUSTIFY_SPACE_SHARE / counts.getSpaceCount() :
+                0.0f;
+
+        return new JustificationInfo(nonSpaceAdjust, spaceAdjust);
     }
 
     private void adjustChildren(JustificationInfo info) {
@@ -471,6 +470,7 @@ public class LineBox extends Box implements InlinePaintable {
     }
 
     @Nullable
+    @CheckReturnValue
     public InlineText findTrailingText() {
         if (getChildCount() == 0) {
             return null;
@@ -498,7 +498,7 @@ public class LineBox extends Box implements InlinePaintable {
         if (text != null) {
             InlineLayoutBox iB = text.getParent();
             IdentValue whitespace = iB.getStyle().getWhitespace();
-            if (whitespace == IdentValue.NORMAL || whitespace == IdentValue.NOWRAP) {
+            if (whitespace == NORMAL || whitespace == IdentValue.NOWRAP) {
                 text.trimTrailingSpace(c);
             }
         }
