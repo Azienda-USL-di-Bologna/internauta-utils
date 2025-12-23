@@ -84,6 +84,14 @@ public class ConversionServices {
                     return ZonedDateTime.ofInstant(toInstant, ZoneId.systemDefault());
                 } catch (ParseException e) {
                 }
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    sdf.setLenient(false);
+                    Instant toInstant = sdf.parse(source.toString()).toInstant();
+                    return ZonedDateTime.ofInstant(toInstant, ZoneId.systemDefault());
+                } catch (ParseException e) {
+                    // non è stato parsato
+                }
 
                 return null;
             });
