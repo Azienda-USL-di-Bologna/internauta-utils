@@ -19,8 +19,8 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza", "TIPO_APPARTENENZA")),
         username(Arrays.asList("username")),
         responsabile(Arrays.asList("responsabile")),
-        datain(Arrays.asList("dataIn", "data attivazione", "data inizio")),
-        datafi(Arrays.asList("dataFi", "data cessazione", "data fine")),
+        //datain(Arrays.asList("dataIn", "data attivazione", "data inizio")),
+        //datafi(Arrays.asList("dataFi", "data cessazione", "data fine")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -51,8 +51,8 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         idPadre(Arrays.asList("idPadre", "id casella padre", "id padre", "id_padre")),
         descrizione(Arrays.asList("descrizione")),
         tipoLegame(Arrays.asList("tipoLegame", "tipo legame", "tipo_legame")),
-        datain(Arrays.asList("dataIn", "data attivazione", "data inizio", "datain")),
-        datafi(Arrays.asList("dataFi", "data cessazione", "data fine", "datafi")),
+        //datain(Arrays.asList("dataIn", "data attivazione", "data inizio", "datain")),
+        //datafi(Arrays.asList("dataFi", "data cessazione", "data fine", "datafi")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;
@@ -116,7 +116,7 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         dataTrasformazione(Arrays.asList("dataTrasformazione", "data trasformazione", "data_trasformazione")),
         dataOraOper(Arrays.asList("dataOraOper", "dataora_oper", "dataOraOper")),
         motivo(Arrays.asList("motivo")),
-        datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
+        //datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;

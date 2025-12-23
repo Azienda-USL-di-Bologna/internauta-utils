@@ -46,36 +46,36 @@ public class ExportDatiManager {
             mapWriter.writeHeader(headers);
             for (Map<String, Object> elemento : elementi) {
                 row.putAll(elemento);
-                if (elemento.get("datain") != null && !elemento.get("datain").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datain").getClass())) {
-                        row.put("datain", Timestamp.from((Instant) elemento.get("datain")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("datafi") != null && !elemento.get("datafi").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datafi").getClass())) {
-                        row.put("datafi", Timestamp.from((Instant) elemento.get("datafi")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("data_assunzione") != null && !elemento.get("data_assunzione").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("data_assunzione").getClass())) {
-                        row.put("data_assunzione", Timestamp.from((Instant) elemento.get("data_assunzione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
-                if (elemento.get("data_dimissione") != null && !elemento.get("data_dimissione").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("data_dimissione").getClass())) {
-                        row.put("data_dimissione", Timestamp.from((Instant) elemento.get("data_dimissione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
+                // if (elemento.get("datain") != null && !elemento.get("datain").toString().trim().equals("")) {
+                //     if (Instant.class.isAssignableFrom(elemento.get("datain").getClass())) {
+                //         row.put("datain", Timestamp.from((Instant) elemento.get("datain")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                //     }
+                // }
+                // if (elemento.get("datafi") != null && !elemento.get("datafi").toString().trim().equals("")) {
+                //     if (Instant.class.isAssignableFrom(elemento.get("datafi").getClass())) {
+                //         row.put("datafi", Timestamp.from((Instant) elemento.get("datafi")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                //     }
+                // }
+                // if (elemento.get("data_assunzione") != null && !elemento.get("data_assunzione").toString().trim().equals("")) {
+                //     if (Instant.class.isAssignableFrom(elemento.get("data_assunzione").getClass())) {
+                //         row.put("data_assunzione", Timestamp.from((Instant) elemento.get("data_assunzione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                //     }
+                // }
+                // if (elemento.get("data_dimissione") != null && !elemento.get("data_dimissione").toString().trim().equals("")) {
+                //     if (Instant.class.isAssignableFrom(elemento.get("data_dimissione").getClass())) {
+                //         row.put("data_dimissione", Timestamp.from((Instant) elemento.get("data_dimissione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                //     }
+                // }
                 if (elemento.get("data_trasformazione") != null && !elemento.get("data_trasformazione").toString().trim().equals("")) {
                     if (Instant.class.isAssignableFrom(elemento.get("data_trasformazione").getClass())) {
                         row.put("data_trasformazione", Timestamp.from((Instant) elemento.get("data_trasformazione")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
                     }
                 }
-                if (elemento.get("datain_partenza") != null && !elemento.get("datain_partenza").toString().trim().equals("")) {
-                    if (Instant.class.isAssignableFrom(elemento.get("datain_partenza").getClass())) {
-                        row.put("datain_partenza", Timestamp.from((Instant) elemento.get("datain_partenza")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-                    }
-                }
+                // if (elemento.get("datain_partenza") != null && !elemento.get("datain_partenza").toString().trim().equals("")) {
+                //     if (Instant.class.isAssignableFrom(elemento.get("datain_partenza").getClass())) {
+                //         row.put("datain_partenza", Timestamp.from((Instant) elemento.get("datain_partenza")).toLocalDateTime().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                //     }
+                // }
                 if (elemento.get("dataora_oper") != null && !elemento.get("dataora_oper").toString().trim().equals("")) {
                     if (Instant.class.isAssignableFrom(elemento.get("dataora_oper").getClass())) {
                         row.put("dataora_oper", Timestamp.from((Instant) elemento.get("dataora_oper")).toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
@@ -115,12 +115,13 @@ public class ExportDatiManager {
                     new Optional(), // nome Bloccante
                     new Optional(), // codice_fiscale bloccante
                     new Optional(), // id_casella bloccante
-                    new Optional(), // datain bloccante
-                    new Optional(), // datafi
+                    new Optional(), // responsaibile bloccante
+                    //new Optional(), // datain bloccante
+                    //new Optional(), // datafi
                     new Optional(), // tipo_appartenenza bloccante
                     new Optional(), // username
-                    new Optional(), // data_assunzione bloccante
-                    new Optional() // data_adimissione
+                    //new Optional(), // data_assunzione bloccante
+                    //new Optional() // data_adimissione
                 };
                 cellProcessor = processorsAPPARTENENTI;
             }
@@ -132,7 +133,7 @@ public class ExportDatiManager {
                     new Optional(), // id_casellla_arrivo
                     new Optional(), // data_trasformazione
                     new Optional(), // motivo
-                    new Optional(), // datain_partenza
+                    //new Optional(), // datain_partenza
                     new Optional(), // dataora_oper
                     new Optional() // codice_ente
                 };
@@ -144,8 +145,8 @@ public class ExportDatiManager {
                     new Optional(), // id_casella
                     new Optional(), // id_padre
                     new Optional(), // descrizione
-                    new Optional(), // datain
-                    new Optional(), // datafi
+                    //new Optional(), // datain
+                    //new Optional(), // datafi
                     new Optional(), // tipo_legame
                     // new NotNull(new StrRegEx(codiceEnteRegex, new ParseInt())), // codice_ente
                     new Optional() // codice_ente
@@ -175,15 +176,14 @@ public class ExportDatiManager {
         switch (tipo) {
             case APPARTENENTI ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
-                    "nome", "codice_fiscale", "id_casella", "datain", "datafi", "tipo_appartenenza",
-                    "username", "data_assunzione", "data_dimissione"};
-
+                    "nome", "codice_fiscale", "id_casella", "responsabile", /* "datain", "datafi", */ "tipo_appartenenza",
+                    "username"/* , "data_assunzione", "data_dimissione" */};
             case STRUTTURE ->
                 headers = new String[]{"id_casella", "id_padre", "descrizione",
-                    "datain", "datafi", "tipo_legame", "codice_ente"};
+                    /* "datain", "datafi", */ "tipo_legame", "codice_ente"};
             case TRASFORMAZIONI ->
                 headers = new String[]{"progressivo_riga", "id_casella_partenza", "id_casella_arrivo", "data_trasformazione",
-                    "motivo", "datain_partenza", "dataora_oper", "codice_ente"};
+                    "motivo", /* "datain_partenza", */ "dataora_oper", "codice_ente"};
             case ANAGRAFICHE ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
                     "nome", "codice_fiscale", "email"};

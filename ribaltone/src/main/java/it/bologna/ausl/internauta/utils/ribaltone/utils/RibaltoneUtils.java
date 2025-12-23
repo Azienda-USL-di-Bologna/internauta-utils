@@ -230,13 +230,13 @@ public class RibaltoneUtils {
 
         for (Tuple tupla : listaTuple) {
             Map<String, Object> map = new HashMap<>();
-
             Integer i = 0;
+
             for (String header : headers) {
                 map.put(header, tupla.get(i, Object.class));
                 i++;
-                list.add(map);
             }
+            list.add(map);
         }
         return list;
     }

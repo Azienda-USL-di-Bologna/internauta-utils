@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +73,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         @RequestParam("idAzienda") Integer idAzienda,
         @RequestParam("tipo") TipologiaCsv tipo,
         HttpServletResponse response,
-        HttpServletRequest request) {
+        HttpServletRequest request) throws FileNotFoundException, IOException {
         File buildCSV = null;
 
         //SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, data_assunzione, data_dimissione, id_azienda FROM gru.mdr_appartenenti WHERE id_azienda = ?1
@@ -87,19 +88,21 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
         switch (tipo) {
             case APPARTENENTI:
-                expressions = List.of(qDatiImportatiAppartenente.codiceEnte,
+                expressions = List.of(
+                    qDatiImportatiAppartenente.codiceEnte,
                     qDatiImportatiAppartenente.codiceMatricola,
                     qDatiImportatiAppartenente.cognome,
                     qDatiImportatiAppartenente.nome,
                     qDatiImportatiAppartenente.codiceFiscale,
                     qDatiImportatiAppartenente.idCasella,
-                    qDatiImportatiAppartenente.datain,
-                    qDatiImportatiAppartenente.datafi,
-                    qDatiImportatiAppartenente.tipoAppartenenza,
-                    qDatiImportatiAppartenente.username,
                     qDatiImportatiAppartenente.responsabile,
-                    qDatiImportatiAppartenente.dataAssunzione,
-                    qDatiImportatiAppartenente.dataDimissione);
+                    //qDatiImportatiAppartenente.datain,
+                    //qDatiImportatiAppartenente.datafi,
+                    qDatiImportatiAppartenente.tipoAppartenenza,
+                    qDatiImportatiAppartenente.username
+                    //qDatiImportatiAppartenente.dataAssunzione,
+                    //qDatiImportatiAppartenente.dataDimissione
+                );
 
                 selectRigheByIdAzienda = queryFactory
                     .select(expressions.toArray(new Expression[0]))
@@ -112,8 +115,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 expressions = List.of(qDatiImportatiStruttura.idCasella,
                     qDatiImportatiStruttura.idPadre,
                     qDatiImportatiStruttura.descrizione,
-                    qDatiImportatiStruttura.datain,
-                    qDatiImportatiStruttura.datafi,
+                    //qDatiImportatiStruttura.datain,
+                    //qDatiImportatiStruttura.datafi,
                     qDatiImportatiStruttura.tipoLegame,
                     qDatiImportatiStruttura.codiceEnte);
 
@@ -127,11 +130,11 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
                     qDatiImportatiTrasformazione.idCasellaPartenza,
                     qDatiImportatiTrasformazione.idCasellaArrivo,
-                    qDatiImportatiTrasformazione.codiceEnte,
                     qDatiImportatiTrasformazione.dataTrasformazione,
                     qDatiImportatiTrasformazione.motivo,
-                    qDatiImportatiTrasformazione.datainPartenza,
-                    qDatiImportatiTrasformazione.dataoraOper
+                    //qDatiImportatiTrasformazione.datainPartenza,
+                    qDatiImportatiTrasformazione.dataoraOper,
+                    qDatiImportatiTrasformazione.codiceEnte
                 );
 
                 selectRigheByIdAzienda = queryFactory
@@ -158,13 +161,21 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
         buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
 
-        if (buildCSV != null) {
-            try {
-                StreamUtils.copy(new FileInputStream(buildCSV), response.getOutputStream());
-            } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(RibaltoneDatiCustomController.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + buildCSV.getName() + "\"");
+
+        try (FileInputStream in = new FileInputStream(buildCSV)) {
+            StreamUtils.copy(in, response.getOutputStream());
+            response.flushBuffer();
         }
+
+        // if (buildCSV != null) {
+        //     try {
+        //         StreamUtils.copy(new FileInputStream(buildCSV), response.getOutputStream());
+        //     } catch (IOException ex) {
+        //         java.util.logging.Logger.getLogger(RibaltoneDatiCustomController.class.getName()).log(Level.SEVERE, null, ex);
+        //     }
+        // }
     }
 
     /*
