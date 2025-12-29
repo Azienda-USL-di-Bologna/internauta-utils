@@ -80,17 +80,17 @@ public class ValidatorStrutture extends AbstractValidator {
     }
 
     private Integer getAntenatoMorto(Map<String, Integer> indexStrutture, List<DatiDaImportareStruttura> datiDaImportareStrutture, DatiDaImportareStruttura datiDaImportareStruttura) {
-        Integer idPadre = datiDaImportareStruttura.getIdPadre();
-        boolean isRadice = idPadre == null || idPadre.equals(0);
+        Integer idCasellaStrutturaPadre = datiDaImportareStruttura.getIdPadre();
+        boolean isRadice = idCasellaStrutturaPadre == null || idCasellaStrutturaPadre.equals(0);
 
-        while (!isRadice && idPadre != null) {
-            if (idPadre == null || idPadre.equals(0)) {
+        while (!isRadice && idCasellaStrutturaPadre != null) {
+            if (idCasellaStrutturaPadre == null || idCasellaStrutturaPadre.equals(0)) {
                 isRadice = true;
             }
-            if (!indexStrutture.containsKey(idPadre.toString())) {
-                return idPadre;
+            if (!indexStrutture.containsKey(idCasellaStrutturaPadre.toString())) {
+                return indexStrutture.get(idCasellaStrutturaPadre.toString());
             } else {
-                idPadre = datiDaImportareStrutture.get(indexStrutture.get(idPadre.toString())).getIdPadre();
+                idCasellaStrutturaPadre = datiDaImportareStrutture.get(indexStrutture.get(idCasellaStrutturaPadre.toString())).getIdPadre();
             }
         }
         return null;

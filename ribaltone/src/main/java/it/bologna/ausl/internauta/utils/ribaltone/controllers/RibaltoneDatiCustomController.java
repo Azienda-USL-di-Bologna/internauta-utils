@@ -15,7 +15,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfig
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
-import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
@@ -27,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,7 +73,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         @RequestParam("idAzienda") Integer idAzienda,
         @RequestParam("tipo") TipologiaCsv tipo,
         HttpServletResponse response,
-        HttpServletRequest request) {
+        HttpServletRequest request) throws FileNotFoundException, IOException {
         File buildCSV = null;
 
         //SELECT codice_ente, codice_matricola, cognome, nome, codice_fiscale, id_casella, datain, datafi, tipo_appartenenza, username, data_assunzione, data_dimissione, id_azienda FROM gru.mdr_appartenenti WHERE id_azienda = ?1
@@ -81,31 +81,33 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
         QDatiImportatiStruttura qDatiImportatiStruttura = QDatiImportatiStruttura.datiImportatiStruttura;
         QDatiImportatiTrasformazione qDatiImportatiTrasformazione = QDatiImportatiTrasformazione.datiImportatiTrasformazione;
-        QCSVDaImportareAppartenente qCSVDaImportareAppartenente = QCSVDaImportareAppartenente.cSVDaImportareAppartenente;
+
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         List<Expression<?>> expressions = new ArrayList<>();
         List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
 
         switch (tipo) {
             case APPARTENENTI:
-                expressions = List.of(qCSVDaImportareAppartenente.codiceEnte,
-                    qCSVDaImportareAppartenente.codiceMatricola,
-                    qCSVDaImportareAppartenente.cognome,
-                    qCSVDaImportareAppartenente.nome,
-                    qCSVDaImportareAppartenente.codiceFiscale,
-                    qCSVDaImportareAppartenente.idCasella,
-                    qCSVDaImportareAppartenente.datain,
-                    qCSVDaImportareAppartenente.datafi,
-                    qCSVDaImportareAppartenente.tipoAppartenenza,
-                    qCSVDaImportareAppartenente.username,
-                    qCSVDaImportareAppartenente.responsabile,
-                    qCSVDaImportareAppartenente.dataAssunzione,
-                    qCSVDaImportareAppartenente.dataDimissione);
+                expressions = List.of(
+                    qDatiImportatiAppartenente.codiceEnte,
+                    qDatiImportatiAppartenente.codiceMatricola,
+                    qDatiImportatiAppartenente.cognome,
+                    qDatiImportatiAppartenente.nome,
+                    qDatiImportatiAppartenente.codiceFiscale,
+                    qDatiImportatiAppartenente.idCasella,
+                    qDatiImportatiAppartenente.responsabile,
+                    //qDatiImportatiAppartenente.datain,
+                    //qDatiImportatiAppartenente.datafi,
+                    qDatiImportatiAppartenente.tipoAppartenenza,
+                    qDatiImportatiAppartenente.username
+                    //qDatiImportatiAppartenente.dataAssunzione,
+                    //qDatiImportatiAppartenente.dataDimissione
+                );
 
                 selectRigheByIdAzienda = queryFactory
                     .select(expressions.toArray(new Expression[0]))
-                    .from(qCSVDaImportareAppartenente)
-                    .where(qCSVDaImportareAppartenente.idAzienda.eq(idAzienda)).fetch();
+                    .from(qDatiImportatiAppartenente)
+                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
 
                 break;
 
@@ -113,8 +115,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 expressions = List.of(qDatiImportatiStruttura.idCasella,
                     qDatiImportatiStruttura.idPadre,
                     qDatiImportatiStruttura.descrizione,
-                    qDatiImportatiStruttura.datain,
-                    qDatiImportatiStruttura.datafi,
+                    //qDatiImportatiStruttura.datain,
+                    //qDatiImportatiStruttura.datafi,
                     qDatiImportatiStruttura.tipoLegame,
                     qDatiImportatiStruttura.codiceEnte);
 
@@ -128,11 +130,11 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
                     qDatiImportatiTrasformazione.idCasellaPartenza,
                     qDatiImportatiTrasformazione.idCasellaArrivo,
-                    qDatiImportatiTrasformazione.codiceEnte,
                     qDatiImportatiTrasformazione.dataTrasformazione,
                     qDatiImportatiTrasformazione.motivo,
-                    qDatiImportatiTrasformazione.datainPartenza,
-                    qDatiImportatiTrasformazione.dataoraOper
+                    //qDatiImportatiTrasformazione.datainPartenza,
+                    qDatiImportatiTrasformazione.dataoraOper,
+                    qDatiImportatiTrasformazione.codiceEnte
                 );
 
                 selectRigheByIdAzienda = queryFactory
@@ -159,13 +161,21 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
         buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
 
-        if (buildCSV != null) {
-            try {
-                StreamUtils.copy(new FileInputStream(buildCSV), response.getOutputStream());
-            } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(RibaltoneDatiCustomController.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + buildCSV.getName() + "\"");
+
+        try (FileInputStream in = new FileInputStream(buildCSV)) {
+            StreamUtils.copy(in, response.getOutputStream());
+            response.flushBuffer();
         }
+
+        // if (buildCSV != null) {
+        //     try {
+        //         StreamUtils.copy(new FileInputStream(buildCSV), response.getOutputStream());
+        //     } catch (IOException ex) {
+        //         java.util.logging.Logger.getLogger(RibaltoneDatiCustomController.class.getName()).log(Level.SEVERE, null, ex);
+        //     }
+        // }
     }
 
     /*
