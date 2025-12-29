@@ -15,6 +15,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfig
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
@@ -80,31 +81,31 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
         QDatiImportatiStruttura qDatiImportatiStruttura = QDatiImportatiStruttura.datiImportatiStruttura;
         QDatiImportatiTrasformazione qDatiImportatiTrasformazione = QDatiImportatiTrasformazione.datiImportatiTrasformazione;
-
+        QCSVDaImportareAppartenente qCSVDaImportareAppartenente = QCSVDaImportareAppartenente.cSVDaImportareAppartenente;
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         List<Expression<?>> expressions = new ArrayList<>();
         List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
 
         switch (tipo) {
             case APPARTENENTI:
-                expressions = List.of(qDatiImportatiAppartenente.codiceEnte,
-                    qDatiImportatiAppartenente.codiceMatricola,
-                    qDatiImportatiAppartenente.cognome,
-                    qDatiImportatiAppartenente.nome,
-                    qDatiImportatiAppartenente.codiceFiscale,
-                    qDatiImportatiAppartenente.idCasella,
-                    qDatiImportatiAppartenente.datain,
-                    qDatiImportatiAppartenente.datafi,
-                    qDatiImportatiAppartenente.tipoAppartenenza,
-                    qDatiImportatiAppartenente.username,
-                    qDatiImportatiAppartenente.responsabile,
-                    qDatiImportatiAppartenente.dataAssunzione,
-                    qDatiImportatiAppartenente.dataDimissione);
+                expressions = List.of(qCSVDaImportareAppartenente.codiceEnte,
+                    qCSVDaImportareAppartenente.codiceMatricola,
+                    qCSVDaImportareAppartenente.cognome,
+                    qCSVDaImportareAppartenente.nome,
+                    qCSVDaImportareAppartenente.codiceFiscale,
+                    qCSVDaImportareAppartenente.idCasella,
+                    qCSVDaImportareAppartenente.datain,
+                    qCSVDaImportareAppartenente.datafi,
+                    qCSVDaImportareAppartenente.tipoAppartenenza,
+                    qCSVDaImportareAppartenente.username,
+                    qCSVDaImportareAppartenente.responsabile,
+                    qCSVDaImportareAppartenente.dataAssunzione,
+                    qCSVDaImportareAppartenente.dataDimissione);
 
                 selectRigheByIdAzienda = queryFactory
                     .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiAppartenente)
-                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
+                    .from(qCSVDaImportareAppartenente)
+                    .where(qCSVDaImportareAppartenente.idAzienda.eq(idAzienda)).fetch();
 
                 break;
 

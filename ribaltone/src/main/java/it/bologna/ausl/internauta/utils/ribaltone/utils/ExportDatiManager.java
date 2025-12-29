@@ -116,15 +116,16 @@ public class ExportDatiManager {
                     new Optional(), // codice_fiscale bloccante
                     new Optional(), // id_casella bloccante
                     new Optional(), // datain bloccante
-                    new Optional(), // datafi
-                    new Optional(), // tipo_appartenenza bloccante
+                    new Optional(), // data fi
+                    new Optional(), // tipo_appartenenza
                     new Optional(), // username
+                    new Optional(), // responsabile
                     new Optional(), // data_assunzione bloccante
-                    new Optional() // data_adimissione
+                    new Optional() // data_dimissione
                 };
                 cellProcessor = processorsAPPARTENENTI;
             }
-            
+
             case TRASFORMAZIONI -> {
                 CellProcessor[] processorsTRASFORMAZIONI = new CellProcessor[]{
                     new Optional(), // progressivo_riga
@@ -164,7 +165,8 @@ public class ExportDatiManager {
                 };
                 cellProcessor = processorsANAGRAFICA;
             }
-            default -> System.out.println("non dovrebbe essere altro tipo di tabella");
+            default ->
+                System.out.println("non dovrebbe essere altro tipo di tabella");
         }
         return cellProcessor;
     }
@@ -192,7 +194,5 @@ public class ExportDatiManager {
         }
         return headers;
     }
-
-  
 
 }

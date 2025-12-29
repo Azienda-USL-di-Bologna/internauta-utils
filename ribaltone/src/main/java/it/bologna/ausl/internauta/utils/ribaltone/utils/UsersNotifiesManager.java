@@ -8,7 +8,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAnagrafica;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
-import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport;
 
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.AziendaParametriJson;
@@ -16,9 +15,6 @@ import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
-import it.bologna.ausl.model.entities.baborg.QUtente;
-import it.bologna.ausl.model.entities.baborg.Struttura;
-import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.configurazione.Applicazione;
 import it.bologna.ausl.model.entities.configurazione.QApplicazione;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
@@ -32,13 +28,10 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
 import it.bologna.ausl.model.entities.scrivania.Attivita;
 import it.bologna.ausl.model.entities.scrivania.DettaglioAttivita;
 import jakarta.persistence.EntityManager;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.print.attribute.HashAttributeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,15 +43,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UsersNotifiesManager {
-    
+
     private static final Logger log = LoggerFactory.getLogger(UsersNotifiesManager.class);
 
     @Autowired
     private EntityManager entityManager;
-    
+
     @Autowired
     private SimpleMailSenderUtility simpleMailSenderUtility;
-    
+
     /*
      * Genera e invia le notifiche/mail agli utenti interessati per le operazioni ribaltone
      * @param buildedOperations le operazioni ribaltone
@@ -66,22 +59,22 @@ public class UsersNotifiesManager {
      * @param idPersonaLanciante l'ID della persona che ha lanciato il ribaltone (null se automatico)
      * @param idPersoneDaNotificare lista di ID persone da notificare (per ribaltone automatico, null se manuale)
      */
-    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare,List<String> mailDaNotificare, String descrizioneErrore) throws IOException {
+    public void generaAndInviaNotifiche(Operations buildedOperations, String codiceAzienda, List<Integer> idPersoneDaNotificare, List<String> mailDaNotificare, String descrizioneErrore) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAzienda qAzienda = QAzienda.azienda;
         Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
-        
+
         QApplicazione qApplicazione = QApplicazione.applicazione;
         Applicazione app = queryFactory.select(qApplicazione).from(qApplicazione).where(qApplicazione.id.eq(Applicazione.Applicazioni.ribaltorg.toString())).fetchOne();
-        
-        // Ricavare le persone da notificare: 
-        // in caso di ribaltone manuale è la persona che ha lanciato il ribaltone manuale, 
+
+        // Ricavare le persone da notificare:
+        // in caso di ribaltone manuale è la persona che ha lanciato il ribaltone manuale,
         // in caso di ribaltone automatico sono le persone scritte nella configurazione di ribaltone
         List<Persona> personeDaNotificareSuScrivania = new ArrayList<>();
         //List<Persona> personeDaNotificareTeamiteMail = new ArrayList<>();
-        
+
         QPersona qPersona = QPersona.persona;
-        
+
         if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty() && descrizioneErrore != null) {
             // Ribaltone automatico: notificare le persone dalla configurazione
             List<Persona> persone = queryFactory.select(qPersona).from(qPersona).where(qPersona.id.in(idPersoneDaNotificare)).fetch();
@@ -89,30 +82,31 @@ public class UsersNotifiesManager {
         } else {
             log.info("Nessuna persona da notificare");
         }
-        
+
         // Genera le attività per ogni persona
         for (Persona p : personeDaNotificareSuScrivania) {
             insertAttivita(azienda, p, app, buildedOperations, queryFactory, descrizioneErrore);
         }
-        
-        if(!mailDaNotificare.isEmpty()) {
+
+        if (!mailDaNotificare.isEmpty()) {
             sendEmail(mailDaNotificare, azienda, buildedOperations, descrizioneErrore);
         }
-           
+
     }
-    
+
     /**
      * Inserisce l'attività di riepilogo delle operazioni effettuate nella tabella attivita
-     * @param azienda l'azienda
-     * @param persona la persona
-     * @param app l'applicazione
+     *
+     * @param azienda           l'azienda
+     * @param persona           la persona
+     * @param app               l'applicazione
      * @param buildedOperations le operazioni ribaltone
-     * @param queryFactory il query factory per le query
+     * @param queryFactory      il query factory per le query
      */
-    private void insertAttivita(Azienda azienda, Persona persona, Applicazione app, Operations buildedOperations, JPAQueryFactory queryFactory,String descrizioneErrore) {
-        
+    private void insertAttivita(Azienda azienda, Persona persona, Applicazione app, Operations buildedOperations, JPAQueryFactory queryFactory, String descrizioneErrore) {
+
         String oggetto = "E' stato aggiornato l'organigramma aziendale. Clicca per visualizzare il riepilogo delle operazioni effettuate.";
-        if(descrizioneErrore != null) {
+        if (descrizioneErrore != null) {
             oggetto = "Il tentivo di aggiornamento dell'organigranigramma aziendale è fallito. Clicca per visualizzare l'errore.";
         }
         Attivita a = new Attivita();
@@ -127,31 +121,31 @@ public class UsersNotifiesManager {
         entityManager.flush();
         insertDettagliAttivita(a.getId(), buildedOperations, queryFactory, descrizioneErrore);
     }
-    
+
     /**
      * Inserisce i dettagli dell'attività suddivisi per sottosezione
-     * @param idAttivita l'ID dell'attività
+     *
+     * @param idAttivita        l'ID dell'attività
      * @param buildedOperations le operazioni ribaltone
-     * @param queryFactory il query factory per le query
+     * @param queryFactory      il query factory per le query
      */
     private void insertDettagliAttivita(Integer idAttivita, Operations buildedOperations, JPAQueryFactory queryFactory, String descrizioneErrore) {
         List<DettaglioAttivita> list = new ArrayList<>();
         QPersona qPersona = QPersona.persona;
         QStruttura qStruttura = QStruttura.struttura;
-        
-        
+
         if (buildedOperations == null && descrizioneErrore != null) {
             DettaglioAttivita dettaglio = new DettaglioAttivita(
-                        idAttivita,
-                        DettaglioAttivita.SottosezioneDettaglioAttivita.ERRORE,
-                        descrizioneErrore,
-                        null,
-                        DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
-                        false
-                    );
+                idAttivita,
+                DettaglioAttivita.SottosezioneDettaglioAttivita.ERRORE,
+                descrizioneErrore,
+                null,
+                DettaglioAttivita.TipoOggettoDettaglioAttivita.MODIFICA_ORGANIGRAMMA,
+                false
+            );
             list.add(dettaglio);
-        } else if (buildedOperations != null ) {
-        // ANAGRAFICHE
+        } else if (buildedOperations != null) {
+            // ANAGRAFICHE
             if (buildedOperations.getListOfOperationAnagrafica() != null) {
                 for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
                     AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
@@ -195,8 +189,8 @@ public class UsersNotifiesManager {
             if (buildedOperations.getListOfOperationStruttura() != null) {
                 for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
                     // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
-                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE || 
-                        operation.getAzione() == Operation.Azione.RINOMINA) {
+                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE
+                        || operation.getAzione() == Operation.Azione.RINOMINA) {
                         continue;
                     }
 
@@ -246,7 +240,7 @@ public class UsersNotifiesManager {
         }
         entityManager.flush();
     }
-    
+
     /**
      * Costruisce la descrizione per un'operazione anagrafica
      */
@@ -255,7 +249,7 @@ public class UsersNotifiesManager {
         String nomeCompleto = entita.getNomeCompleto();
         String cf = entita.getCodiceFiscale();
         String email = entita.getEmail();
-        
+
         switch (operation.getAzione()) {
             case INSERT:
                 return String.format("Nuovo indirizzo email %s per l'utente %s (%s)", email, nomeCompleto, cf);
@@ -267,7 +261,7 @@ public class UsersNotifiesManager {
                 return String.format("Modifica anagrafica per l'utente %s (%s)", nomeCompleto, cf);
         }
     }
-    
+
     /**
      * Costruisce la descrizione per un'operazione appartenente
      */
@@ -282,26 +276,26 @@ public class UsersNotifiesManager {
         }
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
         String responsabile = entita.isResponsabile() ? " come responsabile" : "";
-        
+
         switch (operation.getAzione()) {
             case INSERT:
-                return String.format("L'utente %s (%s) entra a far parte %s della struttura %s (%s)%s", 
+                return String.format("L'utente %s (%s) entra a far parte %s della struttura %s (%s)%s",
                     nomeCompleto, cf, tipoAppartenenza, nomeCasella, idCasella, responsabile);
             case EDIT:
                 String descrizioneCasella = descrizioniAggiuntive != null ? descrizioniAggiuntive.get("descrizioneCasella") : nomeCasella;
                 String tipoAppartenenzaFormattato = "T".equals(entita.getTipoAppartenenza()) ? "diretta" : "funzionale";
-                String ruoloResponsabile = entita.isResponsabile() ? 
-                    "con ruolo di responsabile" : "senza ruolo di responsabile";
-                return String.format("L'utente %s (%s) della struttura %s (%s) è stato aggiornato con afferenza %s %s", 
+                String ruoloResponsabile = entita.isResponsabile()
+                    ? "con ruolo di responsabile" : "senza ruolo di responsabile";
+                return String.format("L'utente %s (%s) della struttura %s (%s) è stato aggiornato con afferenza %s %s",
                     nomeCompleto, cf, descrizioneCasella, idCasella, tipoAppartenenzaFormattato, ruoloResponsabile);
             case CHIUSURA:
-                return String.format("L'utente %s (%s) termina la sua afferenza per la struttura %s (%s)", 
+                return String.format("L'utente %s (%s) termina la sua afferenza per la struttura %s (%s)",
                     nomeCompleto, cf, nomeCasella, idCasella);
             default:
                 return String.format("Modifica appartenenza per l'utente %s (%s)", nomeCompleto, cf);
         }
     }
-    
+
     /**
      * Costruisce la descrizione per un'operazione struttura
      */
@@ -309,13 +303,13 @@ public class UsersNotifiesManager {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
         String descrizione = entita.getDescrizione();
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
-        
+
         switch (operation.getAzione()) {
             case INSERT:
-                String descrizioneCasellaPadre = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaPadre") : "struttura padre";
+                String descrizioneCasellaPadre = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaPadre") : "struttura padre";
                 String idCasellaPadre = entita.getIdPadre() != null ? entita.getIdPadre().toString() : "";
-                return String.format("Creazione struttura %s (%s) come figlia di %s (%s)", 
+                return String.format("Creazione struttura %s (%s) come figlia di %s (%s)",
                     descrizione, idCasella, descrizioneCasellaPadre, idCasellaPadre);
             case EDIT:
                 return String.format("Aggiornamento della struttura %s (%s)", descrizione, idCasella);
@@ -325,48 +319,48 @@ public class UsersNotifiesManager {
                 return String.format("Modifica struttura %s (%s)", descrizione, idCasella);
         }
     }
-    
+
     /**
      * Costruisce la descrizione per un'operazione trasformazione
      */
     private String buildDescrizioneTrasformazione(OperationTrasformazione operation, TrasformazioneFields entita) {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
-        
+
         switch (operation.getAzione()) {
             case CAMBIO_PADRE:
-                String descrizioneCasella = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasella") : "struttura";
-                String descrizioneCasellaPadreVecchio = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaPadreVecchio") : "padre vecchio";
-                String idCasellaPadreVecchio = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("idCasellaPadreVecchio") : "";
-                String descrizioneCasellaPadreNuovo = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaPadreNuovo") : "padre nuovo";
-                String idCasellaPadreNuovo = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("idCasellaPadreNuovo") : "";
-                return String.format("Trasformazione per Trasferimento della struttura %s (%s) dal padre %s (%s) al padre %s (%s)", 
-                    descrizioneCasella, entita.getIdCasellaPartenza(), descrizioneCasellaPadreVecchio, idCasellaPadreVecchio, 
+                String descrizioneCasella = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasella") : "struttura";
+                String descrizioneCasellaPadreVecchio = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaPadreVecchio") : "padre vecchio";
+                String idCasellaPadreVecchio = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("idCasellaPadreVecchio") : "";
+                String descrizioneCasellaPadreNuovo = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaPadreNuovo") : "padre nuovo";
+                String idCasellaPadreNuovo = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("idCasellaPadreNuovo") : "";
+                return String.format("Trasformazione per Trasferimento della struttura %s (%s) dal padre %s (%s) al padre %s (%s)",
+                    descrizioneCasella, entita.getIdCasellaPartenza(), descrizioneCasellaPadreVecchio, idCasellaPadreVecchio,
                     descrizioneCasellaPadreNuovo, idCasellaPadreNuovo);
             case RINOMINA:
-                String descrizioneCasellaVecchia = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaVecchia") : "struttura";
-                String descrizioneCasellaNuova = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaNuova") : "struttura";
-                return String.format("Trasformazione per Rinomina della struttura %s (%s) rinominata in %s", 
+                String descrizioneCasellaVecchia = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaVecchia") : "struttura";
+                String descrizioneCasellaNuova = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaNuova") : "struttura";
+                return String.format("Trasformazione per Rinomina della struttura %s (%s) rinominata in %s",
                     descrizioneCasellaVecchia, entita.getIdCasellaPartenza(), descrizioneCasellaNuova);
             case CONFLUENZA:
-                String descrizioneCasellaPartenza = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaPartenza") : "struttura partenza";
-                String descrizioneCasellaArrivo = descrizioniAggiuntive != null ? 
-                    descrizioniAggiuntive.get("descrizioneCasellaArrivo") : "struttura arrivo";
-                return String.format("Trasformazione per Confluenza per la struttura %s (%s) nella struttura %s (%s)", 
-                    descrizioneCasellaPartenza, entita.getIdCasellaPartenza(), 
+                String descrizioneCasellaPartenza = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaPartenza") : "struttura partenza";
+                String descrizioneCasellaArrivo = descrizioniAggiuntive != null
+                    ? descrizioniAggiuntive.get("descrizioneCasellaArrivo") : "struttura arrivo";
+                return String.format("Trasformazione per Confluenza per la struttura %s (%s) nella struttura %s (%s)",
+                    descrizioneCasellaPartenza, entita.getIdCasellaPartenza(),
                     descrizioneCasellaArrivo, entita.getIdCasellaArrivo());
             default:
                 return String.format("Trasformazione struttura %s", entita.getIdCasellaPartenza());
         }
     }
-    
+
     /**
      * Costruisce la descrizione per un'operazione trasformazione da struttura (CAMBIO_PADRE o RINOMINA)
      */
@@ -374,28 +368,28 @@ public class UsersNotifiesManager {
         Map<String, String> descrizioniAggiuntive = operation.getDescrizioniAggiuntive();
         String descrizione = entita.getDescrizione();
         String idCasella = entita.getIdCasella() != null ? entita.getIdCasella().toString() : "";
-        
+
         if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE) {
-            String descrizioneCasellaPadreVecchio = descrizioniAggiuntive != null ? 
-                descrizioniAggiuntive.get("descrizioneCasellaPadreVecchio") : "padre vecchio";
-            String idCasellaPadreVecchio = descrizioniAggiuntive != null ? 
-                descrizioniAggiuntive.get("idCasellaPadreVecchio") : "";
-            String descrizioneCasellaPadreNuovo = descrizioniAggiuntive != null ? 
-                descrizioniAggiuntive.get("descrizioneCasellaPadreNuovo") : "padre nuovo";
-            String idCasellaPadreNuovo = descrizioniAggiuntive != null ? 
-                descrizioniAggiuntive.get("idCasellaPadreNuovo") : "";
-            return String.format("Trasformazione per Trasferimento della struttura %s (%s) dal padre %s (%s) al padre %s (%s)", 
-                descrizione, idCasella, descrizioneCasellaPadreVecchio, idCasellaPadreVecchio, 
+            String descrizioneCasellaPadreVecchio = descrizioniAggiuntive != null
+                ? descrizioniAggiuntive.get("descrizioneCasellaPadreVecchio") : "padre vecchio";
+            String idCasellaPadreVecchio = descrizioniAggiuntive != null
+                ? descrizioniAggiuntive.get("idCasellaPadreVecchio") : "";
+            String descrizioneCasellaPadreNuovo = descrizioniAggiuntive != null
+                ? descrizioniAggiuntive.get("descrizioneCasellaPadreNuovo") : "padre nuovo";
+            String idCasellaPadreNuovo = descrizioniAggiuntive != null
+                ? descrizioniAggiuntive.get("idCasellaPadreNuovo") : "";
+            return String.format("Trasformazione per Trasferimento della struttura %s (%s) dal padre %s (%s) al padre %s (%s)",
+                descrizione, idCasella, descrizioneCasellaPadreVecchio, idCasellaPadreVecchio,
                 descrizioneCasellaPadreNuovo, idCasellaPadreNuovo);
         } else if (operation.getAzione() == Operation.Azione.RINOMINA) {
-            String descrizioneCasellaVecchia = descrizioniAggiuntive != null ? 
-                descrizioniAggiuntive.get("descrizioneCasellaVecchia") : descrizione;
-            return String.format("Trasformazione per Rinomina della struttura %s (%s) rinominata in %s", 
+            String descrizioneCasellaVecchia = descrizioniAggiuntive != null
+                ? descrizioniAggiuntive.get("descrizioneCasellaVecchia") : descrizione;
+            return String.format("Trasformazione per Rinomina della struttura %s (%s) rinominata in %s",
                 descrizioneCasellaVecchia, idCasella, descrizione);
         }
         return String.format("Trasformazione struttura %s (%s)", descrizione, idCasella);
     }
-    
+
     private AnagraficaFields resolveAnagraficaFields(Object entita) {
         if (entita instanceof DatiDaImportareAnagrafica) {
             DatiDaImportareAnagrafica datiDaImportare = (DatiDaImportareAnagrafica) entita;
@@ -408,7 +402,7 @@ public class UsersNotifiesManager {
         log.warn("Entità anagrafica non gestita ({})", entita != null ? entita.getClass() : "null");
         return null;
     }
-    
+
     private AppartenenteFields resolveAppartenenteFields(Object entita) {
         if (entita instanceof DatiDaImportareAppartenente) {
             DatiDaImportareAppartenente datiDaImportare = (DatiDaImportareAppartenente) entita;
@@ -435,7 +429,7 @@ public class UsersNotifiesManager {
         log.warn("Entità appartenente non gestita ({})", entita != null ? entita.getClass() : "null");
         return null;
     }
-    
+
     private StrutturaFields resolveStrutturaFields(Object entita) {
         if (entita instanceof DatiDaImportareStruttura) {
             DatiDaImportareStruttura datiDaImportare = (DatiDaImportareStruttura) entita;
@@ -448,7 +442,7 @@ public class UsersNotifiesManager {
         log.warn("Entità struttura non gestita ({})", entita != null ? entita.getClass() : "null");
         return null;
     }
-    
+
     private TrasformazioneFields resolveTrasformazioneFields(Object entita) {
         if (entita instanceof DatiDaImportareTrasformazione) {
             DatiDaImportareTrasformazione datiDaImportare = (DatiDaImportareTrasformazione) entita;
@@ -461,12 +455,13 @@ public class UsersNotifiesManager {
         log.warn("Entità trasformazione non gestita ({})", entita != null ? entita.getClass() : "null");
         return null;
     }
-    
+
     private static String safe(String value) {
         return value != null ? value : "";
     }
-    
+
     private static final class AnagraficaFields {
+
         private final String nome;
         private final String cognome;
         private final String codiceFiscale;
@@ -478,21 +473,22 @@ public class UsersNotifiesManager {
             this.codiceFiscale = codiceFiscale;
             this.email = email;
         }
-        
+
         private String getNomeCompleto() {
             return (safe(cognome) + " " + safe(nome)).trim();
         }
-        
+
         private String getCodiceFiscale() {
             return codiceFiscale;
         }
-        
+
         private String getEmail() {
             return email;
         }
     }
-    
+
     private static final class AppartenenteFields {
+
         private final String nome;
         private final String cognome;
         private final String codiceFiscale;
@@ -508,29 +504,30 @@ public class UsersNotifiesManager {
             this.idCasella = idCasella;
             this.responsabile = responsabile;
         }
-        
+
         private String getNomeCompleto() {
             return (safe(cognome) + " " + safe(nome)).trim();
         }
-        
+
         private String getCodiceFiscale() {
             return codiceFiscale;
         }
-        
+
         private String getTipoAppartenenza() {
             return tipoAppartenenza;
         }
-        
+
         private Integer getIdCasella() {
             return idCasella;
         }
-        
+
         private boolean isResponsabile() {
             return Boolean.TRUE.equals(responsabile);
         }
     }
-    
+
     private static final class StrutturaFields {
+
         private final String descrizione;
         private final Integer idCasella;
         private final Integer idPadre;
@@ -540,21 +537,22 @@ public class UsersNotifiesManager {
             this.idCasella = idCasella;
             this.idPadre = idPadre;
         }
-        
+
         private String getDescrizione() {
             return descrizione;
         }
-        
+
         private Integer getIdCasella() {
             return idCasella;
         }
-        
+
         private Integer getIdPadre() {
             return idPadre;
         }
     }
-    
+
     private static final class TrasformazioneFields {
+
         private final Integer idCasellaPartenza;
         private final Integer idCasellaArrivo;
 
@@ -562,58 +560,58 @@ public class UsersNotifiesManager {
             this.idCasellaPartenza = idCasellaPartenza;
             this.idCasellaArrivo = idCasellaArrivo;
         }
-        
+
         private Integer getIdCasellaPartenza() {
             return idCasellaPartenza;
         }
-        
+
         private Integer getIdCasellaArrivo() {
             return idCasellaArrivo;
         }
     }
-    
+
     /**
      * Invia la mail all'utente interessato per il riepilogo delle operazioni effettuate
-     * @param p la persona
+     *
+     * @param p                 la persona
      * @param buildedOperations le operazioni ribaltone (per generare il rapporto)
      */
-    private void sendEmail(List<String> mails,Azienda a, Operations buildedOperations,String descrizioneErrore) throws IOException {
+    private void sendEmail(List<String> mails, Azienda a, Operations buildedOperations, String descrizioneErrore) {
         // TODO: Da fare in altra storia
         // Questo metodo sarà implementato in futuro per inviare una mail con lo stesso contenuto
         // delle attività create. Il codice è già strutturato per essere generico e riutilizzabile.
         String esito = "ESEGUITO RIBALTONE";
-        if(descrizioneErrore != null) {
+        if (descrizioneErrore != null) {
             esito = "ERRORE";
         }
         String subject = "Risultato aggiornamento organigramma: " + esito;
-        
-        String fromAlias = "Esito Aggiornamento Organigramma" ;
+
+        String fromAlias = "Esito Aggiornamento Organigramma";
         String body = buildMailBody(buildedOperations, descrizioneErrore);
         AziendaParametriJson.MailParams mailParams = a.getParametri().getMailParams();
         simpleMailSenderUtility.sendMail(
-                    fromAlias,
-                    subject,
-                    mails,
-                    body,
-                    null,
-                    null,
-                    null,
-                    null,
-                    mailParams,
-                    true
+            fromAlias,
+            subject,
+            mails,
+            body,
+            null,
+            null,
+            null,
+            null,
+            mailParams,
+            true
         );
-        
+
     }
-    
-    
-    private String buildMailBody(Operations buildedOperations,String descrizioneErrore){
-        Map<String,String> mappa = new HashMap<String,String>();
+
+    private String buildMailBody(Operations buildedOperations, String descrizioneErrore) {
+        Map<String, String> mappa = new HashMap<String, String>();
 
         if (buildedOperations == null && descrizioneErrore != null) {
-            
+
             mappa.put("Dettaglio Errore", descrizioneErrore);
-        } else if (buildedOperations != null ) {
-        // ANAGRAFICHE
+        } else if (buildedOperations != null) {
+            // ANAGRAFICHE
             if (buildedOperations.getListOfOperationAnagrafica() != null) {
                 for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
                     AnagraficaFields entita = resolveAnagraficaFields(operation.getEntitaCoinvolta());
@@ -621,8 +619,8 @@ public class UsersNotifiesManager {
                         continue;
                     }
                     String descrizione = buildDescrizioneAnagrafica(operation, entita);
-                    
-                    mappa.put("Modifiche Anagrafica",descrizione);
+
+                    mappa.put("Modifiche Anagrafica", descrizione);
                 }
             }
 
@@ -634,8 +632,8 @@ public class UsersNotifiesManager {
                         continue;
                     }
                     String descrizione = buildDescrizioneAppartenente(operation, entita);
-                    
-                    mappa.put("Modifiche Appartenenti",descrizione);
+
+                    mappa.put("Modifiche Appartenenti", descrizione);
                 }
             }
 
@@ -643,8 +641,8 @@ public class UsersNotifiesManager {
             if (buildedOperations.getListOfOperationStruttura() != null) {
                 for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
                     // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
-                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE || 
-                        operation.getAzione() == Operation.Azione.RINOMINA) {
+                    if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE
+                        || operation.getAzione() == Operation.Azione.RINOMINA) {
                         continue;
                     }
 
@@ -654,8 +652,8 @@ public class UsersNotifiesManager {
                     }
 
                     String descrizione = buildDescrizioneStruttura(operation, entita);
-                    
-                    mappa.put("Modifiche Strutture",descrizione);
+
+                    mappa.put("Modifiche Strutture", descrizione);
 
                 }
             }
@@ -669,8 +667,8 @@ public class UsersNotifiesManager {
                     }
 
                     String descrizione = buildDescrizioneTrasformazione(operation, entita);
-                    
-                    mappa.put("Modifiche Trasformazioni",descrizione);
+
+                    mappa.put("Modifiche Trasformazioni", descrizione);
                 }
             }
         }
@@ -685,8 +683,7 @@ public class UsersNotifiesManager {
         }
 
         String result = html.toString();
-        
-        
+
         return result;
     }
 }

@@ -36,7 +36,7 @@ import jakarta.mail.util.ByteArrayDataSource;
  */
 /**
  *
- * @author Salo 
+ * @author Salo
  */
 @Component
 public class SimpleMailSenderUtility {
@@ -44,14 +44,17 @@ public class SimpleMailSenderUtility {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleMailSenderUtility.class);
 
     //per parametri pubblici?
-    
-
     public Boolean sendMail(
-            String fromName, String subject, List<String> to, String body,
-            List<String> cc, List<String> bcc, List<MultipartFile> attachments, List<String> replyTo, AziendaParametriJson.MailParams mailParams,
-            boolean htmlBody) throws IOException {
-
-        
+        String fromName,
+        String subject,
+        List<String> to,
+        String body,
+        List<String> cc,
+        List<String> bcc,
+        List<MultipartFile> attachments,
+        List<String> replyTo,
+        AziendaParametriJson.MailParams mailParams,
+        boolean htmlBody) {
 
         if (mailParams != null) {
             String smtpServer = mailParams.getMailServerSmtpUrl();
@@ -69,7 +72,7 @@ public class SimpleMailSenderUtility {
             } else {
                 prop.put("mail.smtp.auth", "true");
             }
-            
+
             if (mailParams.getSslAuth() != null && mailParams.getSslAuth()) {
                 prop.put("mail.smtp.ssl.enable", "true");
             }
@@ -79,20 +82,20 @@ public class SimpleMailSenderUtility {
             } else {
                 prop.put("mail.smtp.port", "25");
             }
-            
+
             Session session = null;
-            
+
             if (StringUtils.hasLength(username)) {
                 // Get the Session object and pass username and password
-                    session = Session.getInstance(prop, new jakarta.mail.Authenticator() {
-                        protected PasswordAuthentication getPasswordAuthentication() {
+                session = Session.getInstance(prop, new jakarta.mail.Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
                         return new PasswordAuthentication(username, password);
                     }
                 });
             } else {
                 session = Session.getInstance(prop, null);
             }
-            
+
             Message msg = new MimeMessage(session);
 
             try {
@@ -154,10 +157,11 @@ public class SimpleMailSenderUtility {
 
                     // Body
                     MimeBodyPart messageBodyPart = new MimeBodyPart();
-                    if (htmlBody)
+                    if (htmlBody) {
                         messageBodyPart.setContent(body, "text/html; charset=UTF-8");
-                    else
+                    } else {
                         messageBodyPart.setText(body);
+                    }
                     multipart.addBodyPart(messageBodyPart);
 
                     // Allegati
@@ -167,24 +171,25 @@ public class SimpleMailSenderUtility {
                         byte[] fileBytes = attachment.getBytes();
                         String attachmentName = attachment.getOriginalFilename();
                         ByteArrayDataSource source
-                                = new ByteArrayDataSource(fileBytes, attachment.getContentType());
+                            = new ByteArrayDataSource(fileBytes, attachment.getContentType());
                         attachmentPart.setDataHandler(new DataHandler(source));
                         attachmentPart.setFileName(attachmentName);
                         multipart.addBodyPart(attachmentPart);
                     }
                     msg.setContent(multipart);
                 } else {
-                    if (htmlBody)
+                    if (htmlBody) {
                         msg.setContent(body, "text/html; charset=UTF-8");
-                    else
+                    } else {
                         msg.setText(body);
+                    }
                 }
 
                 // msg.setContent(body, "text/html; charset=utf-8");
                 msg.setSentDate(new Date());
                 // connect
                 try ( // Get SMTPTransport
-//                        SMTPTransport t = (SMTPTransport) session.getTransport("smtp")) {
+                    //                        SMTPTransport t = (SMTPTransport) session.getTransport("smtp")) {
                     Transport t = session.getTransport("smtp")) {
                     // connect
                     t.connect(smtpServer, username, password);
@@ -193,8 +198,7 @@ public class SimpleMailSenderUtility {
                     LOGGER.info("Invio mail");
 //                    System.out.println("Response: " + t.getLastServerResponse());
                 }
-            } catch (MessagingException e) {
-                e.printStackTrace();
+            } catch (MessagingException | IOException e) {
                 LOGGER.info("Invio mail fallito", e);
                 return false;
             }
@@ -205,4 +209,3 @@ public class SimpleMailSenderUtility {
     }
 
 }
-

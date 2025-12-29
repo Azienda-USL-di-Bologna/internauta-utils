@@ -72,27 +72,27 @@ public class RibaltoneTotaleManager {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JsonProcessingException, IOException {
+    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JsonProcessingException {
         Operations buildedOperations = null;
         String errorDescription = null;
         try {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validateSourceData = RibaltoneManagerUtils.getSourceDataAndValidateAndTransfer(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
-        OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
-        buildedOperations = operationsManager.buildOperations();
-        operationsManager.isQuantitaDatiOk();
-        buildedOperations.execute(repositoryFactory, codiceAzienda);
-        RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
-        fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
+            DatiDaImportare validateSourceData = RibaltoneManagerUtils.getSourceDataAndValidateAndTransfer(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
+            OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
+            buildedOperations = operationsManager.buildOperations();
+            operationsManager.isQuantitaDatiOk();
+            buildedOperations.execute(repositoryFactory, codiceAzienda);
+            RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
+            fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
 
-        } catch(Exception ex) {
+        } catch (JsonProcessingException | RibaltoneHttpException ex) {
             errorDescription = ex.getMessage();
+            throw new RibaltoneHttpException(ex);
         } finally {
-            usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare(),configRibaltoneView.getMailDaNotificare(), errorDescription);
+            usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare(), configRibaltoneView.getMailDaNotificare(), errorDescription);
 
         }
-
 
     }
 
@@ -142,13 +142,14 @@ public class RibaltoneTotaleManager {
         try {
             RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
             fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             descrizioneErrore = ex.getMessage();
+            throw new RibaltoneHttpException(descrizioneErrore, ex);
+        } finally {
+            usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
         }
-        
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails,descrizioneErrore);
-        //return buildOperations;
 
+        //return buildOperations;
     }
 
     public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {
