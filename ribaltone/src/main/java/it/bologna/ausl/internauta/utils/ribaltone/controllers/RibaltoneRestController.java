@@ -60,8 +60,14 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneI
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv.TRASFORMAZIONI;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.cache.utils.CacheUtils;
+import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
+import it.bologna.ausl.model.entities.baborg.Azienda;
+import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.baborg.QRuolo;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QUtente;
@@ -71,12 +77,18 @@ import static it.bologna.ausl.model.entities.baborg.StrutturaUnificata.TipoUnifi
 import static it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView.ConfigKeys.mailDaNotificare;
 import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import org.hibernate.StaleObjectStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.util.StreamUtils;
 
 /**
  *
@@ -105,6 +117,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private RibaltoneConfiguration ribaltoneConfiguration;
 
 //    @RequestMapping(value = "/cleanSourceData", method = RequestMethod.GET)
 //    public DatiDaImportare cleanSourceData(
@@ -187,116 +202,204 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         }
     }
 
+    @RequestMapping(value = "downloadCSVUploaded", method = RequestMethod.GET)
+    public void downloadCSVUploaded(
+        @RequestParam("id") Integer id,
+        HttpServletResponse response,
+        HttpServletRequest request) throws MinIOWrapperException {
+        ImportazioniOrganigramma importazioniOrganigramma = repositoryFactory.getEntityManager().find(ImportazioniOrganigramma.class, id);
+        if (importazioniOrganigramma != null) {
+            InputStream fileIS = ribaltoneConfiguration.getMinIOWrapper().getByFileId(importazioniOrganigramma.getPath_csv_error());
+            try {
+                StreamUtils.copy(fileIS, response.getOutputStream());
+            } catch (IOException ex) {
+                LOGGER.error("errore nel copiare il file sull'ouput stream");
+                throw new RibaltoneHttpException("errore nel copiare il file sull'ouput stream", ex);
+            }
+        }
+
+    }
+
 //    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
-    public Object importaCSV(
+    public ResponseEntity<String> importaCSV(
         @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
         @RequestBody(required = true) MultipartFile csv,
         @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
         @RequestParam(required = true, name = "separatore") String separatore,
         @RequestParam(required = true, name = "idSelectedConfiguration") String idSelectedConfiguration
     ) throws RibaltoneHttpException, JsonProcessingException {
+
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
-        Utente utente = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
-        Utente utenteReloaded;
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        utenteReloaded = transactionTemplate.execute(action -> {
-            return repositoryFactory.getEntityManager().find(Utente.class, utente.getId());
-        });
-        Integer idUtente = utenteReloaded.getId();
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
-        QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
-        if (!CacheUtils.isImportazioneCSVInCorsoFromCache(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate)) {
-//            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
-//            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        Utente utente = authenticatedUserProperties.getRealUser() != null
+            ? authenticatedUserProperties.getRealUser()
+            : authenticatedUserProperties.getUser();
 
-            //metto la riga su importazioni organigramma
-            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            Integer idImportazioneOrganigramma = transactionTemplate.execute(action -> {
-                QUtente qUtente = QUtente.utente;
-                Utente ut = jPAQueryFactory.select(qUtente).from(qUtente).where(qUtente.id.eq(idUtente)).fetchOne();
-                if (ut != null) {
-                    ImportazioniOrganigramma entity = new ImportazioniOrganigramma();
-                    entity.setDataInserimentoRiga(ZonedDateTime.now());
-                    entity.setIdAzienda(ut.getIdAzienda());
-                    entity.setIdPersona(ut.getIdPersona());
-                    entity.setIdUtente(ut);
-                    entity.setNomeFile(csv.getOriginalFilename());
-                    entity.setTipo(tipologia.toString());
-                    entity.setEsito("IN CORSO");
-
-                    repositoryFactory.getEntityManager().persist(entity);
-                    repositoryFactory.getEntityManager().flush(); // per avere subito l'ID
-                    return entity.getId();
-                }
-                return null;
-            });
-
-            try {
-
-                CacheUtils.setImportazioneCSVInCorso(idSelectedConfiguration, utenteReloaded, repositoryFactory, objectMapper, transactionTemplate);
-
-                if (idImportazioneOrganigramma == null) {
-                    return new ResponseEntity("Utente non trovato", HttpStatus.INTERNAL_SERVER_ERROR);
-                }
-                transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                return transactionTemplate.execute(action -> {
-
-                    File csvFile = null;
-                    try {
-                        // creo il csv come file temporaneo e lo cancello al termine
-                        csvFile = File.createTempFile("uploadCSVribaltone_", ".csv");
-                        csvFile.deleteOnExit();
-                        try (FileOutputStream fos = new FileOutputStream(csvFile);) {
-                            try (InputStream csvIs = csv.getInputStream()) {
-                                IOUtils.copy(csvIs, fos);
-                            }
-                        }
-                        switch (tipologia) {
-                            case APPARTENENTI ->
-                                jPAQueryFactory.delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente).where(
-                                    QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda)).execute();
-                            case STRUTTURE ->
-                                jPAQueryFactory.delete(QCSVDaImportareStruttura.cSVDaImportareStruttura).where(
-                                    QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda)).execute();
-                            case ANAGRAFICHE ->
-                                jPAQueryFactory.delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica).where(
-                                    QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda)).execute();
-                            case TRASFORMAZIONI ->
-                                jPAQueryFactory.delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione).where(
-                                    QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda)).execute();
-                            default ->
-                                throw new AssertionError();
-                        }
-                        CsvImportManager csvImportManager = new CsvImportManager(objectMapper, repositoryFactory.getEntityManager(), conversionService);
-                        csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
-                        setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "OK");
-                        return new ResponseEntity(true, HttpStatus.OK);
-                    } catch (RibaltoneHttpException | IOException ex) {
-                        LOGGER.error("", ex);
-                        CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-                        setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
-                        return new ResponseEntity(ex, HttpStatus.INTERNAL_SERVER_ERROR);
-                    } finally {
-                        CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-                        if (csvFile != null) {
-                            csvFile.delete();
-                        }
-                    }
-                });
-            } catch (Exception ex) {
-                setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
-                CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-                LOGGER.error("", ex);
-                return new ResponseEntity(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        } else {
-            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
-            RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+        // Verifica se c'è già un'importazione in corso
+        if (CacheUtils.isImportazioneCSVInCorsoFromCache(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate)) {
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(
+                repositoryFactory.getEntityManager(), idSelectedConfiguration);
+            RibaltoneCache ribaltoneCache = getRibaltoneCache(
+                objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
             Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserImportingCSV());
-            return new ResponseEntity(user, HttpStatus.IM_USED);
+            return ResponseEntity.status(HttpStatus.IM_USED).body("Importazione già in corso da parte dell'utente: " + user.getUsername());
         }
 
+        Integer idImportazioneOrganigramma = null;
+
+        try {
+            // Segna l'importazione come in corso
+            CacheUtils.setImportazioneCSVInCorso(idSelectedConfiguration, utente,
+                repositoryFactory, objectMapper, transactionTemplate);
+
+            // Salva il file temporaneamente - ORA È FINAL
+            final File csvFile = File.createTempFile("uploadCSVribaltone_" + csv.getOriginalFilename() + "_", "");
+            csvFile.deleteOnExit();
+
+            try (InputStream csvIs = csv.getInputStream(); FileOutputStream fos = new FileOutputStream(csvFile)) {
+                IOUtils.copy(csvIs, fos);
+            }
+
+            // Carica il file su MinIO
+            String path = "/ribaltone/" + codiceAzienda + "/";
+            MinIOWrapperFileInfo minIoFileInfo;
+
+            try {
+                // Salva il fileId del CSV su MinIO
+                minIoFileInfo = ribaltoneConfiguration.getMinIOWrapper().put(csvFile, codiceAzienda, path, csv.getOriginalFilename(), null, false);
+
+                // VERIFICA IMPORTANTE: controlla che il file sia stato caricato correttamente
+                if (minIoFileInfo == null || minIoFileInfo.getFileId() == null) {
+                    throw new RibaltoneHttpException("Caricamento su MinIO fallito: fileId nullo");
+                }
+
+                LOGGER.info("File CSV caricato su MinIO con ID: {}", minIoFileInfo.getFileId());
+
+            } catch (MinIOWrapperException | FileNotFoundException ex) {
+                LOGGER.error("Errore nel caricamento del file CSV su MinIO", ex);
+                throw new RibaltoneHttpException("Errore caricamento su MinIO: " + ex.getMessage(), ex);
+            }
+
+            // Crea le variabili final per l'uso nelle lambda
+            final String fileId = minIoFileInfo.getFileId();
+            final Integer idUtente = utente.getId();
+
+            // Crea il record di importazione in una nuova transazione
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            idImportazioneOrganigramma = transactionTemplate.execute(action -> {
+                JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+                QUtente qUtente = QUtente.utente;
+                QAzienda qAzienda = QAzienda.azienda;
+
+                Utente ut = jPAQueryFactory.select(qUtente)
+                    .from(qUtente)
+                    .where(qUtente.id.eq(idUtente))
+                    .fetchOne();
+
+                Azienda azienda = jPAQueryFactory.select(qAzienda)
+                    .from(qAzienda)
+                    .where(qAzienda.codice.eq(codiceAzienda))
+                    .fetchOne();
+
+                if (ut == null) {
+                    throw new IllegalStateException("Utente non trovato con ID: " + idUtente);
+                }
+
+                if (azienda == null) {
+                    throw new IllegalStateException("Azienda non trovata con codice: " + codiceAzienda);
+                }
+
+                ImportazioniOrganigramma entity = new ImportazioniOrganigramma();
+                entity.setDataInserimentoRiga(ZonedDateTime.now());
+                entity.setIdAzienda(azienda);
+                entity.setIdPersona(ut.getIdPersona());
+                entity.setIdUtente(ut);
+                entity.setNomeFile(csv.getOriginalFilename());
+                entity.setTipo(tipologia.toString());
+                entity.setEsito("IN CORSO");
+                entity.setPath_csv_error(fileId);
+
+                LOGGER.info("Salvando ImportazioniOrganigramma con path_csv_error: {}", fileId);
+
+                repositoryFactory.getEntityManager().persist(entity);
+                repositoryFactory.getEntityManager().flush();
+
+                LOGGER.info("ImportazioniOrganigramma salvata con ID: {}", entity.getId());
+
+                return entity.getId();
+            });
+
+            if (idImportazioneOrganigramma == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Errore nella creazione del record di importazione");
+            }
+
+            // Esegui l'importazione vera e propria
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            boolean esito = transactionTemplate.execute(action -> {
+                try {
+                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+
+                    // Cancella i dati precedenti
+                    switch (tipologia) {
+                        case APPARTENENTI ->
+                            jPAQueryFactory
+                                .delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente)
+                                .where(QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda))
+                                .execute();
+                        case STRUTTURE ->
+                            jPAQueryFactory
+                                .delete(QCSVDaImportareStruttura.cSVDaImportareStruttura)
+                                .where(QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda))
+                                .execute();
+                        case ANAGRAFICHE ->
+                            jPAQueryFactory
+                                .delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica)
+                                .where(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda))
+                                .execute();
+                        case TRASFORMAZIONI ->
+                            jPAQueryFactory
+                                .delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione)
+                                .where(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda))
+                                .execute();
+                        default ->
+                            throw new IllegalArgumentException("Tipologia non supportata: " + tipologia);
+                    }
+
+                    // Importa il CSV - csvFile è accessibile perché è final
+                    CsvImportManager csvImportManager = new CsvImportManager(
+                        objectMapper, repositoryFactory.getEntityManager(), conversionService);
+                    csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
+
+                    return true;
+                } catch (RibaltoneHttpException | IOException ex) {
+                    LOGGER.error("Errore nella gestione del caricamento CSV", ex);
+                    return false;
+                }
+            });
+
+            // Aggiorna lo stato finale
+            setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, esito ? "OK" : "ERRORE");
+
+            return ResponseEntity.status(esito ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(esito ? "OK" : "ERRORE");
+
+        } catch (Exception ex) {
+            LOGGER.error("Errore durante l'importazione CSV", ex);
+            if (idImportazioneOrganigramma != null) {
+                setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Errore: " + ex.getMessage());
+        } finally {
+            // Pulisci lo stato della cache
+            CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration,
+                repositoryFactory, objectMapper, transactionTemplate);
+
+            // Il cleanup del file temporaneo non può essere fatto qui
+            // perché csvFile è dichiarato nel blocco try
+            // La chiamata csvFile.deleteOnExit() lo gestisce automaticamente
+        }
     }
 
     /**
@@ -394,7 +497,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
                     try {
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
-                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser,mailDaNotificareList);
+                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, mailDaNotificareList);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());

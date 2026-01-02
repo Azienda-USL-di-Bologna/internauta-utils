@@ -15,10 +15,12 @@ import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfig
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiTrasformazione;
+import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration.SpecificheNonSensibiliKeys;
 import jakarta.persistence.EntityManager;
@@ -96,12 +98,12 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                     qDatiImportatiAppartenente.codiceFiscale,
                     qDatiImportatiAppartenente.idCasella,
                     qDatiImportatiAppartenente.responsabile,
-                    //qDatiImportatiAppartenente.datain,
-                    //qDatiImportatiAppartenente.datafi,
+                    qDatiImportatiAppartenente.datain,
+                    qDatiImportatiAppartenente.datafi,
                     qDatiImportatiAppartenente.tipoAppartenenza,
-                    qDatiImportatiAppartenente.username
-                    //qDatiImportatiAppartenente.dataAssunzione,
-                    //qDatiImportatiAppartenente.dataDimissione
+                    qDatiImportatiAppartenente.username,
+                    qDatiImportatiAppartenente.dataAssunzione,
+                    qDatiImportatiAppartenente.dataDimissione
                 );
 
                 selectRigheByIdAzienda = queryFactory
@@ -115,8 +117,8 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
                 expressions = List.of(qDatiImportatiStruttura.idCasella,
                     qDatiImportatiStruttura.idPadre,
                     qDatiImportatiStruttura.descrizione,
-                    //qDatiImportatiStruttura.datain,
-                    //qDatiImportatiStruttura.datafi,
+                    qDatiImportatiStruttura.datain,
+                    qDatiImportatiStruttura.datafi,
                     qDatiImportatiStruttura.tipoLegame,
                     qDatiImportatiStruttura.codiceEnte);
 
