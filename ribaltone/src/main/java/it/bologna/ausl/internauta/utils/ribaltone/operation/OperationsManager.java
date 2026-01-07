@@ -661,7 +661,9 @@ public class OperationsManager {
 
             for (StrutturaUnificata strutturaUnificata : coinvoltoInReplicheFuture) {
                 if (!idUnificazioni.contains(strutturaUnificata.getId())) {
-                    unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
+                    StrutturaUnificata strutturaUnificataReload = repositoryFactory.getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
+                    //repositoryFactory.getEntityManager().refresh(strutturaUnificataReload);
+                    unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificataReload));
                     idUnificazioni.add(strutturaUnificata.getId());
                 }
             }

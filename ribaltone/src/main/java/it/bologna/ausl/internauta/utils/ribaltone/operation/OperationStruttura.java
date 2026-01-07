@@ -60,6 +60,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         switch (getAzione()) {
             case INSERT:
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo inserimento struttura con id_casella = " + entitaDaInserire.getIdCasella());
                 strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
@@ -78,6 +79,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //che facevano parte della struttura chiusa o non potranno entrare o
                 //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo chiusura struttura con id_casella = " + entitaDaChiudere.getIdCasella());
 //                Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
@@ -97,6 +99,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             case RINOMINA:
                 String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
                 DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo " + operazione + " struttura con id_casella = " + entitaDaCambio.getIdCasella());
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
                 Struttura strutturaSorgenteDaChiudereR = queryFactory
@@ -127,7 +130,11 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 );
                 getEntityManager().refresh(strutturaNew);
                 //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
-
+                queryFactory
+                    .update(qStruttura)
+                    .set(qStruttura.idStrutturaPadre, strutturaNew)
+                    .where(qStruttura.idStrutturaPadre.id.eq(strutturaChiusa.getId()).and(qStruttura.attiva.eq(Boolean.TRUE)))
+                    .execute();
                 List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
                 for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
                     storicoRelazione.setAttivaAl(ZonedDateTime.now());
