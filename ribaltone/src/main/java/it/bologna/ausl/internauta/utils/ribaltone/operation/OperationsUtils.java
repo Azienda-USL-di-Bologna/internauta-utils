@@ -230,6 +230,7 @@ public class OperationsUtils {
                 .update(qStruttura)
                 .set(qStruttura.attiva, false)
                 .set(qStruttura.dataCessazione, ZonedDateTime.now())
+                .setNull(qStruttura.codice)
                 .where(qStruttura.id.eq(strutturaBaborgDaChiudere.getId())).execute();
 
             //chiudere su baborg storico relazione
