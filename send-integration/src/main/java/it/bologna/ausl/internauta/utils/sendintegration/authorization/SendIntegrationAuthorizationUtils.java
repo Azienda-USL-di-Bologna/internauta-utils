@@ -11,6 +11,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.authorizationutils.AuthorizationUtilityFunctions;
 import it.bologna.ausl.model.entities.sendintegration.ApiKeyStoreEntry;
 import it.bologna.ausl.model.entities.sendintegration.QApiKeyStoreEntry;
 import it.bologna.ausl.internauta.utils.sendintegration.authorization.exceptions.NotValidJwtException;
@@ -118,20 +119,11 @@ public class SendIntegrationAuthorizationUtils {
             throw new NotValidJwtException(error, ex);
         }
         try {
-            JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer(apiKeyStoreEntry.getApiKey().toString())
                 .issueTime(Date.from(now.toInstant()))
                 .build();
-
-            SignedJWT signedJWT = new SignedJWT(header, claims);
-
-            JWSSigner signer = new MACSigner(apiKeyStoreEntry.getApiSecret().toString());
-            signedJWT.sign(signer);
-
-            // Serializza il token
-            String token = signedJWT.serialize();
-            return token;
+            return AuthorizationUtilityFunctions.generateJWT(apiKeyStoreEntry.getApiSecret().toString(), claims);
         } catch (Exception ex) {
              String error = "errore nella lettura dell'ApiKeyEntry";
             logger.error(error, ex);
