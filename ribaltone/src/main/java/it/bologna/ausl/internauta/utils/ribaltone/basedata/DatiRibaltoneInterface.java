@@ -47,5 +47,4 @@ public interface DatiRibaltoneInterface {
     public String getClasse();
 
     public Integer getIdAzienda();
-
 }

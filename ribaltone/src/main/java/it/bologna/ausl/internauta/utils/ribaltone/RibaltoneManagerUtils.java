@@ -44,26 +44,26 @@ public class RibaltoneManagerUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RibaltoneManagerUtils.class);
 
-    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
-        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
-        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
-        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
-
-        DatiDaImportare datiDaImportareValidated = getAndValidateSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
-        OperationsManager operationsManager = new OperationsManager(
-            datiDaImportareValidated,
-            codiceAzienda,
-            configRibaltoneView.getTolleranzaAppartenenti(),
-            configRibaltoneView.getTolleranzaStrutture(),
-            repositoryFactory);
-        Operations operations = operationsManager.buildOperations();
-        //controllo sul numero minimo di dati
-        operationsManager.isQuantitaDatiOk();
-        operationsCacheManager.dump(operations);
-
-        return operations.generateUserReport(UserReport.UserReportType.HTML);
-    }
-
+//    public static UserReportManager importDataAndGenerateUserReportWithCache(ObjectMapper objectMapper, EntityManager entityManager, String codiceAzienda, ConfigRibaltoneView configRibaltoneView, RepositoryFactory repositoryFactory) throws RibaltoneHttpException, JsonProcessingException {
+//        RibaltoneDataConfiguration ribaltoneConf = getRibaltoneConf(entityManager, (String) configRibaltoneView.getFonteSelezionata());
+//        RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), entityManager);
+//        OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
+//
+//        DatiDaImportare datiDaImportareValidated = getSourceDataAndValidateAndTransfer(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
+//        datiDaImportareValidated.transfer();
+//        OperationsManager operationsManager = new OperationsManager(
+//            datiDaImportareValidated,
+//            codiceAzienda,
+//            configRibaltoneView.getTolleranzaAppartenenti(),
+//            configRibaltoneView.getTolleranzaStrutture(),
+//            repositoryFactory);
+//        Operations operations = operationsManager.buildOperations();
+//        //controllo sul numero minimo di dati
+//        operationsManager.isQuantitaDatiOk();
+//        operationsCacheManager.dump(operations);
+//
+//        return operations.generateUserReport(UserReport.UserReportType.HTML);
+//    }
     public static RibaltoneDataConfiguration getRibaltoneConf(EntityManager entityManager, String idConfiguration) throws RibaltoneHttpException {
         RibaltoneDataConfiguration ribaltoneConf = entityManager.find(RibaltoneDataConfiguration.class, idConfiguration);
         if (ribaltoneConf == null) {
@@ -80,7 +80,7 @@ public class RibaltoneManagerUtils {
         return ribaltoneCache;
     }
 
-    public static DatiDaImportare getAndValidateSourceData(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
+    public static DatiDaImportare getSourceDataAndValidateAndTransfer(ObjectMapper objectMapper, String codiceAzienda, RibaltoneDataConfiguration ribaltoneConf, RepositoryFactory repositoryFactory) throws RibaltoneHttpException {
         //recupero i dati da dove dice la conf
         DatiDaImportare sourceData = getSourceData(objectMapper, codiceAzienda, ribaltoneConf, repositoryFactory);
         DatiDaImportare datiDaImportareValidated = sourceData.validate();
@@ -290,5 +290,47 @@ public class RibaltoneManagerUtils {
         """;
         repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue);
         repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse);
+    }
+
+    public static void setFogliaOnStrutture(RepositoryFactory repositoryFactory) {
+        String updateForglia = """
+                              UPDATE baborg.strutture s
+                              SET foglia = NOT EXISTS (
+                                SELECT 1
+                                FROM baborg.strutture c
+                                WHERE c.id_struttura_padre = s.id AND c.attiva
+                              ) WHERE attiva;
+                              """;
+        repositoryFactory.getEntityManager().createNativeQuery(updateForglia);
+    }
+
+    public static void disableTrigger(RepositoryFactory repositoryFactory) {
+        String[] triggerDaDisabilitare = {
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER set_permessi_impliciti_da_permesso;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_passaggio;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER default_attivo_dal;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER copia_permessi_su_entita_unificate;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
+        };
+        for (String trigger : triggerDaDisabilitare) {
+            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+
+        }
+    }
+
+    public static void enableTrigger(RepositoryFactory repositoryFactory) {
+        String[] triggerDaDisabilitare = {
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER set_permessi_impliciti_da_permesso;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_passaggio;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER default_attivo_dal;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER copia_permessi_su_entita_unificate;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
+        };
+        for (String trigger : triggerDaDisabilitare) {
+            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+
+        }
     }
 }

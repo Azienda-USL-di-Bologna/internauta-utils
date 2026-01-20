@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
+import it.bologna.ausl.blackbox.utils.BlackBoxConstants;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
@@ -24,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +63,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
         switch (getAzione()) {
             case INSERT:
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo inserimento struttura con id_casella = " + entitaDaInserire.getIdCasella());
                 strutturaNew = OperationsUtils.inserisciStruttura(
                     em,
                     queryFactory,
@@ -78,6 +82,7 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //che facevano parte della struttura chiusa o non potranno entrare o
                 //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo chiusura struttura con id_casella = " + entitaDaChiudere.getIdCasella());
 //                Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
                 //chiudere su baborg strutture
                 //chiudere su baborg storico relazione
@@ -91,12 +96,24 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     ).fetchOne();
 
                 strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
+
+                try {
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    //todo chiudere i permessi veicolati
+                    repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaChiusa, "ribaltone");
+                } catch (BlackBoxPermissionException ex) {
+                    log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
+                }
+
                 break;
 
             case CAMBIO_PADRE:
             case RINOMINA:
                 String operazione = getAzione().equals(RINOMINA) ? "R" : "T";
                 DatiDaImportareStruttura entitaDaCambio = (DatiDaImportareStruttura) getEntitaCoinvolta();
+                log.info("sto gestendo " + operazione + " struttura con id_casella = " + entitaDaCambio.getIdCasella());
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
                 Struttura strutturaSorgenteDaChiudereR = queryFactory
@@ -127,7 +144,11 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 );
                 getEntityManager().refresh(strutturaNew);
                 //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
-
+                queryFactory
+                    .update(qStruttura)
+                    .set(qStruttura.idStrutturaPadre, strutturaNew)
+                    .where(qStruttura.idStrutturaPadre.id.eq(strutturaChiusa.getId()).and(qStruttura.attiva.eq(Boolean.TRUE)))
+                    .execute();
                 List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
                 for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
                     storicoRelazione.setAttivaAl(ZonedDateTime.now());
