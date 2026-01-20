@@ -119,8 +119,8 @@ public class ExportDatiManager {
                     new Optional(), // datain bloccante
                     new Optional(), // datafi
                     new Optional(), // tipo_appartenenza bloccante
-                    new Optional(), // username
-                    new Optional(), // data_assunzione bloccante
+                    //                    new Optional(), // username
+                    //                    new Optional(), // data_assunzione bloccante
                     new Optional() // data_adimissione
                 };
                 cellProcessor = processorsAPPARTENENTI;

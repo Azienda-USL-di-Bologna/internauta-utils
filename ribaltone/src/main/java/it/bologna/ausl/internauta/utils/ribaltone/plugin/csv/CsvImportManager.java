@@ -113,7 +113,7 @@ public class CsvImportManager {
                         if (!errore.equals("")) {
                             errori = errori + "errore sulla riga " + rowNumber + " " + errore + "/n";
                         }
-//                        csvDaImportareAppartenente.setErrore(errore);
+                        //csvDaImportareAppartenente.setErrore(errore);
                         csvDaImportareAppartenente.setIdAzienda(azienda.getId());
                         csvDaImportareAppartenente.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareAppartenente);

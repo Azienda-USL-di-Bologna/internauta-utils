@@ -3,6 +3,9 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.PermissionManager;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
+import it.bologna.ausl.blackbox.utils.BlackBoxConstants;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.getRibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
@@ -63,7 +66,6 @@ import it.bologna.ausl.internauta.utils.ribaltone.cache.utils.CacheUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Azienda;
@@ -74,12 +76,10 @@ import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.Ruolo;
 import static it.bologna.ausl.model.entities.baborg.StrutturaUnificata.TipoUnificazione.FUSIONE;
 import static it.bologna.ausl.model.entities.baborg.StrutturaUnificata.TipoUnificazione.REPLICA;
-import static it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView.ConfigKeys.mailDaNotificare;
 import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -102,6 +102,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @Autowired
     private RibaltoneTotaleManager ribaltoneTotaleManager;
+
+    @Autowired
+    private PermissionManager permissionManager;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -242,7 +245,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             RibaltoneCache ribaltoneCache = getRibaltoneCache(
                 objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
             Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserImportingCSV());
-            return ResponseEntity.status(HttpStatus.IM_USED).body("Importazione già in corso da parte dell'utente: " + user.getUsername());
+            return ResponseEntity.status(HttpStatus.IM_USED).body("Importazione già in corso da parte dell'utente: " + user.getIdPersona().getDescrizione());
         }
 
         Integer idImportazioneOrganigramma = null;
@@ -587,20 +590,31 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                                 utente.setIdPersona(daAggiungereASorgente.getIdUtente().getIdPersona());
                                 utente.setUsername(daAggiungereASorgente.getIdUtente().getIdPersona().getUtenteList().get(0).getUsername());
                             }
-                            UtenteStruttura utenteStruttura = new UtenteStruttura();
-                            utenteStruttura.setAttivo(Boolean.TRUE);
-                            utenteStruttura.setAttivoDal(ZonedDateTime.now());
-                            utenteStruttura.setAttributi(daAggiungereASorgente.getAttributi());
-                            utenteStruttura.setIdStruttura(sorgente);
-                            utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                            utenteStruttura.setIdAziendaDerivazioneUnificazione(destinazione.getIdAzienda());
+                            UtenteStruttura utenteStrutturaNew = new UtenteStruttura();
+                            utenteStrutturaNew.setAttivo(Boolean.TRUE);
+                            utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
+                            utenteStrutturaNew.setAttributi(daAggiungereASorgente.getAttributi());
+                            utenteStrutturaNew.setIdStruttura(sorgente);
+                            utenteStrutturaNew.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                            utenteStrutturaNew.setIdAziendaDerivazioneUnificazione(destinazione.getIdAzienda());
                             boolean responsabile = daAggiungereASorgente.getResponsabile() == null ? false : daAggiungereASorgente.getResponsabile();
-                            utenteStruttura.setResponsabile(responsabile);
-                            utenteStruttura.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
-                            utenteStruttura.setIdUtente(utente);
+                            utenteStrutturaNew.setResponsabile(responsabile);
+                            utenteStrutturaNew.setRuoliUtenteStruttura(daAggiungereASorgente.getRuoliUtenteStruttura());
+                            utenteStrutturaNew.setIdUtente(utente);
                             LOGGER.info(utente.getIdPersona().getDescrizione());
                             LOGGER.info(utente.getIdAzienda().getId().toString());
-                            repositoryFactory.getEntityManager().persist(utenteStruttura);
+                            repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
+
+                            try {
+                                permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                    daAggiungereASorgente.getIdUtente(),
+                                    daAggiungereASorgente.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
+                                    utenteStrutturaNew.getIdStruttura());
+
+                            } catch (BlackBoxPermissionException ex) {
+                                LOGGER.error("errore nella copia dei permessi da unificare", ex);
+                                throw new RibaltoneHttpException("errore nella copia dei permessi da unificare", ex);
+                            }
                         }
 
                         for (UtenteStruttura daAggiungereADestinazione : usDaAggiungereADestinazione) {
@@ -617,20 +631,29 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                             }
                             boolean responsabile = daAggiungereADestinazione.getResponsabile() == null ? false : daAggiungereADestinazione.getResponsabile();
-                            UtenteStruttura utenteStruttura = new UtenteStruttura();
-                            utenteStruttura.setAttivo(Boolean.TRUE);
-                            utenteStruttura.setAttivoDal(ZonedDateTime.now());
-                            utenteStruttura.setAttributi(daAggiungereADestinazione.getAttributi());
-                            utenteStruttura.setIdStruttura(destinazione);
-                            utenteStruttura.setIdAfferenzaStruttura(idAfferenzaStruttura);
-                            utenteStruttura.setResponsabile(responsabile);
-                            utenteStruttura.setIdAziendaDerivazioneUnificazione(sorgente.getIdAzienda());
-                            utenteStruttura.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
-                            utenteStruttura.setIdUtente(utente);
+                            UtenteStruttura utenteStrutturaNew = new UtenteStruttura();
+                            utenteStrutturaNew.setAttivo(Boolean.TRUE);
+                            utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
+                            utenteStrutturaNew.setAttributi(daAggiungereADestinazione.getAttributi());
+                            utenteStrutturaNew.setIdStruttura(destinazione);
+                            utenteStrutturaNew.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                            utenteStrutturaNew.setResponsabile(responsabile);
+                            utenteStrutturaNew.setIdAziendaDerivazioneUnificazione(sorgente.getIdAzienda());
+                            utenteStrutturaNew.setRuoliUtenteStruttura(daAggiungereADestinazione.getRuoliUtenteStruttura());
+                            utenteStrutturaNew.setIdUtente(utente);
                             LOGGER.info(utente.getIdPersona().getDescrizione());
                             LOGGER.info(utente.getIdAzienda().getId().toString());
                             LOGGER.info(destinazione.getIdAzienda().getId().toString());
-                            repositoryFactory.getEntityManager().persist(utenteStruttura);
+                            repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
+                            try {
+                                permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                    daAggiungereADestinazione.getIdUtente(),
+                                    daAggiungereADestinazione.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
+                                    utenteStrutturaNew.getIdStruttura());
+                            } catch (BlackBoxPermissionException ex) {
+                                LOGGER.error("errore nella copia dei permessi da unificare", ex);
+                                throw new RibaltoneHttpException("errore nella copia dei permessi da unificare", ex);
+                            }
                         }
                         repositoryFactory.getEntityManager().persist(unificazione);
                     }
@@ -654,18 +677,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         sr.setAttivaDal(ZonedDateTime.now());
                         sr.setIdStrutturaPadre(destinazione);
                         sr.setIdStrutturaFiglia(nuovaStruttura);
+                        repositoryFactory.getEntityManager().persist(sr);
+                        repositoryFactory.getEntityManager().persist(unificazione);
+                        repositoryFactory.getEntityManager().persist(nuovaStruttura);
+                        repositoryFactory.getEntityManager().refresh(nuovaStruttura);
 
-                        //creo l'unificazione
-//                        unificazione = new StrutturaUnificata();
-//                        unificazione.setDataAttivazione(ZonedDateTime.now());
-//                        unificazione.setDataInserimentoRiga(ZonedDateTime.now());
-//                        unificazione.setIdStrutturaSorgente(sorgente);
-//                        unificazione.setIdStrutturaDestinazione(nuovaStruttura);
-//                        unificazione.setTipoOperazione(tipoUnificazione);
-//                        unificazione.setDataAccensioneAttivazione(ZonedDateTime.now());
                         //creo gli utenti struttura
                         List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
-                        List<UtenteStruttura> nuoviUtentiStruttura = new ArrayList<UtenteStruttura>();
+
                         for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
                             Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
                             Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
@@ -690,16 +709,16 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             us.setIdAfferenzaStruttura(idAfferenzaStruttura);
                             us.setIdUtente(utente);
                             us.setResponsabile(utenteStruttura.getResponsabile());
-                            nuoviUtentiStruttura.add(us);
-                        }
-                        //salvataggio di tutto sul db
-                        //prima l'unificazione altrimenti il trigger di spargi_afferenza_da_sottoresponsabile_unificato mi da errore
-                        repositoryFactory.getEntityManager().persist(unificazione);
+                            repositoryFactory.getEntityManager().persist(us);
 
-                        //set degli utenti struttura e salvataggio per evitare confitto con spargi_afferenza_da_sottoresponsabile_unificato
-                        repositoryFactory.getEntityManager().persist(sr);
-                        nuovaStruttura.setUtenteStrutturaList(nuoviUtentiStruttura);
-                        repositoryFactory.getEntityManager().persist(nuovaStruttura);
+                            try {
+                                permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                    utenteStruttura.getIdUtente(),
+                                    utenteStruttura.getIdStruttura(), us.getIdUtente(), us.getIdStruttura());
+                            } catch (BlackBoxPermissionException ex) {
+                                throw new RibaltoneHttpException("errore nel copiare i permessi di " + utenteStruttura.getIdUtente().getId(), ex);
+                            }
+                        }
                     }
                     default ->
                         throw new AssertionError();
@@ -758,13 +777,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                         for (UtenteStruttura daSpegnereASorgente : sorgenteUtentiStrutturaDaSpegnereList) {
                             daSpegnereASorgente = spegniUtenteStruttura(daSpegnereASorgente, repositoryFactory.getEntityManager());
+                            spegniPermessiUtenteStrutturaMorto(daSpegnereASorgente, permissionManager, "spegni unificazione id " + unificazione.getId());
+                            LOGGER.info("spento utente_struttura con id=" + daSpegnereASorgente.getId());
                         }
-
                         for (UtenteStruttura daSpegnereADestinazione : destinazioneUtenteStrutturaDaSpegnereList) {
                             daSpegnereADestinazione = spegniUtenteStruttura(daSpegnereADestinazione, repositoryFactory.getEntityManager());
-
+                            spegniPermessiUtenteStrutturaMorto(daSpegnereADestinazione, permissionManager, "spegni unificazione id " + unificazione.getId());
                         }
-
                     }
 
                     case REPLICA -> {
@@ -788,7 +807,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                                 qStoricoRelazione);
                             for (UtenteStruttura usDaSpegnere : struttura.getUtenteStrutturaList()) {
                                 spegniUtenteStruttura(usDaSpegnere, repositoryFactory.getEntityManager());
+                                spegniPermessiUtenteStrutturaMorto(usDaSpegnere, permissionManager, "spegni unificazione id " + unificazione.getId());
                             }
+                            //todo devo spegnere i permessi veicolati e i permessi per id struttura morti
                         }
 
                     }
@@ -799,6 +820,47 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             }
         } else {
             throw new RibaltoneHttpException("Non posso lanciare l'unificazione perche non ne ho il permesso");
+        }
+    }
+
+    private void spegniPermessiUtenteStrutturaMorto(UtenteStruttura us, PermissionManager pm, String spentoDa) {
+        try {
+            pm.deletePermission(
+                us.getIdUtente(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                BlackBoxConstants.Ambito.PICO.toString(),
+                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                spentoDa
+            );
+            pm.deletePermission(
+                us.getIdUtente(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                BlackBoxConstants.Ambito.DELI.toString(),
+                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                spentoDa
+            );
+            pm.deletePermission(
+                us.getIdUtente(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                BlackBoxConstants.Ambito.DETE.toString(),
+                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                spentoDa
+            );
+
+        } catch (BlackBoxPermissionException ex) {
+            LOGGER.error("non sono riuscito a spengere il permesso perche ", ex);
         }
     }
 
