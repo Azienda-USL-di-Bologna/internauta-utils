@@ -291,4 +291,46 @@ public class RibaltoneManagerUtils {
         repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue);
         repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse);
     }
+
+    public static void setFogliaOnStrutture(RepositoryFactory repositoryFactory) {
+        String updateForglia = """
+                              UPDATE baborg.strutture s
+                              SET foglia = NOT EXISTS (
+                                SELECT 1
+                                FROM baborg.strutture c
+                                WHERE c.id_struttura_padre = s.id AND c.attiva
+                              ) WHERE attiva;
+                              """;
+        repositoryFactory.getEntityManager().createNativeQuery(updateForglia);
+    }
+
+    public static void disableTrigger(RepositoryFactory repositoryFactory) {
+        String[] triggerDaDisabilitare = {
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER set_permessi_impliciti_da_permesso;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_passaggio;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER default_attivo_dal;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER copia_permessi_su_entita_unificate;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
+        };
+        for (String trigger : triggerDaDisabilitare) {
+            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+
+        }
+    }
+
+    public static void enableTrigger(RepositoryFactory repositoryFactory) {
+        String[] triggerDaDisabilitare = {
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER set_permessi_impliciti_da_permesso;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_passaggio;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER default_attivo_dal;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER copia_permessi_su_entita_unificate;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
+        };
+        for (String trigger : triggerDaDisabilitare) {
+            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+
+        }
+    }
 }

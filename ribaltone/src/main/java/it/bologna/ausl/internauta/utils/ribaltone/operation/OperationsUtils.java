@@ -916,6 +916,15 @@ public class OperationsUtils {
                         Boolean.FALSE,
                         BlackBoxConstants.Ambito.PICO.toString(),
                         BlackBoxConstants.Tipo.FLUSSO.toString());
+                    permissionManager.insertSimplePermission(
+                        utente,
+                        struttura,
+                        BlackBoxConstants.Predicato.REDIGE.toString(),
+                        "ribaltone",
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        BlackBoxConstants.Ambito.PICO.toString(),
+                        BlackBoxConstants.Tipo.FLUSSO.toString());
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                 }
@@ -1258,6 +1267,15 @@ public class OperationsUtils {
                                 Boolean.FALSE,
                                 BlackBoxConstants.Ambito.PICO.toString(),
                                 BlackBoxConstants.Tipo.FLUSSO.toString());
+                            permissionManager.insertSimplePermission(
+                                utente,
+                                strutturaSuCuiModificare,
+                                BlackBoxConstants.Predicato.REDIGE.toString(),
+                                "ribaltone",
+                                Boolean.FALSE,
+                                Boolean.FALSE,
+                                BlackBoxConstants.Ambito.PICO.toString(),
+                                BlackBoxConstants.Tipo.FLUSSO.toString());
                         } catch (BlackBoxPermissionException ex) {
                             throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
@@ -1273,6 +1291,15 @@ public class OperationsUtils {
                                 BlackBoxConstants.Ambito.PICO.toString(),
                                 BlackBoxConstants.Tipo.FLUSSO.toString(),
                                 "ribaltone");
+                            permissionManager.insertSimplePermission(
+                                utente,
+                                strutturaSuCuiModificare,
+                                BlackBoxConstants.Predicato.REDIGE.toString(),
+                                "ribaltone",
+                                Boolean.FALSE,
+                                Boolean.FALSE,
+                                BlackBoxConstants.Ambito.PICO.toString(),
+                                BlackBoxConstants.Tipo.FLUSSO.toString());
                         } catch (BlackBoxPermissionException ex) {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
