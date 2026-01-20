@@ -4,21 +4,26 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
+import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
 import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
+import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiTrasformazione;
+import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration.SpecificheNonSensibiliKeys;
 import jakarta.persistence.EntityManager;
@@ -28,11 +33,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +58,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "${ribaltonedati.mapping.url.root}")
 public class RibaltoneDatiCustomController implements ControllerHandledExceptions {
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(RibaltoneDatiCustomController.class);
+
     @Autowired
     private EntityManager entityManager;
 
@@ -61,6 +71,9 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @Autowired
     private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+
+    @Autowired
+    private RibaltoneConfiguration ribaltoneConfiguration;
 
     @Autowired
     private RepositoryFactory repositoryFactory;
@@ -85,89 +98,104 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         List<Expression<?>> expressions = new ArrayList<>();
         List<Tuple> selectRigheByIdAzienda = new ArrayList<>();
-
-        switch (tipo) {
-            case APPARTENENTI:
-                expressions = List.of(
-                    qDatiImportatiAppartenente.codiceEnte,
-                    qDatiImportatiAppartenente.codiceMatricola,
-                    qDatiImportatiAppartenente.cognome,
-                    qDatiImportatiAppartenente.nome,
-                    qDatiImportatiAppartenente.codiceFiscale,
-                    qDatiImportatiAppartenente.idCasella,
-                    qDatiImportatiAppartenente.responsabile,
-                    //qDatiImportatiAppartenente.datain,
-                    //qDatiImportatiAppartenente.datafi,
-                    qDatiImportatiAppartenente.tipoAppartenenza,
-                    qDatiImportatiAppartenente.username
-                    //qDatiImportatiAppartenente.dataAssunzione,
-                    //qDatiImportatiAppartenente.dataDimissione
-                );
-
-                selectRigheByIdAzienda = queryFactory
-                    .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiAppartenente)
-                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
-
-                break;
-
-            case STRUTTURE:
-                expressions = List.of(qDatiImportatiStruttura.idCasella,
-                    qDatiImportatiStruttura.idPadre,
-                    qDatiImportatiStruttura.descrizione,
-                    //qDatiImportatiStruttura.datain,
-                    //qDatiImportatiStruttura.datafi,
-                    qDatiImportatiStruttura.tipoLegame,
-                    qDatiImportatiStruttura.codiceEnte);
-
-                selectRigheByIdAzienda = queryFactory
-                    .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiStruttura)
-                    .where(qDatiImportatiStruttura.idAzienda.eq(idAzienda)).fetch();
-                break;
-
-            case TRASFORMAZIONI:
-                expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
-                    qDatiImportatiTrasformazione.idCasellaPartenza,
-                    qDatiImportatiTrasformazione.idCasellaArrivo,
-                    qDatiImportatiTrasformazione.dataTrasformazione,
-                    qDatiImportatiTrasformazione.motivo,
-                    //qDatiImportatiTrasformazione.datainPartenza,
-                    qDatiImportatiTrasformazione.dataoraOper,
-                    qDatiImportatiTrasformazione.codiceEnte
-                );
-
-                selectRigheByIdAzienda = queryFactory
-                    .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiTrasformazione)
-                    .where(qDatiImportatiTrasformazione.idAzienda.eq(idAzienda)).fetch();
-                break;
-
-            case ANAGRAFICHE:
-                expressions = List.of(qDatiImportatiAnagrafica.codiceEnte.as("pippo"),
-                    qDatiImportatiAnagrafica.codiceMatricola,
-                    qDatiImportatiAnagrafica.cognome,
-                    qDatiImportatiAnagrafica.nome,
-                    qDatiImportatiAnagrafica.codiceFiscale,
-                    qDatiImportatiAnagrafica.email
-                );
-
-                selectRigheByIdAzienda = queryFactory
-                    .select(expressions.toArray(new Expression[0]))
-                    .from(qDatiImportatiAnagrafica)
-                    .where(qDatiImportatiAnagrafica.idAzienda.eq(idAzienda)).fetch();
-                break;
-        }
-
-        buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
-
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + buildCSV.getName() + "\"");
-
-        try (FileInputStream in = new FileInputStream(buildCSV)) {
+        QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
+        String mongoUuid
+            = queryFactory.select(qImportazioniOrganigramma.path_csv_error)
+                .from(qImportazioniOrganigramma)
+                .where(qImportazioniOrganigramma.tipo.equalsIgnoreCase(tipo.toString())
+                    .and(qImportazioniOrganigramma.idAzienda.id.eq(idAzienda)))
+                .orderBy(qImportazioniOrganigramma.id.desc()).limit(1).fetchOne();
+        try {
+            InputStream in = ribaltoneConfiguration.getMinIOWrapper().getByFileId(mongoUuid);
             StreamUtils.copy(in, response.getOutputStream());
             response.flushBuffer();
+        } catch (MinIOWrapperException ex) {
+            LOGGER.error("errore nel reperire il file su mongo", ex);
+            throw new RibaltoneHttpException("errore nel reperire il file su mongo", ex);
         }
+//        switch (tipo) {
+//            case APPARTENENTI:
+//
+//                expressions = List.of(
+//                    qDatiImportatiAppartenente.codiceEnte,
+//                    qDatiImportatiAppartenente.codiceMatricola,
+//                    qDatiImportatiAppartenente.cognome,
+//                    qDatiImportatiAppartenente.nome,
+//                    qDatiImportatiAppartenente.codiceFiscale,
+//                    qDatiImportatiAppartenente.idCasella,
+//                    qDatiImportatiAppartenente.responsabile,
+//                    qDatiImportatiAppartenente.datain,
+//                    qDatiImportatiAppartenente.datafi,
+//                    qDatiImportatiAppartenente.tipoAppartenenza,
+//                    qDatiImportatiAppartenente.username,
+//                    qDatiImportatiAppartenente.dataAssunzione,
+//                    qDatiImportatiAppartenente.dataDimissione
+//                );
+//
+//                selectRigheByIdAzienda = queryFactory
+//                    .select(expressions.toArray(new Expression[0]))
+//                    .from(qDatiImportatiAppartenente)
+//                    .where(qDatiImportatiAppartenente.idAzienda.eq(idAzienda)).fetch();
+//
+//                break;
+//
+//            case STRUTTURE:
+//                expressions = List.of(qDatiImportatiStruttura.idCasella,
+//                    qDatiImportatiStruttura.idPadre,
+//                    qDatiImportatiStruttura.descrizione,
+//                    qDatiImportatiStruttura.datain,
+//                    qDatiImportatiStruttura.datafi,
+//                    qDatiImportatiStruttura.tipoLegame,
+//                    qDatiImportatiStruttura.codiceEnte);
+//
+//                selectRigheByIdAzienda = queryFactory
+//                    .select(expressions.toArray(new Expression[0]))
+//                    .from(qDatiImportatiStruttura)
+//                    .where(qDatiImportatiStruttura.idAzienda.eq(idAzienda)).fetch();
+//                break;
+//
+//            case TRASFORMAZIONI:
+//                expressions = List.of(qDatiImportatiTrasformazione.progressivoRiga,
+//                    qDatiImportatiTrasformazione.idCasellaPartenza,
+//                    qDatiImportatiTrasformazione.idCasellaArrivo,
+//                    qDatiImportatiTrasformazione.dataTrasformazione,
+//                    qDatiImportatiTrasformazione.motivo,
+//                    //qDatiImportatiTrasformazione.datainPartenza,
+//                    qDatiImportatiTrasformazione.dataoraOper,
+//                    qDatiImportatiTrasformazione.codiceEnte
+//                );
+//
+//                selectRigheByIdAzienda = queryFactory
+//                    .select(expressions.toArray(new Expression[0]))
+//                    .from(qDatiImportatiTrasformazione)
+//                    .where(qDatiImportatiTrasformazione.idAzienda.eq(idAzienda)).fetch();
+//                break;
+//
+//            case ANAGRAFICHE:
+//                expressions = List.of(qDatiImportatiAnagrafica.codiceEnte.as("pippo"),
+//                    qDatiImportatiAnagrafica.codiceMatricola,
+//                    qDatiImportatiAnagrafica.cognome,
+//                    qDatiImportatiAnagrafica.nome,
+//                    qDatiImportatiAnagrafica.codiceFiscale,
+//                    qDatiImportatiAnagrafica.email
+//                );
+//
+//                selectRigheByIdAzienda = queryFactory
+//                    .select(expressions.toArray(new Expression[0]))
+//                    .from(qDatiImportatiAnagrafica)
+//                    .where(qDatiImportatiAnagrafica.idAzienda.eq(idAzienda)).fetch();
+//                break;
+//        }
+//
+//        buildCSV = ExportDatiManager.buildCSV(selectRigheByIdAzienda, tipo);
+//
+//        response.setContentType("text/csv");
+//        response.setHeader("Content-Disposition", "attachment; filename=\"" + buildCSV.getName() + "\"");
+//
+//        try (FileInputStream in = new FileInputStream(buildCSV)) {
+//            StreamUtils.copy(in, response.getOutputStream());
+//            response.flushBuffer();
+//        }
 
         // if (buildCSV != null) {
         //     try {

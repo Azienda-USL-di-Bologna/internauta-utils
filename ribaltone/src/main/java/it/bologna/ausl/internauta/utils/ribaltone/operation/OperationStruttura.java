@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
+import it.bologna.ausl.blackbox.utils.BlackBoxConstants;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
@@ -24,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +96,17 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                     ).fetchOne();
 
                 strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
+
+                try {
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                    //todo chiudere i permessi veicolati
+                    repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaChiusa, "ribaltone");
+                } catch (BlackBoxPermissionException ex) {
+                    log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
+                }
+
                 break;
 
             case CAMBIO_PADRE:
