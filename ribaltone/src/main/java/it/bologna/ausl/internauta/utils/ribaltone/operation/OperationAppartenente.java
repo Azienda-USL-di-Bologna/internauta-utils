@@ -298,9 +298,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 //                                    }
                                 }
                             }
-
                         }
-
                     }
                     //  va verificato il modivo. o chiusa perche utente non piu attivo
                     //  se confluito in questo caso bisogna gestire i gruppi
