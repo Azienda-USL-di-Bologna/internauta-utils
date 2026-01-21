@@ -63,7 +63,7 @@ public class Credential implements Serializable {
     private String passwordSalt;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "addtional_data", columnDefinition = "jsonb")
     private Map<String, Object> addtionalData;
     

@@ -52,7 +52,7 @@ public class FutureJob implements Serializable, JobInterface {
     private String name;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private HashMap<String, Object> data;
     

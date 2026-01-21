@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.bdm.core;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import java.io.FileInputStream;
@@ -8,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *

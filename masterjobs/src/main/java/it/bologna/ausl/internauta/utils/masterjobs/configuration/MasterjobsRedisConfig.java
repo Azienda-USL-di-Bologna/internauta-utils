@@ -61,8 +61,6 @@ public class MasterjobsRedisConfig {
     public RedisTemplate<String, Object> materjobsRedis() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(masterjobsJedisConnectionFactory());
-//        RedisSerializer<Object> defaultSerializer = new JdkSerializationRedisSerializer(getClass().getClassLoader());
-        RedisSerializer<Object> jacksonSerializer = new GenericJackson2JsonRedisSerializer();
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
         template.setDefaultSerializer(stringRedisSerializer);
         template.setKeySerializer(stringRedisSerializer);

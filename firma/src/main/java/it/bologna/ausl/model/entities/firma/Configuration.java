@@ -46,7 +46,7 @@ public class Configuration implements Serializable {
     @Column(name = "internal_credentials_manager")
     private Boolean internalCredentialsManager = true;
     
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "params", columnDefinition = "jsonb")
     private Map<String, Object> params;
     

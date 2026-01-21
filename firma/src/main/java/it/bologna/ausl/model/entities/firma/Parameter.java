@@ -31,7 +31,7 @@ public class Parameter implements Serializable {
     @Column(name = "id")
     private String id;
     
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 

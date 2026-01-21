@@ -45,7 +45,7 @@ public class SendIntegrationConfiguration implements Serializable {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 

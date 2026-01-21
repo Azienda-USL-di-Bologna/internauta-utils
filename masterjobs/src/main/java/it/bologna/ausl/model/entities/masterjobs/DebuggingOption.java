@@ -42,7 +42,7 @@ public class DebuggingOption implements Serializable {
     private String key;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Object value;
     

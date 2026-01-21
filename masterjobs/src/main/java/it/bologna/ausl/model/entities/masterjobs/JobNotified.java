@@ -52,7 +52,7 @@ public class JobNotified implements Serializable {
     private String jobName;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "job_data", columnDefinition = "jsonb")
     private Map<String, Object> jobData;
     
@@ -94,7 +94,7 @@ public class JobNotified implements Serializable {
     private String insertedFrom;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "working_objects", columnDefinition = "jsonb")
     private List<MasterjobsWorkingObject> workingObjects;
     

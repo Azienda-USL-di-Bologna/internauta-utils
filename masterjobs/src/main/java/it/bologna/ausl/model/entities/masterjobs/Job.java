@@ -55,7 +55,7 @@ public class Job implements Serializable, JobInterface {
     private String name;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private HashMap<String, Object> data;
     
@@ -95,7 +95,7 @@ public class Job implements Serializable, JobInterface {
     private Integer executableCheckEveryMillis = 100;
     
     @Basic(optional = true)
-    @Type(JsonBinaryType.class)
+    // commentato spring4 @Type(JsonBinaryType.class)
     @Column(name = "work_data", columnDefinition = "jsonb")
     private HashMap<String, Object> workData;
         

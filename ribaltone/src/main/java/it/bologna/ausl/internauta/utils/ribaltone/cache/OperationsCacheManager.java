@@ -1,12 +1,11 @@
 package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operations;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -28,7 +27,7 @@ public class OperationsCacheManager {
         this.ribaltoneCache.dump(datiDaImportareValidati);
     }
 
-    public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException {
+    public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JacksonException {
         return this.ribaltoneCache.restore();
     }
 }

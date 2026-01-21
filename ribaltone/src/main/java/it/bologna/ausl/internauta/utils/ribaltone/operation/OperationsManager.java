@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
@@ -26,14 +25,10 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
-import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
 import jakarta.persistence.EntityManager;
-import java.sql.ResultSet;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,8 +40,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
 
 /**
  *
@@ -117,7 +112,7 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    public Operations buildOperations() throws RibaltoneHttpException, JsonProcessingException {
+    public Operations buildOperations() throws RibaltoneHttpException, JacksonException {
         EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         this.popolaMappeUnificazioni(queryFactory, idAzienda.getId());
@@ -443,7 +438,7 @@ public class OperationsManager {
         return operationAppartenentiList;
     }
 
-    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) throws JsonProcessingException {
+    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) throws JacksonException {
         List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
         log.info("Faccio il build delle operations anagrafiche");
         for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {

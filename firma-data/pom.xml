@@ -4,10 +4,10 @@
     <parent>
         <groupId>it.bologna.ausl.internauta.utils</groupId>
         <artifactId>internauta-utils</artifactId>
-        <version>2.0</version>
+        <version>2.5</version>
     </parent>
     <artifactId>firma-data</artifactId>
-    <version>2.0</version>
+    <version>2.5</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
@@ -24,7 +24,7 @@
         </dependency>
     </dependencies>
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
     </properties>
 </project>
