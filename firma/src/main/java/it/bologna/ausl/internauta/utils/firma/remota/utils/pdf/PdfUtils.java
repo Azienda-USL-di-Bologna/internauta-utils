@@ -1,9 +1,9 @@
 package it.bologna.ausl.internauta.utils.firma.remota.utils.pdf;
 
-import com.itextpdf.text.pdf.PdfReader;
 import it.bologna.ausl.internauta.utils.firma.data.remota.SignAppearance;
 import java.io.IOException;
 import java.io.InputStream;
+import org.openpdf.text.pdf.PdfReader;
 
 /** Utility per la gestione dei file pdf
  *
@@ -11,51 +11,52 @@ import java.io.InputStream;
  */
 public class PdfUtils {
 
-/**
- * Torna un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
- * @param pdfFile
- * @param signAppearance campo della classe FirmaRemotaFile
- * @param text testo da inserire sul campo firma visibile
- * @param location luogo della firma
- * @return un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
- * @throws IOException 
- */
-public static PdfSignFieldDescriptor toPdfSignFieldDescriptor(InputStream pdfFile, SignAppearance signAppearance, String text, String location) throws IOException {
+    /**
+     * Torna un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
+     * @param pdfFile
+     * @param signAppearance campo della classe FirmaRemotaFile
+     * @param text testo da inserire sul campo firma visibile
+     * @param location luogo della firma
+     * @return un oggetto PdfSignFieldDescriptor che descrive un campo firma di un Pdf
+     * @throws IOException
+     */
+    public static PdfSignFieldDescriptor toPdfSignFieldDescriptor(InputStream pdfFile, SignAppearance signAppearance, String text, String location) throws IOException {
 
-    PdfReader pdf = new PdfReader(pdfFile);
+        PdfReader pdf = new PdfReader(pdfFile);
 
-    String[] signPositionSplitted = signAppearance.getSignPosition().split(";");
-    int page;
-    if (signPositionSplitted[0].equalsIgnoreCase("n"))
-        page = pdf.getNumberOfPages();
-    else
-        page = Integer.parseInt(signPositionSplitted[0]);
+        String[] signPositionSplitted = signAppearance.getSignPosition().split(";");
+        int page;
+        if (signPositionSplitted[0].equalsIgnoreCase("n")) {
+            page = pdf.getNumberOfPages();
+        } else {
+            page = Integer.parseInt(signPositionSplitted[0]);
+        }
 
-    int width = Integer.parseInt(signPositionSplitted[1]);
-    int heigth = Integer.parseInt(signPositionSplitted[2]);
-    int paddingWidth = Integer.parseInt(signPositionSplitted[3]);
-    int paddingHeigth = Integer.parseInt(signPositionSplitted[4]);
-    
-    float pageWidth = pdf.getPageSize(page).getWidth();
-    float pageHeight = pdf.getPageSize(page).getHeight();
+        int width = Integer.parseInt(signPositionSplitted[1]);
+        int heigth = Integer.parseInt(signPositionSplitted[2]);
+        int paddingWidth = Integer.parseInt(signPositionSplitted[3]);
+        int paddingHeigth = Integer.parseInt(signPositionSplitted[4]);
 
-    // la pagina è orientata orizzontalmente quindi inverto pageWidth con pageHeight
-    if (pdf.getPageRotation(page) % 180 == 90) {
-        float swap = pageHeight;
-        pageHeight = pageWidth;
-        pageWidth = swap;
+        float pageWidth = pdf.getPageSize(page).getWidth();
+        float pageHeight = pdf.getPageSize(page).getHeight();
+
+        // la pagina è orientata orizzontalmente quindi inverto pageWidth con pageHeight
+        if (pdf.getPageRotation(page) % 180 == 90) {
+            float swap = pageHeight;
+            pageHeight = pageWidth;
+            pageWidth = swap;
+        }
+
+        float lowerLeftX = pageWidth - width - paddingWidth;
+        float lowerLeftY = pageHeight - heigth - paddingHeigth;
+        float upperRigthX = lowerLeftX + width;
+        float upperRigthY = lowerLeftY + heigth;
+
+        PdfSignFieldDescriptor pdfSignFieldDescriptor
+            = new PdfSignFieldDescriptor(page, (int) lowerLeftX, (int) lowerLeftY, (int) upperRigthX, (int) upperRigthY, signAppearance.getSignName(), text, location);
+
+        return pdfSignFieldDescriptor;
     }
-
-    float lowerLeftX = pageWidth - width - paddingWidth;
-    float lowerLeftY = pageHeight - heigth - paddingHeigth;
-    float upperRigthX = lowerLeftX + width;
-    float upperRigthY = lowerLeftY + heigth;
-
-    PdfSignFieldDescriptor pdfSignFieldDescriptor = 
-            new PdfSignFieldDescriptor(page, (int)lowerLeftX, (int)lowerLeftY, (int)upperRigthX, (int)upperRigthY, signAppearance.getSignName(), text, location);
-
-    return pdfSignFieldDescriptor;
-}
 //
 //    /** Inserisce il campo firma in un file pdf
 //     *

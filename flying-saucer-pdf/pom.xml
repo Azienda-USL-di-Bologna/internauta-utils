@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <openpdf.version>3.0.0</openpdf.version>
+    <batik.version>1.19</batik.version>
+    <commons-io.version>2.20.0</commons-io.version>
+    <junit.version>5.13.4</junit.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <assertj.version>3.27.4</assertj.version>
+    <pdftest.version>2.0.0</pdftest.version>
+    <pdfbox.version>3.0.5</pdfbox.version>
+    <bouncycastle.version>1.77</bouncycastle.version>
+    <java.version>25</java.version>
+    <error_prone.version>2.46.0</error_prone.version>
+    <swt.version>3.130.0</swt.version>
+  </properties>
+
+    <parent>
+        <groupId>it.bologna.ausl.internauta.utils</groupId>
+        <artifactId>internauta-utils</artifactId>
+        <version>2.5</version>
+    </parent>
+
+    <artifactId>flying-saucer-pdf-local</artifactId>
+    <version>9.13.3.5</version>
+
+  <name>Flying Saucer PDF Rendering</name>
+  <description>Flying Saucer is a CSS 2.1 renderer written in Java.  This artifact supports PDF output.</description>
+
+  <licenses>
+    <license>
+      <name>GNU Lesser General Public License (LGPL), version 2.1 or later</name>
+      <url>http://www.gnu.org/licenses/lgpl.html</url>
+    </license>
+  </licenses>
+
+  <dependencies>
+      <dependency>
+            <groupId>it.bologna.ausl.internauta.utils</groupId>
+            <artifactId>flying-saucer-core-local</artifactId>
+            <version>9.13.3.5</version>
+        </dependency>
+    <dependency>
+      <groupId>com.github.librepdf</groupId>
+      <artifactId>openpdf</artifactId>
+      <version>${openpdf.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-codec</artifactId>
+      <version>${batik.version}</version>
+    </dependency>
+    <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+            <version>${error_prone.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+            <scope>test</scope>
+            <!--<type>bundle</type>-->
+        </dependency>
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>pdf-test</artifactId>
+            <version>${pdftest.version}</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>../</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>LICENSE*</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>flying.saucer.pdf</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

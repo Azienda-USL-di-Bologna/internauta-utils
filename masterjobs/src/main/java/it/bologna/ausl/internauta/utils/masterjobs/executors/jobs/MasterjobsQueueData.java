@@ -1,8 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 
 /**
@@ -61,9 +60,8 @@ public class MasterjobsQueueData {
     /**
      * trasforma l'oggetto in una stringa json (per scriverla nella coda redis)
      * @return
-     * @throws JsonProcessingException 
      */
-    public String dump() throws JsonProcessingException {
+    public String dump() {
         return this.objectMapper.writeValueAsString(this);
     }
 }

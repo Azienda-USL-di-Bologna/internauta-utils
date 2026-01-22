@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.services.autorelaunchjobs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;

@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin.impl;
 
-import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
+import it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
 import it.bologna.ausl.internauta.utils.downloader.plugin.DownloaderUploadPlugin;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -21,7 +21,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
     
     private static Logger logger = LoggerFactory.getLogger(MinIOUploader.class);
 
-    public MinIOUploader(Map<String, Object> params, RepositoryManager repositoryManager) {
+    public MinIOUploader(Map<String, Object> params, DownloaderRepositoryManager repositoryManager) {
         super(params, repositoryManager);
     }
     
@@ -77,7 +77,7 @@ public class MinIOUploader extends DownloaderUploadPlugin {
         // reperisco la connessione a MinIO dal repositoryManager tramite il metodo opportuno
         MinIOWrapper minIOWrapper = super.repositoryManager.getMinIOWrapper();
         
-        // se non specifico il bucket allora lo rendo uguiale al codiceAzienda
+        // se non specifico il bucket allora lo rendo uguale al codiceAzienda
         String bucket;
         if (params.containsKey("bucket")) {
             bucket = (String) params.get("bucket");

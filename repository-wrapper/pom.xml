@@ -5,10 +5,10 @@
     <parent>
         <groupId>it.bologna.ausl.internauta.utils</groupId>
         <artifactId>internauta-utils</artifactId>
-        <version>2.0</version>
+        <version>2.5</version>
     </parent>
     <artifactId>repository-wrapper</artifactId>
-    <version>3.0</version>
+    <version>3.5</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,9 +45,19 @@
         <dependency>
             <groupId>it.bologna.ausl.internauta.utils</groupId>
             <artifactId>minIO-manager</artifactId>
-            <version>2.0</version>
+            <version>2.5</version>
             <scope>provided</scope>
             <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
@@ -57,13 +67,13 @@
         <dependency>
             <groupId>org.sql2o</groupId>
             <artifactId>sql2o</artifactId>
-            <version>1.8.0</version>
+            <version>1.9.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.sql2o.extensions</groupId>
             <artifactId>sql2o-postgres</artifactId>
-            <version>1.8.0</version>
+            <version>1.9.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -72,16 +82,16 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.1</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
+                <version>3.5.0</version>
                 <executions>
                     <execution>
                         <id>${project.artifactId}</id>

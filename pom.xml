@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>it.bologna.ausl.internauta.utils</groupId>
     <artifactId>internauta-utils</artifactId>
-    <version>2.0</version>
+    <version>2.5</version>
     <packaging>pom</packaging>
     <!--<parent>
         <groupId>it.bologna.ausl.internauta</groupId>
@@ -15,14 +15,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>4.0.1</version>
     </parent>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
     </properties>
-   
+      
     <!-- sub modules -->
     <modules>
         <module>jpa-tools</module>
@@ -42,8 +42,13 @@
         <module>parersender</module>
         <module>ParerDocumentBuilder</module>
         <module>versatore</module>
-        <module>flying-saucer-pdf-itext5</module>
+        <module>flying-saucer-core</module>
+        <module>flying-saucer-pdf</module>
         <module>PDFToolkit</module>
+        <module>ribaltone</module>
+        <module>bdm</module>
+        <module>common-utils</module>
+        <module>send-integration</module>
     </modules>
     <profiles>
         <profile>
@@ -59,7 +64,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.5.0</version>
+                        <version>3.5.4</version>
                         <configuration>
                             <skipTests>true</skipTests>
                         </configuration>

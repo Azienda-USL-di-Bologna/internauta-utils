@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
  * @author boria
  */
 public class DocumentoGEDIBuilder {
-    
+
     private static final Logger log = LoggerFactory.getLogger(DeliBuilder.class);
     private static final String CODICE = "DOCUMENT_UTENTE";
     private static final String TESTO = "TESTO";
     private static final String DATA = "DATA";
     private static final String TESTO_MULTIPLO = "TESTO MULTIPLO";
-    
+
     private VersamentoBuilder versamentoBuilder;
     private Doc doc;
     private DocDetail docDetail;
@@ -50,16 +50,17 @@ public class DocumentoGEDIBuilder {
         this.registro = registro;
         this.parametriVersamento = parametriVersamento;
     }
-    
-     /**
+
+    /**
      * Metodo che costruisce i metadati per i documenti GEDI (tipologia documento generico id tipo doc 85)
-     * @return 
+     * @return
      */
     public VersamentoBuilder build() throws VersatoreSdicoException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
         String codiceEneteVersatore = (String) parametriVersamento.get("ente");
+        String amministrazioneTitolareDelProcedimento = (String) parametriVersamento.get("amministrazioneTitolareDelProcedimento");
         String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String repertorio = mappaParametri.get("repertorio");
@@ -86,14 +87,14 @@ public class DocumentoGEDIBuilder {
         String nomeDelDocumento = "";
         List<Allegato> listaAllegati = doc.getAllegati();
         if (listaAllegati.size() > 0 && !listaAllegati.isEmpty()) {
-            nomeDelDocumento = listaAllegati.get(0).getDettagli().getOriginale().getNome() 
-                    + "." 
-                    + listaAllegati.get(0).getDettagli().getOriginale().getEstensione();
+            nomeDelDocumento = listaAllegati.get(0).getDettagli().getOriginale().getNome()
+                + "."
+                + listaAllegati.get(0).getDettagli().getOriginale().getEstensione();
         } else {
             throw new VersatoreSdicoException("Il documento GEDI non contiene allegati");
         }
         String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
-        
+
         versamentoBuilder.setDocType(docType);
         versamentoBuilder.addSinglemetadataByParams(true, "id_ente_versatore", Arrays.asList(codiceEneteVersatore), TESTO);
         versamentoBuilder.addSinglemetadataByParams(true, "idTipoDoc", Arrays.asList(docType), TESTO);
@@ -102,7 +103,7 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "oggettodocumento", Arrays.asList(doc.getOggetto()), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "numeroProtocollo", Arrays.asList(numeroDocumento), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "dataRegistrazioneProtocollo", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
-        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(codiceEneteVersatore), TESTO);
+        versamentoBuilder.addSinglemetadataByParams(false, "amministrazioneTitolareDelProcedimento", Arrays.asList(amministrazioneTitolareDelProcedimento), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "aooDiRiferimento", Arrays.asList((String) parametriVersamento.get("aooDiRiferimento")), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idFascicolo", Arrays.asList(SdicoVersatoreUtils.buildIdFascicoli(doc, archivio)), TESTO_MULTIPLO);
         versamentoBuilder.addSinglemetadataByParams(false, "idSistemaVersante", Arrays.asList(nomeSistemaVersante), TESTO);
@@ -114,14 +115,13 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(archivioDetail.getIdStruttura().getNome()), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
-        
+        versamentoBuilder.addSinglemetadataByParams(false, "dataAltraRegistrazione", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
+
         //metadati aggiunti nel passaggio alla tipologia 85
-        
         versamentoBuilder.addSinglemetadataByParams(false, "descrizione_classificazione", Arrays.asList(descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tempo_di_conservazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "numero_documento", Arrays.asList(numeroDocumento), TESTO);
-        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().format(formatter)), DATA);
+        versamentoBuilder.addSinglemetadataByParams(false, "data_di_registrazione", Arrays.asList(docDetail.getDataRegistrazione().toLocalDateTime().format(formatter)), DATA);
         versamentoBuilder.addSinglemetadataByParams(false, "tipologia_di_flusso", Arrays.asList(tipologiaDiFlusso), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "tipo_registro", Arrays.asList(tipoRegistro), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "codice_registro", Arrays.asList(codiceRegistro), TESTO);
@@ -136,8 +136,8 @@ public class DocumentoGEDIBuilder {
         //versamentoBuilder.addSinglemetadataByParams(false, "nome_del_documento", Arrays.asList(nomeDelDocumento), TESTO); dato ridondante
         versamentoBuilder.addSinglemetadataByParams(false, "indice_di_classificazione", Arrays.asList(classificazioneArchivistica + " - " + descrizioneClassificazione), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "piano_di_classificazione", Arrays.asList(pianoDiClassificazione), TESTO);
-        
+
         return versamentoBuilder;
     }
-    
+
 }

@@ -1,8 +1,6 @@
 package it.bologna.ausl.internauta.utils.authorizationutils;
 
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.InternautaAuthorizationHttpException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ClaimsBuilder;
 import io.jsonwebtoken.Jwts;
 import java.io.File;
@@ -25,6 +23,8 @@ import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
