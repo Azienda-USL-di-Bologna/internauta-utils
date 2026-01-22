@@ -507,7 +507,6 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         ribaltoneCache.cleanDataCache();
                         CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
                         return new ResponseEntity("tutto ok", HttpStatus.OK);
-
                     } catch (Exception ex) {
                         throw new RibaltoneHttpException(ex);
                     }
