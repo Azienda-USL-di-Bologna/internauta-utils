@@ -20,23 +20,25 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class MasterjobsInitialization {
+
     private static final Logger log = LoggerFactory.getLogger(MasterjobsInitialization.class);
-    
+
     @Autowired
     private BeanFactory beanFactory;
-    
+
     /**
      * Crea una mappa con chiave il nome del Worker e valore la classe corrispondente
+     *
      * @return
-     * @throws MasterjobsConfigurationException 
+     * @throws MasterjobsConfigurationException
      */
     @Bean
     public Map<String, Class<? extends Worker>> workerMap() throws MasterjobsConfigurationException {
         Map<String, Class<? extends Worker>> workerMap = new HashMap();
-        
+
         Set<Class<?>> workersSet = new Reflections(Worker.class.getPackage().getName()).getTypesAnnotatedWith(MasterjobsWorker.class);
 //        Set<Class<? extends Worker>> workersSet = (Set<Class<? extends Worker>>)typesAnnotatedWith;
-        
+
         for (Class<?> workerClass : workersSet) {
             Class<? extends Worker> workerClassCasted = (Class<? extends Worker>) workerClass;
             Worker workerInstance;
@@ -49,7 +51,7 @@ public class MasterjobsInitialization {
             }
             workerMap.put(workerInstance.getName(), workerClassCasted);
         }
-        
+
         return workerMap;
     }
 }

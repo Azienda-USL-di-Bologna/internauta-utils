@@ -49,6 +49,7 @@
         <module>bdm</module>
         <module>send-integration</module>
         <module>common-utils</module>
+        <module>send-integration</module>
     </modules>
     <profiles>
         <profile>
