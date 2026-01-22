@@ -20,7 +20,7 @@ import org.springframework.format.annotation.DateTimeFormat;
  * @author gdm
  */
 @Entity
-@Table(name = "documenti_lotto", catalog = "internauta", schema = "send_integration")
+@Table(name = "documenti_lotto", catalog = "internauta", schema = "sendintegration")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "authorities"})
 @Cacheable(false)
 public class DocumentoLottoEntity implements Serializable {

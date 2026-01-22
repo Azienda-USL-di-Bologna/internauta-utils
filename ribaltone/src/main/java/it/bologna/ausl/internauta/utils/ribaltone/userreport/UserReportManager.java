@@ -47,7 +47,7 @@ public class UserReportManager {
      * @param tipologiaTabella tipo di tabella coinvolta
      * @return stringa html che contiene il report della tipologia indicata
      */
-    public String gethtml(TipologiaTabellaBaborg tipologiaTabella) {
+    public String gethtml() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

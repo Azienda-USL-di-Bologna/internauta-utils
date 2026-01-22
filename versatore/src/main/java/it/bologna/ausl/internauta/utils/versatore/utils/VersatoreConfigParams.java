@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.versatore.utils;
 
-
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.repositories.ParameterRepository;
 import it.bologna.ausl.model.entities.versatore.Parameter;
@@ -18,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Questa classe legge, i parametri di configurazione dal database (tabella firma.parameters)
@@ -34,9 +32,6 @@ public class VersatoreConfigParams {
         minIOConfig,
         externalCheckCertificate,
     }
-    
-    @Autowired
-    private ObjectMapper objectMapper;
     
     @Autowired
     @Qualifier("VersatoreParameterRepository")

@@ -23,7 +23,7 @@ import org.hibernate.annotations.Type;
  * @author gdm
  */
 @Entity
-@Table(name = "configuration", schema = "send_integration", catalog = "internauta")
+@Table(name = "configuration", schema = "sendintegration", catalog = "internauta")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 //@GenerateProjections({})
@@ -45,7 +45,7 @@ public class SendIntegrationConfiguration implements Serializable {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 

@@ -1,6 +1,7 @@
 package it.bologna.ausl.model.entities.pdftoolkit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import java.io.Serializable;
 import java.util.Map;
 import jakarta.persistence.Basic;
@@ -30,7 +31,7 @@ public class Parameter implements Serializable {
     @Column(name = "id")
     private String id;
     
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
     @Column(name = "value", columnDefinition = "jsonb")
     private Map<String, Object> value;
 

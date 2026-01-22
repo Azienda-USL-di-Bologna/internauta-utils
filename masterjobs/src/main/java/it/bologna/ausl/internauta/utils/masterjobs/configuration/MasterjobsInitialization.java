@@ -43,8 +43,8 @@ public class MasterjobsInitialization {
             try {
                 workerInstance = beanFactory.getBean(workerClassCasted);
             } catch (Exception ex) {
-                String errorMessage = "errore nella creazione della mappa dei worker";
-                log.error("errore nella creazione della mappa dei worker", ex);
+                String errorMessage = String.format("errore nella creazione del bean %s della mappa dei worker", workerClassCasted.getCanonicalName());
+                log.error(errorMessage, ex);
                 throw new MasterjobsConfigurationException(errorMessage);
             }
             workerMap.put(workerInstance.getName(), workerClassCasted);

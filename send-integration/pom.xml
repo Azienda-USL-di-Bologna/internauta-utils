@@ -58,7 +58,6 @@
             <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
             <version>2.27.7</version>
-            <scope>provided</scope>
         </dependency>
        <dependency>
             <groupId>com.github.librepdf</groupId>
@@ -76,23 +75,51 @@
             <artifactId>swagger-jaxrs2-servlet-initializer-v2</artifactId>
             <version>2.2.41</version>
         </dependency>-->
-        <dependency>
+<!--        <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.8</version>
             <type>jar</type>
-        </dependency>
-        <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
+        </dependency>-->
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>
-        <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <scope>compile</scope>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.gsonfire</groupId>
+            <artifactId>gson-fire</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>5.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>logging-interceptor</artifactId>
+            <version>5.3.2</version>
+        </dependency>
+<!--        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-jvm</artifactId>
+            <version>5.3.2</version>
+        </dependency>
+
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <scope>provided</scope>
+        </dependency>-->
+<!--        <dependency>
+            <groupId>tools.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>3.0.0-rc2</version>
+        </dependency>-->
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
@@ -183,8 +210,10 @@
                             <configOptions>
                                 <title>send-integration</title>
                                 <useSpringBoot3>true</useSpringBoot3>
+                                <!--<serializationLibrary>gson</serializationLibrary>-->
                                 <delegatePattern>true</delegatePattern>
                                 <sourceFolder>/</sourceFolder>
+                                <generatePom>false</generatePom>
                             </configOptions>
 <!--                            <additionalProperties>
                                 <parentGroupId>org.springframework.boot</parentGroupId>
@@ -194,8 +223,9 @@
                             </additionalProperties>-->
                             <generatorName>spring</generatorName>
                             
-                            <apiPackage>it.bologna.ausl.internauta.service.send-integration.controller</apiPackage>
-                            <modelPackage>it.bologna.ausl.internauta.utils.send-integration.model</modelPackage>
+                            <apiPackage>it.bologna.ausl.internauta.service.sendintegration.controller</apiPackage>
+                            <modelPackage>it.bologna.ausl.internauta.utils.sendintegration.model</modelPackage>
+                            <!--<generateSupportingFiles>false</generateSupportingFiles>-->
                             <supportingFilesToGenerate>
                                 ApiUtil.java
                             </supportingFilesToGenerate>
@@ -217,24 +247,34 @@
                             <configOptions>
                                 <title>send-integration</title>
                                 <useSpringBoot3>true</useSpringBoot3>
+                                <!--<serializationLibrary>gson</serializationLibrary>-->
                                 <!--<delegatePattern>true</delegatePattern>-->
                                 <sourceFolder>/</sourceFolder>
                                 <!--<testOutput>/</testOutput>-->
-                                <library>resttemplate</library>
+                                <!--<library>resttemplate</library>-->
+                                <library>okhttp-gson</library>
                                 <generateClientAsBean>true</generateClientAsBean>
                                 <!--<library>webclient</library>-->
                                 <useJakartaEe>true</useJakartaEe>
                                 <dateLibrary>java8</dateLibrary>
+                                <generatePom>false</generatePom>
                             </configOptions>
+<!--                            <additionalProperties>
+                                <parentGroupId>org.springframework.boot</parentGroupId>
+                                <parentArtifactId>spring-boot-starter-parent</parentArtifactId>
+                                <parentVersion>4.0.1</parentVersion>
+                                <library>spring-boot</library>
+                            </additionalProperties>-->
                             <!--<library>spring-boot</library>-->
                             <generatorName>java</generatorName>
                             
-                            <apiPackage>it.bologna.ausl.internauta.service.send-integration.api</apiPackage>
-                            <modelPackage>it.bologna.ausl.internauta.utils.send-integration.model</modelPackage>
-                            <invokerPackage>it.bologna.ausl.internauta.utils.send-integration.invoker</invokerPackage>
+                            <apiPackage>it.bologna.ausl.internauta.service.sendintegration.api</apiPackage>
+                            <modelPackage>it.bologna.ausl.internauta.utils.sendintegration.model</modelPackage>
+                            <invokerPackage>it.bologna.ausl.internauta.utils.sendintegration.invoker</invokerPackage>
 <!--                            <supportingFilesToGenerate>
                                 ApiUtil.java
                             </supportingFilesToGenerate>-->
+                            <!--<generateSupportingFiles>false</generateSupportingFiles>-->
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
                             <output>target/generated-sources/java</output>

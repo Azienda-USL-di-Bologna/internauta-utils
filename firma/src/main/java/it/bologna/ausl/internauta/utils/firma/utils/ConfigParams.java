@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.firma.utils;
 
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaParameterException;
 import it.bologna.ausl.internauta.utils.firma.repositories.ParameterRepository;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -18,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Questa classe legge, i parametri di configurazione dal database (tabella firma.parameters)

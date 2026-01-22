@@ -32,7 +32,7 @@ import org.springframework.security.core.userdetails.UserDetails;
  * @author gdm
  */
 @Entity
-@Table(name = "api_key_store", catalog = "internauta", schema = "send_integration")
+@Table(name = "api_key_store", catalog = "internauta", schema = "sendintegration")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "authorities"})
 @Cacheable(false)
 public class ApiKeyStoreEntry implements Serializable {

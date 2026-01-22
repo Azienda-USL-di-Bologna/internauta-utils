@@ -35,11 +35,11 @@ public class RibaltoneDataConfiguration {
     @Column(name = "cache_operation_to_do")
     String cacheOperationToDo;
 
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
     @Column(name = "specifiche", columnDefinition = "jsonb")
     HashMap<String, Object> specifiche;
 
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
     @Column(name = "cacheConfig", columnDefinition = "jsonb")
     HashMap<String, Object> cacheConfig;
 

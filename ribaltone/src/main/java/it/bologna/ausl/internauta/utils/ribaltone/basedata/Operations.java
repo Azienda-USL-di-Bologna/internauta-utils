@@ -17,24 +17,30 @@ import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import it.bologna.ausl.model.entities.rubrica.QContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +83,8 @@ public class Operations implements Serializable {
 
     public void execute(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
         workToDo = new HashMap<Integer, List<Integer>>();
+        //devo disabilitare dei trigger che rallenterebbero troppo il ribaltone
+        RibaltoneManagerUtils.disableTrigger(repositoryFactory);
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
@@ -120,8 +128,14 @@ public class Operations implements Serializable {
             repositoryFactory.getEntityManager().flush();
         }
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
-
+        RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
+
+        //devo ricalcolare la gerarchia delle entita
+        ricalcolaGerarchiePerAziende(listOfOperationUnificazioneStruttura, codiceAzienda, repositoryFactory);
+        //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
+        RibaltoneManagerUtils.enableTrigger(repositoryFactory);
+
     }
 
     public UserReportManager generateUserReport(UserReportType userReportType) {
@@ -275,6 +289,30 @@ public class Operations implements Serializable {
                 }
             }
 
+        }
+    }
+
+    private void ricalcolaGerarchiePerAziende(List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura, String codiceAzienda, RepositoryFactory repositoryFactory) {
+
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QAzienda qAzienda = QAzienda.azienda;
+        Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
+        Set<Integer> idAziende = new HashSet<>();
+        idAziende.add(azienda.getId());
+
+        for (OperationUnificazioneStruttura operationUnificazioneStruttura : listOfOperationUnificazioneStruttura) {
+            List<UnificazioneDaGestire> unificazioniDaGestire = operationUnificazioneStruttura.getUnificazioniDaGestire();
+            for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
+                StrutturaUnificata unificazione = repositoryFactory.getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
+                idAziende.add(unificazione.getIdStrutturaSorgente().getIdAzienda().getId());
+                idAziende.add(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId());
+            }
+        }
+        for (Integer idAzienda : idAziende) {
+            String sistemaGerarchieEntitaStrutture = """
+                                  select baborg.sistema_gerarchia_entita_strutture(array[]::integer[], (select id from baborg.strutture where attiva = true and id_struttura_padre is NULL AND NOT ufficio AND id_azienda = :id_azienda))
+                                  """.replaceAll(":id_azienda", idAzienda.toString());
+            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture);
         }
     }
 

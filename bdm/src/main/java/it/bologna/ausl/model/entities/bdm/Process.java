@@ -42,10 +42,10 @@ public class Process {
     
     @Column(name = "json_process", columnDefinition = "jsonb")
     @Basic(optional = true)
-//    // commentato spring4 @Type(JsonBinaryType.class)
+//    @Type(JsonBinaryType.class)
 //    @Embedded
 //    @JdbcTypeCode(SqlTypes.JSON)
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
 //    private TestJson jsonProcess;
     private BdmProcess jsonProcess;
     

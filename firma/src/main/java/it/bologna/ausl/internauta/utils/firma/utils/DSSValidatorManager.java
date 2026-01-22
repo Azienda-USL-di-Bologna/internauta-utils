@@ -1,18 +1,12 @@
 package it.bologna.ausl.internauta.utils.firma.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import it.bologna.ausl.dss.data.DSSValidatorReponse;
 import it.bologna.ausl.dss.data.exceptions.NoSignException;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.validator.controllers.ValidatorController;
 import it.bologna.ausl.internauta.utils.firma.validator.exceptions.DssResponseException;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
-import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -24,14 +18,14 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -76,7 +70,7 @@ public class DSSValidatorManager {
         }
         try {
             log.info(this.objectMapper.writeValueAsString(res));
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
         }
         return res;
     }
@@ -131,17 +125,17 @@ public class DSSValidatorManager {
         }
     }
     
-    public List<Map<String, Object>> getSignsReport( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+    public List<Map<String, Object>> getSignsReport(LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
         DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl,  validationDate, file);
         return dSSValidatorReponse.getSignaturesReport();
     }
     
-    public String validateSignedDocument( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+    public String validateSignedDocument(LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
         DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl, validationDate, file);
         return dSSValidatorReponse.getSignReportString();
     }
     
-    public Map<String, String> validateCertificate( LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
+    public Map<String, String> validateCertificate(LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
         DSSValidatorReponse dSSValidatorReponse = callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey.validateCertificateUrl, validationDate, file);
         return dSSValidatorReponse.getCertificateReportMap();
     }

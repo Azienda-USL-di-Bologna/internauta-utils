@@ -40,7 +40,7 @@ public class RequestParameter implements Serializable {
     @Column(name = "id")
     private String id;
     
-    // commentato spring4 @Type(JsonBinaryType.class)
+    @Type(JsonBinaryType.class)
     @Column(name = "data", columnDefinition = "jsonb")
     private Map<String, Object> data;
 

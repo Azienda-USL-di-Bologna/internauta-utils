@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
+import it.bologna.ausl.minio.manager.MinIOWrapper;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -9,8 +10,10 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Component
 public class RibaltoneConfiguration {
-    
+
     private ObjectMapper objectMapper;
+
+    private MinIOWrapper minIOWrapper;
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
@@ -18,6 +21,14 @@ public class RibaltoneConfiguration {
 
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-    }  
-}
+    }
 
+    public MinIOWrapper getMinIOWrapper() {
+        return minIOWrapper;
+    }
+
+    public void setMinIOWrapper(MinIOWrapper minIOWrapper) {
+        this.minIOWrapper = minIOWrapper;
+    }
+
+}

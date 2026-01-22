@@ -82,6 +82,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             case INSERT -> {
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 Struttura struttura = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+                log.info("inserisco utente " + entitaDaInserire.getCodiceFiscale() + " alla struttura con id " + struttura.getId());
                 OperationsUtils.insertUtenteInStruttura(queryFactory, entitaDaInserire, struttura, repositoryFactory.getEntityManager(), permissionManager, null);
             }
             case CHIUSURA -> {
@@ -96,7 +97,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                     ).fetchOne();
 
                 OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
-
+                log.info("tolgo utente " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
             }
             case EDIT -> {
                 //sicuramente non ha cambiato struttura perche questa operazione si traduce in una insert e una chiusura
@@ -121,6 +122,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         case "responsabile" -> {
                             strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
                             OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+                            log.info("modifico utente " + entitaDaInserire.getCodiceFiscale() + " sulla struttura con id_casella " + entitaDaInserire.getIdCasella() + " responsabile " + entitaDaInserire.getResponsabile().toString());
                         }
                         case "codice_matricola" -> {
                         }
