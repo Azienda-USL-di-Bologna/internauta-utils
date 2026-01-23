@@ -129,6 +129,7 @@ public class Operations implements Serializable {
         }
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
+        repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
 
         //devo ricalcolare la gerarchia delle entita

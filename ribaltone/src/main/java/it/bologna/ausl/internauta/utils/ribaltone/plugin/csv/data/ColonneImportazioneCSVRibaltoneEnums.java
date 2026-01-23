@@ -118,7 +118,7 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         dataTrasformazione(Arrays.asList("dataTrasformazione", "data trasformazione", "data_trasformazione")),
         dataOraOper(Arrays.asList("dataOraOper", "dataora_oper", "dataOraOper")),
         motivo(Arrays.asList("motivo")),
-        //datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
+        datainPartenza(Arrays.asList("datainPartenza", "data inizio casella di partenza", "datain_partenza")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;

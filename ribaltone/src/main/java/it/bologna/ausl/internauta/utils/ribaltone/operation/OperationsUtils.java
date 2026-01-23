@@ -1075,7 +1075,9 @@ public class OperationsUtils {
                                 null,
                                 null,
                                 ambitoDaSpegnere,
-                                BlackBoxConstants.Tipo.FLUSSO.toString());
+                                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                                "ribaltone"
+                            );
                         }
                     } catch (BlackBoxPermissionException ex) {
                         throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
@@ -1122,7 +1124,8 @@ public class OperationsUtils {
                             Boolean.FALSE,
                             Boolean.FALSE,
                             ambitoDaSpegnere,
-                            BlackBoxConstants.Tipo.FLUSSO.toString());
+                            BlackBoxConstants.Tipo.FLUSSO.toString(),
+                            "ribaltone");
                     }
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
@@ -1291,7 +1294,7 @@ public class OperationsUtils {
                                 BlackBoxConstants.Ambito.PICO.toString(),
                                 BlackBoxConstants.Tipo.FLUSSO.toString(),
                                 "ribaltone");
-                            permissionManager.insertSimplePermission(
+                            permissionManager.deletePermission(
                                 utente,
                                 strutturaSuCuiModificare,
                                 BlackBoxConstants.Predicato.REDIGE.toString(),
@@ -1299,7 +1302,8 @@ public class OperationsUtils {
                                 Boolean.FALSE,
                                 Boolean.FALSE,
                                 BlackBoxConstants.Ambito.PICO.toString(),
-                                BlackBoxConstants.Tipo.FLUSSO.toString());
+                                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                                "ribaltone");
                         } catch (BlackBoxPermissionException ex) {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }

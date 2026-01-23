@@ -89,6 +89,7 @@ import org.hibernate.StaleObjectStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -488,10 +489,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         @RequestParam(required = true) String codiceAzienda,
         @RequestParam(required = true) String idSelectedConfiguration,
         @RequestParam(required = true) Integer idRibaltTree,
-        @RequestParam(required = true) String mailDaNotificare
+        @RequestParam(required = false) String mailDaNotificare
     ) throws RibaltoneHttpException, JsonProcessingException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-        List<String> mailDaNotificareList = Arrays.asList(mailDaNotificare.split(","));
+
         if (hoPermessoPerLanciareRibaltone()) {
             AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
             try {
@@ -499,6 +500,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
                     realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
                     try {
+                        List<String> mailDaNotificareList = null;
+                        if (StringUtils.hasText(mailDaNotificare)) {
+                            mailDaNotificareList = Arrays.asList(mailDaNotificare.split(","));
+
+                        }
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
                         ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, mailDaNotificareList);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
@@ -808,9 +814,17 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                                 spegniUtenteStruttura(usDaSpegnere, repositoryFactory.getEntityManager());
                                 spegniPermessiUtenteStrutturaMorto(usDaSpegnere, permissionManager, "spegni unificazione id " + unificazione.getId());
                             }
-                            //todo devo spegnere i permessi veicolati e i permessi per id struttura morti
+                            //devo spegnere i permessi veicolati e i permessi per id struttura morti
+                            try {
+                                repositoryFactory.getPermissionManager().deletePermissionByObject(struttura, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                                repositoryFactory.getPermissionManager().deletePermissionByObject(struttura, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                                repositoryFactory.getPermissionManager().deletePermissionByObject(struttura, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                                //chiudere i permessi veicolati
+                                repositoryFactory.getPermissionManager().deleteVeicoledPermission(struttura, "ribaltone");
+                            } catch (BlackBoxPermissionException ex) {
+                                LOGGER.error("non sono stati rimossi i permessi di struttura con id " + struttura.getId());
+                            }
                         }
-
                     }
                     default ->
                         throw new AssertionError();

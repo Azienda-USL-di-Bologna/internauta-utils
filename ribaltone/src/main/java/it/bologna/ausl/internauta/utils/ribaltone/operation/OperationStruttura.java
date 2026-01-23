@@ -78,9 +78,6 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
 
             case CHIUSURA:
-                //non serve spegnere i permessi veicolati qui perche tanto gli utenti
-                //che facevano parte della struttura chiusa o non potranno entrare o
-                //verranno spostati su altra struttura quindi questa operazione si fa negli utenti
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
                 log.info("sto gestendo chiusura struttura con id_casella = " + entitaDaChiudere.getIdCasella());
 //                Azienda idAzienda = em.find(Azienda.class, entitaDaChiudere.getIdAzienda());
