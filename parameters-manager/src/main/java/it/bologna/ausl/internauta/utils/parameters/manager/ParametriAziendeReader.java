@@ -60,7 +60,8 @@ public class ParametriAziendeReader {
         maxSchedePerFiltriEdiEfiWithAutoMode,
         notificaGestioneMassivaArchiviPerUtentiCoinvolti,
         alwaysReplaceHostWithCurrentHost,
-        dimensioniMassimeAllegatoSenzaBabelshare
+        dimensioniMassimeAllegatoSenzaBabelshare,
+        onlyoffice
     }
 
     @Autowired
