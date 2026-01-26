@@ -96,7 +96,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         } catch (NoSignException ex) {
             return ResponseEntity.noContent().build();
         }
-        log.info(res);
+//        log.info(res);
         return ResponseEntity.ok(res);
 //          return dSSValidatorManager.validateSingleFile(fileRepoFileId, fileRepoMongoUuid, validationDate, request);
     }
@@ -120,7 +120,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         } catch (NoSignException ex) {
             return ResponseEntity.noContent().build();
         }
-        log.info(res);
+//        log.info(res);
         return ResponseEntity.ok(res);
     }
     
@@ -235,7 +235,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
         } catch (NoSignException ex) {
             return ResponseEntity.noContent().build();
         }
-        log.info(signsReport.toString());
+        //slog.info(signsReport.toString());
         return ResponseEntity.ok(signsReport);
     }
     

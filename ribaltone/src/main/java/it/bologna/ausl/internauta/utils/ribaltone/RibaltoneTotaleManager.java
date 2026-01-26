@@ -138,15 +138,18 @@ public class RibaltoneTotaleManager {
         RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildedOperations = operationsCacheManager.restore();
-        buildedOperations.execute(repositoryFactory, codiceAzienda);
-        try {
-            RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
-            fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        } catch (Exception ex) {
-            descrizioneErrore = ex.getMessage();
-            throw new RibaltoneHttpException(descrizioneErrore, ex);
-        } finally {
-            // usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
+        if (buildedOperations != null) {
+            buildedOperations.execute(repositoryFactory, codiceAzienda);
+            try {
+                RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
+                fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
+            } catch (Exception ex) {
+                descrizioneErrore = ex.getMessage();
+                throw new RibaltoneHttpException(descrizioneErrore, ex);
+            } finally {
+                // usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
+            }
+
         }
 
         //return buildOperations;
