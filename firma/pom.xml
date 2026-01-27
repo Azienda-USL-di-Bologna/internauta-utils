@@ -218,6 +218,7 @@
                                 <vmArg>-Djakarta.xml.accessExternalSchema=all</vmArg>
                             </vmArgs>
                             <wsdlLocation>https://arss-firma-auslbo.avec.emr.it:8443/ArubaSignService/ArubaSignService?wsdl</wsdlLocation>
+                            <!--<wsdlLocation>https://arss.demo.firma-automatica.it/ArubaSignService/ArubaSignService?wsdl</wsdlLocation>-->
                             <staleFile>${project.build.directory}/jaxws/stale/ArubaSignService.stale</staleFile>
                         </configuration>
                         <id>wsimport-generate-ArubaSignService</id>

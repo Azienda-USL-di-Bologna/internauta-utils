@@ -26,16 +26,24 @@ public class ArubaUserInformation extends UserInformation {
     private Boolean useSavedCredential;
     private ModalitaFirma modalitaFirma;
     private Boolean firmaDelegata = false; // se true indica che la firma sarà automatica, quindi non sarà richiesto l'otp all'utente
+    /* 
+    se firmaDelegata=true i campi successivi indicano lo username e la password della firma automatica (delegatedUser e delegatedPassword)    
+    lo username di cui è titolare la firma sarà letto da username
+    il dominio delegato sarà letto da dominioFirma
+    come token sarà inserita una stringa fissa, così come da specifiche ARUBA
+    */
+    private String usernameDelegato = null;
+    private String passwordDelegato = null; 
     
 
     public ArubaUserInformation() {
     }
 
     public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential) {
-        this(username, password, token, modalitaFirma, certId, dominioFirma, useSavedCredential, false);
+        this(username, password, token, modalitaFirma, certId, dominioFirma, useSavedCredential, false, null, null);
     }
     
-    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential, Boolean firmaDelegata) {
+    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential, Boolean firmaDelegata, String usernameDelegato, String passwordDelegato) {
         this.username = username;
         this.password = password;
         this.token = token;
@@ -44,6 +52,8 @@ public class ArubaUserInformation extends UserInformation {
         this.dominioFirma = dominioFirma;
         this.useSavedCredential = useSavedCredential;
         this.firmaDelegata = firmaDelegata;
+        this.usernameDelegato = usernameDelegato;
+        this.passwordDelegato = passwordDelegato;
     }
 
     @Override
@@ -113,5 +123,21 @@ public class ArubaUserInformation extends UserInformation {
 
     public void setFirmaDelegata(Boolean firmaDelegata) {
         this.firmaDelegata = firmaDelegata;
+    }
+
+    public String getUsernameDelegato() {
+        return usernameDelegato;
+    }
+
+    public void setUsernameDelegato(String usernameDelegato) {
+        this.usernameDelegato = usernameDelegato;
+    }
+
+    public String getPasswordDelegato() {
+        return passwordDelegato;
+    }
+
+    public void setPasswordDelegato(String passwordDelegato) {
+        this.passwordDelegato = passwordDelegato;
     }
 }

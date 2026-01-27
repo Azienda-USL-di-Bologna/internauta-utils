@@ -127,37 +127,44 @@ public class FirmaRemotaAruba extends FirmaRemota {
 
         // prendo i file da firmare
         List<FirmaRemotaFile> files = firmaRemotaInformation.getFiles();
-
+        ArubaUserInformation arubaUserInformation = (ArubaUserInformation) firmaRemotaInformation.getUserInformation();
+        
         // creo l'oggetto Auth necessario al WEB-SERVICE di aruba per identificare l'utente di firma
         Auth identity;
         try {
-            identity = getIdentity((ArubaUserInformation) firmaRemotaInformation.getUserInformation());
+            identity = getIdentity(arubaUserInformation);
         } catch (EncryptionException ex) {
             throw new FirmaHttpException("errore nel reperire le credenziali", ex);
         }
 
         String sessionId = null;
-        try {
-            // apertura sessione
-            logger.info("opening session...");
-            sessionId = arubaSignService.opensession(identity);
-            logger.info("sessionId: " + sessionId);
-            if (sessionId == null) {
-                throw new RemoteServiceException("sign session opened is null");
-            } else {
-                if (sessionId.startsWith("KO")) {
-                    logger.error(String.format("errore nella firma: %s ", sessionId));
-                    String errorCode = sessionId.split("-")[1];
-                    throwCorrectException("KO", errorCode, "error opening session");
+        /* 
+        nel caso di firma delegata automatica, non devo aprire la sessione,
+        non serve perché l'otp non si deve inserire e quindi non è nesessario usare una sessione per doverlo inserire solo una volta
+        */
+        if (arubaUserInformation.getFirmaDelegata() == null || !arubaUserInformation.getFirmaDelegata()) {
+            try {
+                // apertura sessione
+                logger.info("opening session...");
+                sessionId = arubaSignService.opensession(identity);
+                logger.info("sessionId: " + sessionId);
+                if (sessionId == null) {
+                    throw new RemoteServiceException("sign session opened is null");
+                } else {
+                    if (sessionId.startsWith("KO")) {
+                        logger.error(String.format("errore nella firma: %s ", sessionId));
+                        String errorCode = sessionId.split("-")[1];
+                        throwCorrectException("KO", errorCode, "error opening session");
+                    }
                 }
+            } catch (Exception ex) {
+                logger.error("error opening session", ex);
+                if (sessionId != null) { // se c'è un errore chiudo la sessione, se è aperta
+                    logger.info("closing session...");
+                    arubaSignService.closesession(identity, sessionId);
+                }
+                throw ex;
             }
-        } catch (Exception ex) {
-            logger.error("error opening session", ex);
-            if (sessionId != null) { // se c'è un errore chiudo la sessione, se è aperta
-                logger.info("closing session...");
-                arubaSignService.closesession(identity, sessionId);
-            }
-            throw ex;
         }
 
         try {
@@ -181,7 +188,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
             logger.error("errore: ", ex);
             throw new FirmaHttpException(ex);
         } finally {
-            arubaSignService.closesession(identity, sessionId);
+            if (sessionId != null) {
+                arubaSignService.closesession(identity, sessionId);
+            }
         }
         return firmaRemotaInformation;
     }
@@ -365,7 +374,8 @@ public class FirmaRemotaAruba extends FirmaRemota {
             }
         }
         if (userInformation.getFirmaDelegata()) {
-            identity.setDelegatedUser(userInformation.getUsername());
+            identity.setDelegatedUser(userInformation.getUsernameDelegato());
+            identity.setUser(userInformation.getUsername());
         } else {
             identity.setUser(userInformation.getUsername());
         }
@@ -373,7 +383,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
         if (userInformation.useSavedCredential()) {
             if (configuration.getInternalCredentialsManager()) {
                 if (userInformation.getFirmaDelegata()) {
-                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
+                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(userInformation.getUsernameDelegato(), configuration.getHostId()));
                 } else {
                     identity.setUserPWD(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
                 }
@@ -386,7 +396,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
             }
         } else {
             if (userInformation.getFirmaDelegata()) {
-                    identity.setDelegatedPassword(userInformation.getPassword());
+                    identity.setDelegatedPassword(userInformation.getPasswordDelegato());
             } else {
                 identity.setUserPWD(userInformation.getPassword());
             }
