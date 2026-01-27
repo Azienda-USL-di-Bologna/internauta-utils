@@ -17,11 +17,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+<!--        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <type>jar</type>
             <scope>provided</scope>
-        </dependency>
+        </dependency>-->
     </dependencies>
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
