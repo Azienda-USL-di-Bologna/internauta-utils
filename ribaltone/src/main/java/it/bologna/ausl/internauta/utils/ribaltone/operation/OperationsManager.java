@@ -151,11 +151,11 @@ public class OperationsManager {
         // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
 //        this.mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
 //            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
-        this.mappaFusioniPerIdCasellaSorgente = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+        this.mappaFusioniPerIdCasellaSorgente = listaUnificazioni.stream().filter(u -> (u.getIdStrutturaSorgente().getIdAzienda().getId().equals(idAzienda) || u.getIdStrutturaDestinazione().getIdAzienda().getId().equals(idAzienda)) && u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
             .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
 
         // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
-        this.mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+        this.mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> (u.getIdStrutturaSorgente().getIdAzienda().getId().equals(idAzienda) || u.getIdStrutturaDestinazione().getIdAzienda().getId().equals(idAzienda)) && u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
             .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
     }
 
@@ -354,7 +354,7 @@ public class OperationsManager {
                         if (coinvoltoInReplicaFutura != null || coinvoltoInReplicapassata != null) {
                             operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                         } else {
-                            log.info("marchio la casella con id " + struttura.getIdCasella() + " come NON coinvolta in replica");
+                            log.info("marchio la casella con id_casella " + struttura.getIdCasella() + " come NON coinvolta in replica");
                             idCaselleNonReplicateSet.add(struttura.getIdCasella());
                         }
                     } else {

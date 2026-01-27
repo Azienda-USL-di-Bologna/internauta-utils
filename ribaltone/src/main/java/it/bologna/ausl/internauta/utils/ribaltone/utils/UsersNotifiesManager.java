@@ -88,7 +88,7 @@ public class UsersNotifiesManager {
             insertAttivita(azienda, p, app, buildedOperations, queryFactory, descrizioneErrore);
         }
 
-        if (!mailDaNotificare.isEmpty()) {
+        if (mailDaNotificare != null && !mailDaNotificare.isEmpty()) {
             sendEmail(mailDaNotificare, azienda, buildedOperations, descrizioneErrore);
         }
 

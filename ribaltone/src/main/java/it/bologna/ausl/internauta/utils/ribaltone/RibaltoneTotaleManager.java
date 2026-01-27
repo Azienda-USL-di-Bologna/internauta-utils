@@ -145,7 +145,7 @@ public class RibaltoneTotaleManager {
                 descrizioneErrore = ex.getMessage();
                 throw new RibaltoneHttpException(descrizioneErrore, ex);
             } finally {
-                // usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
+//                usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
             }
 
         }

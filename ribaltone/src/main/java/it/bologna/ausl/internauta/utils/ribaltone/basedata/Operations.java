@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
@@ -12,28 +11,19 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneStruttura;
-import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Azienda;
-import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
-import it.bologna.ausl.model.entities.baborg.QPersona;
-import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
-import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
-import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
-import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
-import it.bologna.ausl.model.entities.rubrica.QContatto;
-import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -129,6 +119,7 @@ public class Operations implements Serializable {
         }
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
         RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
+        repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
 
         //devo ricalcolare la gerarchia delle entita

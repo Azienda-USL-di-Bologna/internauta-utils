@@ -11,7 +11,9 @@ import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.FonteAggiuntaAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.nextsw.common.controller.BeforeUpdateEntityApplier;
 import it.nextsw.common.data.annotations.NextSdrInterceptor;
 import it.nextsw.common.interceptors.exceptions.AbortSaveInterceptorException;
@@ -38,6 +40,22 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
     @Override
     public Class getTargetEntityClass() {
         return FonteAggiuntaAppartenente.class;
+    }
+
+    @Override
+    public Object beforeCreateEntityInterceptor(Object entity, Map<String, String> additionalData, HttpServletRequest request, boolean mainEntity, Class projectionClass) throws AbortSaveInterceptorException {
+        FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
+        DatiImportatiAppartenente datiImportatiAppartenente = queryFactory
+            .select(qDatiImportatiAppartenente)
+            .from(qDatiImportatiAppartenente)
+            .where(qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())).limit(1)
+            .fetchOne();
+        fonteAggiuntaAppartenente.setCodiceAzienda(fonteAggiuntaAppartenente.getCodiceAzienda());
+        fonteAggiuntaAppartenente.setCodiceEnte(fonteAggiuntaAppartenente.getCodiceEnte());
+        fonteAggiuntaAppartenente.setCodiceMatricola(fonteAggiuntaAppartenente.getCodiceMatricola());
+        return fonteAggiuntaAppartenente;
     }
 
     @Override
