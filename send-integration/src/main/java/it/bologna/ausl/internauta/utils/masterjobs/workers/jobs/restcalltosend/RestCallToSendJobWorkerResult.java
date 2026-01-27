@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBase;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBase;
 
 /**
  *

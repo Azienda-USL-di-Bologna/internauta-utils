@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.firma.jnj.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.AuthorizationUtilityFunctions;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
@@ -41,6 +39,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.FirmaRemotaControllerHandledExceptions;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Controller che implementa le API per la firma remota

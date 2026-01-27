@@ -1,12 +1,12 @@
 package it.bologna.ausl.internauta.utils.sendintegration;
 
-import it.bologna.ausl.internauta.service.send_integration.controller.ErogatoreApiDelegate;
+import it.bologna.ausl.internauta.service.sendintegration.controller.ErogatoreApiDelegate;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto.DownloadLottoJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto.DownloadLottoJobWorkerData;
-import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBase;
+import it.bologna.ausl.internauta.utils.sendintegration.model.Lotto;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBase;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendResponseStatusException;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import it.bologna.ausl.model.entities.sendintegration.SendIntegrationConfiguration;

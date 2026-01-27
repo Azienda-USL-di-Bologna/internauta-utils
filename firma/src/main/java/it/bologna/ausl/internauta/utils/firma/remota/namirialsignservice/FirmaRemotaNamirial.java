@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.firma.remota.namirialsignservice;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
@@ -43,6 +42,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
 
 /**
  * Classe che implementa i metodi necessari per la firma remota Namirial.
@@ -454,7 +454,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @throws JsonProcessingException
      * @throws EncryptionException 
      */
-    private String getCredentialJson(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException, JsonProcessingException {
+    private String getCredentialJson(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException, JacksonException {
         Map<String, Object> credentialMap = getCredentialMap(userInformation, sessionKey);
         return configParams.getObjectMapper().writeValueAsString(credentialMap);
     }

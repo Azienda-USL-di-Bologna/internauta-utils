@@ -1,10 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
@@ -14,11 +11,9 @@ import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHand
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
-import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
@@ -30,7 +25,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,13 +32,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
@@ -53,6 +44,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping(value = "${ribaltonedati.mapping.url.root}")

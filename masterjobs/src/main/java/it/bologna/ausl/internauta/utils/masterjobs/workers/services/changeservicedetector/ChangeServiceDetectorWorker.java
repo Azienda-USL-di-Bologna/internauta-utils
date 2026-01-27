@@ -1,14 +1,13 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.services.changeservicedetector;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
-import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.WorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.services.ServiceWorker;
 import it.bologna.ausl.model.entities.masterjobs.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.ZonedDateTime;

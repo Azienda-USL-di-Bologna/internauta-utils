@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsObjectNotFoundException;
 import it.bologna.ausl.model.entities.masterjobs.DebuggingOption;

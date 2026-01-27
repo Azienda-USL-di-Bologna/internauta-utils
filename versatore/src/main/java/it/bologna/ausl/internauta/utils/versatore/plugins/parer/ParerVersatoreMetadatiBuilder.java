@@ -1,11 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.internauta.utils.versatore.plugins.parer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
@@ -19,7 +13,6 @@ import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
-import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DELIBERA;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DETERMINA;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
@@ -136,8 +129,7 @@ public final class ParerVersatoreMetadatiBuilder {
 
     private DatiSpecifici buildDatiSpecifici(Doc doc, DocDetail docDetail, String dataArchiviazione, String versioneDatiSpecificiPico, String versioneDatiSpecificiDete, String versioneDatiSpecificiDeli) throws ParserConfigurationException {
 
-        DatiSpecifici datiSpecifici = new DatiSpecifici();
-        ObjectMapper mapper = new ObjectMapper();
+        DatiSpecifici datiSpecifici;
 
         DatiSpecificiBuilder datiSpecificiBuilder = new DatiSpecificiBuilder();
 

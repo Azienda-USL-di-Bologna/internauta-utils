@@ -1,8 +1,8 @@
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *

@@ -1,8 +1,8 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend;
 
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBaseConEventualiErrori;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoElaborato;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBaseConEventualiErrori;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoElaborato;
 
 /**
  *

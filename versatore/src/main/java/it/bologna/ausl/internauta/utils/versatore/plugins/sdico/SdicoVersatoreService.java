@@ -8,7 +8,6 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.Documen
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeteBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilder;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
@@ -38,7 +37,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
@@ -61,6 +59,7 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
 
 /**
  *
@@ -391,11 +390,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         String resBodyString = resp.body().string();
                         log.info("Body: " + resBodyString);
                         risultatoEVersamentiAllegati.put("responseJson", resBodyString);
-                        ObjectMapper objectMapper = new ObjectMapper();
                         try {
                             response = objectMapper.readValue(resBodyString, SdicoResponse.class);
 
-                        } catch (JsonProcessingException ex) {
+                        } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da SDICO", ex);
                         }
                     } else {

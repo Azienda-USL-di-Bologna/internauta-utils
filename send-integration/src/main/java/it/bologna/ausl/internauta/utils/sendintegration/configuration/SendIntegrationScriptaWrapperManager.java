@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.sendintegration.configuration;
 
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoElaborato;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoElaborato;
 
 /**
  * Classe astratta che descrive i metodi che internauta deve implementare per potersi integrare con il modulo send-integration

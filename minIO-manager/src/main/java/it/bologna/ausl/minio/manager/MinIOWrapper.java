@@ -1,8 +1,5 @@
 package it.bologna.ausl.minio.manager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -39,7 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
@@ -52,6 +48,9 @@ import org.springframework.util.StringUtils;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -681,7 +680,7 @@ public class MinIOWrapper {
         return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
     }
 
-    private String metadataToStringNullSafe(Map<String, Object> metadata) throws JsonProcessingException {
+    private String metadataToStringNullSafe(Map<String, Object> metadata) throws JacksonException {
         if (metadata != null) {
             return objectMapper.writeValueAsString(metadata);
         } else {

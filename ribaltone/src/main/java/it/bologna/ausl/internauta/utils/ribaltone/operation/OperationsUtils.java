@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.blackbox.PermissionManager;
 import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
@@ -40,10 +37,11 @@ import it.bologna.ausl.model.entities.rubrica.Contatto;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 
 /**
  *
@@ -1231,7 +1229,7 @@ public class OperationsUtils {
                     result.put(idCasella, row);
                 }
                 return result;
-            } catch (JsonProcessingException ex) {
+            } catch (JacksonException ex) {
                 throw new RibaltoneHttpException("errore nella conversione delle unificazioni nella funzione getMappaReplicheStrutture");
             }
         });

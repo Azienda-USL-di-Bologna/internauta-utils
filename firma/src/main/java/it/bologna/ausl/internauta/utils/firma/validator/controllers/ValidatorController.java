@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.firma.validator.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.dss.data.exceptions.NoSignException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParams;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
@@ -30,6 +29,7 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
+import tools.jackson.core.JacksonException;
 
 /**
  * Controller che implementa le API per la validazione dei file firmati
@@ -129,7 +129,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
             @RequestParam("file") MultipartFile file, 
             //@RequestParam(value = "validationDate", required = false) String validationDate,
             @RequestParam(value = "validationDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime validationDate,
-            HttpServletRequest request) throws JsonProcessingException, DssResponseException {
+            HttpServletRequest request) throws JacksonException, DssResponseException {
             
             SignParams.CertificateStatus res = SignParams.CertificateStatus.UNKNOWN;
             Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate);
@@ -172,7 +172,7 @@ public class ValidatorController implements FirmaRemotaControllerHandledExceptio
     public ResponseEntity<?> validateCertificate( 
             @RequestParam("file") MultipartFile file, 
             @RequestParam(value = "validationDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime validationDate,
-            HttpServletRequest request) throws JsonProcessingException {
+            HttpServletRequest request) throws JacksonException {
         
         try {
             Map<String, String> reportCertificateValidationMap = dSSValidatorManager.getReportCertificateValidationMap(file, validationDate);

@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.csv;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SourceDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.SpecificData;
 import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareAnagrafica;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
