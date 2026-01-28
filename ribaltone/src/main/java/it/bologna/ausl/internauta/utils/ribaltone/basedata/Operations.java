@@ -136,8 +136,11 @@ public class Operations implements Serializable {
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
         log.info("setto le strutture foglie");
         RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
+        log.info("elimino protocontatti");
+        RibaltoneManagerUtils.eliminaProtocontatti(repositoryFactory);
         log.info("spegniPermessiVeicolatiInvalidi");
         repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
+
         log.info("faccio i check fdi conformita");
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
 
@@ -324,7 +327,7 @@ public class Operations implements Serializable {
             String sistemaGerarchieEntitaStrutture = """
                                   select baborg.sistema_gerarchia_entita_strutture(array[]::integer[], (select id from baborg.strutture where attiva = true and id_struttura_padre is NULL AND NOT ufficio AND id_azienda = :id_azienda))
                                   """.replaceAll(":id_azienda", idAzienda.toString());
-            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture);
+            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture).executeUpdate();
         }
     }
 
