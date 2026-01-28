@@ -1238,7 +1238,7 @@ public class OperationsUtils {
 
     }
 
-    public static void editUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+    public static void storicizzaUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
         if (persona != null && strutturaSuCuiModificare != null) {
             Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, strutturaSuCuiModificare.getIdAzienda().getId(), persona);
@@ -1252,12 +1252,21 @@ public class OperationsUtils {
                 utente.setIdPersona(persona);
                 UtenteStruttura utenteStruttura = OperationsUtils.getUtenteStrutturaAttivo(queryFactory, strutturaSuCuiModificare, utente);
                 if (utenteStruttura != null) {
-                    utenteStruttura.setResponsabile(entitaDaModificare.getResponsabile());
-                    utenteStruttura.setIdUtente(utente);
-                    utenteStruttura.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
+                    //creo il nuovo utente struttura
+                    UtenteStruttura utenteStrutturaNew = UtenteStruttura.clone(utenteStruttura);
+                    //posso spostare il dettaglio contatto tanto è lo stesso
+                    utenteStrutturaNew.setIdDettaglioContatto(utenteStruttura.getIdDettaglioContatto());
+                    utenteStrutturaNew.setResponsabile(entitaDaModificare.getResponsabile());
+                    //spengo il vecchio utente struttura
+                    utenteStruttura.setAttivoAl(ZonedDateTime.now());
+                    utenteStruttura.setAttivo(false);
+                    utenteStruttura.setIdDettaglioContatto(null);
+//                    utenteStruttura.setIdUtente(utente);
+                    utenteStrutturaNew.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
                     entityManager.persist(utenteStruttura);
+                    entityManager.persist(utenteStrutturaNew);
                     if (utenteStrutturaDaInserireList != null) {
-                        utenteStrutturaDaInserireList.add(utenteStruttura);
+                        utenteStrutturaDaInserireList.add(utenteStrutturaNew);
                     }
                     if (entitaDaModificare.getResponsabile()) {
                         try {

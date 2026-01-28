@@ -120,9 +120,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         case "afferenza" -> {
                         }
                         case "responsabile" -> {
-                            strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
-                            OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
                             log.info("modifico utente " + entitaDaInserire.getCodiceFiscale() + " sulla struttura con id_casella " + entitaDaInserire.getIdCasella() + " responsabile " + entitaDaInserire.getResponsabile().toString());
+                            strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+                            OperationsUtils.storicizzaUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
                         }
                         case "codice_matricola" -> {
                         }

@@ -218,13 +218,12 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 //                            .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
 //                    ).orderBy(qStruttura.id.desc()).fetchOne();
                     log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaDestinazione.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
-                    OperationsUtils.editUtenteStruttura(strutturaDestinazione, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
+                    OperationsUtils.storicizzaUtenteStruttura(strutturaDestinazione, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
                     QPersona qPersona = QPersona.persona;
                     Persona persona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
                     if (persona != null) {
                         try {
                             Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSorgente.getIdAzienda().getId(), persona);
-
                             if (utente != null) {
                                 repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
                                     utente,
