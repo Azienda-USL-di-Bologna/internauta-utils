@@ -6,6 +6,8 @@ import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterfac
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CHIUSURA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import static it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils.getUtenteDiIdAzienda;
+import static it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils.getUtenteStrutturaAttivo;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Persona;
@@ -119,7 +121,15 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                     }
                     log.info("inserisco utenteunificato " + entitaDaInserire.getCodiceFiscale() + " alla struttura con id " + strutturaDoveInserire.getId());
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
-                    UtenteStruttura utenteStrutturaInserito = utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1);
+                    UtenteStruttura utenteStrutturaInserito;
+                    if (utenteStrutturaDaInserireList.isEmpty()) {
+                        Persona persona = OperationsUtils.getPersona(jPAQueryFactory, entitaDaInserire);
+                        Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaDoveInserire.getIdAzienda().getId(), persona);
+                        utenteStrutturaInserito = OperationsUtils.getUtenteStrutturaAttivo(jPAQueryFactory, strutturaDoveInserire, utente);
+                    } else {
+
+                        utenteStrutturaInserito = utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1);
+                    }
 
                     if (entitaDaInserire.getResponsabile()) {
                         Struttura strutturaPartenza;
@@ -182,26 +192,43 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 // è il caso di utente che diventa o non è più responsabile,
                 // quindi verificare i permessi di flusso
                 for (StrutturaUnificata sU : strutturaUnificataList) {
-                    StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
-                    getEntityManager().refresh(strutturaUnificata);
-                    Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
-                    Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
-                            .and(qStruttura.attiva)
-                            .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
-                    ).orderBy(qStruttura.id.desc()).fetchOne();
-                    log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaDaModificare.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
-                    OperationsUtils.editUtenteStruttura(strutturaDaModificare, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
+                    StrutturaUnificata strutturaUnificataReloaded = getEntityManager().find(StrutturaUnificata.class, sU.getId());
+                    getEntityManager().refresh(strutturaUnificataReloaded);
+                    Struttura strutturaSorgente;
+                    Struttura strutturaDestinazione;
+                    if (strutturaUnificataReloaded.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
+                        strutturaSorgente = strutturaUnificataReloaded.getIdStrutturaSorgente();
+                        strutturaDestinazione = strutturaUnificataReloaded.getIdStrutturaDestinazione();
+                    } else {
+                        strutturaSorgente = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+                            qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
+                                .and(qStruttura.attiva)
+                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaSorgente().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                        strutturaDestinazione = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+                            qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
+                                .and(qStruttura.attiva)
+                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                    }
+//                    Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificataReloaded.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificataReloaded.getIdStrutturaDestinazione() : strutturaUnificataReloaded.getIdStrutturaSorgente();
+//                    Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+//                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
+//                            .and(qStruttura.attiva)
+//                            .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
+//                    ).orderBy(qStruttura.id.desc()).fetchOne();
+                    log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaDestinazione.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
+                    OperationsUtils.editUtenteStruttura(strutturaDestinazione, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
                     QPersona qPersona = QPersona.persona;
                     Persona persona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
                     if (persona != null) {
                         try {
-                            Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSorgenteDiAziendaInCuiModicare.getIdAzienda().getId(), persona);
+                            Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSorgente.getIdAzienda().getId(), persona);
 
                             if (utente != null) {
                                 repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
                                     utente,
-                                    strutturaSorgenteDiAziendaInCuiModicare,
+                                    strutturaSorgente,
                                     utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdUtente(),
                                     utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdStruttura()
                                 );

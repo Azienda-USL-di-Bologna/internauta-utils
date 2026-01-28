@@ -84,6 +84,7 @@ public class Operations implements Serializable {
     public void execute(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
         workToDo = new HashMap<Integer, List<Integer>>();
         //devo disabilitare dei trigger che rallenterebbero troppo il ribaltone
+        log.info("ribalto le strutture");
         RibaltoneManagerUtils.disableTrigger(repositoryFactory);
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
@@ -92,6 +93,7 @@ public class Operations implements Serializable {
         }
 //        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
+        log.info("ribalto gli appartenenti");
         for (OperationAppartenente operation : listOfOperationAppartenente) {
             log.info(operation.toString());
             operation.esegui(workToDo, repositoryFactory);
@@ -100,21 +102,23 @@ public class Operations implements Serializable {
         }
         //qui bisogna scrivere una funzione che va sul db e per ogni afferenza di utenti in listofOperation
         //deve risistemare afferenze funzionali e dirette e mettere il dettaglio principare corretto
-
+        log.info("faccio le trasformazioni");
         workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationTrasformazione operation : listOfOperationTrasformazione) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattiTrasformati(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
+        log.info("risistemo le afferenze");
         risistemaAfferenze(repositoryFactory, codiceAzienda);
         workToDo = null;
+        log.info("ribalto le anagrafiche");
         for (OperationAnagrafica operation : listOfOperationAnagrafica) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
-
+        log.info("gestisco le unificazioni per le strutture");
         workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationUnificazioneStruttura operation : listOfOperationUnificazioneStruttura) {
             operation.esegui(workToDo, repositoryFactory);
@@ -122,19 +126,26 @@ public class Operations implements Serializable {
             repositoryFactory.getEntityManager().flush();
         }
         workToDo = null;
+        log.info("gestisto le unificazioni per gli appartenenti");
         for (OperationUnificazioneAppartenente operation : listOfOperationUnificazioneAppartenente) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenenteUnificato(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
+        log.info("setto le omonimine");
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
+        log.info("setto le strutture foglie");
         RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
+        log.info("spegniPermessiVeicolatiInvalidi");
         repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
+        log.info("faccio i check fdi conformita");
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
 
         //devo ricalcolare la gerarchia delle entita
+        log.info("ricarcolo la gerarchia entita per le aziende");
         ricalcolaGerarchiePerAziende(listOfOperationUnificazioneStruttura, codiceAzienda, repositoryFactory);
         //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
+        log.info("riabilito i trigger che ho spento");
         RibaltoneManagerUtils.enableTrigger(repositoryFactory);
 
     }
