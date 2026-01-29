@@ -225,13 +225,13 @@ public class Operations implements Serializable {
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Integer idAfferenzaFunzionale = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
-        AfferenzaStruttura idAfferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
+        AfferenzaStruttura afferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
             .select(us.idUtente.id)
             .from(us)
             .where(us.attivo.isTrue()
                 .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(1)))
+                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId())))
             .groupBy(us.idUtente.id)
             .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
             .fetch();
@@ -241,21 +241,24 @@ public class Operations implements Serializable {
             .from(us)
             .where(us.attivo.isTrue()
                 .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(1))
+                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
                 .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette))) // Join con il risultato della prima query
             .fetch();
         //ora ho tutte le afferenze plurime dirette devo andare a sistemarle
         //direi che una a caso (direi dalla seconda che esamino) diverranno funzionali
         Map<Integer, Map<Integer, Integer>> utentiConGiaAfferenzaDiretta = new HashMap<>();
         for (UtenteStruttura utenteStruttura : utentiStrutturaDaSistemare) {
-            if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) != null
-                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1) != null
-                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(2) == null) {
+            //            if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) != null
+            //                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1) != null
+            //                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(2) == null)
+            Integer idUtente = utenteStruttura.getIdUtente().getId();
+            Map<Integer, Integer> afferenze = utentiConGiaAfferenzaDiretta.get(idUtente);
+            if (afferenze != null && afferenze.get(1) != null && afferenze.get(2) == null) {
                 Integer utenteStrutturaDaNonToccare = utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1);
                 queryFactory
                     .update(us)
                     .set(us.idAfferenzaStruttura.id, idAfferenzaFunzionale)
-                    .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId())));
+                    .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId()))).execute();
                 //segno gia sistemata questa persona
                 utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).put(2, 1);
             } else if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) == null) {
@@ -271,7 +274,7 @@ public class Operations implements Serializable {
             .where(
                 us.attivo.isTrue()
                     .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                    .and(us.idAfferenzaStruttura.id.eq(3))
+                    .and(us.idAfferenzaStruttura.id.eq(idAfferenzaFunzionale))
                     // esclude utenti che hanno almeno una diretta attiva
                     .and(
                         us.idUtente.id.notIn(
@@ -280,7 +283,7 @@ public class Operations implements Serializable {
                                 .from(us2)
                                 .where(
                                     us2.attivo.isTrue()
-                                        .and(us2.idAfferenzaStruttura.id.eq(1))
+                                        .and(us2.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
                                         .and(us2.idUtente.idAzienda.codice.eq(codiceAzienda))
                                 )
                         )
@@ -294,7 +297,7 @@ public class Operations implements Serializable {
         for (UtenteStruttura utenteStrutturaFunzionale : utentiStrutturaFunzionaliSenzaDirette) {
             if (!Objects.equals(idUtenteDiAppoggio, utenteStrutturaFunzionale.getIdUtente().getId())) {
                 idUtenteDiAppoggio = utenteStrutturaFunzionale.getIdUtente().getId();
-                utenteStrutturaFunzionale.setIdAfferenzaStruttura(idAfferenzaDiretta);
+                utenteStrutturaFunzionale.setIdAfferenzaStruttura(afferenzaDiretta);
                 repositoryFactory.getEntityManager().persist(utenteStrutturaFunzionale);
                 DettaglioContatto idDettaglioContatto = utenteStrutturaFunzionale.getIdDettaglioContatto();
                 if (idDettaglioContatto != null) {
@@ -327,7 +330,7 @@ public class Operations implements Serializable {
             String sistemaGerarchieEntitaStrutture = """
                                   select baborg.sistema_gerarchia_entita_strutture(array[]::integer[], (select id from baborg.strutture where attiva = true and id_struttura_padre is NULL AND NOT ufficio AND id_azienda = :id_azienda))
                                   """.replaceAll(":id_azienda", idAzienda.toString());
-            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture).executeUpdate();
+            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture).getSingleResult();
         }
     }
 
