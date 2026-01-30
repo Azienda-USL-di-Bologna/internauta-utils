@@ -335,6 +335,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
                             cloneStrutturaForUnificazione.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
                             cloneStrutturaForUnificazione.setIdStrutturaReplicata(idStrutturaReplicata);
+
                             StoricoRelazione storicoRelazione = new StoricoRelazione();
                             storicoRelazione.setAttivaDal(ZonedDateTime.now());
                             storicoRelazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
@@ -364,7 +365,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     }
 
                 } else if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
-                    //non devo fare nulla se non aggiornare la l'unificazione
+                    //non devo fare nulla se non aggiornare la l'unificazione ma ci pensa lo sposta strutture della struttura rinominata
                 }
 
             }

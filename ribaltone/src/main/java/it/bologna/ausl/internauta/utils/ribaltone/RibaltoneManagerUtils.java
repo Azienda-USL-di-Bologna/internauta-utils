@@ -288,8 +288,8 @@ public class RibaltoneManagerUtils {
                     AND p2.descrizione = p.descrizione
                 )
         """;
-        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue);
-        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse);
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaTrue).executeUpdate();
+        repositoryFactory.getEntityManager().createNativeQuery(updateOmonimiaFalse).executeUpdate();
     }
 
     public static void setFogliaOnStrutture(RepositoryFactory repositoryFactory) {
@@ -301,7 +301,7 @@ public class RibaltoneManagerUtils {
                                 WHERE c.id_struttura_padre = s.id AND c.attiva
                               ) WHERE attiva;
                               """;
-        repositoryFactory.getEntityManager().createNativeQuery(updateForglia);
+        repositoryFactory.getEntityManager().createNativeQuery(updateForglia).executeUpdate();
     }
 
     public static void disableTrigger(RepositoryFactory repositoryFactory) {
@@ -314,7 +314,7 @@ public class RibaltoneManagerUtils {
             "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
         };
         for (String trigger : triggerDaDisabilitare) {
-            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+            repositoryFactory.getEntityManager().createNativeQuery(trigger).executeUpdate();
 
         }
     }
@@ -329,8 +329,12 @@ public class RibaltoneManagerUtils {
             "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
         };
         for (String trigger : triggerDaDisabilitare) {
-            repositoryFactory.getEntityManager().createNativeQuery(trigger);
+            repositoryFactory.getEntityManager().createNativeQuery(trigger).executeUpdate();
 
         }
+    }
+
+    public static void eliminaProtocontatti(RepositoryFactory repositoryFactory) {
+        repositoryFactory.getEntityManager().createNativeQuery("select rubrica.elimina_protocontatti()").getSingleResult();
     }
 }
