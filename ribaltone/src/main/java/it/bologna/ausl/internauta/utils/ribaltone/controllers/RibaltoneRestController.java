@@ -689,8 +689,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                         //creo gli utenti struttura
                         List<UtenteStruttura> utentiStrutturaDaRiportare = sorgente.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
-
                         for (UtenteStruttura utenteStruttura : utentiStrutturaDaRiportare) {
+                            Azienda idAziendaDerivazioneUnificazione = utenteStruttura.getIdStruttura().getIdAzienda();
                             Persona idPersona = utenteStruttura.getIdUtente().getIdPersona();
                             Optional<Utente> userOpt = idPersona.getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(destinazione.getIdAzienda().getId())).findFirst();
 
@@ -712,6 +712,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             us.setAttivoDal(ZonedDateTime.now());
 //                        us.setBitRuoli(utenteStruttura.getBitRuoli());
                             us.setIdAfferenzaStruttura(idAfferenzaStruttura);
+                            us.setIdAziendaDerivazioneUnificazione(idAziendaDerivazioneUnificazione);
+                            us.setIdStrutturaDerivazioneUnificazione(utenteStruttura.getIdStruttura());
                             us.setIdUtente(utente);
                             us.setResponsabile(utenteStruttura.getResponsabile());
                             repositoryFactory.getEntityManager().persist(us);
