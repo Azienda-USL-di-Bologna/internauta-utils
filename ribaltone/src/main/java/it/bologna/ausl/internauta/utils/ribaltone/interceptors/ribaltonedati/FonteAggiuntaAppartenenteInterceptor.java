@@ -47,14 +47,41 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
         FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
-        DatiImportatiAppartenente datiImportatiAppartenente = queryFactory
-            .select(qDatiImportatiAppartenente)
-            .from(qDatiImportatiAppartenente)
-            .where(qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())).limit(1)
-            .fetchOne();
-        fonteAggiuntaAppartenente.setCodiceAzienda(fonteAggiuntaAppartenente.getCodiceAzienda());
-        fonteAggiuntaAppartenente.setCodiceEnte(fonteAggiuntaAppartenente.getCodiceEnte());
+        QStruttura qStruttura = QStruttura.struttura;
         fonteAggiuntaAppartenente.setCodiceMatricola(fonteAggiuntaAppartenente.getCodiceMatricola());
+        Struttura struttura = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.attiva.and(qStruttura.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella()))).fetchOne();
+        //vuol dire che sto aggiungendo un utente alla struttura destinazione di replica
+        if (struttura == null) {
+            struttura = queryFactory
+                .select(qStruttura)
+                .from(qStruttura)
+                .where(
+                    qStruttura.attiva.and(qStruttura.idStrutturaReplicata.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella()))).fetchOne();
+        }
+        if (struttura != null) {
+            DatiImportatiAppartenente datiImportatiAppartenente = queryFactory
+                .select(qDatiImportatiAppartenente)
+                .from(qDatiImportatiAppartenente)
+                .where(
+                    qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())
+                        .and(qDatiImportatiAppartenente.idAzienda.eq(struttura.getIdAzienda().getId()))
+                )
+                .limit(1)
+                .fetchOne();
+            if (datiImportatiAppartenente == null) {
+                datiImportatiAppartenente = queryFactory
+                    .select(qDatiImportatiAppartenente)
+                    .from(qDatiImportatiAppartenente)
+                    .where(
+                        qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())
+                    )
+                    .limit(1)
+                    .fetchOne();
+            }
+            fonteAggiuntaAppartenente.setCodiceMatricola(datiImportatiAppartenente != null ? datiImportatiAppartenente.getCodiceMatricola() : null);
+            fonteAggiuntaAppartenente.setCodiceAzienda(struttura.getIdAzienda().getCodice());
+            fonteAggiuntaAppartenente.setCodiceEnte(struttura.getIdAzienda().getCodice() + "01");
+        }
         return fonteAggiuntaAppartenente;
     }
 
