@@ -477,17 +477,21 @@ public final class ParerVersatoreMetadatiBuilder {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFilePrincipale;
+                    VersamentoAllegatoInformation allegatoInformation;
                     if (originaleFirmato == null) {
-                        identityFilePrincipale = new IdentityFile("allegato_firmato", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
+                        identityFilePrincipale = new IdentityFile("allegato", getUuidMinIObyFileId(originale.getIdRepository()), originale.getHashMd5(), originale.getEstensione(), originale.getMimeType());
                         i = i + 1;
                         unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(originale.getIdRepository()), "GENERICO", "", originale.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
+
                     } else {
                         identityFilePrincipale = new IdentityFile("allegato_firmato", getUuidMinIObyFileId(originaleFirmato.getIdRepository()), originaleFirmato.getHashMd5(), originaleFirmato.getEstensione(), originaleFirmato.getMimeType());
                         i = i + 1;
                         unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(originaleFirmato.getIdRepository()), "GENERICO", "", originaleFirmato.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "Allegato", "Contenuto", "FILE", docDetail.getDataRegistrazione().format(formatter), getDescrizioneRiferimentoTemporale(doc.getTipologia()));
+                        allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
+
                     }
 
-                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegatoFirmato(allegato.getId(), identityFilePrincipale);
                     versamentiAllegatiInfo.add(allegatoInformation);
 //                } else if (allegato.getDettagli().getConvertito() != null && allegato.getTipo() != Allegato.TipoAllegato.TESTO) {
 //                    Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
