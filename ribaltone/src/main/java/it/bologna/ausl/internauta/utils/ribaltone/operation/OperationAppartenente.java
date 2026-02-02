@@ -87,17 +87,22 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             }
             case CHIUSURA -> {
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
-                Struttura strutturaDiUtenteDaRimuovere = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
+                UtenteStruttura utenteStrutturaDaSpegnere = queryFactory
+                    .select(qUtenteStruttura)
+                    .from(qUtenteStruttura)
                     .where(
-                        qStruttura.attiva
-                            .and(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella()))
-                            .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                        qUtenteStruttura.attivo
+                            .and(qUtenteStruttura.idUtente.idPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale()))
+                            .and(qUtenteStruttura.idUtente.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                            .and(qUtenteStruttura.idStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
+                                .and(qUtenteStruttura.idStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda())))
                     ).fetchOne();
+                if (utenteStrutturaDaSpegnere != null) {
+                    Struttura strutturaDiUtenteDaRimuovere = utenteStrutturaDaSpegnere.getIdStruttura();
+                    OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
+                    log.info("tolgo utente " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
+                }
 
-                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
-                log.info("tolgo utente " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
             }
             case EDIT -> {
                 //sicuramente non ha cambiato struttura perche questa operazione si traduce in una insert e una chiusura
