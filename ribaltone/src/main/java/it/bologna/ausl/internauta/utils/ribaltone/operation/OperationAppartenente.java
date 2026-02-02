@@ -2,8 +2,6 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.blackbox.PermissionManager;
-import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
-import it.bologna.ausl.blackbox.utils.BlackBoxConstants;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CHIUSURA;
@@ -11,9 +9,7 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.INSERT;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
-import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura.CodiciAfferenzaStruttura;
-import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.QPersona;
@@ -21,7 +17,6 @@ import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
-import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
@@ -36,12 +31,9 @@ import it.bologna.ausl.model.entities.rubrica.GruppiContatti;
 import it.bologna.ausl.model.entities.rubrica.QDettaglioContatto;
 import jakarta.persistence.EntityManager;
 import java.io.Serializable;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,20 +82,26 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
             case INSERT -> {
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 Struttura struttura = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+                log.info("inserisco utente " + entitaDaInserire.getCodiceFiscale() + " alla struttura con id " + struttura.getId());
                 OperationsUtils.insertUtenteInStruttura(queryFactory, entitaDaInserire, struttura, repositoryFactory.getEntityManager(), permissionManager, null);
             }
             case CHIUSURA -> {
                 DatiImportatiAppartenente entitaDaChiudere = (DatiImportatiAppartenente) getEntitaCoinvolta();
-                Struttura strutturaDiUtenteDaRimuovere = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
+                UtenteStruttura utenteStrutturaDaSpegnere = queryFactory
+                    .select(qUtenteStruttura)
+                    .from(qUtenteStruttura)
                     .where(
-                        qStruttura.attiva
-                            .and(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella()))
-                            .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                        qUtenteStruttura.attivo
+                            .and(qUtenteStruttura.idUtente.idPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale()))
+                            .and(qUtenteStruttura.idUtente.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                            .and(qUtenteStruttura.idStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
+                                .and(qUtenteStruttura.idStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda())))
                     ).fetchOne();
-
-                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
+                if (utenteStrutturaDaSpegnere != null) {
+                    Struttura strutturaDiUtenteDaRimuovere = utenteStrutturaDaSpegnere.getIdStruttura();
+                    OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
+                    log.info("tolgo utente " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
+                }
 
             }
             case EDIT -> {
@@ -127,8 +125,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                         case "afferenza" -> {
                         }
                         case "responsabile" -> {
+                            log.info("modifico utente " + entitaDaInserire.getCodiceFiscale() + " sulla struttura con id_casella " + entitaDaInserire.getIdCasella() + " responsabile " + entitaDaInserire.getResponsabile().toString());
                             strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
-                            OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+                            OperationsUtils.storicizzaUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
                         }
                         case "codice_matricola" -> {
                         }
@@ -304,9 +303,7 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 //                                    }
                                 }
                             }
-
                         }
-
                     }
                     //  va verificato il modivo. o chiusa perche utente non piu attivo
                     //  se confluito in questo caso bisogna gestire i gruppi

@@ -92,6 +92,6 @@ public class NewIssueController {
             }
         }
         jo.put("Res", "tutto ok");
-        return new ResponseEntity(null, HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }

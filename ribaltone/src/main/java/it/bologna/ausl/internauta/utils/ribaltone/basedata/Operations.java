@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.basedata;
 
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils;
@@ -12,29 +11,26 @@ import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationStruttura;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationTrasformazione;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneAppartenente;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationUnificazioneStruttura;
-import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReport.UserReportType;
 import it.bologna.ausl.internauta.utils.ribaltone.userreport.UserReportManager;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
-import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QAfferenzaStruttura;
-import it.bologna.ausl.model.entities.baborg.QPersona;
-import it.bologna.ausl.model.entities.baborg.QStruttura;
+import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
-import it.bologna.ausl.model.entities.baborg.Struttura;
-import it.bologna.ausl.model.entities.baborg.Utente;
+import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
-import it.bologna.ausl.model.entities.rubrica.Contatto;
+import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
-import it.bologna.ausl.model.entities.rubrica.QContatto;
-import jakarta.persistence.EntityManager;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +73,9 @@ public class Operations implements Serializable {
 
     public void execute(RepositoryFactory repositoryFactory, String codiceAzienda) throws RibaltoneHttpException {
         workToDo = new HashMap<Integer, List<Integer>>();
+        //devo disabilitare dei trigger che rallenterebbero troppo il ribaltone
+        log.info("ribalto le strutture");
+        RibaltoneManagerUtils.disableTrigger(repositoryFactory);
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
@@ -84,6 +83,7 @@ public class Operations implements Serializable {
         }
 //        OperationsUtils.manageUnificazioni(repositoryFactory.getEntityManager(), listOfOperationStruttura);
         workToDo = null;
+        log.info("ribalto gli appartenenti");
         for (OperationAppartenente operation : listOfOperationAppartenente) {
             log.info(operation.toString());
             operation.esegui(workToDo, repositoryFactory);
@@ -92,21 +92,23 @@ public class Operations implements Serializable {
         }
         //qui bisogna scrivere una funzione che va sul db e per ogni afferenza di utenti in listofOperation
         //deve risistemare afferenze funzionali e dirette e mettere il dettaglio principare corretto
-
+        log.info("faccio le trasformazioni");
         workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationTrasformazione operation : listOfOperationTrasformazione) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattiTrasformati(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
+        log.info("risistemo le afferenze");
         risistemaAfferenze(repositoryFactory, codiceAzienda);
         workToDo = null;
+        log.info("ribalto le anagrafiche");
         for (OperationAnagrafica operation : listOfOperationAnagrafica) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContatto(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
-
+        log.info("gestisco le unificazioni per le strutture");
         workToDo = new HashMap<Integer, List<Integer>>();
         for (OperationUnificazioneStruttura operation : listOfOperationUnificazioneStruttura) {
             operation.esegui(workToDo, repositoryFactory);
@@ -114,14 +116,31 @@ public class Operations implements Serializable {
             repositoryFactory.getEntityManager().flush();
         }
         workToDo = null;
+        log.info("gestisto le unificazioni per gli appartenenti");
         for (OperationUnificazioneAppartenente operation : listOfOperationUnificazioneAppartenente) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoAppartenenteUnificato(repositoryFactory);
             repositoryFactory.getEntityManager().flush();
         }
+        log.info("setto le omonimine");
         RibaltoneManagerUtils.setOmonimiaOnUtentiOmonimi(repositoryFactory, codiceAzienda);
+        log.info("setto le strutture foglie");
+        RibaltoneManagerUtils.setFogliaOnStrutture(repositoryFactory);
+        log.info("elimino protocontatti");
+        RibaltoneManagerUtils.eliminaProtocontatti(repositoryFactory);
+        log.info("spegniPermessiVeicolatiInvalidi");
+        repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
 
+        log.info("faccio i check fdi conformita");
         QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
+
+        //devo ricalcolare la gerarchia delle entita
+        log.info("ricarcolo la gerarchia entita per le aziende");
+        ricalcolaGerarchiePerAziende(listOfOperationUnificazioneStruttura, codiceAzienda, repositoryFactory);
+        //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
+        log.info("riabilito i trigger che ho spento");
+        RibaltoneManagerUtils.enableTrigger(repositoryFactory);
+
     }
 
     public UserReportManager generateUserReport(UserReportType userReportType) {
@@ -196,13 +215,13 @@ public class Operations implements Serializable {
         QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Integer idAfferenzaFunzionale = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
-        AfferenzaStruttura idAfferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
+        AfferenzaStruttura afferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
             .select(us.idUtente.id)
             .from(us)
             .where(us.attivo.isTrue()
                 .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(1)))
+                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId())))
             .groupBy(us.idUtente.id)
             .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
             .fetch();
@@ -212,21 +231,24 @@ public class Operations implements Serializable {
             .from(us)
             .where(us.attivo.isTrue()
                 .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(1))
+                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
                 .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette))) // Join con il risultato della prima query
             .fetch();
         //ora ho tutte le afferenze plurime dirette devo andare a sistemarle
         //direi che una a caso (direi dalla seconda che esamino) diverranno funzionali
         Map<Integer, Map<Integer, Integer>> utentiConGiaAfferenzaDiretta = new HashMap<>();
         for (UtenteStruttura utenteStruttura : utentiStrutturaDaSistemare) {
-            if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) != null
-                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1) != null
-                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(2) == null) {
+            //            if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) != null
+            //                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1) != null
+            //                && utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(2) == null)
+            Integer idUtente = utenteStruttura.getIdUtente().getId();
+            Map<Integer, Integer> afferenze = utentiConGiaAfferenzaDiretta.get(idUtente);
+            if (afferenze != null && afferenze.get(1) != null && afferenze.get(2) == null) {
                 Integer utenteStrutturaDaNonToccare = utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1);
                 queryFactory
                     .update(us)
                     .set(us.idAfferenzaStruttura.id, idAfferenzaFunzionale)
-                    .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId())));
+                    .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId()))).execute();
                 //segno gia sistemata questa persona
                 utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).put(2, 1);
             } else if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) == null) {
@@ -242,7 +264,7 @@ public class Operations implements Serializable {
             .where(
                 us.attivo.isTrue()
                     .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                    .and(us.idAfferenzaStruttura.id.eq(3))
+                    .and(us.idAfferenzaStruttura.id.eq(idAfferenzaFunzionale))
                     // esclude utenti che hanno almeno una diretta attiva
                     .and(
                         us.idUtente.id.notIn(
@@ -251,7 +273,7 @@ public class Operations implements Serializable {
                                 .from(us2)
                                 .where(
                                     us2.attivo.isTrue()
-                                        .and(us2.idAfferenzaStruttura.id.eq(1))
+                                        .and(us2.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
                                         .and(us2.idUtente.idAzienda.codice.eq(codiceAzienda))
                                 )
                         )
@@ -265,7 +287,7 @@ public class Operations implements Serializable {
         for (UtenteStruttura utenteStrutturaFunzionale : utentiStrutturaFunzionaliSenzaDirette) {
             if (!Objects.equals(idUtenteDiAppoggio, utenteStrutturaFunzionale.getIdUtente().getId())) {
                 idUtenteDiAppoggio = utenteStrutturaFunzionale.getIdUtente().getId();
-                utenteStrutturaFunzionale.setIdAfferenzaStruttura(idAfferenzaDiretta);
+                utenteStrutturaFunzionale.setIdAfferenzaStruttura(afferenzaDiretta);
                 repositoryFactory.getEntityManager().persist(utenteStrutturaFunzionale);
                 DettaglioContatto idDettaglioContatto = utenteStrutturaFunzionale.getIdDettaglioContatto();
                 if (idDettaglioContatto != null) {
@@ -275,6 +297,30 @@ public class Operations implements Serializable {
                 }
             }
 
+        }
+    }
+
+    private void ricalcolaGerarchiePerAziende(List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura, String codiceAzienda, RepositoryFactory repositoryFactory) {
+
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QAzienda qAzienda = QAzienda.azienda;
+        Azienda azienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
+        Set<Integer> idAziende = new HashSet<>();
+        idAziende.add(azienda.getId());
+
+        for (OperationUnificazioneStruttura operationUnificazioneStruttura : listOfOperationUnificazioneStruttura) {
+            List<UnificazioneDaGestire> unificazioniDaGestire = operationUnificazioneStruttura.getUnificazioniDaGestire();
+            for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
+                StrutturaUnificata unificazione = repositoryFactory.getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
+                idAziende.add(unificazione.getIdStrutturaSorgente().getIdAzienda().getId());
+                idAziende.add(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId());
+            }
+        }
+        for (Integer idAzienda : idAziende) {
+            String sistemaGerarchieEntitaStrutture = """
+                                  select baborg.sistema_gerarchia_entita_strutture(array[]::integer[], (select id from baborg.strutture where attiva = true and id_struttura_padre is NULL AND NOT ufficio AND id_azienda = :id_azienda))
+                                  """.replaceAll(":id_azienda", idAzienda.toString());
+            repositoryFactory.getEntityManager().createNativeQuery(sistemaGerarchieEntitaStrutture).getSingleResult();
         }
     }
 

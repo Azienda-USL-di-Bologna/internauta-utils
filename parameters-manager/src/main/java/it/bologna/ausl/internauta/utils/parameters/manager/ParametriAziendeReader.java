@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.parameters.manager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.BooleanTemplate;
 import com.querydsl.core.types.dsl.Expressions;
@@ -16,6 +13,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Classe che contiene tutti i metodi per leggere i parametri_aziende.
@@ -60,7 +60,8 @@ public class ParametriAziendeReader {
         maxSchedePerFiltriEdiEfiWithAutoMode,
         notificaGestioneMassivaArchiviPerUtentiCoinvolti,
         alwaysReplaceHostWithCurrentHost,
-        dimensioniMassimeAllegatoSenzaBabelshare
+        dimensioniMassimeAllegatoSenzaBabelshare,
+        onlyoffice
     }
 
     @Autowired
@@ -204,7 +205,7 @@ public class ParametriAziendeReader {
     public <T extends Object> T getValue(ParametroAziende parametroAziende, Class<T> valueType) {
         try {
             return objectMapper.readValue(parametroAziende.getValore(), valueType);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return null;
         }
     }
@@ -220,7 +221,7 @@ public class ParametriAziendeReader {
     public <T extends Object> T getValue(ParametroAziende parametroAziende, TypeReference<T> typeReference) {
         try {
             return objectMapper.readValue(parametroAziende.getValore(), typeReference);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return null;
         }
     }

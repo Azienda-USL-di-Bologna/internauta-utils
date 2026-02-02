@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import static it.bologna.ausl.internauta.utils.ribaltone.RibaltoneManagerUtils.unisciListeUnichePerCodiceFiscaleIdCasella;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
@@ -36,7 +34,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltoneutils.RibaltoneDaLanciare;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +43,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -71,17 +70,28 @@ public class RibaltoneTotaleManager {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JsonProcessingException {
-        RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
+    public void ribaltaWithOutUserReport(String codiceAzienda, ConfigRibaltoneView configRibaltoneView) throws RibaltoneHttpException, JacksonException {
+        Operations buildedOperations = null;
+        String errorDescription = null;
+        try {
+            RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), (String) configRibaltoneView.getFonteSelezionata());
 //        SpecificData specificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), SpecificData.class);
-        DatiDaImportare validateSourceData = RibaltoneManagerUtils.getSourceDataAndValidateAndTransfer(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
-        OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
-        Operations buildedOperations = operationsManager.buildOperations();
-        operationsManager.isQuantitaDatiOk();
-        buildedOperations.execute(repositoryFactory, codiceAzienda);
-        RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
-        fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare());
+            DatiDaImportare validateSourceData = RibaltoneManagerUtils.getSourceDataAndValidateAndTransfer(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
+            OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
+            buildedOperations = operationsManager.buildOperations();
+            operationsManager.isQuantitaDatiOk();
+            buildedOperations.execute(repositoryFactory, codiceAzienda);
+            RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
+            fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
+
+        } catch (JacksonException | RibaltoneHttpException ex) {
+            errorDescription = ex.getMessage();
+            throw new RibaltoneHttpException(ex);
+        } finally {
+            //usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, configRibaltoneView.getIdPersoneDaNotificare(), configRibaltoneView.getMailDaNotificare(), errorDescription);
+
+        }
+
     }
 
     public Operations ribaltaWithUserReportAndCacheOperation(
@@ -120,18 +130,27 @@ public class RibaltoneTotaleManager {
         });
     }
 
-    public void ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration, Utente utenteLanciatore) throws RibaltoneHttpException, ClassNotFoundException, JsonProcessingException {
+    public void ribaltaFromCachedOperation(String codiceAzienda, String idConfiguration, Utente utenteLanciatore, List<String> mails) throws RibaltoneHttpException, ClassNotFoundException, JacksonException {
+        String descrizioneErrore = null;
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idConfiguration);
         RibaltoneCache ribaltoneCache = RibaltoneManagerUtils.getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildedOperations = operationsCacheManager.restore();
-        buildedOperations.execute(repositoryFactory, codiceAzienda);
-        RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
-        fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-        //configRibaltoneView.getIdPersoneDaNotificare();
-        //usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, Arrays.asList(utenteLanciatore.getIdPersona().getId()));
-        //return buildOperations;
+        if (buildedOperations != null) {
+            buildedOperations.execute(repositoryFactory, codiceAzienda);
+            try {
+                RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
+                fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
+            } catch (Exception ex) {
+                descrizioneErrore = ex.getMessage();
+                throw new RibaltoneHttpException(descrizioneErrore, ex);
+            } finally {
+//                usersNotifiesManager.generaAndInviaNotifiche(buildedOperations, codiceAzienda, null, mails, descrizioneErrore);
+            }
 
+        }
+
+        //return buildOperations;
     }
 
     public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {

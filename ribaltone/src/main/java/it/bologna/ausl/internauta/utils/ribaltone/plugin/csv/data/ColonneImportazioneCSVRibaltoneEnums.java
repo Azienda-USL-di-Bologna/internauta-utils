@@ -10,10 +10,10 @@ import java.util.List;
 public class ColonneImportazioneCSVRibaltoneEnums {
 
     public static enum ColonneAppartenente implements ColonneImportazioneCSVRibaltone {
-        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola", "codice_matricola")),
-        nome(Arrays.asList("nome")),
-        cognome(Arrays.asList("cognome")),
         codiceEnte(Arrays.asList("codiceEnte", "codice_ente")),
+        codiceMatricola(Arrays.asList("codiceMatricola", "codice matricola", "codice_matricola")),
+        cognome(Arrays.asList("cognome")),
+        nome(Arrays.asList("nome")),
         codiceFiscale(Arrays.asList("codiceFiscale", "codice fiscale", "codice_fiscale")),
         idCasella(Arrays.asList("idCasella", "id casella", "id_casella")),
         tipoAppartenenza(Arrays.asList("tipoAppartenenza", "tipo appartenenza", "tipo_appartenenza", "TIPO_APPARTENENZA")),
@@ -21,6 +21,8 @@ public class ColonneImportazioneCSVRibaltoneEnums {
         responsabile(Arrays.asList("responsabile")),
         datain(Arrays.asList("dataIn", "data attivazione", "data inizio")),
         datafi(Arrays.asList("dataFi", "data cessazione", "data fine")),
+        dataAssunzione(Arrays.asList("data assunzione", "data_assunzione", "dataassunzione")),
+        dataDimissione(Arrays.asList("data dimissione", "data_dimissione", "dataDimissione")),
         errori(Arrays.asList("errori"));
 
         private final List<String> valuesList;

@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import it.bologna.ausl.internauta.utils.firma.data.exceptions.SignParamsException;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.EndSign;
 import it.bologna.ausl.internauta.utils.firma.data.jnj.SignParamsComponent.SignDocument;
@@ -121,15 +121,15 @@ public class SignParams implements Serializable {
         return res;
     }
     
-    public static SignParams parse(String str) throws JsonProcessingException {
+    public static SignParams parse(String str) throws JacksonException {
         return SignParamsComponent.getObjectMapper().readValue(str, SignParams.class);
     }
     
-    public String toJsonString() throws JsonProcessingException {
+    public String toJsonString() throws JacksonException {
         return SignParamsComponent.getObjectMapper().writeValueAsString(this);
     }
     
-    public byte[] toJsonByte() throws JsonProcessingException {
+    public byte[] toJsonByte() throws JacksonException {
         return SignParamsComponent.getObjectMapper().writeValueAsBytes(this);
     }
 }

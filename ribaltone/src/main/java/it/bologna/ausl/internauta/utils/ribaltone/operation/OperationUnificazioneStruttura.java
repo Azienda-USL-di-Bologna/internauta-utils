@@ -3,6 +3,8 @@ package it.bologna.ausl.internauta.utils.ribaltone.operation;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
+import it.bologna.ausl.blackbox.utils.BlackBoxConstants;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CAMBIO_PADRE;
@@ -30,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -41,6 +45,8 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
     private List<UnificazioneDaGestire> unificazioniDaGestire;
     private Map<String, List<Struttura>> mappStrutturePerGestioneContatti = new HashMap();
     private OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica;
+
+    private static final Logger log = LoggerFactory.getLogger(OperationAppartenente.class);
 
     public OperationUnificazioneStruttura(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, StrutturaUnificata.TipoUnificazione tipoUnificazione, List<UnificazioneDaGestire> unificazioniDaGestire, Map<String, String> descrizioniAggiuntive, OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica) {
         super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
@@ -146,8 +152,19 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             .from(qStruttura)
                             .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
                                 .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaChiusa.getIdCasella()))
+                                .and(qStruttura.attiva)
                             ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
                         OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
+                        //todo da chiudere i permessi sulla struttura
+                        try {
+                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+                            //todo chiudere i permessi veicolati
+                            repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaUnificataBaborgDaChiudere, "ribaltone");
+                        } catch (BlackBoxPermissionException ex) {
+                            log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
+                        }
                         List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
                         if (struttureList == null) {
                             struttureList = new ArrayList<>();
@@ -223,6 +240,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
                             if (strutturaUnificataBaborgDaChiudere != null) {
                                 Struttura strutturaReplicaChiusa = OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
+                                //todo chiudere i permessi struttura e veicolati
                                 List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
                                 if (struttureList == null) {
                                     struttureList = new ArrayList<>();
@@ -317,6 +335,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
                             cloneStrutturaForUnificazione.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
                             cloneStrutturaForUnificazione.setIdStrutturaReplicata(idStrutturaReplicata);
+
                             StoricoRelazione storicoRelazione = new StoricoRelazione();
                             storicoRelazione.setAttivaDal(ZonedDateTime.now());
                             storicoRelazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
@@ -346,7 +365,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     }
 
                 } else if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
-                    //non devo fare nulla se non aggiornare la l'unificazione
+                    //non devo fare nulla se non aggiornare la l'unificazione ma ci pensa lo sposta strutture della struttura rinominata
                 }
 
             }

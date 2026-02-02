@@ -1,11 +1,11 @@
 package it.bologna.ausl.internauta.utils.ribaltone.pluginutils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareTrasformazione;
 import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *

@@ -1,15 +1,23 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CHIUSURA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import static it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils.getUtenteDiIdAzienda;
+import static it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsUtils.getUtenteStrutturaAttivo;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
+import it.bologna.ausl.model.entities.baborg.QUtente;
+import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
@@ -20,6 +28,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,11 +119,46 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                     } else {
                         strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
                     }
+                    log.info("inserisco utenteunificato " + entitaDaInserire.getCodiceFiscale() + " alla struttura con id " + strutturaDoveInserire.getId());
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
-//                    if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
-//                    } else if (pair.getLeft().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
-//
-//                    }
+                    UtenteStruttura utenteStrutturaInserito;
+                    if (utenteStrutturaDaInserireList.isEmpty()) {
+                        Persona persona = OperationsUtils.getPersona(jPAQueryFactory, entitaDaInserire);
+                        Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaDoveInserire.getIdAzienda().getId(), persona);
+                        utenteStrutturaInserito = OperationsUtils.getUtenteStrutturaAttivo(jPAQueryFactory, strutturaDoveInserire, utente);
+                    } else {
+
+                        utenteStrutturaInserito = utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1);
+                    }
+
+                    if (entitaDaInserire.getResponsabile()) {
+                        Struttura strutturaPartenza;
+                        if (strutturaUnificataReload.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
+                            strutturaPartenza = jPAQueryFactory
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(
+                                    qStruttura.attiva
+                                        .and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()))
+                                        .and(qStruttura.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
+                                ).fetchOne();
+                        } else {
+                            strutturaPartenza = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaSorgente() : strutturaUnificataReload.getIdStrutturaDestinazione();
+                        }
+                        try {
+                            List<Utente> utenti = utenteStrutturaInserito.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(strutturaPartenza.getIdAzienda().getId())).toList();
+                            if (utenti != null && !utenti.isEmpty()) {
+                                repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                    utenti.get(0),
+                                    strutturaPartenza,
+                                    utenteStrutturaInserito.getIdUtente(),
+                                    strutturaDoveInserire
+                                );
+                            }
+                        } catch (BlackBoxPermissionException ex) {
+                            throw new RibaltoneHttpException("errore nel mettere i permessi a utente con cf " + entitaDaInserire.getCodiceFiscale(), ex);
+                        }
+                    }
                 }
             }
             case CHIUSURA -> {
@@ -135,6 +179,7 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 
                     }
                     if (strutturaDiUtenteDaRimuovere != null) {
+                        log.info("rimuovo utente unificato " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
                         OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
                     }
                 }
@@ -147,15 +192,50 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                 // è il caso di utente che diventa o non è più responsabile,
                 // quindi verificare i permessi di flusso
                 for (StrutturaUnificata sU : strutturaUnificataList) {
-                    StrutturaUnificata strutturaUnificata = getEntityManager().find(StrutturaUnificata.class, sU.getId());
-                    getEntityManager().refresh(strutturaUnificata);
-                    Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificata.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificata.getIdStrutturaDestinazione() : strutturaUnificata.getIdStrutturaSorgente();
-                    Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
-                            .and(qStruttura.attiva)
-                            .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
-                    ).orderBy(qStruttura.id.desc()).fetchOne();
-                    OperationsUtils.editUtenteStruttura(strutturaDaModificare, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
+                    StrutturaUnificata strutturaUnificataReloaded = getEntityManager().find(StrutturaUnificata.class, sU.getId());
+                    getEntityManager().refresh(strutturaUnificataReloaded);
+                    Struttura strutturaSorgente;
+                    Struttura strutturaDestinazione;
+                    if (strutturaUnificataReloaded.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
+                        strutturaSorgente = strutturaUnificataReloaded.getIdStrutturaSorgente();
+                        strutturaDestinazione = strutturaUnificataReloaded.getIdStrutturaDestinazione();
+                    } else {
+                        strutturaSorgente = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+                            qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
+                                .and(qStruttura.attiva)
+                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaSorgente().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                        strutturaDestinazione = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+                            qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
+                                .and(qStruttura.attiva)
+                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                    }
+//                    Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificataReloaded.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificataReloaded.getIdStrutturaDestinazione() : strutturaUnificataReloaded.getIdStrutturaSorgente();
+//                    Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
+//                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
+//                            .and(qStruttura.attiva)
+//                            .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
+//                    ).orderBy(qStruttura.id.desc()).fetchOne();
+                    log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaDestinazione.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
+                    OperationsUtils.storicizzaUtenteStruttura(strutturaDestinazione, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
+                    QPersona qPersona = QPersona.persona;
+                    Persona persona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
+                    if (persona != null) {
+                        try {
+                            Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSorgente.getIdAzienda().getId(), persona);
+                            if (utente != null) {
+                                repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                    utente,
+                                    strutturaSorgente,
+                                    utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdUtente(),
+                                    utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdStruttura()
+                                );
+                            }
+                        } catch (BlackBoxPermissionException ex) {
+                            throw new RibaltoneHttpException("errore nel mettere i permessi a utente con cf " + entitaDaModificare.getCodiceFiscale(), ex);
+                        }
+                    }
                 }
             }
             default ->

@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiDaImportare;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
@@ -26,14 +25,10 @@ import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiTrasformazione;
-import it.bologna.ausl.model.entities.ribaltonedati.QDatiDaImportareStruttura;
-import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
 import jakarta.persistence.EntityManager;
-import java.sql.ResultSet;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,8 +40,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
 
 /**
  *
@@ -117,7 +112,7 @@ public class OperationsManager {
      * i report per l'utente o si puo proseguire col ribaltone
      * @throws com.fasterxml.jackson.core.JsonProcessingException
      */
-    public Operations buildOperations() throws RibaltoneHttpException, JsonProcessingException {
+    public Operations buildOperations() throws RibaltoneHttpException, JacksonException {
         EntityManager entityManager = repositoryFactory.getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         this.popolaMappeUnificazioni(queryFactory, idAzienda.getId());
@@ -156,11 +151,11 @@ public class OperationsManager {
         // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
 //        this.mappaReplichePerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA))
 //            .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
-        this.mappaFusioniPerIdCasellaSorgente = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+        this.mappaFusioniPerIdCasellaSorgente = listaUnificazioni.stream().filter(u -> (u.getIdStrutturaSorgente().getIdAzienda().getId().equals(idAzienda) || u.getIdStrutturaDestinazione().getIdAzienda().getId().equals(idAzienda)) && u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
             .collect(Collectors.groupingBy(su -> su.getIdStrutturaSorgente().getIdCasella()));
 
         // Mappa: idStrutturaDestinazione -> lista di StrutturaUnificata
-        this.mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
+        this.mappaFusioniPerIdCasellaDestinazione = listaUnificazioni.stream().filter(u -> (u.getIdStrutturaSorgente().getIdAzienda().getId().equals(idAzienda) || u.getIdStrutturaDestinazione().getIdAzienda().getId().equals(idAzienda)) && u.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE))
             .collect(Collectors.groupingBy(su -> su.getIdStrutturaDestinazione().getIdCasella()));
     }
 
@@ -359,7 +354,7 @@ public class OperationsManager {
                         if (coinvoltoInReplicaFutura != null || coinvoltoInReplicapassata != null) {
                             operationsUnificazioneAppartenente.add(new OperationUnificazioneAppartenente(azione, datiDaImportareAppartenente, repositoryFactory.getEntityManager(), idCaselleReplicateMap.get(datiDaImportareAppartenente.getIdCasella()), null));
                         } else {
-                            log.info("marchio la casella con id " + struttura.getIdCasella() + " come NON coinvolta in replica");
+                            log.info("marchio la casella con id_casella " + struttura.getIdCasella() + " come NON coinvolta in replica");
                             idCaselleNonReplicateSet.add(struttura.getIdCasella());
                         }
                     } else {
@@ -443,7 +438,7 @@ public class OperationsManager {
         return operationAppartenentiList;
     }
 
-    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) throws JsonProcessingException {
+    private List<OperationAnagrafica> buildedOperationsAnagrafiche(List<DatiDaImportareAnagrafica> anagraficheDaImportare, List<DatiImportatiAnagrafica> anagraficheImportate, Map<String, Integer> indexAnagraficheImportate) throws JacksonException {
         List<OperationAnagrafica> operationAnagraficheList = new ArrayList<>();
         log.info("Faccio il build delle operations anagrafiche");
         for (DatiDaImportareAnagrafica datiDaImportareAnagrafica : anagraficheDaImportare) {
@@ -661,7 +656,9 @@ public class OperationsManager {
 
             for (StrutturaUnificata strutturaUnificata : coinvoltoInReplicheFuture) {
                 if (!idUnificazioni.contains(strutturaUnificata.getId())) {
-                    unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificata));
+                    StrutturaUnificata strutturaUnificataReload = repositoryFactory.getEntityManager().find(StrutturaUnificata.class, strutturaUnificata.getId());
+                    //repositoryFactory.getEntityManager().refresh(strutturaUnificataReload);
+                    unificazioniEseguite.add(UnificazioneDaGestire.buildUnificazioneEseguita(strutturaUnificataReload));
                     idUnificazioni.add(strutturaUnificata.getId());
                 }
             }
