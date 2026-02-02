@@ -34,18 +34,20 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public abstract class FirmaRemota {
     private static final Logger logger = LoggerFactory.getLogger(FirmaRemota.class);
-    
+
     protected final ConfigParams configParams;
     protected final FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils;
     protected final Configuration configuration;
     protected final InternalCredentialManager internalCredentialManager;
+    protected final FirmeDelegaManager firmeDelegaManager;
     protected final FirmaHttpClientConfiguration firmaHttpClientConfiguration;
     
-    protected FirmaRemota(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) {
+    protected FirmaRemota(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmeDelegaManager firmeDelegaManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) {
         this.configParams = configParams;
         this.firmaRemotaDownloaderUtils = firmaRemotaDownloaderUtils;
         this.configuration = configuration;
         this.internalCredentialManager = internalCredentialManager;
+        this.firmeDelegaManager = firmeDelegaManager;
         this.firmaHttpClientConfiguration = firmaHttpClientConfiguration;
     }
     
@@ -256,4 +258,5 @@ public abstract class FirmaRemota {
     protected abstract boolean externalRemoveCredential(UserInformation userInformation, String hostId) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException;
 
     public abstract List<FirmaRemotaUserSign> getUserSigns(UserInformation userInformation) throws FirmaHttpException, InvalidCredentialException, RemoteServiceException;
+    
 }
