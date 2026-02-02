@@ -384,12 +384,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
             // Aggiorna lo stato finale
             setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, esito ? "OK" : "ERRORE");
-
+            CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
             return ResponseEntity.status(esito ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(esito ? "OK" : "ERRORE");
 
         } catch (Exception ex) {
             LOGGER.error("Errore durante l'importazione CSV", ex);
+            CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
             if (idImportazioneOrganigramma != null) {
                 setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
             }
