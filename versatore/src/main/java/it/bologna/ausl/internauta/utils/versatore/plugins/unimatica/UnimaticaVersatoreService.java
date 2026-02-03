@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
@@ -331,7 +331,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
 
-                        } catch (JsonProcessingException ex) {
+                        } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
                         }
                     } else {
@@ -342,7 +342,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
 
-                        } catch (JsonProcessingException ex) {
+                        } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
                         }
                         /*response.setErrorMessage(resp.toString());
