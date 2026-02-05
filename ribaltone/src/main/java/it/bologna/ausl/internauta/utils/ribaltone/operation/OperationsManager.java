@@ -341,7 +341,7 @@ public class OperationsManager {
 //                    editString.add("dataDimissione");
 //                    azione = Operation.Azione.EDIT;
 //                }
-                if (appartenentiImportati.get(posizione).getUsername() != null && !appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
+                if (appartenentiImportati.get(posizione).getUsername() != null && datiDaImportareAppartenente.getUsername() != null && !appartenentiImportati.get(posizione).getUsername().equals(datiDaImportareAppartenente.getUsername())) {
                     editString.add("username");
                     azione = Operation.Azione.EDIT;
                 }
