@@ -394,7 +394,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 identity.setDelegatedDomain(userInformation.getDominioFirma());
             }
         } else {
-            identity.setTypeOtpAuth(dominioFirmaDefault);
+            
             if (userInformation.getFirmaDelegata()) {
                 Map<String, Object> addtionalData = firmaDelega.getAddtionalData();
                 if (addtionalData == null || !addtionalData.containsKey(ADDITIONAL_DATA_DELEGA_DOMAIN_KEY)) {
@@ -404,6 +404,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 }
                 String delegatedDomain = (String) addtionalData.get(ADDITIONAL_DATA_DELEGA_DOMAIN_KEY);
                 identity.setDelegatedDomain(delegatedDomain);
+                identity.setTypeOtpAuth(delegatedDomain);
+            } else {
+                identity.setTypeOtpAuth(dominioFirmaDefault);
             }
         }
         if (userInformation.getFirmaDelegata()) {
@@ -446,7 +449,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 logger.error(error);
                 throw new FirmaRemotaConfigurationException(error);
             }
-            identity.setOtpPwd(ADDITIONAL_DATA_DELEGA_OTP_KEY);
+            identity.setOtpPwd((String) addtionalData.get(ADDITIONAL_DATA_DELEGA_OTP_KEY));
         } else {
             identity.setOtpPwd(userInformation.getToken());
         }
