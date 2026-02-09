@@ -183,12 +183,13 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     try {
                         CacheUtils.setRibaltoneCacheInCorso(configRibaltoneView.getFonteSelezionata(), realUser, repositoryFactory, objectMapper, transactionTemplate);
                         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
-                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta");
+                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta", false);
                     } catch (RibaltoneHttpException | JacksonException ex) {
-                        if (ex instanceof RibaltoneHttpException ribaltoneHttpException)
+                        if (ex instanceof RibaltoneHttpException ribaltoneHttpException) {
                             throw ribaltoneHttpException;
-                        else
+                        } else {
                             throw new RibaltoneHttpException(ex);
+                        }
                     }
                 });
             } catch (RibaltoneHttpException ex) {
@@ -442,7 +443,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         } else {
                             infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
                         }
-                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport");
+                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport", false);
                         infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
                         return new ResponseEntity(infoRibaltone, HttpStatus.OK);
                     } catch (RibaltoneHttpException | ClassNotFoundException | JacksonException | StaleObjectStateException ex) {
@@ -505,7 +506,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         }
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
                         ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, mailDaNotificareList);
-                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport");
+                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport", false);
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
                         ribaltoneCache.cleanDataCache();
@@ -540,7 +541,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
         realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
         CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache");
+        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache", false);
     }
 
     @Transactional(rollbackOn = Throwable.class)
