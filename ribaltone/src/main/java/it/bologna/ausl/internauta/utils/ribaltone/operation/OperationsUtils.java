@@ -1308,7 +1308,12 @@ public class OperationsUtils {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
                     }
+                } else {
+                    insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
                 }
+
+            } else {
+                insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
             }
 
         }
