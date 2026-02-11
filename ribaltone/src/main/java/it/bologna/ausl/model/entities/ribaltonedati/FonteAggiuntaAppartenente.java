@@ -309,4 +309,26 @@ public class FonteAggiuntaAppartenente implements Serializable {
         datiDaImportareAppartenente.setUsername(username);
         return datiDaImportareAppartenente;
     }
+
+    public DatiImportatiAppartenente buildDatoImportatoAppartenente() {
+        DatiImportatiAppartenente datiImportatiAppartenente = new DatiImportatiAppartenente();
+
+        datiImportatiAppartenente.setCodiceAzienda(codiceAzienda);
+        datiImportatiAppartenente.setCodiceEnte(codiceEnte);
+        datiImportatiAppartenente.setCodiceFiscale(codiceFiscale);
+        datiImportatiAppartenente.setCodiceMatricola(codiceMatricola);
+        datiImportatiAppartenente.setCognome(WordUtils.capitalizeFully(cognome));
+        datiImportatiAppartenente.setNome(WordUtils.capitalizeFully(nome));
+        datiImportatiAppartenente.setIdCasella(idCasella);
+        datiImportatiAppartenente.setIdAzienda(idAzienda);
+        datiImportatiAppartenente.setDatain(datain);
+        datiImportatiAppartenente.setDatafi(datafi);
+        datiImportatiAppartenente.setDataAssunzione(dataAssunzione);
+        datiImportatiAppartenente.setDataDimissione(dataDimissione);
+        datiImportatiAppartenente.setTipoAppartenenza(tipoAppartenenza);
+        datiImportatiAppartenente.setUsername(username);
+        datiImportatiAppartenente.setResponsabile(responsabile);
+
+        return datiImportatiAppartenente;
+    }
 }

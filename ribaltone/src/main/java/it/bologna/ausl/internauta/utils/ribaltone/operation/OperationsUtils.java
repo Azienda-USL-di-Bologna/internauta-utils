@@ -1254,7 +1254,7 @@ public class OperationsUtils {
                 if (utenteStruttura != null) {
                     utenteStruttura.setResponsabile(entitaDaModificare.getResponsabile());
                     utenteStruttura.setIdUtente(utente);
-                    utenteStruttura.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
+                    utenteStruttura.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaModificare.getIdAzienda().equals(strutturaSuCuiModificare.getIdAzienda().getId()) ? entitaDaModificare.getTipoAppartenenza() : "U", utente));
                     entityManager.persist(utenteStruttura);
                     if (utenteStrutturaDaInserireList != null) {
                         utenteStrutturaDaInserireList.add(utenteStruttura);
