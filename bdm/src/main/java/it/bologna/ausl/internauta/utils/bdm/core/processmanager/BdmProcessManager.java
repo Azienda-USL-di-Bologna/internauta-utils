@@ -30,10 +30,12 @@ public class BdmProcessManager {
     public static final String ADDING_PROCESS_PARAMS = "process_params";
     private final ProcessStorageManager psm;
     private final EntityManager entityManager;
+    private Map<String, Object> processBag;
 
-    public BdmProcessManager(ProcessStorageManager psm, EntityManager entityManager) {
+    public BdmProcessManager(ProcessStorageManager psm, EntityManager entityManager, Map<String, Object> processBag) {
         this.psm = psm;
         this.entityManager = entityManager;
+        this.processBag = processBag;
     }
 
     public String addProcess(BdmProcess p) {
@@ -67,6 +69,7 @@ public class BdmProcessManager {
         try {
             BdmProcess p = psm.loadProcess(id);
             p.setEntityManager(entityManager);
+            p.setProcessBag(processBag);
             return p;
         } catch (StorageException ex) {
             String error = String.format("unable to get process %s", id);
@@ -86,6 +89,7 @@ public class BdmProcessManager {
             return false;
         }
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         p.setStatus(BdmStatus.ABORTED);
         try {
             psm.saveProcess(p);
@@ -131,6 +135,7 @@ public class BdmProcessManager {
             return null;
         }
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         BdmStatus status = p.stepOn(parameters);
         psm.saveProcess(p);
         return status;
@@ -146,6 +151,7 @@ public class BdmProcessManager {
             return null;
         }
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         BdmStatus status = p.stepTo(stepId, parameters);
         psm.saveProcess(p);
         return status.toString();
@@ -159,6 +165,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         Step s = p.getStep(stepId);
         try {
             Task t = (Task) Class.forName("it.bologna.ausl.internauta.utils.bdm.workflows.tasks." + taskType).newInstance();
@@ -178,6 +185,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         p.setContext(context);
         psm.saveProcess(p);
     }
@@ -188,6 +196,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         Bag currentContext = p.getContext();
         
         Map<String, Object> parameters = values.getParameters();
@@ -206,6 +215,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         Step step = p.getStep(stepId);
         step.setStepLogic(stepLogic);
         psm.saveProcess(p);
@@ -218,6 +228,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         Step s = null;
         if (stepId != null) {
             s = p.getStep(stepId);
@@ -254,6 +265,7 @@ public class BdmProcessManager {
         Objects.nonNull(stepDescription);
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         Step s = new Step(stepType, stepDescription, stepLogic, allowedStepLogic);
         p.getStepList().add(s);
         psm.saveProcess(p);
@@ -266,6 +278,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setProcessBag(processBag);
         p.getStepList().remove(p.getStep(stepId));
         psm.saveProcess(p);
     }
