@@ -20,6 +20,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenE
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
 import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmeDelegaManager;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
 import java.io.IOException;
@@ -57,8 +58,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private final String signServiceEndPointUri;
     private final OkHttpClient okHttpClient;
 
-    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, 
+            InternalCredentialManager internalCredentialManager, FirmeDelegaManager firmeDelegaManager, 
+            FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
