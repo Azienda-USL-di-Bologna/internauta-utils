@@ -4,13 +4,13 @@ package it.bologna.ausl.internauta.utils.versatore.exceptions;
  *
  * @author gdm
  */
-public class VersatoreSdicoException extends Exception {
+public class VersatorePluginException extends Exception {
 
-    public VersatoreSdicoException(String message) {
+    public VersatorePluginException(String message) {
         super(message);
     }
     
-    public VersatoreSdicoException(Throwable cause) {
+    public VersatorePluginException(Throwable cause) {
         super(cause);
     }
     

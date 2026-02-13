@@ -16,9 +16,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.TransactionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -43,7 +47,16 @@ public class FirmaRemotaFactory {
     private InternalCredentialManager internalCredentialManager;
     
     @Autowired
+    private FirmeDelegaManager firmeDelegaManager;
+    
+    @Autowired
     private FirmaHttpClientConfiguration firmaHttpClientConfiguration;
+    
+//    @Autowired
+//    private TransactionTemplate transactionTemplate;
+//    
+//    @PersistenceContext
+//    private EntityManager entityManager;
 
     List<it.bologna.ausl.model.entities.firma.Configuration> configurations;
 
@@ -58,16 +71,16 @@ public class FirmaRemotaFactory {
             FirmaRemota firmaRemotaInstance;
             switch (provider) {
                 case ARUBA:
-                    firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration, dominioFirmaDefault);
+                    firmaRemotaInstance = new FirmaRemotaAruba(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration, dominioFirmaDefault);
                     break;
                 case INFOCERT:
-                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+                    firmaRemotaInstance = new FirmaRemotaInfocert(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
                     break;
                 case NAMIRIAL:
-                    firmaRemotaInstance = new FirmaRemotaNamirial(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+                    firmaRemotaInstance = new FirmaRemotaNamirial(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
                     break;
                 case MEDAS:
-                    firmaRemotaInstance = new FirmaRemotaMedas(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+                    firmaRemotaInstance = new FirmaRemotaMedas(configParams, firmaRemotaUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
                     break;
                 default:
                     throw new FirmaRemotaConfigurationException("Provider: " + provider + " not found");

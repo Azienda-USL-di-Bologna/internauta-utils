@@ -36,7 +36,9 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloader
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescriptor;
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmeDelegaManager;
 import it.bologna.ausl.model.entities.firma.Configuration;
+import it.bologna.ausl.model.entities.firma.FirmaDelega;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,10 +53,12 @@ import java.util.Map;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.xml.ws.BindingProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -71,7 +75,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private static final String P7M_CONTENT_TYPE = "application/pkcs7-mime";
 
     private static final String CREDENTIAL_PROXY_PASS = "$credential_proxy";
-    private static final String DELEGATE_FIXED_OTP = "dsign";
+    
+    private static final String ADDITIONAL_DATA_DELEGA_OTP_KEY = "otp";
+    private static final String ADDITIONAL_DATA_DELEGA_DOMAIN_KEY = "delegated_domain";
     
     private Boolean credentialProxyActive = false;
     private final Map<String, Object> credentialProxyAdminInfo;
@@ -79,8 +85,15 @@ public class FirmaRemotaAruba extends FirmaRemota {
     private final CredentialProxyService credentialProxyService;
     private final String dominioFirmaDefault;
 
-    public FirmaRemotaAruba(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration, String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+    public FirmaRemotaAruba(
+            ConfigParams configParams, 
+            FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, 
+            Configuration configuration, 
+            InternalCredentialManager internalCredentialManager, 
+            FirmeDelegaManager firmeDelegaManager, 
+            FirmaHttpClientConfiguration firmaHttpClientConfiguration, 
+            String dominioFirmaDefault) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
 //        Map<String, Map<String, Object>> firmaRemotaConfiguration = configParams.getFirmaRemotaConfiguration(codiceAzienda);
@@ -135,6 +148,8 @@ public class FirmaRemotaAruba extends FirmaRemota {
             identity = getIdentity(arubaUserInformation);
         } catch (EncryptionException ex) {
             throw new FirmaHttpException("errore nel reperire le credenziali", ex);
+        } catch (FirmaRemotaConfigurationException ex) {
+           throw new FirmaHttpException("errore nella configurazione delle firme delega", ex);
         }
 
         String sessionId = null;
@@ -142,7 +157,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
         nel caso di firma delegata automatica, non devo aprire la sessione,
         non serve perché l'otp non si deve inserire e quindi non è nesessario usare una sessione per doverlo inserire solo una volta
         */
-        if (arubaUserInformation.getFirmaDelegata() == null || !arubaUserInformation.getFirmaDelegata()) {
+        if (!arubaUserInformation.getFirmaDelegata()) {
             try {
                 // apertura sessione
                 logger.info("opening session...");
@@ -203,10 +218,16 @@ public class FirmaRemotaAruba extends FirmaRemota {
     @Override
     public void preAuthentication(UserInformation userInformation) throws FirmaHttpException {
         Auth identity;
+        ArubaUserInformation arubaUserInformation = (ArubaUserInformation) userInformation;
+        if (arubaUserInformation.getFirmaDelegata()) {
+            throw new FirmaHttpException("firma delegata non ammessa con il meccanismo di preautenticazione");
+        }
         try {
-            identity = getIdentity((ArubaUserInformation) userInformation);
+            identity = getIdentity(arubaUserInformation);
         } catch (EncryptionException ex) {
             throw new FirmaHttpException("errore nel reperire le credenziali", ex);
+        } catch (FirmaRemotaConfigurationException ex) {
+           throw new FirmaHttpException("errore nella configurazione delle firme delega", ex);
         }
         it.bologna.ausl.internauta.utils.firma.remota.data.arubasignservice.wsclient.ArssReturn credential = arubaSignService.sendCredential(identity, CredentialsType.ARUBACALL);
         //System.out.println(String.format("sendCredential %s %s %s", credential.getStatus(), credential.getDescription(), credential.getReturnCode()));
@@ -356,9 +377,14 @@ public class FirmaRemotaAruba extends FirmaRemota {
      * @param userInformation
      * @return 
      */
-    private Auth getIdentity(ArubaUserInformation userInformation) throws EncryptionException {
+    private Auth getIdentity(ArubaUserInformation userInformation) throws EncryptionException, FirmaRemotaConfigurationException {
         Auth identity = new Auth();
         identity.setTypeHSM("COSIGN");
+        
+        FirmaDelega firmaDelega = null;
+        if (userInformation.getFirmaDelegata()) {
+            firmaDelega = firmeDelegaManager.getFirmaDelega(userInformation.getIdFirmeDelega());
+        }
         
         // impostazione del dominio. Il dominio è un parametro di configurazione dell'utente ed è fornito da ARUBA in fase di attivazioen dell'utenza
         logger.info("dominio: " + userInformation.getDominioFirma());     
@@ -368,13 +394,23 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 identity.setDelegatedDomain(userInformation.getDominioFirma());
             }
         } else {
-            identity.setTypeOtpAuth(dominioFirmaDefault);
+            
             if (userInformation.getFirmaDelegata()) {
-                identity.setDelegatedDomain(dominioFirmaDefault);
+                Map<String, Object> addtionalData = firmaDelega.getAddtionalData();
+                if (addtionalData == null || !addtionalData.containsKey(ADDITIONAL_DATA_DELEGA_DOMAIN_KEY)) {
+                    String error = String.format("errore nella lettura del campo %s%s", ADDITIONAL_DATA_DELEGA_DOMAIN_KEY, addtionalData == null? "additionalData è null": "");
+                    logger.error(error);
+                    throw new FirmaRemotaConfigurationException(error);
+                }
+                String delegatedDomain = (String) addtionalData.get(ADDITIONAL_DATA_DELEGA_DOMAIN_KEY);
+                identity.setDelegatedDomain(delegatedDomain);
+                identity.setTypeOtpAuth(delegatedDomain);
+            } else {
+                identity.setTypeOtpAuth(dominioFirmaDefault);
             }
         }
         if (userInformation.getFirmaDelegata()) {
-            identity.setDelegatedUser(userInformation.getUsernameDelegato());
+            identity.setDelegatedUser(firmaDelega.getUsername());
             identity.setUser(userInformation.getUsername());
         } else {
             identity.setUser(userInformation.getUsername());
@@ -383,7 +419,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
         if (userInformation.useSavedCredential()) {
             if (configuration.getInternalCredentialsManager()) {
                 if (userInformation.getFirmaDelegata()) {
-                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(userInformation.getUsernameDelegato(), configuration.getHostId()));
+                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(firmaDelega.getUsername(), configuration.getHostId()));
                 } else {
                     identity.setUserPWD(internalCredentialManager.getPlainPassword(userInformation.getUsername(), configuration.getHostId()));
                 }
@@ -396,7 +432,7 @@ public class FirmaRemotaAruba extends FirmaRemota {
             }
         } else {
             if (userInformation.getFirmaDelegata()) {
-                    identity.setDelegatedPassword(userInformation.getPasswordDelegato());
+                    identity.setDelegatedPassword(firmaDelega.getPassword());
             } else {
                 identity.setUserPWD(userInformation.getPassword());
             }
@@ -407,7 +443,13 @@ public class FirmaRemotaAruba extends FirmaRemota {
             identity.setExtAuthtype(CredentialsType.ARUBACALL);
         }
         if (userInformation.getFirmaDelegata()) {
-            identity.setOtpPwd(DELEGATE_FIXED_OTP);
+            Map<String, Object> addtionalData = firmaDelega.getAddtionalData();
+            if (addtionalData == null || !addtionalData.containsKey(ADDITIONAL_DATA_DELEGA_OTP_KEY)) {
+                String error = String.format("errore nella lettura del campo %s%s", ADDITIONAL_DATA_DELEGA_OTP_KEY, addtionalData == null? "additionalData è null": "");
+                logger.error(error);
+                throw new FirmaRemotaConfigurationException(error);
+            }
+            identity.setOtpPwd((String) addtionalData.get(ADDITIONAL_DATA_DELEGA_OTP_KEY));
         } else {
             identity.setOtpPwd(userInformation.getToken());
         }

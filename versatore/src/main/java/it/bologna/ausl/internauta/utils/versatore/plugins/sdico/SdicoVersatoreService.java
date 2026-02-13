@@ -7,7 +7,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.PicoBui
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DocumentoGEDIBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeteBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
-import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilder;
+import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.AllegatiBuilderSdico;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.VersatoreDocs;
@@ -40,8 +40,8 @@ import org.springframework.stereotype.Component;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoExceptionRitentabile;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QUtente;
@@ -196,7 +196,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                 Archivio archivio = new Archivio();
                 List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
                 if (listaArchivioDocs.isEmpty()) {
-                    throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
+                    throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                 }
                 Persona responsabileGestioneDocumentale = new Persona();
                 if (doc.getTipologia() != Doc.TipologiaDoc.RGPICO) {
@@ -223,7 +223,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                                 return risultatoEVersamentiAllegati;
                             }
                         } else {
-                            throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
+                            throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                         }
                     } else {
                         //se il documento è già stato versato per questo fascicolo radice non proseguo con il versamento
@@ -236,7 +236,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     if (listaArchivioDocs.get(0).getId() != null) {
                         archivio = listaArchivioDocs.get(0).getIdArchivio();
                     } else {
-                        throw new VersatoreSdicoException("Il documento non è collegato ad alcun fasciolo");
+                        throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
                     }
                     //prendo il responsabile della gestione documentale
                     String usernameResponsabileGestioneDocumentale = (String) parametriVersamento.get("usernameResponsabileGestioneDocumentale");
@@ -247,7 +247,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                         responsabileGestioneDocumentale = personaDaUsernameEAzienda(usernameResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
                         log.info("Il responsabile della gestione documentale è: " + responsabileGestioneDocumentale.getCognome() + " " + responsabileGestioneDocumentale.getNome());
                     } else {
-                        throw new VersatoreSdicoException("Non è stato indicato il Responsabile della Gestione Documentale");
+                        throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
                     }
                 }
                 List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
@@ -316,16 +316,16 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             break;
                         }
                         default:
-                            throw new VersatoreSdicoException("Tipologia documentale non presente");
+                            throw new VersatorePluginException("Tipologia documentale non presente");
                     }
                 } catch (NullPointerException e) {
                     log.error("Errore, Trovato un valore nullo nella costruzione dei metadati:", e);
-                    throw new VersatoreSdicoException("Trovato un valore nullo nella costruzione dei metadati");
+                    throw new VersatorePluginException("Trovato un valore nullo nella costruzione dei metadati");
                 }
 
                 log.info("accedo ai dati degli allegati e li inserisco nell'XML");
                 List<Allegato> allegati = doc.getAllegati();
-                AllegatiBuilder allegatiBuild = new AllegatiBuilder(versatoreRepositoryConfiguration);
+                AllegatiBuilderSdico allegatiBuild = new AllegatiBuilderSdico(versatoreRepositoryConfiguration);
                 Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, docDetail, allegati, versamentoBuilder);
                 List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
                 List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
@@ -342,10 +342,10 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     token = getJWT(username, password, sdicoLoginURI);
                 } catch (IOException e) {
                     log.error("Errore nell'effettuare il login per la ricezione del token:", e);
-                    throw new VersatoreSdicoExceptionRitentabile("Errore nell'effettuare il login per la ricezione del token");
+                    throw new VersatorePluginExceptionRitentabile("Errore nell'effettuare il login per la ricezione del token");
                 }
                 if (token.equals("") || token.isEmpty()) {
-                    throw new VersatoreSdicoExceptionRitentabile("Non è stato ottenuto il token necessario per l'autenticazione");
+                    throw new VersatorePluginExceptionRitentabile("Non è stato ottenuto il token necessario per l'autenticazione");
                 }
 
                 // inizializzazione http client
@@ -414,11 +414,11 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     response.setErrorMessage("Errore nella chiamata di riversamento");
                     response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                 }
-            } catch (VersatoreSdicoException e) {
+            } catch (VersatorePluginException e) {
                 log.error("Errore:", e);
                 response.setErrorMessage(e.getMessage());
                 response.setResponseCode(ERRORE_PLUG_IN);
-            } catch (VersatoreSdicoExceptionRitentabile e) {
+            } catch (VersatorePluginExceptionRitentabile e) {
                 log.error("Errore:", e);
                 response.setErrorMessage(e.getMessage());
                 response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
