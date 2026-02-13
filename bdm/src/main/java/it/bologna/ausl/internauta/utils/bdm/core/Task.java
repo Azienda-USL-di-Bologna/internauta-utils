@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
-import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
