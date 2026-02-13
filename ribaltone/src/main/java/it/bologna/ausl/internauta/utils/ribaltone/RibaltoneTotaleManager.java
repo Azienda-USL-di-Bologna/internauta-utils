@@ -153,7 +153,7 @@ public class RibaltoneTotaleManager {
         //return buildOperations;
     }
 
-    public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from) throws RibaltoneHttpException {
+    public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from, Boolean soloLocale) throws RibaltoneHttpException {
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QAzienda qAzienda = QAzienda.azienda;
         Azienda idAzienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
@@ -165,7 +165,7 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
                 ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
                 ribaltoneDaLanciare.setIdUtente(utente);
-                ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
+                ribaltoneDaLanciare.setRibaltaInternauta(!soloLocale);
                 ribaltoneDaLanciare.setNote(note);
                 ribaltoneDaLanciare.setIdAzienda(idAzienda);
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
@@ -183,7 +183,7 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
                 ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
                 ribaltoneDaLanciare.setIdUtente(utente);
-                ribaltoneDaLanciare.setRibaltaInternauta(Boolean.TRUE);
+                ribaltoneDaLanciare.setRibaltaInternauta(!soloLocale);
                 ribaltoneDaLanciare.setNote(note);
                 ribaltoneDaLanciare.setIdAzienda(idAzienda);
                 ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);

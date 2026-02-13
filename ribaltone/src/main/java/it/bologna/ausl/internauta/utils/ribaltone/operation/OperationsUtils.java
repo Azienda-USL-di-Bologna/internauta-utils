@@ -1260,7 +1260,7 @@ public class OperationsUtils {
                     utenteStruttura.setAttivo(false);
                     utenteStruttura.setIdDettaglioContatto(null);
 //                    utenteStruttura.setIdUtente(utente);
-                    utenteStrutturaNew.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
+                    utenteStrutturaNew.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaModificare.getIdAzienda().equals(strutturaSuCuiModificare.getIdAzienda().getId()) ? entitaDaModificare.getTipoAppartenenza() : "U", utente));
                     entityManager.persist(utenteStruttura);
                     entityManager.persist(utenteStrutturaNew);
                     if (utenteStrutturaDaInserireList != null) {
@@ -1315,7 +1315,12 @@ public class OperationsUtils {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
                     }
+                } else {
+                    insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
                 }
+            } else {
+                insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+
             }
 
         }
