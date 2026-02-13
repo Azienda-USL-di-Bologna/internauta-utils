@@ -112,9 +112,9 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                 //che cambia username
                 //modificare username su baborg.utenti
                 DatiDaImportareAppartenente entitaDaInserire = (DatiDaImportareAppartenente) getEntitaCoinvolta();
+                log.info("modifico utente " + entitaDaInserire.getCodiceFiscale() + " sulla struttura con id_casella " + entitaDaInserire.getIdCasella() + " responsabile " + entitaDaInserire.getResponsabile().toString());
+                strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
 
-                // è il caso di utente che diventa o non è più responsabile,
-                // quindi verificare i permessi di flusso
                 for (String edit : listOfEdit) {
                     switch (edit) {
                         case "cognome" -> {
@@ -123,11 +123,15 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
 
                         }
                         case "afferenza" -> {
+                            //è il caso di utente che cambia di afferenza funzionale -> diretta o viceversa
+                            OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+
                         }
                         case "responsabile" -> {
-                            log.info("modifico utente " + entitaDaInserire.getCodiceFiscale() + " sulla struttura con id_casella " + entitaDaInserire.getIdCasella() + " responsabile " + entitaDaInserire.getResponsabile().toString());
-                            strutturaAppartenteOriginale = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
-                            OperationsUtils.storicizzaUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+                            // è il caso di utente che diventa o non è più responsabile,
+                            // quindi verificare i permessi di flusso
+                            OperationsUtils.editUtenteStruttura(strutturaAppartenteOriginale, entitaDaInserire, queryFactory, getEntityManager(), permissionManager, null);
+
                         }
                         case "codice_matricola" -> {
                         }
