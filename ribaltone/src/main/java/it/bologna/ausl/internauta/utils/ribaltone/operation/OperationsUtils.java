@@ -1252,6 +1252,7 @@ public class OperationsUtils {
                 if (utenteStruttura != null) {
                     //creo il nuovo utente struttura
                     UtenteStruttura utenteStrutturaNew = UtenteStruttura.clone(utenteStruttura);
+                    utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
                     //posso spostare il dettaglio contatto tanto è lo stesso
                     utenteStrutturaNew.setIdDettaglioContatto(utenteStruttura.getIdDettaglioContatto());
                     utenteStrutturaNew.setResponsabile(entitaDaModificare.getResponsabile());
