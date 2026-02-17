@@ -276,7 +276,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 //creazione del multipart
                 //metadati e json
                 //TODO vedere come costruire il nome
-                String nomeFileMetadati = "idDoc" + doc.getId() + "_idArchivio" + archivio.getId() + "_" + documentoPrincipale.getNomeFile() + ".xml";
+                String nomeFileMetadati = doc.getId() + ".xml";
                 MultipartBody.Builder buildernew = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addPart(
