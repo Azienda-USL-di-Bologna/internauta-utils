@@ -1,30 +1,22 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.internauta.service.send_integration.api.FruitoreApi;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
-import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.lottosignerandregister.LottiSignerAndRegisterJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.lottosignerandregister.LottiSignerAndRegisterJobWorkerData;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend.RestCallToSendJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend.RestCallToSendJobWorkerData;
-import it.bologna.ausl.internauta.utils.send_integration.model.Documento;
-import it.bologna.ausl.internauta.utils.send_integration.model.Errore;
-import it.bologna.ausl.internauta.utils.send_integration.model.Lotto;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBase;
-import it.bologna.ausl.internauta.utils.send_integration.model.LottoBaseConEventualiErrori;
-import it.bologna.ausl.internauta.utils.sendintegration.SendIntegrationConstants;
+import it.bologna.ausl.internauta.utils.sendintegration.model.Documento;
+import it.bologna.ausl.internauta.utils.sendintegration.model.Errore;
+import it.bologna.ausl.internauta.utils.sendintegration.model.Lotto;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBaseConEventualiErrori;
 import it.bologna.ausl.internauta.utils.sendintegration.SendIntegrationSFTPManager;
 import it.bologna.ausl.internauta.utils.sendintegration.SendIntegrationUtils;
 import it.bologna.ausl.internauta.utils.sendintegration.authorization.SendIntegrationAuthorizationUtils;
-import it.bologna.ausl.internauta.utils.sendintegration.authorization.exceptions.NotValidJwtException;
 import it.bologna.ausl.internauta.utils.sendintegration.configuration.SendIntegrationHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.sendintegration.configuration.SendIntegrationRepositoryConfiguration;
-import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendIntegrationException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.model.entities.masterjobs.SetInterface;
@@ -41,19 +33,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  *
@@ -71,16 +55,10 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
     private SendIntegrationHttpClientConfiguration httpClientConfiguration;
     
     @Autowired
-    private FruitoreApi fruitoreApi;
-    
-    @Autowired
     private SendIntegrationAuthorizationUtils authorizationUtils;
     
     @Autowired
     private SendIntegrationSFTPManager sftpManager;
-    
-    @Autowired
-    private ObjectMapper objectMapper;
     
     @Override
     public String getName() {

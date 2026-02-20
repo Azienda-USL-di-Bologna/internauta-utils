@@ -33,11 +33,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.eclipse.angus.mail.util.BASE64DecoderStream;
-import org.eclipse.angus.mail.util.QPDecoderStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+//import org.eclipse.angus.mail.util.BASE64DecoderStream;
+//import org.eclipse.angus.mail.util.QPDecoderStream;
 
 public class EmlHandlerUtils {
 
@@ -195,10 +195,12 @@ public class EmlHandlerUtils {
                         Object attachmentContent = EmlHandlerUtils.getAttachmentContent(p, a.getId());
                         String imageBase64 = null;
                         try {
-                            BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
+                            InputStream b64ds = (InputStream) attachmentContent;
+//                            BASE64DecoderStream b64ds = (BASE64DecoderStream) attachmentContent;
                             imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
                         } catch (ClassCastException e) {
-                            QPDecoderStream b64ds = (QPDecoderStream) attachmentContent;
+                            InputStream b64ds = (InputStream) attachmentContent;
+//                            QPDecoderStream b64ds = (QPDecoderStream) attachmentContent;
                             imageBase64 = BaseEncoding.base64().encode(ByteStreams.toByteArray(b64ds));
                         }
                         doc.select("img[src*=" + src + "]").attr("src", "data:" + a.getMimeType().split(";")[0] + ";base64, " + imageBase64);

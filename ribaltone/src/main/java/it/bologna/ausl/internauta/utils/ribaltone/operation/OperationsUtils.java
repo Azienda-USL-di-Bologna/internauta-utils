@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.blackbox.PermissionManager;
 import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
@@ -40,10 +37,11 @@ import it.bologna.ausl.model.entities.rubrica.Contatto;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 
 /**
  *
@@ -1231,14 +1229,14 @@ public class OperationsUtils {
                     result.put(idCasella, row);
                 }
                 return result;
-            } catch (JsonProcessingException ex) {
+            } catch (JacksonException ex) {
                 throw new RibaltoneHttpException("errore nella conversione delle unificazioni nella funzione getMappaReplicheStrutture");
             }
         });
 
     }
 
-    public static void editUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+    public static void storicizzaUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
         if (persona != null && strutturaSuCuiModificare != null) {
             Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, strutturaSuCuiModificare.getIdAzienda().getId(), persona);
@@ -1252,12 +1250,22 @@ public class OperationsUtils {
                 utente.setIdPersona(persona);
                 UtenteStruttura utenteStruttura = OperationsUtils.getUtenteStrutturaAttivo(queryFactory, strutturaSuCuiModificare, utente);
                 if (utenteStruttura != null) {
-                    utenteStruttura.setResponsabile(entitaDaModificare.getResponsabile());
-                    utenteStruttura.setIdUtente(utente);
-                    utenteStruttura.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
+                    //creo il nuovo utente struttura
+                    UtenteStruttura utenteStrutturaNew = UtenteStruttura.clone(utenteStruttura);
+                    utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
+                    //posso spostare il dettaglio contatto tanto è lo stesso
+                    utenteStrutturaNew.setIdDettaglioContatto(utenteStruttura.getIdDettaglioContatto());
+                    utenteStrutturaNew.setResponsabile(entitaDaModificare.getResponsabile());
+                    //spengo il vecchio utente struttura
+                    utenteStruttura.setAttivoAl(ZonedDateTime.now());
+                    utenteStruttura.setAttivo(false);
+                    utenteStruttura.setIdDettaglioContatto(null);
+//                    utenteStruttura.setIdUtente(utente);
+                    utenteStrutturaNew.setIdAfferenzaStruttura(getAfferenzaFromSigla(queryFactory, entitaDaModificare.getIdAzienda().equals(strutturaSuCuiModificare.getIdAzienda().getId()) ? entitaDaModificare.getTipoAppartenenza() : "U", utente));
                     entityManager.persist(utenteStruttura);
+                    entityManager.persist(utenteStrutturaNew);
                     if (utenteStrutturaDaInserireList != null) {
-                        utenteStrutturaDaInserireList.add(utenteStruttura);
+                        utenteStrutturaDaInserireList.add(utenteStrutturaNew);
                     }
                     if (entitaDaModificare.getResponsabile()) {
                         try {
@@ -1308,7 +1316,12 @@ public class OperationsUtils {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
                     }
+                } else {
+                    insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
                 }
+            } else {
+                insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+
             }
 
         }

@@ -1,4 +1,4 @@
-package it.bologna.ausl.internauta.utils.send_integration.model;
+package it.bologna.ausl.internauta.utils.sendintegration.model;
 
 import java.util.List;
 

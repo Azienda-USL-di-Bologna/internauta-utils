@@ -21,6 +21,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfSignFieldDescr
 import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
 import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmeDelegaManager;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -63,8 +64,9 @@ public class FirmaRemotaInfocert extends FirmaRemota {
     private final String signServiceEndPointUri;
     private final OkHttpClient okHttpClient;
 
-    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+    public FirmaRemotaInfocert(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, 
+            InternalCredentialManager internalCredentialManager, FirmeDelegaManager firmeDelegaManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
         
         // leggo le informazioni di configurazione della firma remota
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();

@@ -4,7 +4,6 @@ package it.bologna.ausl.mongowrapper;
  *
  * @author spritz
  */
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
@@ -30,6 +29,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.StringUtils;
+import tools.jackson.databind.ObjectMapper;
 
 public class WrapperMinIO extends MongoWrapper {
 

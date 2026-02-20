@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.services.jobsnotified;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;

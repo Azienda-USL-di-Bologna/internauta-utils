@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.model.entities.bdm.Process;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
@@ -21,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -91,7 +91,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
                         log.info("json processo:");
                         try {
                             log.info(objectMapper.writeValueAsString(p));
-                        } catch (JsonProcessingException ex) {
+                        } catch (JacksonException ex) {
                             log.error("errore json", ex);
                         }
                         // il processo esiste e transactionId fanno match, devo fare l'update

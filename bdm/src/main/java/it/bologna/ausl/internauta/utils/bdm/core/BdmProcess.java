@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,13 @@ public  class BdmProcess implements Dumpable, Serializable {
     private String processType;
     private String processId = UUID.randomUUID().toString();
     protected Bag context;
-
+    
+    /*
+    contiene quello che gli si passa in fase di creazione della classe bdmProcessManager
+    idealmente contiene istanze di oggetti Autowired di cui si può aver bisogno all'interno dei task
+    */
+    Map<String, Object> processBag;
+    
 //    @JsonIgnore
     protected Bag runningContext = new Bag();
     private List<Step> stepList = new ArrayList<>();
@@ -158,12 +165,24 @@ public  class BdmProcess implements Dumpable, Serializable {
         return context;
     }
 
+    @JsonIgnore
     public EntityManager getEntityManager() {
         return entityManager;
     }
 
+    @JsonIgnore
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    @JsonIgnore
+    public Map<String, Object> getProcessBag() {
+        return processBag;
+    }
+
+    @JsonIgnore
+    public void setProcessBag(Map<String, Object> processBag) {
+        this.processBag = processBag;
     }
 
     public void setContext(Bag c) {
@@ -228,6 +247,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         stepOnts = ZonedDateTime.now();
         Step step = stepList.get(currentStepIndex);
         step.setEntityManager(entityManager);
+        step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
 
         // inserisco i dati necessari nella lista di StepLog
@@ -314,7 +334,7 @@ public  class BdmProcess implements Dumpable, Serializable {
             case ERROR:
             default:
                 status = BdmStatus.ERROR;
-                throw new ProcessWorkFlowException("Error in task:");
+                throw new ProcessWorkFlowException("Error in task");
         }
 
         return status;

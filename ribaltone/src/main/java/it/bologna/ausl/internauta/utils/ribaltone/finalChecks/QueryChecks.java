@@ -8,7 +8,6 @@ import it.bologna.ausl.model.entities.ribaltonedati.checks.RibaltoneValidationCh
 import it.bologna.ausl.model.entities.ribaltonedati.checks.RisultatiErrati;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.util.StringUtils;
 

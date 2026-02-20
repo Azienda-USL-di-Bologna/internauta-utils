@@ -1,11 +1,11 @@
 package it.bologna.ausl.internauta.utils.bdm.utilities;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -25,7 +25,7 @@ public interface Dumpable extends Serializable{
 //        return mapper;
 //    }
     
-    public default <T extends Dumpable> String dump(ObjectMapper objectMapper) throws JsonProcessingException {
+    public default <T extends Dumpable> String dump(ObjectMapper objectMapper) throws JacksonException {
         String writeValueAsString = objectMapper.writeValueAsString(this);
         return writeValueAsString;
     }

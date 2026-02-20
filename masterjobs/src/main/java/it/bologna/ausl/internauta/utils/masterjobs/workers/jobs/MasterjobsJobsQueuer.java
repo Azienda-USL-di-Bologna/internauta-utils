@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.JPQLTemplates;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -360,7 +359,7 @@ public class MasterjobsJobsQueuer {
      * @param queueData
      * @throws JsonProcessingException
      */
-    public void insertInQueue(MasterjobsQueueData queueData) throws JsonProcessingException {
+    public void insertInQueue(MasterjobsQueueData queueData) {
         redisTemplate.opsForList().rightPush(queueData.getQueue(), queueData.dump());
     }
     
@@ -680,7 +679,7 @@ public class MasterjobsJobsQueuer {
                     // inserisco il json nella coda di esecuzione
                     log.info("inserisco il json nella coda di esecuzione...");
                     insertInQueue(queueData);
-                } catch (JsonProcessingException ex) {
+                } catch (Exception ex) {
                     String errorMessage = String.format("errore nell'inserimo del json del set %s", set.getId());
                     log.error(errorMessage, ex);
                     try {
@@ -688,7 +687,7 @@ public class MasterjobsJobsQueuer {
                             log.error(String.format("il josn è il seguente: %s", queueData.dump()));
                         else
                             log.error("queueData è null");
-                    } catch (JsonProcessingException subEx) {
+                    } catch (Exception subEx) {
                         log.error("non sono riuscito a stampare il json", ex);
                     }
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
@@ -766,7 +765,7 @@ public class MasterjobsJobsQueuer {
                     // inserisco il json nella coda di esecuzione
                     log.info("inserisco il json nella coda di esecuzione...");
                     insertInQueue(queueData);
-                } catch (JsonProcessingException ex) {
+                } catch (Exception ex) {
                     String errorMessage = String.format("errore nell'inserimo del json del set %s", setWithJobIdsArray.getId());
                     log.error(errorMessage, ex);
                     try {
@@ -774,7 +773,7 @@ public class MasterjobsJobsQueuer {
                             log.error(String.format("il josn è il seguente: %s", queueData.dump()));
                         else
                             log.error("queueData è null");
-                    } catch (JsonProcessingException subEx) {
+                    } catch (Exception subEx) {
                         log.error("non sono riuscito a stampare il json", ex);
                     }
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
@@ -912,7 +911,7 @@ public class MasterjobsJobsQueuer {
                     .fetchOne();
             }
             return one != null;
-        } catch (JsonProcessingException | NoSuchAlgorithmException ex) {
+        } catch (NoSuchAlgorithmException ex) {
             log.error("",ex);
             return false;
         }

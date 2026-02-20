@@ -5,9 +5,6 @@
  */
 package it.bologna.ausl.internauta.utils.bdm.core;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.IOException;
-
 /**
  *
  * @author andrea
@@ -19,7 +16,7 @@ public class Bdm {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws JsonProcessingException, IOException, ClassNotFoundException {
+    public static void main(String[] args) {
         // TODO code application logic here
 
 //        Bag p = new Bag();

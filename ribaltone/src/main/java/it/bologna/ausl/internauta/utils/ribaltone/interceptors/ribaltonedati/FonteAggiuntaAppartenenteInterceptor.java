@@ -49,7 +49,15 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
         QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
         QStruttura qStruttura = QStruttura.struttura;
         fonteAggiuntaAppartenente.setCodiceMatricola(fonteAggiuntaAppartenente.getCodiceMatricola());
-        Struttura struttura = queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.attiva.and(qStruttura.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella()))).fetchOne();
+        Struttura struttura = queryFactory
+            .select(qStruttura)
+            .from(qStruttura)
+            .where(
+                qStruttura.attiva.and(
+                    qStruttura.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
+                ).and(
+                    qStruttura.idAzienda.id.eq(fonteAggiuntaAppartenente.getIdAzienda())
+                )).fetchOne();
         //vuol dire che sto aggiungendo un utente alla struttura destinazione di replica
         if (struttura == null) {
             struttura = queryFactory
@@ -91,6 +99,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
 //        AuthenticatedSessionData authenticatedSessionData = getAuthenticatedUserProperties();
         FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
+        DatiImportatiAppartenente datoImportatoAppartenente = fonteAggiuntaAppartenente.buildDatoImportatoAppartenente();
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Struttura struttura = queryFactory
             .select(qStruttura)
@@ -144,6 +153,8 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
                 repositoryFactory.getPermissionManager(),
                 null);
         }
+        repositoryFactory.getEntityManager().persist(datoImportatoAppartenente);
+
         return entity;
     }
 

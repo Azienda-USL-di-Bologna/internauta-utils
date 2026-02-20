@@ -1,8 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsParsingException;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +34,7 @@ public interface JobWorkerDataInterface {
         });
     }
     
-    public default String toJsonString(ObjectMapper objectMapper) throws JsonProcessingException {
+    public default String toJsonString(ObjectMapper objectMapper) {
         return objectMapper.writeValueAsString(this);
     }
 
