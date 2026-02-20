@@ -51,12 +51,12 @@ public class Operations implements Serializable {
     private Object workToDo = null;
 
     public Operations(
-        List<OperationStruttura> listOfOperationStruttura,
-        List<OperationAppartenente> listOfOperationAppartenenti,
-        List<OperationAnagrafica> listOfOperationAnagrafiche,
-        List<OperationTrasformazione> listOfOperationTrasformazioni,
-        List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura,
-        List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente
+            List<OperationStruttura> listOfOperationStruttura,
+            List<OperationAppartenente> listOfOperationAppartenenti,
+            List<OperationAnagrafica> listOfOperationAnagrafiche,
+            List<OperationTrasformazione> listOfOperationTrasformazioni,
+            List<OperationUnificazioneStruttura> listOfOperationUnificazioneStruttura,
+            List<OperationUnificazioneAppartenente> listOfOperationUnificazioneAppartenente
     ) {
 
         this.listOfOperationStruttura = listOfOperationStruttura;
@@ -217,23 +217,23 @@ public class Operations implements Serializable {
         Integer idAfferenzaFunzionale = queryFactory.select(qAfferenzaStruttura.id).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.FUNZIONALE.toString())).fetchOne();
         AfferenzaStruttura afferenzaDiretta = queryFactory.select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())).fetchOne();
         List<Integer> idUtentiConNAfferenzeDirette = queryFactory
-            .select(us.idUtente.id)
-            .from(us)
-            .where(us.attivo.isTrue()
-                .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId())))
-            .groupBy(us.idUtente.id)
-            .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
-            .fetch();
+                .select(us.idUtente.id)
+                .from(us)
+                .where(us.attivo.isTrue()
+                        .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
+                        .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId())))
+                .groupBy(us.idUtente.id)
+                .having(us.id.count().gt(1)) // COUNT(id_afferenza_struttura) > 1
+                .fetch();
 
         List<UtenteStruttura> utentiStrutturaDaSistemare = queryFactory
-            .select(us)
-            .from(us)
-            .where(us.attivo.isTrue()
-                .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
-                .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette))) // Join con il risultato della prima query
-            .fetch();
+                .select(us)
+                .from(us)
+                .where(us.attivo.isTrue()
+                        .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
+                        .and(us.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
+                        .and(us.idUtente.id.in(idUtentiConNAfferenzeDirette))) // Join con il risultato della prima query
+                .fetch();
         //ora ho tutte le afferenze plurime dirette devo andare a sistemarle
         //direi che una a caso (direi dalla seconda che esamino) diverranno funzionali
         Map<Integer, Map<Integer, Integer>> utentiConGiaAfferenzaDiretta = new HashMap<>();
@@ -246,9 +246,9 @@ public class Operations implements Serializable {
             if (afferenze != null && afferenze.get(1) != null && afferenze.get(2) == null) {
                 Integer utenteStrutturaDaNonToccare = utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).get(1);
                 queryFactory
-                    .update(us)
-                    .set(us.idAfferenzaStruttura.id, idAfferenzaFunzionale)
-                    .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId()))).execute();
+                        .update(us)
+                        .set(us.idAfferenzaStruttura.id, idAfferenzaFunzionale)
+                        .where(us.id.ne(utenteStrutturaDaNonToccare).and(us.idUtente.id.eq(utenteStruttura.getIdUtente().getId()))).execute();
                 //segno gia sistemata questa persona
                 utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()).put(2, 1);
             } else if (utentiConGiaAfferenzaDiretta.get(utenteStruttura.getIdUtente().getId()) == null) {
@@ -260,27 +260,27 @@ public class Operations implements Serializable {
         QUtenteStruttura us2 = new QUtenteStruttura("us2");
 
         List<UtenteStruttura> utentiStrutturaFunzionaliSenzaDirette = queryFactory
-            .selectFrom(us)
-            .where(
-                us.attivo.isTrue()
-                    .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
-                    .and(us.idAfferenzaStruttura.id.eq(idAfferenzaFunzionale))
-                    // esclude utenti che hanno almeno una diretta attiva
-                    .and(
-                        us.idUtente.id.notIn(
-                            JPAExpressions
-                                .select(us2.idUtente.id)
-                                .from(us2)
-                                .where(
-                                    us2.attivo.isTrue()
-                                        .and(us2.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
-                                        .and(us2.idUtente.idAzienda.codice.eq(codiceAzienda))
+                .selectFrom(us)
+                .where(
+                        us.attivo.isTrue()
+                                .and(us.idUtente.idAzienda.codice.eq(codiceAzienda))
+                                .and(us.idAfferenzaStruttura.id.eq(idAfferenzaFunzionale))
+                                // esclude utenti che hanno almeno una diretta attiva
+                                .and(
+                                        us.idUtente.id.notIn(
+                                                JPAExpressions
+                                                        .select(us2.idUtente.id)
+                                                        .from(us2)
+                                                        .where(
+                                                                us2.attivo.isTrue()
+                                                                        .and(us2.idAfferenzaStruttura.id.eq(afferenzaDiretta.getId()))
+                                                                        .and(us2.idUtente.idAzienda.codice.eq(codiceAzienda))
+                                                        )
+                                        )
                                 )
-                        )
-                    )
-            )
-            .orderBy(us.idUtente.id.asc()) //
-            .fetch();
+                )
+                .orderBy(us.idUtente.id.asc()) //
+                .fetch();
 
         Integer idUtenteDiAppoggio = null;
 

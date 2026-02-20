@@ -132,7 +132,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
             .where(
                 (qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
                     .or(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())))
-                    .and(qStrutturaUnificata.dataAccensioneAttivazione.after(ZonedDateTime.now()))
+                    .and(qStrutturaUnificata.dataAccensioneAttivazione.before(ZonedDateTime.now()))
                     .and(qStrutturaUnificata.dataDisattivazione.isNull())
                     .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)))
             .fetch();
@@ -262,7 +262,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
             .where(
                 (qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
                     .or(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())))
-                    .and(qStrutturaUnificata.dataAccensioneAttivazione.after(ZonedDateTime.now()))
+                    .and(qStrutturaUnificata.dataAccensioneAttivazione.before(ZonedDateTime.now()))
                     .and(qStrutturaUnificata.dataDisattivazione.isNull())
                     .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)))
             .fetch();
