@@ -134,11 +134,13 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         OperationUnificazioneAppartenente.UnificazionePair convertValue = objectMapper.convertValue(operationDaRedis.get("pair"),
                             new TypeReference<OperationUnificazioneAppartenente.UnificazionePair>() {
                         });
+                        List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
                         listOfOperationUnificazioneAppartenente.add(
                             new OperationUnificazioneAppartenente(
                                 Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
                                 entitaCoinvolta,
                                 entityManager,
+                                edit,
                                 convertValue, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive"))
                         );
                     }

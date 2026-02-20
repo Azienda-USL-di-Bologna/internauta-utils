@@ -107,6 +107,9 @@ public class Struttura implements Serializable {
 //        fonteIntermediaStruttura.setDatafi(datafi);
         fonteIntermediaStruttura.setDescrizione(WordUtils.capitalizeFully(descrizione).trim());
         fonteIntermediaStruttura.setIdCasella(idCasella);
+        if (idPadre == null) {
+            idPadre = 0;
+        }
         fonteIntermediaStruttura.setIdPadre(idPadre);
         fonteIntermediaStruttura.setIdAzienda(idAzienda);
         fonteIntermediaStruttura.setTipoLegame(tipoLegame);
