@@ -89,10 +89,12 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     private UnificazionePair pair;
     private List<UtenteStruttura> utenteStrutturaDaInserireList = new ArrayList();
     private List<UtenteStruttura> utenteStrutturaDaSpegnereList = new ArrayList();
+    private List<String> listOfEdit;
 
-    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, UnificazionePair pair, Map<String, String> descrizioniAggiuntive) {
+    public OperationUnificazioneAppartenente(Azione azione, DatiRibaltoneInterface entitaCoinvolta, EntityManager entityManager, List<String> listOfEdit, UnificazionePair pair, Map<String, String> descrizioniAggiuntive) {
         super(azione, entitaCoinvolta, entityManager, descrizioniAggiuntive);
         this.pair = pair;
+        this.listOfEdit = listOfEdit;
     }
 
     @Override
@@ -109,15 +111,17 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                     Struttura strutturaDoveInserire = null;
                     if (strutturaUnificataReload.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                         strutturaDoveInserire = jPAQueryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(
-                                qStruttura.attiva
-                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaInserire.getIdCasella()))
-                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificataReload.getIdStrutturaDestinazione().getIdAzienda().getId()))
-                            ).fetchOne();
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(
+                                        qStruttura.attiva
+                                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaInserire.getIdCasella()))
+                                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReload.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                                ).fetchOne();
                     } else {
-                        strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
+                        strutturaDoveInserire = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella())
+                                && strutturaUnificataReload.getIdStrutturaSorgente().getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())
+                                ? strutturaUnificataReload.getIdStrutturaDestinazione() : strutturaUnificataReload.getIdStrutturaSorgente();
                     }
                     log.info("inserisco utenteunificato " + entitaDaInserire.getCodiceFiscale() + " alla struttura con id " + strutturaDoveInserire.getId());
                     OperationsUtils.insertUtenteInStruttura(jPAQueryFactory, entitaDaInserire, strutturaDoveInserire, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
@@ -135,13 +139,13 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                         Struttura strutturaPartenza;
                         if (strutturaUnificataReload.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                             strutturaPartenza = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(
-                                    qStruttura.attiva
-                                        .and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()))
-                                        .and(qStruttura.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
-                                ).fetchOne();
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(
+                                            qStruttura.attiva
+                                                    .and(qStruttura.idCasella.eq(entitaDaInserire.getIdCasella()))
+                                                    .and(qStruttura.idAzienda.id.eq(entitaDaInserire.getIdAzienda()))
+                                    ).fetchOne();
                         } else {
                             strutturaPartenza = strutturaUnificataReload.getIdStrutturaSorgente().getIdCasella().equals(entitaDaInserire.getIdCasella()) ? strutturaUnificataReload.getIdStrutturaSorgente() : strutturaUnificataReload.getIdStrutturaDestinazione();
                         }
@@ -149,10 +153,10 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                             List<Utente> utenti = utenteStrutturaInserito.getIdUtente().getIdPersona().getUtenteList().stream().filter(u -> u.getIdAzienda().getId().equals(strutturaPartenza.getIdAzienda().getId())).toList();
                             if (utenti != null && !utenti.isEmpty()) {
                                 repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
-                                    utenti.get(0),
-                                    strutturaPartenza,
-                                    utenteStrutturaInserito.getIdUtente(),
-                                    strutturaDoveInserire
+                                        utenti.get(0),
+                                        strutturaPartenza,
+                                        utenteStrutturaInserito.getIdUtente(),
+                                        strutturaDoveInserire
                                 );
                             }
                         } catch (BlackBoxPermissionException ex) {
@@ -169,13 +173,13 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                     Struttura strutturaDiUtenteDaRimuovere = strutturaUnificata.getIdStrutturaDestinazione();
                     if (strutturaUnificata.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                         strutturaDiUtenteDaRimuovere = jPAQueryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(
-                                qStruttura.attiva
-                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaChiudere.getIdCasella()))
-                                    .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
-                            ).fetchOne();
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(
+                                        qStruttura.attiva
+                                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaChiudere.getIdCasella()))
+                                                .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                                ).fetchOne();
 
                     }
                     if (strutturaDiUtenteDaRimuovere != null) {
@@ -187,55 +191,72 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
             }
 
             case EDIT -> {
-                DatiDaImportareAppartenente entitaDaModificare = (DatiDaImportareAppartenente) getEntitaCoinvolta();
 
+                DatiDaImportareAppartenente entitaDaModificare = (DatiDaImportareAppartenente) getEntitaCoinvolta();
                 // è il caso di utente che diventa o non è più responsabile,
                 // quindi verificare i permessi di flusso
+
                 for (StrutturaUnificata sU : strutturaUnificataList) {
                     StrutturaUnificata strutturaUnificataReloaded = getEntityManager().find(StrutturaUnificata.class, sU.getId());
                     getEntityManager().refresh(strutturaUnificataReloaded);
                     Struttura strutturaSorgente;
                     Struttura strutturaDestinazione;
+                    Struttura strutturaSuCuiModificare;
+                    Struttura strutturaDaCopiare;
                     if (strutturaUnificataReloaded.getTipoOperazione().equals(StrutturaUnificata.TipoUnificazione.FUSIONE)) {
                         strutturaSorgente = strutturaUnificataReloaded.getIdStrutturaSorgente();
                         strutturaDestinazione = strutturaUnificataReloaded.getIdStrutturaDestinazione();
+                        strutturaSuCuiModificare = strutturaSorgente.getIdAzienda().getId().equals(entitaDaModificare.getIdAzienda()) ? strutturaDestinazione : strutturaSorgente;
+                        strutturaDaCopiare = !strutturaSorgente.getIdAzienda().getId().equals(entitaDaModificare.getIdAzienda()) ? strutturaDestinazione : strutturaSorgente;
                     } else {
                         strutturaSorgente = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                            qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
-                                .and(qStruttura.attiva)
-                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaSorgente().getIdAzienda().getId()))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                                qStruttura.idCasella.eq(entitaDaModificare.getIdCasella())
+                                        //                                .and(qStruttura.attiva)
+                                        .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaSorgente().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
                         strutturaDestinazione = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
-                            qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
-                                .and(qStruttura.attiva)
-                                .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                                qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
+                                        //                                .and(qStruttura.attiva)
+                                        .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
+                        ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
+                        strutturaDaCopiare = strutturaSorgente;
+                        strutturaSuCuiModificare = strutturaDestinazione;
                     }
+
 //                    Struttura strutturaSorgenteDiAziendaInCuiModicare = strutturaUnificataReloaded.getIdStrutturaSorgente().getIdCasella().equals(entitaDaModificare.getIdCasella()) ? strutturaUnificataReloaded.getIdStrutturaDestinazione() : strutturaUnificataReloaded.getIdStrutturaSorgente();
 //                    Struttura strutturaDaModificare = jPAQueryFactory.select(qStruttura).from(qStruttura).where(
 //                        qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaModificare.getIdCasella())
 //                            .and(qStruttura.attiva)
 //                            .and(qStruttura.idAzienda.id.eq(strutturaUnificataReloaded.getIdStrutturaDestinazione().getIdAzienda().getId()))
 //                    ).orderBy(qStruttura.id.desc()).fetchOne();
-                    log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaDestinazione.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
-                    OperationsUtils.storicizzaUtenteStruttura(strutturaDestinazione, entitaDaModificare, jPAQueryFactory, getEntityManager(), repositoryFactory.getPermissionManager(), utenteStrutturaDaInserireList);
+                    log.info("modifico utente unificato " + entitaDaModificare.getCodiceFiscale() + " alla struttura con id " + strutturaSuCuiModificare.getId() + " responsabile " + entitaDaModificare.getResponsabile().toString());
                     QPersona qPersona = QPersona.persona;
                     Persona persona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
-                    if (persona != null) {
-                        try {
-                            Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSorgente.getIdAzienda().getId(), persona);
-                            if (utente != null) {
-                                repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
-                                    utente,
-                                    strutturaSorgente,
-                                    utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdUtente(),
-                                    utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdStruttura()
-                                );
-                            }
-                        } catch (BlackBoxPermissionException ex) {
-                            throw new RibaltoneHttpException("errore nel mettere i permessi a utente con cf " + entitaDaModificare.getCodiceFiscale(), ex);
-                        }
+                    Utente utente = OperationsUtils.getUtenteDiIdAzienda(jPAQueryFactory, strutturaSuCuiModificare.getIdAzienda().getId(), persona);
+                    OperationsUtils.storicizzaAndInserisciUtenteStruttura(
+                            persona,
+                            utente,
+                            strutturaSuCuiModificare,
+                            null,
+                            entitaDaModificare.getResponsabile(),
+                            entitaDaModificare,
+                            repositoryFactory.getPermissionManager(),
+                            repositoryFactory.getEntityManager(),
+                            utenteStrutturaDaInserireList,
+                            jPAQueryFactory);
+
+                    try {
+                        repositoryFactory.getPermissionManager().copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
+                                utente,
+                                strutturaSorgente,
+                                utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdUtente(),
+                                utenteStrutturaDaInserireList.get(utenteStrutturaDaInserireList.size() - 1).getIdStruttura()
+                        );
+
+                    } catch (BlackBoxPermissionException ex) {
+                        throw new RibaltoneHttpException("errore nel mettere i permessi a utente con cf " + entitaDaModificare.getCodiceFiscale(), ex);
                     }
+
                 }
             }
             default ->
@@ -246,13 +267,13 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
         for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
             log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
-                + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
+                    + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
             repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
-            Contatto contattoDB = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
-            repositoryFactory.getEntityManager().refresh(contattoDB);
-            List<DettaglioContatto> dettaglioContattoList = contattoDB.getDettaglioContattoList();
+            Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
+            repositoryFactory.getEntityManager().refresh(contattoPersona);
+            List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
             repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
-            List<DettaglioContatto> dettagliContattiDellaPersona = dettaglioContattoList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+            List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
             DettaglioContatto idDettaglioContatto = null;
             if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
                 idDettaglioContatto = dettagliContattiDellaPersona.get(0);
@@ -272,9 +293,14 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
 //                }
                 getEntityManager().persist(idDettaglioContatto);
             } else {
-                //devo creare il dettaglio contatto
-                idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
-                getEntityManager().persist(idDettaglioContatto);
+                JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+
+                if (idDettaglioContatto != null) {
+                    //devo creare il dettaglio contatto
+                    idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
+                    getEntityManager().persist(idDettaglioContatto);
+                    getEntityManager().flush();
+                }
                 utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
                 getEntityManager().persist(utenteStrutturaNew);
 

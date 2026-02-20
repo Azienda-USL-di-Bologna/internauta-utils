@@ -261,21 +261,21 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                         .where(qStruttura.idStrutturaReplicata.id.eq(strutturaBaborgAperta.getIdStrutturaPadre().getId()))
                                         .fetch();
                                     for (Struttura strutturaPadre : padriSuCuiMiDevoReplicare) {
-                                        Struttura cloneStrutturaForUnificazione = strutturaBaborgAperta.cloneStrutturaForUnificazione(unificazione);
-                                        cloneStrutturaForUnificazione.setIdAzienda(strutturaPadre.getIdAzienda());
-                                        cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaPadre);
+                                        Struttura strutturaReplicaNew = strutturaBaborgAperta.cloneStrutturaForUnificazione(unificazione);
+                                        strutturaReplicaNew.setIdAzienda(strutturaPadre.getIdAzienda());
+                                        strutturaReplicaNew.setIdStrutturaPadre(strutturaPadre);
 
                                         StoricoRelazione storicoRelazione = new StoricoRelazione();
                                         storicoRelazione.setAttivaDal(ZonedDateTime.now());
                                         storicoRelazione.setIdStrutturaPadre(strutturaPadre);
-                                        storicoRelazione.setIdStrutturaFiglia(cloneStrutturaForUnificazione);
+                                        storicoRelazione.setIdStrutturaFiglia(strutturaReplicaNew);
                                         getEntityManager().persist(storicoRelazione);
-
+                                        OperationsUtils.inserisciSpostaUtentiStruttura(jPAQueryFactory, getEntityManager(), strutturaReplicaNew, strutturaReplicaChiusa);
                                         if (strutturaPadre.getIdAzienda().getId().equals(strutturaReplicaChiusa.getIdAzienda().getId())) {
                                             OperationsUtils.spostaStruttura(
                                                 getEntityManager(),
                                                 strutturaReplicaChiusa.getId(),
-                                                cloneStrutturaForUnificazione.getId(),
+                                                strutturaReplicaNew.getId(),
                                                 "T",
                                                 ZonedDateTime.now().toString());
                                         }
@@ -293,19 +293,28 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
             }
 
             case RINOMINA -> {
-                //sono nel caso del cambio padre o della rinomina in ogni caso potrei avere
-//                //un trascorso e potrei essere sia sorgente e che destinazione di una fusione
-//                //sia replica che fusione
-//                //se sono replicatore
-//                //il mio vecchio id sara dentro a idstruttura replicata quindi devo trovare il mio vecchio me
-//                //altrimenti il mio vecchio id sara dentro idStrutturaReplicata
-//                //andare a cercare la vecchia replica
-//                //andare a creare la nuova struttura replica
-//                //chiamare lo sposta struttura tra vecchio id e quello appena creato
-//                //primo passo sono replica o sono fusione? o non sono nulla?
-//                //se sono replica o figlio di replica allora trovero che io
-//                //o uno dei miei antenati sta in un qualche idStrutturaReplicata
-//                //oppure ce l'ho valorizzato se qualcuno è replicato in me
+                //sono nel caso della rinomina in ogni caso potrei avere
+//                //un trascorso e potrei essere sia sorgente e che destinazione di una FUSIONE
+
+//                // oppure sono nel caso di REPLICA
+                // e devo gestire il caso in cui una struttura replicata sia stata rinominata
+                // - devo trovare la struttura da rinominare
+                //   - sto cercando una struttura attiva che abbia come idStrutturaReplicata una struttura che ha id_casella =  entitaRinominata.id_casella
+                //   - da li ho idStrutturaUnificata nuovo (se è stato cambiato con lo sposta strutture della struttura di partenza, caso in cui ho rinominato la sorgente)
+                // - devo spegnere la struttura da rinominare
+                // - devo creare la nuova struttura rinominata
+                // - devo spostare gli utenti struttura sulla nuova
+                // - devo chiamare lo sposta strutture
+                // VECCHIO COMMENTO -----------------------------------------------
+//                      il mio vecchio id sara dentro a idstruttura replicata quindi devo trovare il mio vecchio me
+//                      altrimenti il mio vecchio id sara dentro idStrutturaReplicata
+//                      andare a cercare la vecchia replica
+//                      andare a creare la nuova struttura replica
+//                      chiamare lo sposta struttura tra vecchio id e quello appena creato
+//                      primo passo sono replica o sono fusione? o non sono nulla?
+//                      se sono replica o figlio di replica allora trovero che io
+//                      o uno dei miei antenati sta in un qualche idStrutturaReplicata
+//                      oppure ce l'ho valorizzato se qualcuno è replicato in me
                 DatiDaImportareStruttura strutturaRinominata = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                     //devo rinominare anche dall'altro lato
@@ -330,20 +339,22 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                         .and(qStruttura.attiva.eq(Boolean.TRUE)))
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
 
-                            Struttura cloneStrutturaForUnificazione = strutturaBaborgReplicaDaChiudere.cloneStrutturaForUnificazione(unificazione);
-                            cloneStrutturaForUnificazione.setNome(strutturaRinominata.getDescrizione());
-                            cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
-                            cloneStrutturaForUnificazione.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
-                            cloneStrutturaForUnificazione.setIdStrutturaReplicata(idStrutturaReplicata);
+                            Struttura strutturaNew = strutturaBaborgReplicaDaChiudere.cloneStrutturaForUnificazione(unificazione);
+                            strutturaNew.setNome(strutturaRinominata.getDescrizione());
+                            strutturaNew.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
+                            strutturaNew.setIdAzienda(strutturaBaborgReplicaDaChiudere.getIdAzienda());
+                            strutturaNew.setIdStrutturaReplicata(idStrutturaReplicata);
 
-                            StoricoRelazione storicoRelazione = new StoricoRelazione();
-                            storicoRelazione.setAttivaDal(ZonedDateTime.now());
-                            storicoRelazione.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
-                            storicoRelazione.setIdStrutturaFiglia(cloneStrutturaForUnificazione);
-                            getEntityManager().persist(storicoRelazione);
-                            getEntityManager().refresh(storicoRelazione);
-                            getEntityManager().persist(cloneStrutturaForUnificazione);
-                            getEntityManager().refresh(cloneStrutturaForUnificazione);
+                            StoricoRelazione storicoRelazioneNew = new StoricoRelazione();
+                            storicoRelazioneNew.setAttivaDal(ZonedDateTime.now());
+                            storicoRelazioneNew.setIdStrutturaPadre(strutturaBaborgReplicaDaChiudere.getIdStrutturaPadre());
+                            storicoRelazioneNew.setIdStrutturaFiglia(strutturaNew);
+                            getEntityManager().persist(storicoRelazioneNew);
+                            getEntityManager().flush();
+                            getEntityManager().refresh(storicoRelazioneNew);
+                            getEntityManager().persist(strutturaNew);
+                            getEntityManager().flush();
+                            getEntityManager().refresh(strutturaNew);
 
                             List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
                             if (struttureList == null) {
@@ -353,12 +364,12 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
 
                             OperationsUtils.chiudiStruttura(strutturaBaborgReplicaDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
-
+                            OperationsUtils.inserisciSpostaUtentiStruttura(jPAQueryFactory, getEntityManager(), strutturaNew, strutturaBaborgReplicaDaChiudere);
                             OperationsUtils.spostaStruttura(getEntityManager(),
                                 strutturaBaborgReplicaDaChiudere.getId(),
-                                cloneStrutturaForUnificazione.getId(),
+                                strutturaNew.getId(),
                                 "R",
-                                cloneStrutturaForUnificazione.getDataAttivazione().toString()
+                                strutturaNew.getDataAttivazione().toString()
                             );
 
                         }
