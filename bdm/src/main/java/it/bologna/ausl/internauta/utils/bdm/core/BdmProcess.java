@@ -449,4 +449,14 @@ public  class BdmProcess implements Dumpable, Serializable {
     public boolean isLastStep(Step step) throws ProcessWorkFlowException {
         return isLastStep(step.getStepId());
     }
+    
+    @JsonIgnore
+    public Step getStepById(String stepId){
+        for (int i=0; i<stepList.size(); i++) {
+            if (stepList.get(i).getStepId().equals(stepId)) {
+                return stepList.get(i);
+            }
+        }
+        return null;
+    }
 }
