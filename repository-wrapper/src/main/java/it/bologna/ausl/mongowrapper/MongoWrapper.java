@@ -1,6 +1,5 @@
 package it.bologna.ausl.mongowrapper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -34,6 +33,7 @@ import java.util.logging.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Questa classe si occupa dell'interazione con MongoDB utilizzando la libreria

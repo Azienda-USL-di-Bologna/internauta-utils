@@ -4,7 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -57,7 +57,7 @@ public class PicoBuilder {
      *
      * @return
      */
-    public VersamentoBuilder build() throws VersatoreSdicoException {
+    public VersamentoBuilder build() throws VersatorePluginException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         DecimalFormat df = new DecimalFormat("0000000");
         Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(CODICE);
@@ -147,13 +147,13 @@ public class PicoBuilder {
                 stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
                 versamentoBuilder.addSinglemetadataByParams(false, "cfTitolareFirma", Arrays.asList(stringaDiFirmatari), TESTO);
             } else {
-                throw new VersatoreSdicoException("Il protocollo non ha firmatari");
+                throw new VersatorePluginException("Il protocollo non ha firmatari");
             }
             if (docDetail.getIdPersonaResponsabileProcedimento() != null) {
                 responsabileProcedimento = docDetail.getIdPersonaResponsabileProcedimento().getDescrizione();
                 versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList(responsabileProcedimento), TESTO);
             } else {
-                throw new VersatoreSdicoException("Il Protocollo non ha Responsabile di Procedimento");
+                throw new VersatorePluginException("Il Protocollo non ha Responsabile di Procedimento");
                 //versamentoBuilder.addSinglemetadataByParams(false, "responsabileProcedimento", Arrays.asList("Non indicato"), TESTO);
             }
             firmatoDigitalmente = (String) parametriSoloPU.get("firmatoDigitalmente");

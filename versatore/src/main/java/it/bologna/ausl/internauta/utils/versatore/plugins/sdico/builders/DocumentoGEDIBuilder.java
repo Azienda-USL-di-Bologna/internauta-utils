@@ -4,7 +4,7 @@
  */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreSdicoException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders.DeliBuilder;
 import it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils;
 import it.bologna.ausl.model.entities.scripta.Allegato;
@@ -55,7 +55,7 @@ public class DocumentoGEDIBuilder {
      * Metodo che costruisce i metadati per i documenti GEDI (tipologia documento generico id tipo doc 85)
      * @return
      */
-    public VersamentoBuilder build() throws VersatoreSdicoException {
+    public VersamentoBuilder build() throws VersatorePluginException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
         Map<String, String> mappaParametri = (Map<String, String>) parametriVersamento.get(CODICE);
         String docType = (String) mappaParametri.get("idTipoDoc");
@@ -91,7 +91,7 @@ public class DocumentoGEDIBuilder {
                 + "."
                 + listaAllegati.get(0).getDettagli().getOriginale().getEstensione();
         } else {
-            throw new VersatoreSdicoException("Il documento GEDI non contiene allegati");
+            throw new VersatorePluginException("Il documento GEDI non contiene allegati");
         }
         String pianoDiClassificazione = (String) parametriVersamento.get("pianoDiClassificazione");
 

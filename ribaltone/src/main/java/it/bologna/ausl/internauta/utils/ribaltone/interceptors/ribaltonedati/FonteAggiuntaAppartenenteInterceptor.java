@@ -11,7 +11,9 @@ import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.FonteAggiuntaAppartenente;
+import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.nextsw.common.controller.BeforeUpdateEntityApplier;
 import it.nextsw.common.data.annotations.NextSdrInterceptor;
 import it.nextsw.common.interceptors.exceptions.AbortSaveInterceptorException;
@@ -41,11 +43,63 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
     }
 
     @Override
+    public Object beforeCreateEntityInterceptor(Object entity, Map<String, String> additionalData, HttpServletRequest request, boolean mainEntity, Class projectionClass) throws AbortSaveInterceptorException {
+        FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
+        JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+        QDatiImportatiAppartenente qDatiImportatiAppartenente = QDatiImportatiAppartenente.datiImportatiAppartenente;
+        QStruttura qStruttura = QStruttura.struttura;
+        fonteAggiuntaAppartenente.setCodiceMatricola(fonteAggiuntaAppartenente.getCodiceMatricola());
+        Struttura struttura = queryFactory
+            .select(qStruttura)
+            .from(qStruttura)
+            .where(
+                qStruttura.attiva.and(
+                    qStruttura.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
+                ).and(
+                    qStruttura.idAzienda.id.eq(fonteAggiuntaAppartenente.getIdAzienda())
+                )).fetchOne();
+        //vuol dire che sto aggiungendo un utente alla struttura destinazione di replica
+        if (struttura == null) {
+            struttura = queryFactory
+                .select(qStruttura)
+                .from(qStruttura)
+                .where(
+                    qStruttura.attiva.and(qStruttura.idStrutturaReplicata.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella()))).fetchOne();
+        }
+        if (struttura != null) {
+            DatiImportatiAppartenente datiImportatiAppartenente = queryFactory
+                .select(qDatiImportatiAppartenente)
+                .from(qDatiImportatiAppartenente)
+                .where(
+                    qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())
+                        .and(qDatiImportatiAppartenente.idAzienda.eq(struttura.getIdAzienda().getId()))
+                )
+                .limit(1)
+                .fetchOne();
+            if (datiImportatiAppartenente == null) {
+                datiImportatiAppartenente = queryFactory
+                    .select(qDatiImportatiAppartenente)
+                    .from(qDatiImportatiAppartenente)
+                    .where(
+                        qDatiImportatiAppartenente.codiceFiscale.eq(fonteAggiuntaAppartenente.getCodiceFiscale())
+                    )
+                    .limit(1)
+                    .fetchOne();
+            }
+            fonteAggiuntaAppartenente.setCodiceMatricola(datiImportatiAppartenente != null ? datiImportatiAppartenente.getCodiceMatricola() : null);
+            fonteAggiuntaAppartenente.setCodiceAzienda(struttura.getIdAzienda().getCodice());
+            fonteAggiuntaAppartenente.setCodiceEnte(struttura.getIdAzienda().getCodice() + "01");
+        }
+        return fonteAggiuntaAppartenente;
+    }
+
+    @Override
     public Object afterCreateEntityInterceptor(Object entity, Map<String, String> additionalData, HttpServletRequest request, boolean mainEntity, Class projectionClass) throws AbortSaveInterceptorException {
         QStruttura qStruttura = QStruttura.struttura;
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
 //        AuthenticatedSessionData authenticatedSessionData = getAuthenticatedUserProperties();
         FonteAggiuntaAppartenente fonteAggiuntaAppartenente = (FonteAggiuntaAppartenente) entity;
+        DatiImportatiAppartenente datoImportatoAppartenente = fonteAggiuntaAppartenente.buildDatoImportatoAppartenente();
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         Struttura struttura = queryFactory
             .select(qStruttura)
@@ -78,7 +132,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
             .where(
                 (qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
                     .or(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())))
-                    .and(qStrutturaUnificata.dataAccensioneAttivazione.after(ZonedDateTime.now()))
+                    .and(qStrutturaUnificata.dataAccensioneAttivazione.before(ZonedDateTime.now()))
                     .and(qStrutturaUnificata.dataDisattivazione.isNull())
                     .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)))
             .fetch();
@@ -99,6 +153,8 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
                 repositoryFactory.getPermissionManager(),
                 null);
         }
+        repositoryFactory.getEntityManager().persist(datoImportatoAppartenente);
+
         return entity;
     }
 
@@ -206,7 +262,7 @@ public class FonteAggiuntaAppartenenteInterceptor extends RibaltoneBaseIntercept
             .where(
                 (qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())
                     .or(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(fonteAggiuntaAppartenente.getIdCasella())))
-                    .and(qStrutturaUnificata.dataAccensioneAttivazione.after(ZonedDateTime.now()))
+                    .and(qStrutturaUnificata.dataAccensioneAttivazione.before(ZonedDateTime.now()))
                     .and(qStrutturaUnificata.dataDisattivazione.isNull())
                     .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE)))
             .fetch();

@@ -115,16 +115,17 @@ public class ExportDatiManager {
                     new Optional(), // nome Bloccante
                     new Optional(), // codice_fiscale bloccante
                     new Optional(), // id_casella bloccante
+                    new Optional(), // responsaibile bloccante
                     new Optional(), // datain bloccante
                     new Optional(), // datafi
                     new Optional(), // tipo_appartenenza bloccante
-                    new Optional(), // username
-                    new Optional(), // data_assunzione bloccante
+                    //                    new Optional(), // username
+                    //                    new Optional(), // data_assunzione bloccante
                     new Optional() // data_adimissione
                 };
                 cellProcessor = processorsAPPARTENENTI;
             }
-            
+
             case TRASFORMAZIONI -> {
                 CellProcessor[] processorsTRASFORMAZIONI = new CellProcessor[]{
                     new Optional(), // progressivo_riga
@@ -132,7 +133,7 @@ public class ExportDatiManager {
                     new Optional(), // id_casellla_arrivo
                     new Optional(), // data_trasformazione
                     new Optional(), // motivo
-                    new Optional(), // datain_partenza
+                    //new Optional(), // datain_partenza
                     new Optional(), // dataora_oper
                     new Optional() // codice_ente
                 };
@@ -164,7 +165,8 @@ public class ExportDatiManager {
                 };
                 cellProcessor = processorsANAGRAFICA;
             }
-            default -> System.out.println("non dovrebbe essere altro tipo di tabella");
+            default ->
+                System.out.println("non dovrebbe essere altro tipo di tabella");
         }
         return cellProcessor;
     }
@@ -175,15 +177,14 @@ public class ExportDatiManager {
         switch (tipo) {
             case APPARTENENTI ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
-                    "nome", "codice_fiscale", "id_casella", "datain", "datafi", "tipo_appartenenza",
-                    "username", "data_assunzione", "data_dimissione"};
-
+                    "nome", "codice_fiscale", "id_casella", "responsabile", "datain", "datafi", "tipo_appartenenza",
+                    "username"/* , "data_assunzione", "data_dimissione" */};
             case STRUTTURE ->
                 headers = new String[]{"id_casella", "id_padre", "descrizione",
                     "datain", "datafi", "tipo_legame", "codice_ente"};
             case TRASFORMAZIONI ->
                 headers = new String[]{"progressivo_riga", "id_casella_partenza", "id_casella_arrivo", "data_trasformazione",
-                    "motivo", "datain_partenza", "dataora_oper", "codice_ente"};
+                    "motivo", /* "datain_partenza", */ "dataora_oper", "codice_ente"};
             case ANAGRAFICHE ->
                 headers = new String[]{"codice_ente", "codice_matricola", "cognome",
                     "nome", "codice_fiscale", "email"};
@@ -192,7 +193,5 @@ public class ExportDatiManager {
         }
         return headers;
     }
-
-  
 
 }

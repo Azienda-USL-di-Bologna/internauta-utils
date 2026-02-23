@@ -1,0 +1,17 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.project.sourcePaths": [],
+    "java.project.outputPath": "",
+    "java.project.referencedLibraries": [],
+    "java.configuration.maven.userSettings": null,
+    "java.import.maven.enabled": true,
+    "java.import.gradle.enabled": false,
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    }
+}
+

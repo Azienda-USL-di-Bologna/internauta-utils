@@ -25,17 +25,24 @@ public class ArubaUserInformation extends UserInformation {
     private String dominioFirma; // rappresenta il dominio della firma (es. frAUSLBO)
     private Boolean useSavedCredential;
     private ModalitaFirma modalitaFirma;
-    private Boolean firmaDelegata = false; // se true indica che la firma sarà automatica, quindi non sarà richiesto l'otp all'utente
     
+    private boolean firmaDelegata = false; // se true indica che la firma sarà automatica, quindi non sarà richiesto l'otp all'utente
+    /* 
+    se firmaDelegata=true il campo idFirmeDelega indica l'id della tabella firma.firme_delega che specifica lo username della firma delegata automatica
+    (delegatedUser) e il dominio (delegatedDomain), la password invece (delegatedPassword) sarà reperita dalle credenziali salvate
+    lo username di cui è titolare la firma sarà letto dal campo username
+    come token sarà inserita una stringa fissa, così come da specifiche ARUBA, indicata sempre nella tabella firma.firme_delega
+    */
+    private String idFirmeDelega = null;
 
     public ArubaUserInformation() {
     }
 
-    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential) {
-        this(username, password, token, modalitaFirma, certId, dominioFirma, useSavedCredential, false);
+    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, boolean useSavedCredential) {
+        this(username, password, token, modalitaFirma, certId, dominioFirma, useSavedCredential, false, null);
     }
     
-    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, Boolean useSavedCredential, Boolean firmaDelegata) {
+    public ArubaUserInformation(String username, String password, String token, ModalitaFirma modalitaFirma, String certId, String dominioFirma, boolean useSavedCredential, Boolean firmaDelegata, String idFirmeDelega) {
         this.username = username;
         this.password = password;
         this.token = token;
@@ -44,6 +51,7 @@ public class ArubaUserInformation extends UserInformation {
         this.dominioFirma = dominioFirma;
         this.useSavedCredential = useSavedCredential;
         this.firmaDelegata = firmaDelegata;
+        this.idFirmeDelega = idFirmeDelega;
     }
 
     @Override
@@ -107,11 +115,19 @@ public class ArubaUserInformation extends UserInformation {
         this.dominioFirma = dominioFirma;
     }
 
-    public Boolean getFirmaDelegata() {
+    public boolean getFirmaDelegata() {
         return firmaDelegata;
     }
 
-    public void setFirmaDelegata(Boolean firmaDelegata) {
+    public void setFirmaDelegata(boolean firmaDelegata) {
         this.firmaDelegata = firmaDelegata;
+    }
+
+    public String getIdFirmeDelega() {
+        return idFirmeDelega;
+    }
+
+    public void setIdFirmeDelega(String idFirmeDelega) {
+        this.idFirmeDelega = idFirmeDelega;
     }
 }

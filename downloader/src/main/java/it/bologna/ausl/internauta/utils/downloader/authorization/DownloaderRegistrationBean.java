@@ -9,14 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * In questa classe di configurazione inchiiamo i path da proteggere tramite il controlo del token
+ * In questa classe di configurazione indichiamo i path da proteggere tramite il controlo del token
  * 
  * @author gdm
  */
 @Configuration
 public class DownloaderRegistrationBean {
 
-    // i path da proteggere sono inseriti all'interno del parametri downloader.security.start-nodes-protection dell'application properties dell'applicazione
+    // i path da proteggere sono inseriti all'interno del parametro downloader.security.start-nodes-protection dell'application.properties dell'applicazione
     @Value("${downloader.security.start-nodes-protection}")
     private String startNodesProtection;
 

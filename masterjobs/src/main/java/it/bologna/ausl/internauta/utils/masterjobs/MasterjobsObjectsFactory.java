@@ -1,8 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs;
 
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsQueueData;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsApplicationConfig;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsJobsExecutionThread;
@@ -50,7 +49,7 @@ public class MasterjobsObjectsFactory {
      * @return l'oggetto MasterjobsQueueData
      * @throws JsonProcessingException 
      */
-    public MasterjobsQueueData getMasterjobsQueueDataFromString(String data) throws JsonProcessingException {
+    public MasterjobsQueueData getMasterjobsQueueDataFromString(String data) {
         MasterjobsQueueData masterjobsQueueData = this.objectMapper.readValue(data, MasterjobsQueueData.class);
         masterjobsQueueData.setObjectMapper(objectMapper);
         return masterjobsQueueData;

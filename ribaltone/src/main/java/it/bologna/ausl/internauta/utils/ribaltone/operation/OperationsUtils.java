@@ -1,8 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.blackbox.PermissionManager;
 import it.bologna.ausl.blackbox.exceptions.BlackBoxPermissionException;
@@ -40,10 +37,11 @@ import it.bologna.ausl.model.entities.rubrica.Contatto;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 
 /**
  *
@@ -79,43 +77,43 @@ public class OperationsUtils {
      * @return
      */
     public static Struttura inserisciStruttura(
-        EntityManager entityManager,
-        JPAQueryFactory queryFactory,
-        Integer idAzienda,
-        Integer idCasella,
-        String descrizione,
-        Integer idCasellaPadre,
-        QStruttura qStruttura,
-        HashMap<Integer, List<Integer>> struttureDaAggiornareConPadre
+            EntityManager entityManager,
+            JPAQueryFactory queryFactory,
+            Integer idAzienda,
+            Integer idCasella,
+            String descrizione,
+            Integer idCasellaPadre,
+            QStruttura qStruttura,
+            HashMap<Integer, List<Integer>> struttureDaAggiornareConPadre
     ) {
         Azienda azienda = entityManager.find(Azienda.class, idAzienda);
         if (idAzienda != null) {
             Struttura strutturaDaInserire = new Struttura(
-                idCasella,
-                descrizione,
-                ZonedDateTime.now(),
-                null,
-                true,
-                null,
-                idCasella,
-                idCasellaPadre,
-                Boolean.FALSE,
-                null,
-                azienda,
-                false
+                    idCasella,
+                    descrizione,
+                    ZonedDateTime.now(),
+                    null,
+                    true,
+                    null,
+                    idCasella,
+                    idCasellaPadre,
+                    Boolean.FALSE,
+                    null,
+                    azienda,
+                    false
             );
             log.info("idCasellaPadre" + idCasellaPadre);
             log.info("idAzienda" + idAzienda);
             //da trovare il padre se non c'è devo segnarmela e poi sistemarla a meno che non sia la radice
             if (idCasellaPadre != null && idCasellaPadre != 0) {
                 Struttura idStrutturaPadre = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.attiva
-                        .and(qStruttura.idCasella.eq(idCasellaPadre))
-                        .and(qStruttura.idAzienda.id.eq(idAzienda))
-                    )
-                    .fetchOne();
+                        .select(qStruttura)
+                        .from(qStruttura)
+                        .where(qStruttura.attiva
+                                .and(qStruttura.idCasella.eq(idCasellaPadre))
+                                .and(qStruttura.idAzienda.id.eq(idAzienda))
+                        )
+                        .fetchOne();
 
                 //Inserire su baborg strutture
                 //Inserire su baborg storico relazione
@@ -137,9 +135,9 @@ public class OperationsUtils {
                 //ho inserito una struttura quindi cerco se devo collegare qualcosa
                 if (struttureDaAggiornareConPadre.containsKey(strutturaDaInserire.getIdCasella())) {
                     queryFactory
-                        .update(qStruttura)
-                        .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
-                        .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
+                            .update(qStruttura)
+                            .set(qStruttura.idStrutturaPadre, strutturaDaInserire)
+                            .where(qStruttura.id.in(struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella()))).execute();
                     for (Integer idStrutturaFiglia : struttureDaAggiornareConPadre.get(strutturaDaInserire.getIdCasella())) {
                         Struttura strutturaFiglia = entityManager.find(Struttura.class, idStrutturaFiglia);
                         if (strutturaFiglia != null) {
@@ -227,19 +225,20 @@ public class OperationsUtils {
             //chiudere su baborg strutture
 
             queryFactory
-                .update(qStruttura)
-                .set(qStruttura.attiva, false)
-                .set(qStruttura.dataCessazione, ZonedDateTime.now())
-                .where(qStruttura.id.eq(strutturaBaborgDaChiudere.getId())).execute();
+                    .update(qStruttura)
+                    .set(qStruttura.attiva, false)
+                    .set(qStruttura.dataCessazione, ZonedDateTime.now())
+                    .setNull(qStruttura.codice)
+                    .where(qStruttura.id.eq(strutturaBaborgDaChiudere.getId())).execute();
 
             //chiudere su baborg storico relazione
             queryFactory
-                .update(qStoricoRelazione)
-                .set(qStoricoRelazione.attivaAl, ZonedDateTime.now())
-                .where((qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now()))).and(
-                    qStoricoRelazione.idStrutturaFiglia.id.eq(strutturaBaborgDaChiudere.getId())
-                        .or(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaBaborgDaChiudere.getId())))
-                ).execute();
+                    .update(qStoricoRelazione)
+                    .set(qStoricoRelazione.attivaAl, ZonedDateTime.now())
+                    .where((qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now()))).and(
+                            qStoricoRelazione.idStrutturaFiglia.id.eq(strutturaBaborgDaChiudere.getId())
+                                    .or(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaBaborgDaChiudere.getId())))
+                    ).execute();
 
             return queryFactory.select(qStruttura).from(qStruttura).where(qStruttura.id.eq(strutturaBaborgDaChiudere.getId())).fetchOne();
         }
@@ -247,14 +246,14 @@ public class OperationsUtils {
 
     public static void aggiustaUnificazioni(Integer idCasellaDaChiudere, Struttura strutturaAppenaInserita, EntityManager em, JPAQueryFactory queryFactory, QStrutturaUnificata qStrutturaUnificata) {
         List<StrutturaUnificata> sorgentiDaModificare = queryFactory.select(qStrutturaUnificata)
-            .from(qStrutturaUnificata)
-            .where(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(idCasellaDaChiudere)
-                .and(qStrutturaUnificata.dataDisattivazione.isNull())).fetch();
+                .from(qStrutturaUnificata)
+                .where(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(idCasellaDaChiudere)
+                        .and(qStrutturaUnificata.dataDisattivazione.isNull())).fetch();
 
         List<StrutturaUnificata> destinazioniDaModificare = queryFactory.select(qStrutturaUnificata)
-            .from(qStrutturaUnificata)
-            .where(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(idCasellaDaChiudere)
-                .and(qStrutturaUnificata.dataDisattivazione.isNull())).fetch();
+                .from(qStrutturaUnificata)
+                .where(qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(idCasellaDaChiudere)
+                        .and(qStrutturaUnificata.dataDisattivazione.isNull())).fetch();
 
         for (StrutturaUnificata sorgenteDaModificare : sorgentiDaModificare) {
             sorgenteDaModificare.setDataDisattivazione(ZonedDateTime.now());
@@ -281,11 +280,11 @@ public class OperationsUtils {
 
     public static void spostaStruttura(EntityManager em, Integer idStrutturaSorgente, Integer idStrutturaDestinazione, String tipoOperazione, String dataTrasformazioneStr) {
         em.createNativeQuery("SELECT ribaltone_utils.sposta_struttura(:id_struttura_vecchia, :id_struttura_nuova, :tipo_operazione, :id_strutturtext_data_trasformazionea_vecchia);")
-            .setParameter("id_struttura_vecchia", idStrutturaSorgente)
-            .setParameter("id_struttura_nuova", idStrutturaDestinazione)
-            .setParameter("tipo_operazione", tipoOperazione)
-            .setParameter("id_strutturtext_data_trasformazionea_vecchia", dataTrasformazioneStr)
-            .getSingleResult();
+                .setParameter("id_struttura_vecchia", idStrutturaSorgente)
+                .setParameter("id_struttura_nuova", idStrutturaDestinazione)
+                .setParameter("tipo_operazione", tipoOperazione)
+                .setParameter("id_strutturtext_data_trasformazionea_vecchia", dataTrasformazioneStr)
+                .getSingleResult();
 
     }
 
@@ -300,12 +299,12 @@ public class OperationsUtils {
      */
     public static Struttura getStrutturaAttivaFromIdCasellaAndIdAzienda(JPAQueryFactory queryFactory, Integer idCasella, Integer idAzienda, QStruttura qStruttura) {
         return queryFactory
-            .select(qStruttura)
-            .from(qStruttura)
-            .where(qStruttura.idCasella.eq(idCasella)
-                .and(qStruttura.attiva)
-                .and(qStruttura.idAzienda.id.eq(idAzienda)))
-            .fetchFirst();
+                .select(qStruttura)
+                .from(qStruttura)
+                .where(qStruttura.idCasella.eq(idCasella)
+                        .and(qStruttura.attiva)
+                        .and(qStruttura.idAzienda.id.eq(idAzienda)))
+                .fetchFirst();
     }
 
     public static List<StrutturaUnificata> entitaCoinvoltaTouchUnificazioni(JPAQueryFactory queryFactory, DatiRibaltoneInterface entitaCoinvolta, QStruttura qStruttura) {
@@ -337,19 +336,19 @@ public class OperationsUtils {
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         if (strutturaCoinvolta != null) {
             List<StrutturaUnificata> struttureUnificateAttive = queryFactory
-                .select(qStrutturaUnificata)
-                .from(qStrutturaUnificata)
-                .where((qStrutturaUnificata.idStrutturaSorgente.id.eq(strutturaCoinvolta.getId())
-                    .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(strutturaCoinvolta.getId())))
-                    .and(qStrutturaUnificata.dataAttivazione.isNotNull()
-                        .and(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now()))
-                        .and(
-                            qStrutturaUnificata.dataDisattivazione.isNull()
-                                .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
-                        )
+                    .select(qStrutturaUnificata)
+                    .from(qStrutturaUnificata)
+                    .where((qStrutturaUnificata.idStrutturaSorgente.id.eq(strutturaCoinvolta.getId())
+                            .or(qStrutturaUnificata.idStrutturaDestinazione.id.eq(strutturaCoinvolta.getId())))
+                            .and(qStrutturaUnificata.dataAttivazione.isNotNull()
+                                    .and(qStrutturaUnificata.dataAttivazione.before(ZonedDateTime.now()))
+                                    .and(
+                                            qStrutturaUnificata.dataDisattivazione.isNull()
+                                                    .or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now()))
+                                    )
+                            )
                     )
-                )
-                .fetch();
+                    .fetch();
 
             return struttureUnificateAttive;
         } else {
@@ -418,15 +417,15 @@ public class OperationsUtils {
      * @param idCasella
      * @param attiva
      * @return lista ordinata per livello di antenati struttura (dalla radice
-     *         Direzione Generale fino ad arrivare a idCasella passata)
+     * Direzione Generale fino ad arrivare a idCasella passata)
      */
     public static List<Struttura> getStruttureAntenateAttiveONo(EntityManager entityManager, Integer idCasella, Boolean attive, Integer idAzienda) {
         return entityManager.createNativeQuery(
-            "SELECT * FROM baborg.strutture_antenate_attive_o_no(:idCasella, :attive, :idAzienda)", Struttura.class)
-            .setParameter("idCasella", idCasella)
-            .setParameter("attive", attive)
-            .setParameter("idAzienda", idAzienda)
-            .getResultList();
+                "SELECT * FROM baborg.strutture_antenate_attive_o_no(:idCasella, :attive, :idAzienda)", Struttura.class)
+                .setParameter("idCasella", idCasella)
+                .setParameter("attive", attive)
+                .setParameter("idAzienda", idAzienda)
+                .getResultList();
 
     }
 
@@ -701,12 +700,12 @@ public class OperationsUtils {
         QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
 
         StoricoRelazione storicoRelazioneFiglioVecchio = queryFactory
-            .select(qStoricoRelazione)
-            .from(qStoricoRelazione)
-            .where(qStoricoRelazione.attivaDal.before(ZonedDateTime.now())
-                .and(qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now())))
-                .and(qStoricoRelazione.idStrutturaFiglia.id.eq(idStrutturaDestinazioneVecchia.getId()))
-            ).fetchOne();
+                .select(qStoricoRelazione)
+                .from(qStoricoRelazione)
+                .where(qStoricoRelazione.attivaDal.before(ZonedDateTime.now())
+                        .and(qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now())))
+                        .and(qStoricoRelazione.idStrutturaFiglia.id.eq(idStrutturaDestinazioneVecchia.getId()))
+                ).fetchOne();
 
         if (storicoRelazioneFiglioVecchio != null) {
             storicoRelazioneFiglioVecchio.setAttivaAl(ZonedDateTime.now());
@@ -720,12 +719,12 @@ public class OperationsUtils {
         }
 
         List<StoricoRelazione> storicoRelazionePadriVecchi = queryFactory
-            .select(qStoricoRelazione)
-            .from(qStoricoRelazione)
-            .where(qStoricoRelazione.attivaDal.before(ZonedDateTime.now())
-                .and(qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now())))
-                .and(qStoricoRelazione.idStrutturaPadre.id.eq(idStrutturaDestinazioneVecchia.getId()))
-            ).fetch();
+                .select(qStoricoRelazione)
+                .from(qStoricoRelazione)
+                .where(qStoricoRelazione.attivaDal.before(ZonedDateTime.now())
+                        .and(qStoricoRelazione.attivaAl.isNull().or(qStoricoRelazione.attivaAl.after(ZonedDateTime.now())))
+                        .and(qStoricoRelazione.idStrutturaPadre.id.eq(idStrutturaDestinazioneVecchia.getId()))
+                ).fetch();
 
         for (StoricoRelazione storicoRelazionePadreVecchio : storicoRelazionePadriVecchi) {
             if (storicoRelazionePadreVecchio != null) {
@@ -746,15 +745,15 @@ public class OperationsUtils {
         Azienda idAziendaNew = idStrutturaNuova.getIdAzienda();
         //prendo gli utenti della struttura vecchia
         List<UtenteStruttura> utentiStrutturaDaAggiornare = queryFactory
-            .select(qUtenteStruttura)
-            .from(qUtenteStruttura)
-            .where(
-                qUtenteStruttura.attivo.and(
-                    qUtenteStruttura.idStruttura.id.eq(idStrutturaVecchia.getId())
-                        .and(qUtenteStruttura.attivoAl.isNull().or(qUtenteStruttura.attivoAl.after(ZonedDateTime.now())))
-                        .and(qUtenteStruttura.attivoDal.before(ZonedDateTime.now()))
-                )
-            ).fetch();
+                .select(qUtenteStruttura)
+                .from(qUtenteStruttura)
+                .where(
+                        qUtenteStruttura.attivo.and(
+                                qUtenteStruttura.idStruttura.id.eq(idStrutturaVecchia.getId())
+                                        .and(qUtenteStruttura.attivoAl.isNull().or(qUtenteStruttura.attivoAl.after(ZonedDateTime.now())))
+                                        .and(qUtenteStruttura.attivoDal.before(ZonedDateTime.now()))
+                        )
+                ).fetch();
         //per ogniuno di loro creo sulla struttura nuova utenza se non c'è (caso di unificazione) e afferenza
         for (UtenteStruttura utenteStrutturaDaAggiornare : utentiStrutturaDaAggiornare) {
             Persona idPersona = utenteStrutturaDaAggiornare.getIdUtente().getIdPersona();
@@ -795,14 +794,14 @@ public class OperationsUtils {
     private static void gestioneFusione(EntityManager entityManager, JPAQueryFactory queryFactory, Struttura strutturaNuovaDaCollegare) {
         QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
         List<StrutturaUnificata> fusioniCoinvolte = queryFactory
-            .select(qStrutturaUnificata)
-            .from(qStrutturaUnificata)
-            .where(
-                (qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
-                    .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE))
-                    .and(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(strutturaNuovaDaCollegare.getIdCasella()).or(
-                        qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(strutturaNuovaDaCollegare.getIdCasella()))))
-            .fetch();
+                .select(qStrutturaUnificata)
+                .from(qStrutturaUnificata)
+                .where(
+                        (qStrutturaUnificata.dataDisattivazione.isNull().or(qStrutturaUnificata.dataDisattivazione.after(ZonedDateTime.now())))
+                                .and(qStrutturaUnificata.tipoOperazione.eq(StrutturaUnificata.TipoUnificazione.FUSIONE))
+                                .and(qStrutturaUnificata.idStrutturaSorgente.idCasella.eq(strutturaNuovaDaCollegare.getIdCasella()).or(
+                                        qStrutturaUnificata.idStrutturaDestinazione.idCasella.eq(strutturaNuovaDaCollegare.getIdCasella()))))
+                .fetch();
 //
         if (!fusioniCoinvolte.isEmpty()) {
             // devo fare qualcosa
@@ -851,8 +850,10 @@ public class OperationsUtils {
     }
 
     public static void insertUtenteInStruttura(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire, Struttura struttura, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList, Integer idFonteAggiunta) {
+        log.info("sto gestendo cf: " + entitaDaInserire.getCodiceFiscale() + " su struttura: " + entitaDaInserire.getIdCasella());
         Persona persona = getPersona(queryFactory, entitaDaInserire);
-
+        //puo capitare con le unificazioni
+        boolean utenteStrutturaGiaPresente = false;
         //inserire in baborg persone se non c'è la persona
         if (struttura != null) {
             if (persona == null) {
@@ -886,6 +887,7 @@ public class OperationsUtils {
             entityManager.persist(utente);
             entityManager.flush();
             UtenteStruttura utenteStruttura = getUtenteStrutturaAttivo(queryFactory, struttura, utente);
+
             if (utenteStruttura == null) {
                 utenteStruttura = new UtenteStruttura();
                 utenteStruttura.setIdUtente(utente);
@@ -901,20 +903,36 @@ public class OperationsUtils {
                 if (utenteStrutturaDaInserireList != null) {
                     utenteStrutturaDaInserireList.add(utenteStruttura);
                 }
+            } else {
+                utenteStrutturaGiaPresente = true;
+                AfferenzaStruttura afferenzaStrutturaNew = OperationsUtils.getAfferenzaFromSigla(
+                        queryFactory,
+                        entitaDaInserire.getIdAzienda().equals(struttura.getIdAzienda().getId()) ? entitaDaInserire.getTipoAppartenenza() : "U",
+                        utente);
+                storicizzaAndInserisciUtenteStruttura(persona, utente, struttura, afferenzaStrutturaNew, entitaDaInserire.getResponsabile(), entitaDaInserire, permissionManager, entityManager, utenteStrutturaDaInserireList, queryFactory);
             }
-            log.info("sto gestendo username: " + username + " su struttura: " + utenteStruttura.getIdStruttura().getIdCasella());
-            if (entitaDaInserire.getResponsabile()) {
-                //inserire i permessi di flusso per i responsabili
+
+            //inserire i permessi di flusso per i responsabili nuovi appena inseriti
+            if (entitaDaInserire.getResponsabile() && !utenteStrutturaGiaPresente) {
                 try {
                     permissionManager.insertSimplePermission(
-                        utente,
-                        struttura,
-                        BlackBoxConstants.Predicato.FIRMA.toString(),
-                        "ribaltone",
-                        Boolean.FALSE,
-                        Boolean.FALSE,
-                        BlackBoxConstants.Ambito.PICO.toString(),
-                        BlackBoxConstants.Tipo.FLUSSO.toString());
+                            utente,
+                            struttura,
+                            BlackBoxConstants.Predicato.FIRMA.toString(),
+                            "ribaltone",
+                            Boolean.FALSE,
+                            Boolean.FALSE,
+                            BlackBoxConstants.Ambito.PICO.toString(),
+                            BlackBoxConstants.Tipo.FLUSSO.toString());
+                    permissionManager.insertSimplePermission(
+                            utente,
+                            struttura,
+                            BlackBoxConstants.Predicato.REDIGE.toString(),
+                            "ribaltone",
+                            Boolean.FALSE,
+                            Boolean.FALSE,
+                            BlackBoxConstants.Ambito.PICO.toString(),
+                            BlackBoxConstants.Tipo.FLUSSO.toString());
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                 }
@@ -929,10 +947,10 @@ public class OperationsUtils {
     public static Persona getPersona(JPAQueryFactory queryFactory, DatiDaImportareAppartenente entitaDaInserire) {
         //faccio fetchFirst perche mi aspetto di trovare un solo utente per azienda o di non trovarne affatto
         return queryFactory
-            .select(qPersona)
-            .from(qPersona)
-            .where(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()))
-            .fetchFirst();
+                .select(qPersona)
+                .from(qPersona)
+                .where(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()))
+                .fetchFirst();
     }
 
     public static Utente getUtenteDiIdAzienda(JPAQueryFactory queryFactory, Integer idAzienda, Persona persona) {
@@ -940,11 +958,11 @@ public class OperationsUtils {
             return null;
         } else {
             List<Utente> utenti = queryFactory
-                .select(qUtente)
-                .from(qUtente)
-                .where(qUtente.idPersona.id.eq(persona.getId())
-                    .and(qUtente.idAzienda.id.eq(idAzienda)))
-                .fetch();
+                    .select(qUtente)
+                    .from(qUtente)
+                    .where(qUtente.idPersona.id.eq(persona.getId())
+                            .and(qUtente.idAzienda.id.eq(idAzienda)))
+                    .fetch();
             if (utenti == null || utenti.isEmpty()) {
                 return null;
             } else {
@@ -967,11 +985,11 @@ public class OperationsUtils {
                 }
             }
             return queryFactory
-                .select(qUtenteStruttura)
-                .from(qUtenteStruttura)
-                .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
-                    .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
-                .fetchFirst();
+                    .select(qUtenteStruttura)
+                    .from(qUtenteStruttura)
+                    .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
+                            .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
+                    .fetchFirst();
         } else {
             return null;
         }
@@ -1001,9 +1019,9 @@ public class OperationsUtils {
             }
         }
         AfferenzaStruttura afferenza = queryFactory
-            .select(qffAfferenzaStruttura)
-            .from(qffAfferenzaStruttura)
-            .where(qffAfferenzaStruttura.codice.eq(codice.toString())).fetchOne();
+                .select(qffAfferenzaStruttura)
+                .from(qffAfferenzaStruttura)
+                .where(qffAfferenzaStruttura.codice.eq(codice.toString())).fetchOne();
         return afferenza;
     }
 
@@ -1021,28 +1039,28 @@ public class OperationsUtils {
                 //spengni tutti i permessi veicolati
                 try {
                     permissionManager.deletePermission(
-                        persona,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                        BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                        "ribaltone",
-                        utenteStruttura.getIdStruttura());
+                            persona,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                            BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                            "ribaltone",
+                            utenteStruttura.getIdStruttura());
                     //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
                     permissionManager.deletePermission(
-                        utente,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                        BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                        "ribaltone",
-                        utenteStruttura.getIdStruttura());
+                            utente,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                            BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                            "ribaltone",
+                            utenteStruttura.getIdStruttura());
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                 }
@@ -1058,14 +1076,16 @@ public class OperationsUtils {
                         for (String ambitoDaSpegnere : ambitiDaSpegnere) {
 
                             permissionManager.deletePermission(
-                                utente,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                ambitoDaSpegnere,
-                                BlackBoxConstants.Tipo.FLUSSO.toString());
+                                    utente,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    ambitoDaSpegnere,
+                                    BlackBoxConstants.Tipo.FLUSSO.toString(),
+                                    "ribaltone"
+                            );
                         }
                     } catch (BlackBoxPermissionException ex) {
                         throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
@@ -1073,23 +1093,25 @@ public class OperationsUtils {
                     if (!personaHasOtherUtenti(queryFactory, persona)) {
                         persona.setAttiva(Boolean.FALSE);
                         persona.setDataSpegnimento(ZonedDateTime.now());
+                        //serve per salvare tutto alla fine
                         utente.setIdPersona(persona);
                         //spegni tutti i permessi persona
                         try {
                             permissionManager.deletePermission(
-                                persona,
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                                BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                                "ribaltone");
+                                    persona,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                                    "ribaltone");
                         } catch (BlackBoxPermissionException ex) {
                             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                         }
                     }
+                    //serve per salvare tutto alla fine
                     utenteStruttura.setIdUtente(utente);
                 }
                 entityManager.persist(utenteStruttura);
@@ -1105,14 +1127,15 @@ public class OperationsUtils {
                     for (String ambitoDaSpegnere : ambitiDaSpegnere) {
 
                         permissionManager.deletePermission(
-                            utente,
-                            utenteStruttura.getIdStruttura(),
-                            null,
-                            null,
-                            Boolean.FALSE,
-                            Boolean.FALSE,
-                            ambitoDaSpegnere,
-                            BlackBoxConstants.Tipo.FLUSSO.toString());
+                                utente,
+                                utenteStruttura.getIdStruttura(),
+                                null,
+                                null,
+                                Boolean.FALSE,
+                                Boolean.FALSE,
+                                ambitoDaSpegnere,
+                                BlackBoxConstants.Tipo.FLUSSO.toString(),
+                                "ribaltone");
                     }
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
@@ -1138,11 +1161,11 @@ public class OperationsUtils {
                 }
             }
             return queryFactory
-                .select(qUtenteStruttura)
-                .from(qUtenteStruttura)
-                .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
-                    .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
-                .fetchFirst();
+                    .select(qUtenteStruttura)
+                    .from(qUtenteStruttura)
+                    .where(qUtenteStruttura.idUtente.id.eq(userPerQuery.getId())
+                            .and(qUtenteStruttura.idStruttura.id.eq(struttura.getId())).and(qUtenteStruttura.attivo))
+                    .fetchFirst();
         } else {
             return null;
         }
@@ -1151,10 +1174,10 @@ public class OperationsUtils {
     private static Boolean utenteHasOtherStrutture(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
         if (struttura != null && utente != null) {
             return queryFactory
-                .select(qUtenteStruttura.id)
-                .from(qUtenteStruttura)
-                .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
-                    .and(qUtenteStruttura.attivo)).limit(1).fetchFirst() != null;
+                    .select(qUtenteStruttura.id)
+                    .from(qUtenteStruttura)
+                    .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
+                            .and(qUtenteStruttura.attivo)).limit(1).fetchFirst() != null;
         } else {
             return null;
         }
@@ -1163,10 +1186,10 @@ public class OperationsUtils {
     private static Boolean personaHasOtherUtenti(JPAQueryFactory queryFactory, Persona persona) {
         if (persona != null) {
             return queryFactory
-                .select(qUtente.id)
-                .from(qUtente)
-                .where(qUtente.idPersona.id.eq(persona.getId()).and(qUtente.attivo))
-                .fetchFirst() != null;
+                    .select(qUtente.id)
+                    .from(qUtente)
+                    .where(qUtente.idPersona.id.eq(persona.getId()).and(qUtente.attivo))
+                    .fetchFirst() != null;
         } else {
             return null;
         }
@@ -1218,67 +1241,192 @@ public class OperationsUtils {
                     result.put(idCasella, row);
                 }
                 return result;
-            } catch (JsonProcessingException ex) {
+            } catch (JacksonException ex) {
                 throw new RibaltoneHttpException("errore nella conversione delle unificazioni nella funzione getMappaReplicheStrutture");
             }
         });
 
     }
 
-    public static void editUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
-        Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
-        if (persona != null && strutturaSuCuiModificare != null) {
-            Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, strutturaSuCuiModificare.getIdAzienda().getId(), persona);
-//                    Struttura struttura = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
-            persona.setCognome(entitaDaModificare.getCognome());
-            persona.setNome(entitaDaModificare.getNome());
-            persona.setDescrizione(entitaDaModificare.getCognome() + " " + entitaDaModificare.getNome());
+    public static void storicizzaAndInserisciUtenteStruttura(Persona persona, Utente utente, Struttura strutturaSuCuiModificare, AfferenzaStruttura afferenzaStruttura, Boolean responsabile, DatiDaImportareAppartenente entitaDaModificare, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaInserireList, JPAQueryFactory queryFactory) {
+        if (utente != null) {
+            UtenteStruttura utenteStruttura = OperationsUtils.getUtenteStrutturaAttivo(queryFactory, strutturaSuCuiModificare, utente);
+            if (utenteStruttura != null) {
+                UtenteStruttura utenteStrutturaNew = UtenteStruttura.clone(utenteStruttura);
+                utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
+                utenteStrutturaNew.setAttivoAl(null);
+                //posso spostare il dettaglio contatto tanto è lo stesso
+                utenteStrutturaNew.setIdDettaglioContatto(utenteStruttura.getIdDettaglioContatto());
 
-            if (utente != null) {
-                utente.setUsername(entitaDaModificare.getUsername() == null ? entitaDaModificare.getCodiceFiscale() : entitaDaModificare.getUsername());
-                utente.setIdPersona(persona);
-                UtenteStruttura utenteStruttura = OperationsUtils.getUtenteStrutturaAttivo(queryFactory, strutturaSuCuiModificare, utente);
-                if (utenteStruttura != null) {
-                    utenteStruttura.setResponsabile(entitaDaModificare.getResponsabile());
-                    utenteStruttura.setIdUtente(utente);
-                    utenteStruttura.setIdAfferenzaStruttura(OperationsUtils.getAfferenzaFromSigla(queryFactory, entitaDaModificare.getTipoAppartenenza(), utente));
-                    entityManager.persist(utenteStruttura);
-                    if (utenteStrutturaDaInserireList != null) {
-                        utenteStrutturaDaInserireList.add(utenteStruttura);
-                    }
-                    if (entitaDaModificare.getResponsabile()) {
-                        try {
-                            permissionManager.insertSimplePermission(
-                                utente,
-                                strutturaSuCuiModificare,
-                                BlackBoxConstants.Predicato.FIRMA.toString(),
-                                "ribaltone",
-                                Boolean.FALSE,
-                                Boolean.FALSE,
-                                BlackBoxConstants.Ambito.PICO.toString(),
-                                BlackBoxConstants.Tipo.FLUSSO.toString());
-                        } catch (BlackBoxPermissionException ex) {
-                            throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                        }
-                    } else {
-                        try {
-                            permissionManager.deletePermission(
-                                utente,
-                                strutturaSuCuiModificare,
-                                BlackBoxConstants.Predicato.FIRMA.toString(),
-                                "ribaltone",
-                                Boolean.FALSE,
-                                Boolean.FALSE,
-                                BlackBoxConstants.Ambito.PICO.toString(),
-                                BlackBoxConstants.Tipo.FLUSSO.toString(),
-                                "ribaltone");
-                        } catch (BlackBoxPermissionException ex) {
-                            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                        }
-                    }
+                //metto o tolgo la responsabilita se non è null altrimenti non è per questo che sono entrato
+                if (responsabile != null) {
+                    utenteStrutturaNew.setResponsabile(responsabile);
                 }
-            }
 
+                //spengo il vecchio utente struttura
+                utenteStruttura.setAttivoAl(ZonedDateTime.now());
+                utenteStruttura.setAttivo(false);
+                utenteStruttura.setIdDettaglioContatto(null);
+
+                //metto la nuova afferenza altrimenti vuol dire che non devo modificare questo
+                if (afferenzaStruttura != null) {
+                    utenteStrutturaNew.setIdAfferenzaStruttura(afferenzaStruttura);
+                }
+                entityManager.persist(utenteStruttura);
+                entityManager.flush();
+                entityManager.persist(utenteStrutturaNew);
+                entityManager.flush();
+                if (utenteStrutturaDaInserireList != null) {
+                    utenteStrutturaDaInserireList.add(utenteStrutturaNew);
+                }
+            } else {
+                throw new RibaltoneHttpException("non trovato utente struttura non dovrebbe mai capitare");
+                //insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+            }
+        } else {
+            throw new RibaltoneHttpException("non trovato utente non dovrebbe mai capitare");
+            //insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+        }
+        //entro perche ho cambiato responsabilita
+        if (responsabile != null && responsabile) {
+            try {
+                permissionManager.insertSimplePermission(
+                        utente,
+                        strutturaSuCuiModificare,
+                        BlackBoxConstants.Predicato.FIRMA.toString(),
+                        "ribaltone",
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        BlackBoxConstants.Ambito.PICO.toString(),
+                        BlackBoxConstants.Tipo.FLUSSO.toString());
+                permissionManager.insertSimplePermission(
+                        utente,
+                        strutturaSuCuiModificare,
+                        BlackBoxConstants.Predicato.REDIGE.toString(),
+                        "ribaltone",
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        BlackBoxConstants.Ambito.PICO.toString(),
+                        BlackBoxConstants.Tipo.FLUSSO.toString());
+            } catch (BlackBoxPermissionException ex) {
+                throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+            }
+        } else if (responsabile != null && !responsabile) {
+            try {
+                permissionManager.deletePermission(
+                        utente,
+                        strutturaSuCuiModificare,
+                        BlackBoxConstants.Predicato.FIRMA.toString(),
+                        "ribaltone",
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        BlackBoxConstants.Ambito.PICO.toString(),
+                        BlackBoxConstants.Tipo.FLUSSO.toString(),
+                        "ribaltone");
+                permissionManager.deletePermission(
+                        utente,
+                        strutturaSuCuiModificare,
+                        BlackBoxConstants.Predicato.REDIGE.toString(),
+                        "ribaltone",
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        BlackBoxConstants.Ambito.PICO.toString(),
+                        BlackBoxConstants.Tipo.FLUSSO.toString(),
+                        "ribaltone");
+            } catch (BlackBoxPermissionException ex) {
+                throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+            }
         }
     }
+
+//    public static void storicizzaAndInserisciUtenteStruttura(Struttura strutturaSuCuiModificare, DatiDaImportareAppartenente entitaDaModificare, JPAQueryFactory queryFactory, EntityManager entityManager, PermissionManager permissionManager, List<UtenteStruttura> utenteStrutturaDaInserireList) {
+//        Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaModificare.getCodiceFiscale())).fetchFirst();
+//        if (persona != null && strutturaSuCuiModificare != null) {
+//            Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, strutturaSuCuiModificare.getIdAzienda().getId(), persona);
+//                    Struttura struttura = OperationsUtils.getStrutturaAttivaFromIdCasellaAndIdAzienda(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
+//            persona.setCognome(entitaDaModificare.getCognome());
+//            persona.setNome(entitaDaModificare.getNome());
+//            persona.setDescrizione(entitaDaModificare.getCognome() + " " + entitaDaModificare.getNome());
+//
+//            if (utente != null) {
+//                utente.setUsername(entitaDaModificare.getUsername() == null ? entitaDaModificare.getCodiceFiscale() : entitaDaModificare.getUsername());
+//                utente.setIdPersona(persona);
+//                UtenteStruttura utenteStruttura = OperationsUtils.getUtenteStrutturaAttivo(queryFactory, strutturaSuCuiModificare, utente);
+//                if (utenteStruttura != null) {
+//                    creo il nuovo utente struttura
+//                    UtenteStruttura utenteStrutturaNew = UtenteStruttura.clone(utenteStruttura);
+//                    utenteStrutturaNew.setAttivoDal(ZonedDateTime.now());
+//                    posso spostare il dettaglio contatto tanto è lo stesso
+//                    utenteStrutturaNew.setIdDettaglioContatto(utenteStruttura.getIdDettaglioContatto());
+//                    utenteStrutturaNew.setResponsabile(entitaDaModificare.getResponsabile());
+//                    spengo il vecchio utente struttura
+//                    utenteStruttura.setAttivoAl(ZonedDateTime.now());
+//                    utenteStruttura.setAttivo(false);
+//                    utenteStruttura.setIdDettaglioContatto(null);
+//                    utenteStruttura.setIdUtente(utente);
+//                    utenteStrutturaNew.setIdAfferenzaStruttura();
+//                    entityManager.persist(utenteStruttura);
+//                    entityManager.persist(utenteStrutturaNew);
+//                    if (utenteStrutturaDaInserireList != null) {
+//                        utenteStrutturaDaInserireList.add(utenteStrutturaNew);
+//                    }
+//                    if (entitaDaModificare.getResponsabile()) {
+//                        try {
+//                            permissionManager.insertSimplePermission(
+//                                utente,
+//                                strutturaSuCuiModificare,
+//                                BlackBoxConstants.Predicato.FIRMA.toString(),
+//                                "ribaltone",
+//                                Boolean.FALSE,
+//                                Boolean.FALSE,
+//                                BlackBoxConstants.Ambito.PICO.toString(),
+//                                BlackBoxConstants.Tipo.FLUSSO.toString());
+//                            permissionManager.insertSimplePermission(
+//                                utente,
+//                                strutturaSuCuiModificare,
+//                                BlackBoxConstants.Predicato.REDIGE.toString(),
+//                                "ribaltone",
+//                                Boolean.FALSE,
+//                                Boolean.FALSE,
+//                                BlackBoxConstants.Ambito.PICO.toString(),
+//                                BlackBoxConstants.Tipo.FLUSSO.toString());
+//                        } catch (BlackBoxPermissionException ex) {
+//                            throw new RibaltoneHttpException("errore nella creazione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+//                        }
+//                    } else {
+//                        try {
+//                            permissionManager.deletePermission(
+//                                utente,
+//                                strutturaSuCuiModificare,
+//                                BlackBoxConstants.Predicato.FIRMA.toString(),
+//                                "ribaltone",
+//                                Boolean.FALSE,
+//                                Boolean.FALSE,
+//                                BlackBoxConstants.Ambito.PICO.toString(),
+//                                BlackBoxConstants.Tipo.FLUSSO.toString(),
+//                                "ribaltone");
+//                            permissionManager.deletePermission(
+//                                utente,
+//                                strutturaSuCuiModificare,
+//                                BlackBoxConstants.Predicato.REDIGE.toString(),
+//                                "ribaltone",
+//                                Boolean.FALSE,
+//                                Boolean.FALSE,
+//                                BlackBoxConstants.Ambito.PICO.toString(),
+//                                BlackBoxConstants.Tipo.FLUSSO.toString(),
+//                                "ribaltone");
+//                        } catch (BlackBoxPermissionException ex) {
+//                            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+//                        }
+//                    }
+//                } else if (utenteStruttura == null) {
+//                    insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+//                }
+//            } else {
+//                insertUtenteInStruttura(queryFactory, entitaDaModificare, strutturaSuCuiModificare, entityManager, permissionManager, utenteStrutturaDaInserireList);
+//
+//            }
+//
+//        }
+//    }
 }

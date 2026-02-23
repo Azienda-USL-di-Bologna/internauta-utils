@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *

@@ -31,6 +31,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.utils.pdf.PdfUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmeDelegaManager;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
@@ -45,15 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.xml.ws.BindingProvider;
 import org.apache.tika.mime.MimeTypeException;
@@ -84,8 +82,10 @@ public class FirmaRemotaMedas extends FirmaRemota {
     private final ThreadLocal<String> largeFileHash = new ThreadLocal<>();
     private final ThreadLocal<Pair<Session, ChannelSftp>> sftpConnection = new ThreadLocal<>();
     
-    public FirmaRemotaMedas(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+    public FirmaRemotaMedas(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, 
+            InternalCredentialManager internalCredentialManager, FirmeDelegaManager firmeDelegaManager, 
+            FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
         
         // lista di file grossi da eliminare al termine della firma
 //        this.largeFilesToDelete.set(new ArrayList<>()); // inizializzazione della lista di file grossi da eliminare al termine della firma

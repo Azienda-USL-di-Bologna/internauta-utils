@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsInterruptException;
 import it.bologna.ausl.model.entities.masterjobs.Set;
@@ -57,7 +56,7 @@ public class MasterjobsWaitQueueJobsExecutionThread extends MasterjobsJobsExecut
             MasterjobsQueueData queueData;
             try {
                 queueData = masterjobsObjectsFactory.getMasterjobsQueueDataFromString(queueDataString);
-            } catch (JsonProcessingException ex) {
+            } catch (Exception ex) {
                 String errorMessage = String.format("json parse error from string %s", queueDataString);
                 log.error(errorMessage);
                 throw new MasterjobsExecutionThreadsException(errorMessage, ex);

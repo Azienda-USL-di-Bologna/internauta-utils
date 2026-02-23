@@ -1,6 +1,5 @@
 package it.bologna.ausl.documentgenerator.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.documentgenerator.exceptions.Http500ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Sql2oSelectException;
 import java.io.IOException;
@@ -19,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.data.Row;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -26,9 +26,9 @@ import org.sql2o.data.Row;
  */
 public class BabelUtils {
 
-    AziendaParamsManager aziendaParamsManager;
+    private final AziendaParamsManager aziendaParamsManager;
 
-    ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BabelUtils.class);
 
@@ -181,7 +181,7 @@ public class BabelUtils {
             throw new Http500ResponseException("500", "Errore nella chiamata alla Web-api");
         }
 
-        List<Map<String, String>> idGuidList = new ArrayList<>();
+        List<Map<String, String>> idGuidList;
 
         idGuidList = objectMapper.readValue(responseg.body().string(), List.class);
 
@@ -280,7 +280,7 @@ public class BabelUtils {
             System.out.println("Query ricerca fascicolo: " + q.toString());
 
             List<String> listaIdFascicoliGd = q.executeAndFetch(String.class);
-            if (listaIdFascicoliGd.size() == 0) {
+            if (listaIdFascicoliGd.isEmpty()) {
                 throw new Sql2oSelectException(Sql2oSelectException.SelectException.NESSUN_RISULTATO, "Fascicolo non trovato!!");
             } else if (listaIdFascicoliGd.size() > 1) {
                 throw new Sql2oSelectException(Sql2oSelectException.SelectException.PIU_RISULTATI, "Trovati più fascicoli!");
@@ -308,7 +308,7 @@ public class BabelUtils {
                 + "FROM bds_tools.file_supportati "
                 + "WHERE mime_type = :mimetype";
 
-        List<Row> rows = null;
+        List<Row> rows;
 
         try ( Connection conn = aziendaParamsManager.getDbConnection(codiceAzienda).open()) {
             rows = conn.createQuery(query)

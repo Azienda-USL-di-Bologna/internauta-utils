@@ -29,9 +29,10 @@ import org.springframework.stereotype.Component;
 public class RibaltoneDataConfigurationInterceptor extends RibaltoneBaseInterceptor {
 
     @Autowired
-    RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+    private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+
     @Autowired
-    RibaltoneDatiUtils ribaltoneDatiUtils;
+    private RibaltoneDatiUtils ribaltoneDatiUtils;
 
     @Autowired
     private PermissionManager permissionManager;
@@ -55,7 +56,8 @@ public class RibaltoneDataConfigurationInterceptor extends RibaltoneBaseIntercep
 
         //tolgo dal JSON specifiche le chiavi che contengono dati sensibili
         r.setSpecifiche(ribaltoneDatiUtils.getOnlySpecificheNonSensibili(r));
-
+        r.setCacheConfig(null);
+        r.setCacheOperationToDo(null);
         return super.afterSelectQueryInterceptor(entity, additionalData, request, mainEntity, projectionClass);
     }
 

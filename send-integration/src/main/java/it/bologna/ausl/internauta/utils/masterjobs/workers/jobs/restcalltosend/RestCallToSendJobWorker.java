@@ -1,0 +1,108 @@
+package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.restcalltosend;
+
+import it.bologna.ausl.internauta.service.sendintegration.api.FruitoreApi;
+import it.bologna.ausl.internauta.utils.masterjobs.annotations.MasterjobsWorker;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerResult;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBase;
+import it.bologna.ausl.internauta.utils.sendintegration.authorization.SendIntegrationAuthorizationUtils;
+import it.bologna.ausl.internauta.utils.sendintegration.invoker.ApiException;
+import it.bologna.ausl.model.entities.sendintegration.SendIntegrationConfiguration;
+import java.time.ZonedDateTime;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import it.bologna.ausl.internauta.utils.sendintegration.invoker.ApiResponse;
+
+/**
+ *
+ * @author gdm
+ */
+@MasterjobsWorker
+public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerData, JobWorkerResult> {
+    private static final Logger log = LoggerFactory.getLogger(RestCallToSendJobWorker.class);
+    private final String name = RestCallToSendJobWorker.class.getSimpleName();
+    
+    @Autowired
+    private SendIntegrationAuthorizationUtils authorizationUtils;
+    
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    @Override
+    protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
+        log.info("sono in do doWork() di {}", getName());
+        
+        JobWorkerResult res;
+        
+        RestCallToSendJobWorkerData jobData = getWorkerData();
+        RestCallToSendJobWorkerData.RestCalls restCall = jobData.getRestCall();
+        String paId = jobData.getPaId();
+        
+        SendIntegrationConfiguration lepidaAziendaConfiguration = 
+            entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
+        Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
+        Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(paId);
+        String basePath = (String) paConfiguration.get("base_path");
+        
+        ZonedDateTime now = ZonedDateTime.now();
+
+        String token;
+        try {
+            token = authorizationUtils.generateTokenForFruitore(now);
+        } catch (Exception ex) {
+            String error = String.format("errore nella generazione del token", "elaboraLottoRicevuto");
+            log.error(error);
+            throw new MasterjobsWorkerException(error);
+        }
+        FruitoreApi fruitoreApi = new FruitoreApi();
+        fruitoreApi.getApiClient().setBasePath(basePath).setBearerToken(token);
+        ApiResponse<LottoBase> resp;
+        switch (restCall) {
+            case ELABORA_LOTTO_RICEVUTO -> {
+                try {
+                    resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(jobData.getLottoBaseConEventualiErrori());
+                } catch (ApiException ex) {
+                    String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
+                    log.error(error, ex);
+                    throw new MasterjobsWorkerException(error, ex);
+                }
+            }
+            case LOTTO_ELABORATO -> {
+                try {
+                    resp = fruitoreApi.lottoElaboratoWithHttpInfo(jobData.getLottoElaborato());
+                } catch (ApiException ex) {
+                    String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
+                    log.error(error, ex);
+                    throw new MasterjobsWorkerException(error, ex);
+                }
+            }
+            default -> {
+                String error = String.format("restCall non prevista %s", restCall);
+                log.error(error);
+                throw new MasterjobsWorkerException(error);
+            }
+        }
+        
+        if (resp.getStatusCode() > 200 && resp.getStatusCode() <= 299) {
+            String error = String.format("errore nella chiamata POST al %s: ha tornato %s", restCall.toString(), resp.getStatusCode());
+            log.error(error);
+            log.error(resp.toString());
+            throw new MasterjobsWorkerException(error);
+        }
+        if (resp.getData() != null) {
+            res = new RestCallToSendJobWorkerResult(resp.getData());
+        } else {
+            String error = String.format("La risposta della chiamata POST al %s: non ha body", restCall.toString());
+            log.error(error);
+            throw new MasterjobsWorkerException(error);
+        }
+        
+        log.info("job finito!");
+        return res;
+    }
+}

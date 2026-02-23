@@ -1,0 +1,141 @@
+package it.bologna.ausl.model.entities.firma;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import java.io.Serializable;
+import java.time.ZonedDateTime;
+import java.util.Map;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.util.Objects;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Type;
+import org.springframework.format.annotation.DateTimeFormat;
+
+/**
+ * Classe per mappare le firme delegate automatiche
+ * @author gdm
+ */
+@Entity
+@Table(name = "firme_delega", schema = "firma")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Cacheable(false)
+@DynamicUpdate
+public class FirmaDelega implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "id")
+    protected String id;
+    
+    @JoinColumn(name = "host_id", referencedColumnName = "host_id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Configuration configuration;
+    
+    @Basic(optional = false)
+    @Column(name = "username")
+    private String username;
+    
+    @Basic(optional = true)
+    @Column(name = "password")
+    private String password;
+    
+    @Basic(optional = true)
+    @Type(JsonBinaryType.class)
+    @Column(name = "addtional_data", columnDefinition = "jsonb")
+    private Map<String, Object> addtionalData;
+    
+    @Version()
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX'['VV']'")
+    private ZonedDateTime version;
+
+    public FirmaDelega() {
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Map<String, Object> getAddtionalData() {
+        return addtionalData;
+    }
+
+    public void setAddtionalData(Map<String, Object> addtionalData) {
+        this.addtionalData = addtionalData;
+    }
+
+    public ZonedDateTime getVersion() {
+        return version;
+    }
+
+    public void setVersion(ZonedDateTime version) {
+        this.version = version;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof FirmaDelega)) {
+            return false;
+        }
+        FirmaDelega other = (FirmaDelega) object;
+        return !((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id)));
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + Objects.hashCode(this.id);
+        return hash;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getCanonicalName()+ "[ id=" + id + " ]";
+    }
+
+}
