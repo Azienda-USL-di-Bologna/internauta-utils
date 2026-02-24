@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -11,7 +12,10 @@ public class ResponseUnimatica {
 
     private String esitoComplessivo;
     private String pdvUuid;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ssXXX")
     private ZonedDateTime dataDiCarico;
+
     private List<ErroreUnimatica> erroriGeneraliList;
     private EsitoConsegnaUnimatica esitoConsegnaUnimatica;
 

@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
 
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.AllegatoUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
@@ -40,6 +41,10 @@ public class IndiceJsonBuilder {
      * @return
      */
     public Map<String, Object> build() throws VersatorePluginException {
+        //estraggo i parametri per la tipologia di documento
+        String tipoDocumento = doc.getTipologia().toString();
+        Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(tipoDocumento);
+
         Map<String, Object> jsonMap = new HashMap<>();
         Map<String, Object> profilo = new HashMap<>();
         //tenant
@@ -60,17 +65,18 @@ public class IndiceJsonBuilder {
         if (registro == null) {
             throw new VersatorePluginException("Non è presente un registro ufficiale e attivo per il documento con id " + doc.getId());
         }
-        profilo.put("classeDocumentale", registro.getDescrizione());
+        profilo.put("classeDocumentale", (String) mappaParametri.get("classeDocumentale"));
         jsonMap.put("profilo", profilo);
         List<Map<String, Object>> documentiList = new ArrayList<>();
         Map<String, Object> documento = new HashMap<>();
-        //id del documento
-        documento.put("id", doc.getId());
+        //id del documento (TODO idDoc_nomeFile)
+        String nomeFile = UnimaticaVersatoreUtils.removeExtension(String.valueOf(documentoPrincipale.getNomeFile()));
+        documento.put("id", doc.getId() + "_" + nomeFile);
         Map<String, Object> chiave = new HashMap<>();
         //numero registro
-        chiave.put("numero", registroDocDocumento.getNumero());
+        chiave.put("numero", String.valueOf(registroDocDocumento.getNumero()));
         //anno registro
-        chiave.put("anno", registroDocDocumento.getAnno());
+        chiave.put("anno", String.valueOf(registroDocDocumento.getAnno()));
         //registro
         chiave.put("registro", registro.getCodice());
         documento.put("chiave", chiave);
@@ -86,12 +92,13 @@ public class IndiceJsonBuilder {
         documento.put("hash", hashDocumentoPrincipale);
         //dati dei metadati
         Map<String, Object> metadati = new HashMap<>();
-        metadati.put("nomeFile", doc.getId().toString() + ".xml");
+        metadati.put("nomeFile", doc.getId() + "_" + nomeFile + ".xml");
         Map<String, Object> hashMetadati = new HashMap<>();
         hashMetadati.put("impronta", sha256HexMetadati);
         hashMetadati.put("codifica", parametriVersamento.get("codifica"));
         hashMetadati.put("algoritmo", parametriVersamento.get("algoritmo"));
         metadati.put("hash", hashMetadati);
+        documento.put("metadati", metadati);
         //parametri
         Map<String, Object> parametriDocumento = new HashMap();
         //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...

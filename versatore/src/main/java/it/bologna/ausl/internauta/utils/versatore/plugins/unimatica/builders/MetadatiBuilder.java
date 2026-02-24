@@ -40,6 +40,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -117,7 +118,7 @@ public class MetadatiBuilder {
         IdDocType idDocPrimario = new IdDocType();
         ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumento = new ImprontaCrittograficaDelDocumentoType();
         //impronta del documento principale
-        improntaCrittograficaDelDocumento.setImpronta(documentoPrincipale.getImpronta());
+        improntaCrittograficaDelDocumento.setImpronta(documentoPrincipale.getImpronta().getBytes(StandardCharsets.UTF_8));
         //algoritmo del documento principale
         improntaCrittograficaDelDocumento.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
         idDocPrimario.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumento);
@@ -239,7 +240,7 @@ public class MetadatiBuilder {
                 IndiceAllegatiType indiceAllegati = new IndiceAllegatiType();
                 IdDocType idDocAllegato = new IdDocType();
                 ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumentoAllegato = new ImprontaCrittograficaDelDocumentoType();
-                improntaCrittograficaDelDocumentoAllegato.setImpronta(allegatoUnimatica.getImpronta());
+                improntaCrittograficaDelDocumentoAllegato.setImpronta(allegatoUnimatica.getImpronta().getBytes(StandardCharsets.UTF_8));
                 improntaCrittograficaDelDocumentoAllegato.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
                 idDocAllegato.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumentoAllegato);
                 idDocAllegato.setIdentificativo(allegatoUnimatica.getIdFile().toString());
@@ -292,8 +293,11 @@ public class MetadatiBuilder {
         documentoAmministrativoInformatico.setNomeDelDocumento(documentoPrincipale.getNomeFile());
         //tempo di conservazione
         Integer tempoDiConservazione = 9999;
-        if (archivio.getAnniTenuta() != 999) {
-            tempoDiConservazione = archivio.getAnniTenuta();
+        //in caso di RGPICO metto sempre illimitata la conservazione
+        if (!doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) {
+            if (archivio.getAnniTenuta() != 999) {
+                tempoDiConservazione = archivio.getAnniTenuta();
+            }
         }
         documentoAmministrativoInformatico.setTempoDiConservazione(tempoDiConservazione);
         //note

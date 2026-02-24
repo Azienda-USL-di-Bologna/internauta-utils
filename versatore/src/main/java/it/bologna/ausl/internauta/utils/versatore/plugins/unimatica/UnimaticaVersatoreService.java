@@ -17,6 +17,9 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.Ind
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ErroreUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ResponseUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
+import it.bologna.ausl.minio.manager.MinIOWrapper;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QUtente;
@@ -90,7 +93,8 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         //TODO la gestione degli errori deve essere provata, in base a cosa poi unimatica restituisce
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
         //Reperisoco i risultati del versamento
-        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, entityManager, versatoreRepositoryConfiguration, objectMapper);
+        //TODO aggiornare la firma senza miniowrapper ecc.. (vedi SDICO)
+        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, entityManager, versatoreRepositoryConfiguration, objectMapper, null, null);
         ResponseUnimatica response = (ResponseUnimatica) mappaResultAndAllegati.get("response");
         String responseJson = (String) mappaResultAndAllegati.get("responseJson");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
@@ -177,7 +181,13 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
      * @return
      */
     //TODO togliere entity manager e vers conf e object mapper
-    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, ObjectMapper objectMapper) throws VersatoreProcessingException {
+    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, ObjectMapper objectMapper, MinIOWrapper minIOWrapper, VersatoreHttpClientConfiguration versatoreHttpClientConfiguration) throws VersatoreProcessingException {
+
+        //TODO da togliere
+        this.minIOWrapper = minIOWrapper;
+        this.versatoreHttpClientConfiguration = versatoreHttpClientConfiguration;
+        //
+
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
         //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
@@ -276,14 +286,12 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 //creazione del multipart
                 //metadati e json
                 //TODO vedere come costruire il nome
+                String nomeFileDocumentoPrincipale = UnimaticaVersatoreUtils.removeExtension(documentoPrincipale.getNomeFile());
                 String nomeFileMetadati = doc.getId() + ".xml";
                 MultipartBody.Builder buildernew = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addPart(
-                        Headers.of("Content-Disposition", "form-data; name=\"json\""),
-                        RequestBody.create(indiceJsonString, MediaType.parse("application/json"))
-                    )
-                    .addFormDataPart("file", nomeFileMetadati, RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+                    .addFormDataPart("indice", indiceJsonString)
+                    .addFormDataPart("metadati", idDoc + "_" + nomeFileDocumentoPrincipale, RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
 
                 // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
                 List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
@@ -295,9 +303,10 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         byte[] bytes;
                         try (InputStream is = paccoFile.getInputStream()) {
                             bytes = IOUtils.toByteArray(is);
-                            buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                            buildernew.addFormDataPart("documenti", idDoc + "_" + nomeFileDocumentoPrincipale, RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
                         } catch (Exception ex) {
                             log.error("Problemi con l'inputstream dei file", ex);
+                            throw new VersatorePluginExceptionRitentabile("Problemi con l'inputstream dei file");
                         }
                     }
                 }
@@ -312,6 +321,13 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
 
                 // richiesta
                 log.info("Costruisco la request");
+
+                //TODO da togliere
+                unimaticaServizioVersamentoURI = "https://webt.unimaticaspa.it/gwconservazione-test/api/v1/consegna/pdv";
+                username = "arpal_umbria_tecnica@fittizia.it";
+                password = "arpal_umbria_tecnica";
+                //
+
                 Request request = new Request.Builder()
                     .url(unimaticaServizioVersamentoURI)
                     .post(requestBody)
@@ -327,7 +343,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         String resBodyString = resp.body().string();
                         log.info("Body: " + resBodyString);
                         risultatoEVersamentiAllegati.put("responseJson", resBodyString);
-                        //ObjectMapper objectMapper = new ObjectMapper();
+                        //TODO ObjectMapper objectMapper = new ObjectMapper();
                         try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
 
@@ -345,7 +361,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
                         }
-                        /*response.setErrorMessage(resp.toString());
+                        /*TODO response.setErrorMessage(resp.toString());
                         if (resp.code() == 500) {
                             response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                         } else {
@@ -434,18 +450,18 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         for (IdentityFile identityFile : identityFiles) {
             log.info("Cerco l'allegato: " + identityFile.getFileName());
             PaccoFile paccoFile = new PaccoFile();
-            /*try {
+            try {
                 InputStream is = identityFile.getUuidMongo() != null
                     ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
                     : minIOWrapper.getByFileId(identityFile.getFileBase64());
-                paccoFile.setInputStream(is);*/
-            paccoFile.setMime(identityFile.getMime());
-            paccoFile.setFileName(identityFile.getFileName());
-            paccoFile.setId(identityFile.getId());
-            filesList.add(paccoFile);
-            /*} catch (MinIOWrapperException ex) {
+                paccoFile.setInputStream(is);
+                paccoFile.setMime(identityFile.getMime());
+                paccoFile.setFileName(identityFile.getFileName());
+                paccoFile.setId(identityFile.getId());
+                filesList.add(paccoFile);
+            } catch (MinIOWrapperException ex) {
                 log.error("Errore nel reperire il file da MinIO", ex);
-            }*/
+            }
         }
         return filesList;
     }
