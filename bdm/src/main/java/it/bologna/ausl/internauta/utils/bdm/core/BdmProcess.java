@@ -272,6 +272,8 @@ public  class BdmProcess implements Dumpable, Serializable {
                 while (currentStepIndex < stepList.size()) {
                     if (stepChanged) {
                         step = stepList.get(currentStepIndex);
+                        step.setEntityManager(entityManager);
+                        step.setProcessBag(processBag);
                         runningContext.put(CURRENT_STEP, step);
 //                        step.reset();
                         stepsLog.add(new StepLog(step.getStepId(), step.getStepType(), ZonedDateTime.now()));
@@ -344,6 +346,8 @@ public  class BdmProcess implements Dumpable, Serializable {
     public BdmStatus stepTo(String stepId, Bag params) throws IllegalStepStateException, ProcessWorkFlowException {
         //annulliamo lo step attuale
         Step currentStep = stepList.get(currentStepIndex);
+        currentStep.setEntityManager(entityManager);
+        currentStep.setProcessBag(processBag);
         runningContext.put(CURRENT_PROCESS, this);
         runningContext.put(CURRENT_STEP, currentStep);
         currentStep.undo(runningContext, context, params);
@@ -358,10 +362,12 @@ public  class BdmProcess implements Dumpable, Serializable {
             }
 
         }
-
         if (nextStep == null || nextStepIndex == null) {
             throw new ProcessWorkFlowException("Unable to find next step :" + stepId);
         }
+        
+        nextStep.setEntityManager(entityManager);
+        nextStep.setProcessBag(processBag);
 
         //controllo che non sia uno stepTo allo step corrente
         if (currentStep.getStepId().equals(nextStep.getStepId())) {
@@ -395,6 +401,8 @@ public  class BdmProcess implements Dumpable, Serializable {
         currentStepIndex = nextStepIndex;
         
         Step step = stepList.get(currentStepIndex);
+        step.setEntityManager(entityManager);
+        step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
 //        step.reset();
 //        step.executeOnEnterTasks(runningContext, context, params);
