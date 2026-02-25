@@ -1,6 +1,5 @@
 package it.bologna.ausl.documentgenerator.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -12,6 +11,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import org.sql2o.Sql2o;
+import tools.jackson.databind.ObjectMapper;
 
 public final class AziendaParamsManager {
 
@@ -20,7 +20,6 @@ public final class AziendaParamsManager {
     private final Map<String, Sql2o> dbConnectionMap;
     private final Map<String, MongoWrapper> storageConnectionMap;
 
-    private ObjectMapper objectMapper;
 
 //    @Value("${spring.datasource.driver-class-name}")
 //    String driverClass;

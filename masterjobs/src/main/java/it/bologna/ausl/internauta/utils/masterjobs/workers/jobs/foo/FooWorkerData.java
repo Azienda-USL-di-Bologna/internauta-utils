@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.foo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerData;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.JobWorkerDataInterface;
 import java.util.HashMap;

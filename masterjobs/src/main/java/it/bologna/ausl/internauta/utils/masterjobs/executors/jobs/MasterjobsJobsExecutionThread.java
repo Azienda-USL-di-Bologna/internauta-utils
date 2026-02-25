@@ -1,8 +1,7 @@
 package it.bologna.ausl.internauta.utils.masterjobs.executors.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -513,18 +512,11 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                 redisTemplate.opsForList().rightPush(this.errorQueue, queueData.dump());
                 redisTemplate.delete(this.workQueue);
             } catch (Throwable subThr) {
-                if (subThr.getClass().isAssignableFrom(JsonProcessingException.class)) {
-                    log.error("error in dumping QueueData in json, moving all set in error queue", subThr);
-                } else {
-                    log.error("error in managin error, moving all set in error queue", subThr);
-                }
+                log.error("error in managin error, moving all set in error queue", subThr);
+                
                 redisTemplate.opsForList().move(
                 this.workQueue, RedisListCommands.Direction.LEFT, 
                 this.errorQueue, RedisListCommands.Direction.RIGHT);
-            }
-            if (t.getClass().isAssignableFrom(JsonProcessingException.class)) {
-                String errorMessage = String.format("json parse error from string %s", queueDataString);
-                log.error(errorMessage, t);
             }
             throw new MasterjobsExecutionThreadsException(t);
         }

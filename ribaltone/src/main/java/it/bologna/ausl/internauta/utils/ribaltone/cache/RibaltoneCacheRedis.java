@@ -1,9 +1,5 @@
 package it.bologna.ausl.internauta.utils.ribaltone.cache;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.TypeRef;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation;
@@ -24,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisPassword;
@@ -33,8 +27,11 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.apache.commons.lang3.tuple.Pair;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -74,13 +71,13 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         try {
             String jsonOperation = objectMapper.writeValueAsString(operations);
             this.saveData(keyRibaltoneDati, jsonOperation);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new RibaltoneHttpException("Errore nella serializzazione JSON", ex);
         }
     }
 
     @Override
-    public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JsonProcessingException {
+    public Operations restore() throws ClassNotFoundException, RibaltoneHttpException, JacksonException {
         List<OperationStruttura> listOfOperationStrutture = new ArrayList();
         List<OperationAppartenente> listOfOperationAppartenenti = new ArrayList();
         List<OperationAnagrafica> listOfOperationAnagrafiche = new ArrayList();
@@ -137,11 +134,13 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
                         OperationUnificazioneAppartenente.UnificazionePair convertValue = objectMapper.convertValue(operationDaRedis.get("pair"),
                             new TypeReference<OperationUnificazioneAppartenente.UnificazionePair>() {
                         });
+                        List<String> edit = (List<String>) operationDaRedis.get("listOfEdit");
                         listOfOperationUnificazioneAppartenente.add(
                             new OperationUnificazioneAppartenente(
                                 Operation.Azione.valueOf(operationDaRedis.get("azione").toString()),
                                 entitaCoinvolta,
                                 entityManager,
+                                edit,
                                 convertValue, (Map<String, String>) operationDaRedis.get("descrizioniAggiuntive"))
                         );
                     }
@@ -173,7 +172,8 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             redisTemp.setConnectionFactory(connectionFactory);
             redisTemp.afterPropertiesSet();
             redisTemp.setKeySerializer(new StringRedisSerializer());
-            redisTemp.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+//            redisTemp.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+            redisTemp.setValueSerializer(new GenericJacksonJsonRedisSerializer(objectMapper));
             redisTemp.afterPropertiesSet();
             return redisTemp;
         } catch (Exception e) {
@@ -186,7 +186,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
         redisTemplate.opsForValue().set(key, value, this.timeToExpire, TimeUnit.MINUTES);
     }
 
-    public Map<String, List<Map<String, Object>>> getData(String key) throws RibaltoneHttpException, JsonProcessingException {
+    public Map<String, List<Map<String, Object>>> getData(String key) throws RibaltoneHttpException, JacksonException {
 
         if (redisTemplate.opsForValue().get(key) == null) {
             return null;
@@ -213,7 +213,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
             try {
                 String userStr = objectMapper.writeValueAsString(user.getId());
                 redisTemplate.opsForValue().set(keyExecuting, userStr, 60, TimeUnit.MINUTES);
-            } catch (JsonProcessingException ex) {
+            } catch (JacksonException ex) {
                 log.error("non sono riuscito a inserire l'utente con id " + user.getId() + " nella chiave di redis per bloccare il ribaltone", ex);
             }
         } else {
@@ -236,7 +236,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
-    public Integer getIdUserExecuting() throws RibaltoneHttpException, JsonProcessingException {
+    public Integer getIdUserExecuting() throws RibaltoneHttpException, JacksonException {
         Integer idUtente = null;
         try {
             if (redisTemplate.opsForValue().get(keyExecuting) == null) {
@@ -256,7 +256,7 @@ public class RibaltoneCacheRedis extends RibaltoneCache {
     }
 
     @Override
-    public Integer getIdUserImportingCSV() throws JsonProcessingException, RibaltoneHttpException {
+    public Integer getIdUserImportingCSV() throws JacksonException, RibaltoneHttpException {
         if (redisTemplate.opsForValue().get(keyImportingCSV) == null) {
             return null;
         }

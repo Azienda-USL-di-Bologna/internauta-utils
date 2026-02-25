@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.firma.remota.namirialsignservice;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.bologna.ausl.internauta.utils.firma.configuration.FirmaHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaFile;
 import it.bologna.ausl.internauta.utils.firma.data.remota.FirmaRemotaInformation;
@@ -21,6 +20,7 @@ import it.bologna.ausl.internauta.utils.firma.remota.exceptions.http.WrongTokenE
 import it.bologna.ausl.internauta.utils.firma.remota.utils.FirmaRemotaDownloaderUtils;
 import it.bologna.ausl.internauta.utils.firma.utils.HttpUtils;
 import it.bologna.ausl.internauta.utils.firma.exceptions.EncryptionException;
+import it.bologna.ausl.internauta.utils.firma.remota.FirmeDelegaManager;
 import it.bologna.ausl.model.entities.firma.Configuration;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +43,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
 
 /**
  * Classe che implementa i metodi necessari per la firma remota Namirial.
@@ -57,8 +58,10 @@ public class FirmaRemotaNamirial extends FirmaRemota {
     private final String signServiceEndPointUri;
     private final OkHttpClient okHttpClient;
 
-    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, InternalCredentialManager internalCredentialManager, FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
-        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmaHttpClientConfiguration);
+    public FirmaRemotaNamirial(ConfigParams configParams, FirmaRemotaDownloaderUtils firmaRemotaDownloaderUtils, Configuration configuration, 
+            InternalCredentialManager internalCredentialManager, FirmeDelegaManager firmeDelegaManager, 
+            FirmaHttpClientConfiguration firmaHttpClientConfiguration) throws FirmaRemotaConfigurationException {
+        super(configParams, firmaRemotaDownloaderUtils, configuration, internalCredentialManager, firmeDelegaManager, firmaHttpClientConfiguration);
         
         // leggo le informazioni di configurazione della firma remota e del credential proxy
         Map<String, Object> firmaRemotaConfiguration = configuration.getParams();
@@ -454,7 +457,7 @@ public class FirmaRemotaNamirial extends FirmaRemota {
      * @throws JsonProcessingException
      * @throws EncryptionException 
      */
-    private String getCredentialJson(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException, JsonProcessingException {
+    private String getCredentialJson(NamirialUserInformation userInformation, String sessionKey) throws EncryptionException, JacksonException {
         Map<String, Object> credentialMap = getCredentialMap(userInformation, sessionKey);
         return configParams.getObjectMapper().writeValueAsString(credentialMap);
     }

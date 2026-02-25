@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.infocert;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
@@ -88,6 +86,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 /**
  *
@@ -196,7 +196,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
                     -> Versamento.StatoVersamento.VERSATO.equals(all.getStatoVersamento()));
                 versamentoDocInformation.setStatoVersamento(allVersati ? Versamento.StatoVersamento.VERSATO : Versamento.StatoVersamento.IN_CARICO);
             }
-        } catch (MalformedURLException | JsonProcessingException ex) {
+        } catch (MalformedURLException | JacksonException ex) {
             log.error("Errore URL", ex);
             versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
             versamentoDocInformation.setDescrizioneErrore(ex.getMessage());
@@ -252,7 +252,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             }
 
             versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInfo);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             log.error(ERROR_PARSING_JSON, ex);
             versamentoDocInformation.setDescrizioneErrore(ex.getMessage());
         } catch (Throwable ex) {
@@ -304,7 +304,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
             allegatoInformation.setTipoDettaglioAllegato(versamentoAllegato.getDettaglioAllegato());
             allegatoInformation.setMetadatiVersati(versamentoAllegato.getMetadatiVersati());
             allegatoInformation.setRapporto(objectMapper.writeValueAsString(rapporto));
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             log.error(ERROR_PARSING_JSON, ex);
         }
         return allegatoInformation;
@@ -766,7 +766,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         try {
             final JsonNode jsonNode = objectMapper.readTree(metadatiVersati);
             attr = jsonNode.get(attributo.toString()).toString();
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             log.error(ERROR_PARSING_JSON, ex);
             throw new VersatoreProcessingException(ERROR_PARSING_JSON, ex);
         }

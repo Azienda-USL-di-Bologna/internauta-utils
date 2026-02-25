@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
@@ -9,7 +8,6 @@ import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
 import it.bologna.ausl.model.entities.masterjobs.Job;
 import it.bologna.ausl.model.entities.masterjobs.QJob;
-import static it.bologna.ausl.model.entities.masterjobs.QJob.job;
 import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -244,7 +242,7 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     protected abstract R doRealWork() throws MasterjobsWorkerException;
     
-    public UUID calcolaMD5(boolean future, ZonedDateTime executionTs) throws JsonProcessingException, NoSuchAlgorithmException{
+    public UUID calcolaMD5(boolean future, ZonedDateTime executionTs) throws NoSuchAlgorithmException{
         //String md5 = jobRepository.calcolaMD5(this.getName(), objectMapper.writeValueAsString(this.getData()),this.isDeferred());
         log.info("inizio calcolo applicativo md5");
         String md5 = getMD5(this, future, executionTs);
@@ -261,7 +259,7 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      * @throws NoSuchAlgorithmException
      * @throws JsonProcessingException 
      */
-    private String getMD5(JobWorker worker, boolean future, ZonedDateTime executionTs) throws NoSuchAlgorithmException, JsonProcessingException {
+    private String getMD5(JobWorker worker, boolean future, ZonedDateTime executionTs) throws NoSuchAlgorithmException {
         String strData = 
                 worker.getName() + 
                 (worker.getData() != null? worker.getData().toJsonString(objectMapper): "") +

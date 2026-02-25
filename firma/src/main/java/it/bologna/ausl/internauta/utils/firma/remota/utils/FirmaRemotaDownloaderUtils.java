@@ -1,13 +1,10 @@
 package it.bologna.ausl.internauta.utils.firma.remota.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreator;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import it.bologna.ausl.internauta.utils.firma.utils.ConfigParams;
 import it.bologna.ausl.internauta.utils.firma.remota.exceptions.FirmaRemotaConfigurationException;
 import it.bologna.ausl.internauta.utils.firma.exceptions.FirmaHttpException;
-import it.bologna.ausl.internauta.utils.firma.utils.CommonUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,7 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
 import okhttp3.Call;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -35,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Fornisce gli strumenti per l'upload dei file tramite la funzione upload del Downloader

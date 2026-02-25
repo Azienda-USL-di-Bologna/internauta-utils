@@ -9,6 +9,8 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerIdoneitaChe
 import it.bologna.ausl.internauta.utils.versatore.plugins.parer.ParerVersatoreService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoIdoneitaCheckerService;
 import it.bologna.ausl.internauta.utils.versatore.plugins.sdico.SdicoVersatoreService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.UnimaticaIdoneitaCheckerService;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.UnimaticaVersatoreService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,36 +29,36 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class VersatoreFactory {
-    
-     // Elenco dei vari provider supportati
+
+    // Elenco dei vari provider supportati
     public static enum VersatoreProviders {
-        PARER, INFOCERT, SDICO
+        PARER, INFOCERT, SDICO, UNIMATICA
     };
 
     @Autowired
     private BeanFactory beanFactory;
-    
+
     @Autowired
     @Qualifier("VersatoreConfigurationRepository")
     private VersatoreConfigurationRepository configurationRepository;
-    
+
     private boolean initialized = false;
-    
+
     // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del Versatore
     private final static Map<String, VersatoreDocs> hostIdVersatoreInstansceMap = new HashMap<>();
-    
+
     // Contiene per ogni installazione (identificata dal suo hostId), un'istanza del checker dell'idoneità
     private final static Map<String, IdoneitaChecker> hostIdIdoneitaCheckerInstanceMap = new HashMap<>();
-   
+
     List<VersatoreConfiguration> configurations;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(VersatoreFactory.class);
-    
+
     /**
      * inizializza le classi necessarie al versatore
      * Sia per il controllo idoneità che per il versamento, crea una mappa che ha come chiave l'hostId e come valore
      * l'istanza della classe del plugin corretta
-     * @throws VersatoreProcessingException 
+     * @throws VersatoreProcessingException
      */
     public void initVersatoreFactory() throws VersatoreProcessingException {
         configurations = configurationRepository.findAll();
@@ -73,12 +75,19 @@ public class VersatoreFactory {
                 case INFOCERT:
                     versatoreDocsInstance = beanFactory.getBean(InfocertVersatoreService.class);
                     versatoreDocsInstance.init(configuration);
-                    idoneitaCheckerInstance = beanFactory.getBean(InfocertIdoneitaCheckerService.class);;
+                    idoneitaCheckerInstance = beanFactory.getBean(InfocertIdoneitaCheckerService.class);
+                    ;
                     break;
                 case SDICO:
                     versatoreDocsInstance = beanFactory.getBean(SdicoVersatoreService.class);
                     versatoreDocsInstance.init(configuration);
-                    idoneitaCheckerInstance = beanFactory.getBean(SdicoIdoneitaCheckerService.class);;
+                    idoneitaCheckerInstance = beanFactory.getBean(SdicoIdoneitaCheckerService.class);
+                    ;
+                    break;
+                case UNIMATICA:
+                    versatoreDocsInstance = beanFactory.getBean(UnimaticaVersatoreService.class);
+                    versatoreDocsInstance.init(configuration);
+                    idoneitaCheckerInstance = beanFactory.getBean(UnimaticaIdoneitaCheckerService.class);
                     break;
                 default:
                     throw new VersatoreProcessingException("Provider: " + provider + " not found");
@@ -88,12 +97,12 @@ public class VersatoreFactory {
         }
         initialized = true;
     }
-    
+
     /**
      * Torna l'istanza della classe per il versamento relativa all'hostId passato
      * @param hostId
      * @return l'istanza della classe per il versamento relativa all'hostId passato
-     * @throws VersatoreProcessingException 
+     * @throws VersatoreProcessingException
      */
     public VersatoreDocs getVersatoreDocsInstance(String hostId) throws VersatoreProcessingException {
         // Tramite l'hostId recupero dalla mappa l'istanza creata in fase di inizializzazione
@@ -103,12 +112,12 @@ public class VersatoreFactory {
         VersatoreDocs versatoreDocsInstance = hostIdVersatoreInstansceMap.get(hostId);
         return versatoreDocsInstance;
     }
-    
+
     /**
      * Torna l'istanza della classe per il controllo idoneità all'hostId passato
      * @param hostId
      * @return l'istanza della classe per il controllo idoneità all'hostId passato
-     * @throws VersatoreProcessingException 
+     * @throws VersatoreProcessingException
      */
     public IdoneitaChecker getIdoneitaCheckerInstance(String hostId) throws VersatoreProcessingException {
         // Tramite l'hostId recupero dalla mappa l'istanza creata in fase di inizializzazione

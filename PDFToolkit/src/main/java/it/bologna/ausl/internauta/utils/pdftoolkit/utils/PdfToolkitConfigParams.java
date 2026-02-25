@@ -1,6 +1,5 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.pdftoolkit.exceptions.PdfToolkitConfigurationException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.repositories.ParameterRepository;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Classe per la configurazione iniziale del modulo.

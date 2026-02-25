@@ -1,24 +1,22 @@
 package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionData;
+import it.bologna.ausl.internauta.utils.authorizationutils.session.AuthenticatedSessionDataBuilder;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeReader;
 import it.bologna.ausl.internauta.utils.parameters.manager.ParametriAziendeWriter;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.ControllerHandledExceptions;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.krint.RibaltoneKrintWrapperManager;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RibaltoneDataConfigurationRepository;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.ExportDatiManager;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.configurazione.ParametroAziende;
 import it.bologna.ausl.model.entities.configurazione.data.ConfigRibaltoneView;
-import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAnagrafica;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiStruttura;
@@ -30,7 +28,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,13 +35,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
@@ -53,6 +47,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping(value = "${ribaltonedati.mapping.url.root}")
@@ -67,7 +63,7 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
     private ParametriAziendeWriter parametriWriter;
 
     @Autowired
-    private ParametriAziendeReader parametriReader;
+    private ParametriAziendeReader parametriAziendeReader;
 
     @Autowired
     private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
@@ -80,6 +76,9 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private AuthenticatedSessionDataBuilder authenticatedSessionDataBuilder;
 
     @RequestMapping(value = "downloadCSVFileFromIdAzienda", method = RequestMethod.GET)
     public void downloadCSVFileFromIdAzienda(
@@ -214,19 +213,26 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         @RequestBody String configRibaltoneViewDaSalvareString,
         @RequestParam Integer idAzienda,
         HttpServletRequest request) throws IOException {
+        AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
+        RibaltoneKrintWrapperManager ribaltoneKrintWrapperManager = ribaltoneConfiguration.getRibaltoneKrintWrapperManager();
+
         Integer[] idAziende = new Integer[]{idAzienda};
         ObjectMapper om = new ObjectMapper();
         ConfigRibaltoneView configRibaltoneViewDaSalvareObject = om.readValue(configRibaltoneViewDaSalvareString, ConfigRibaltoneView.class);
 
         //salvo prima la parte di dati che va nel parametro azienda. Quindi tutto tranne i codici enti
-        List<ParametroAziende> par = parametriReader.getParameters(ParametriAziendeReader.ParametriAzienda.ribaltoneConf.toString(), idAziende);
-        Map<String, Object> map = parametriReader.getValue(par.get(0), new TypeReference<Map<String, Object>>() {
+        List<ParametroAziende> par = parametriAziendeReader.getParameters(ParametriAziendeReader.ParametriAzienda.ribaltoneConf.toString(), idAziende);
+        Map<String, Object> map = parametriAziendeReader.getValue(par.get(0), new TypeReference<Map<String, Object>>() {
         });
+        ConfigRibaltoneView configRibaltoneViewOld = parametriAziendeReader.getValue(par.get(0), new TypeReference<ConfigRibaltoneView>() {
+        });
+
         map.put(ConfigRibaltoneView.ConfigKeys.fonteSelezionata.toString(), configRibaltoneViewDaSalvareObject.getFonteSelezionata());
         map.put(ConfigRibaltoneView.ConfigKeys.fonti.toString(), configRibaltoneViewDaSalvareObject.getFonti());
         map.put(ConfigRibaltoneView.ConfigKeys.attivo.toString(), configRibaltoneViewDaSalvareObject.isAttivo());
         map.put(ConfigRibaltoneView.ConfigKeys.mailDaNotificare.toString(), configRibaltoneViewDaSalvareObject.getMailDaNotificare());
         map.put(ConfigRibaltoneView.ConfigKeys.tolleranzaStrutture.toString(), configRibaltoneViewDaSalvareObject.getTolleranzaStrutture());
+        map.put(ConfigRibaltoneView.ConfigKeys.lanciaSoloLocale.toString(), configRibaltoneViewDaSalvareObject.getLanciaSoloLocale());
         map.put(ConfigRibaltoneView.ConfigKeys.idPersoneDaNotificare.toString(), configRibaltoneViewDaSalvareObject.getIdPersoneDaNotificare());
         map.put(ConfigRibaltoneView.ConfigKeys.tolleranzaAnagrafica.toString(), configRibaltoneViewDaSalvareObject.getTolleranzaAnagrafica());
         map.put(ConfigRibaltoneView.ConfigKeys.tolleranzaAppartenenti.toString(), configRibaltoneViewDaSalvareObject.getTolleranzaAppartenenti());
@@ -241,13 +247,15 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
         //salvo la seconda parte che va su tabella ribaltone.configuration, ovvero i codici enti che vanno inseriti all'interno del json contenuto in 'specifiche'
         RibaltoneDataConfiguration r = ribaltoneDataConfigurationRepository.getReferenceById(configRibaltoneViewDaSalvareObject.getFonteSelezionata().toString());
         HashMap<String, Object> specifiche = (HashMap<String, Object>) r.getSpecifiche();
+        configRibaltoneViewOld.setCodiciEntiValidi((List<Integer>) specifiche.get(SpecificheNonSensibiliKeys.codiciEntiValidi.toString()));
         specifiche.put(SpecificheNonSensibiliKeys.codiciEntiValidi.toString(), configRibaltoneViewDaSalvareObject.getCodiciEntiValidi());
         try {
             RibaltoneDataConfiguration ribaltoneDataConfigurationSaved = ribaltoneDataConfigurationRepository.save(r);
         } catch (Exception e) {
             return new ResponseEntity("Errore mentre si tentava di salvare ribaltoneDataConfiguration con i nuovi codici enti", HttpStatus.CONFLICT);
         }
-
+        //loggo nel krint
+        ribaltoneKrintWrapperManager.scriviNelKrint(configRibaltoneViewDaSalvareObject, configRibaltoneViewOld, authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser(), idAzienda);
         return new ResponseEntity(om.writeValueAsString(configRibaltoneViewDaSalvareObject), HttpStatus.OK);
     }
 

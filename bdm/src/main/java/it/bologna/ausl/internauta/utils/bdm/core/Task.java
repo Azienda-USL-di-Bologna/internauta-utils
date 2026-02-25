@@ -9,6 +9,7 @@ import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -30,9 +31,12 @@ public abstract class Task implements Dumpable {
     protected BdmStatus status = BdmStatus.NOT_STARTED;
     protected Bag params;
     protected Boolean auto = false;
-
+    
     @JsonIgnore
     protected EntityManager entityManager;
+    
+    @JsonIgnore
+    protected Map<String, Object> processBag;
     
     // di questa funzione va fatto l'override nelle sottoclassi
     public static String getTaskParametersKey() {
@@ -95,7 +99,7 @@ public abstract class Task implements Dumpable {
      * @param c contesto del processo
      * @param p parametri da passare al passo
      */
-    abstract public void stepIn(Context c, Bag p);
+    //abstract public void stepIn(Context c, Bag p);
 
     public String getTaskId() {
         return taskId;
@@ -119,6 +123,14 @@ public abstract class Task implements Dumpable {
 
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    public Map<String, Object> getProcessBag() {
+        return processBag;
+    }
+
+    public void setProcessBag(Map<String, Object> processBag) {
+        this.processBag = processBag;
     }
 
     @JsonIgnore

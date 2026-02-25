@@ -2,8 +2,8 @@ package it.bologna.ausl.internauta.utils.firma.data.jnj;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -86,15 +86,15 @@ public class SignParamsComponent {
             this.endSignResult = endSignResult;
         }
         
-        public static EndSign parse(String str) throws JsonProcessingException {
+        public static EndSign parse(String str) throws JacksonException {
             return getObjectMapper().readValue(str, EndSign.class);
         }
         
-         public String toJsonString() throws JsonProcessingException {
+         public String toJsonString() throws JacksonException {
             return SignParamsComponent.getObjectMapper().writeValueAsString(this);
         }
     
-        public byte[] toJsonByte() throws JsonProcessingException {
+        public byte[] toJsonByte() throws JacksonException {
             return SignParamsComponent.getObjectMapper().writeValueAsBytes(this);
         }
     } 

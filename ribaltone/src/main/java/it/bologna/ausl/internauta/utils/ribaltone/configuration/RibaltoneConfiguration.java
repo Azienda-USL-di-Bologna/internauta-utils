@@ -1,8 +1,9 @@
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.internauta.utils.ribaltone.krint.RibaltoneKrintWrapperManager;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -14,6 +15,8 @@ public class RibaltoneConfiguration {
     private ObjectMapper objectMapper;
 
     private MinIOWrapper minIOWrapper;
+
+    private RibaltoneKrintWrapperManager ribaltoneKrintWrapperManager;
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
@@ -29,6 +32,14 @@ public class RibaltoneConfiguration {
 
     public void setMinIOWrapper(MinIOWrapper minIOWrapper) {
         this.minIOWrapper = minIOWrapper;
+    }
+
+    public RibaltoneKrintWrapperManager getRibaltoneKrintWrapperManager() {
+        return ribaltoneKrintWrapperManager;
+    }
+
+    public void setRibaltoneKrintWrapperManager(RibaltoneKrintWrapperManager ribaltoneKrintWrapperManager) {
+        this.ribaltoneKrintWrapperManager = ribaltoneKrintWrapperManager;
     }
 
 }

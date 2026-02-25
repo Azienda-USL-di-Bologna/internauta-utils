@@ -38,10 +38,6 @@ public class SampleTask extends Task {
     }
 
     @Override
-    public void stepIn(Context c, Bag p) {
-    }
-
-    @Override
     public String getTaskVersion() {
         return "0001";
     }

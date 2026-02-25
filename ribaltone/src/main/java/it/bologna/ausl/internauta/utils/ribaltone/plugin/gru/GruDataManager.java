@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.gru;
 
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.oracledata.Anagrafica;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareAnagrafica;
 
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.text.WordUtils;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *

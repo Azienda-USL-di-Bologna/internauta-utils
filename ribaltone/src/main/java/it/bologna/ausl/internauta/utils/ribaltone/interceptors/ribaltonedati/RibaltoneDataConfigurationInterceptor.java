@@ -29,9 +29,10 @@ import org.springframework.stereotype.Component;
 public class RibaltoneDataConfigurationInterceptor extends RibaltoneBaseInterceptor {
 
     @Autowired
-    RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+    private RibaltoneDataConfigurationRepository ribaltoneDataConfigurationRepository;
+
     @Autowired
-    RibaltoneDatiUtils ribaltoneDatiUtils;
+    private RibaltoneDatiUtils ribaltoneDatiUtils;
 
     @Autowired
     private PermissionManager permissionManager;
