@@ -266,6 +266,8 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 MetadatiBuilder metadatiBuilder = new MetadatiBuilder(parametriVersamento, doc, archivio, documentoPrincipale, allegatiSecondariList);
                 metadatiBuilder.build();
                 String metadati = metadatiBuilder.toString();
+                //TODO da togliere
+                log.info(metadati);
                 risultatoEVersamentiAllegati.put("metadati", metadati);
                 byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
                 //calcolo lo sha 256 del file di metadati
@@ -280,6 +282,8 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 IndiceJsonBuilder indiceJsonBuilder = new IndiceJsonBuilder(parametriVersamento, doc, documentoPrincipale, allegatiSecondariList, sha256HexMetadati);
                 Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
                 String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
+                //TODO da togliere
+                log.info(indiceJsonString);
                 risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
 
                 // --Sezione di collegamento con UNIMATICA e versamento--
@@ -287,11 +291,11 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 //metadati e json
                 //TODO vedere come costruire il nome
                 String nomeFileDocumentoPrincipale = UnimaticaVersatoreUtils.removeExtension(documentoPrincipale.getNomeFile());
-                String nomeFileMetadati = doc.getId() + ".xml";
+                //String nomeFileMetadati = doc.getId() + ".xml";
                 MultipartBody.Builder buildernew = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("indice", indiceJsonString)
-                    .addFormDataPart("metadati", idDoc + "_" + nomeFileDocumentoPrincipale, RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+                    .addFormDataPart("metadati", idDoc + "_" + nomeFileDocumentoPrincipale + ".xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
 
                 // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
                 List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");

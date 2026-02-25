@@ -28,6 +28,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoSoggetto
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
 import static it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils.buildIdFascicolo;
+import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
@@ -108,7 +109,8 @@ public class MetadatiBuilder {
         String denominazioneAOO = (String) parametriVersamento.get("denominazioneAOO");
         String mailAmministrazione = (String) parametriVersamento.get("mailAmministrazione");
         //creo l'intestazione del documento principale
-        intestazione.setIdFile("idDoc" + doc.getId() + "_idArchivio" + archivio.getId() + "_" + documentoPrincipale.getNomeFile());
+        String nomeFile = UnimaticaVersatoreUtils.removeExtension(documentoPrincipale.getNomeFile());
+        intestazione.setIdFile(doc.getId() + "_" + nomeFile);
         intestazione.setNomeFile(documentoPrincipale.getNomeFile());
         intestazione.setPrincipale(true);
         //creo il profilo
@@ -190,14 +192,14 @@ public class MetadatiBuilder {
         if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA)) {
             ProtocolloType protocolloType = new ProtocolloType();
             protocolloType.setTipoRegistro("ProtocolloOrdinario\\ProtocolloEmergenza");
-            protocolloType.setDataProtocollazioneDocumento(toXMLGregorianCalendar(registroDocDocumentoPrincipale.getDataRegistrazione()));
+            protocolloType.setDataProtocollazioneDocumento(UnimaticaVersatoreUtils.toXMLGregorianDate(registroDocDocumentoPrincipale.getDataRegistrazione()));
             protocolloType.setNumeroProtocolloDocumento(registroDocDocumentoPrincipale.getNumero().toString());
             protocolloType.setCodiceRegistro(registro.getCodice().toString());
             tipoRegistro.setProtocolloOrdinarioProtocolloEmergenza(protocolloType);
         } else {
             NoProtocolloType noProtocolloType = new NoProtocolloType();
             noProtocolloType.setTipoRegistro("Repertorio\\Registro");
-            noProtocolloType.setDataRegistrazioneDocumento(toXMLGregorianCalendar(registroDocDocumentoPrincipale.getDataRegistrazione()));
+            noProtocolloType.setDataRegistrazioneDocumento(UnimaticaVersatoreUtils.toXMLGregorianDate(registroDocDocumentoPrincipale.getDataRegistrazione()));
             noProtocolloType.setNumeroRegistrazioneDocumento(registroDocDocumentoPrincipale.getNumero().toString());
             noProtocolloType.setCodiceRegistro(registro.getCodice().toString());
             tipoRegistro.setRepertorioRegistro(noProtocolloType);
@@ -319,17 +321,6 @@ public class MetadatiBuilder {
             }
         }
         return (numero + "/" + archivio.getAnno() + " [id_" + archivio.getId() + "]");
-    }
-
-    /**
-    metodo per la conversione delle date nell'xml
-    @param zdt
-    @return
-    @throws Exception
-     */
-    public static XMLGregorianCalendar toXMLGregorianCalendar(ZonedDateTime zdt) throws Exception {
-        GregorianCalendar gregorianCalendar = GregorianCalendar.from(zdt);
-        return DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
     }
 
     @Override

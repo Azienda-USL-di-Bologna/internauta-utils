@@ -2,6 +2,12 @@ package it.bologna.ausl.internauta.utils.versatore.utils;
 
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeConstants;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 /**
  *
@@ -21,6 +27,7 @@ public class UnimaticaVersatoreUtils {
         return fileName.substring(0, lastDot);
     }
 
+    //TODO tolgo?
     public static String sha256(InputStream inputStream) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] buffer = new byte[8192]; // buffer ragionevole per grandi file
@@ -42,4 +49,24 @@ public class UnimaticaVersatoreUtils {
 
         return hexString.toString();
     }
+
+    /**
+    metodo per convertire le date da usarenell'xml
+    @param zdt
+    @return
+    @throws DatatypeConfigurationException
+     */
+    public static XMLGregorianCalendar toXMLGregorianDate(ZonedDateTime zdt)
+        throws DatatypeConfigurationException {
+
+        LocalDate localDate = zdt.toLocalDate();
+
+        return DatatypeFactory.newInstance().newXMLGregorianCalendarDate(
+            localDate.getYear(),
+            localDate.getMonthValue(),
+            localDate.getDayOfMonth(),
+            DatatypeConstants.FIELD_UNDEFINED
+        );
+    }
+
 }
