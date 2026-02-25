@@ -335,6 +335,22 @@ public class MetadatiBuilder {
 
         try {
             out = new String(baos.toByteArray(), codificaMarshaller);
+
+            // Trova il tag <DocumentoAmministrativoInformatico>...</DocumentoAmministrativoInformatico>
+            int start = out.indexOf("<DocumentoAmministrativoInformatico>");
+            int end = out.indexOf("</DocumentoAmministrativoInformatico>") + "</DocumentoAmministrativoInformatico>".length();
+
+            if (start >= 0 && end > start) {
+                String daiXml = out.substring(start, end);
+
+                // Aggiungi dichiarazione XML e CDATA
+                String daiXmlWithCData = "<![CDATA[\n<?xml version=\"1.0\" encoding=\"" + codificaMarshaller + "\"?>\n"
+                    + daiXml + "\n]]>";
+
+                // Sostituisci nell'XML originale
+                out = out.substring(0, start) + daiXmlWithCData + out.substring(end);
+            }
+
         } catch (UnsupportedEncodingException e) {
             return "Document Error unable to serialize with coding " + codificaMarshaller + ": " + e;
         }
