@@ -9,6 +9,7 @@ import it.bologna.ausl.internauta.utils.ribaltone.cache.RibaltoneCache;
 import it.bologna.ausl.internauta.utils.ribaltone.operation.OperationsManager;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
+import it.bologna.ausl.internauta.utils.ribaltone.finalChecks.QueryChecks;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVDataManager;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CSVSpecificData;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.gru.GruDataManager;
@@ -80,10 +81,16 @@ public class RibaltoneTotaleManager {
             OperationsManager operationsManager = new OperationsManager(validateSourceData, codiceAzienda, configRibaltoneView.getTolleranzaAppartenenti(), configRibaltoneView.getTolleranzaStrutture(), repositoryFactory);
             buildedOperations = operationsManager.buildOperations();
             operationsManager.isQuantitaDatiOk();
+            log.info("disabilito i trigger");
+            RibaltoneManagerUtils.disableTrigger(repositoryFactory);
             buildedOperations.execute(repositoryFactory, codiceAzienda);
             RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(configRibaltoneView.getFonteSelezionata(), codiceAzienda, repositoryFactory);
             fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
-
+            log.info("faccio i check di conformita");
+            QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
+            //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
+            log.info("riabilito i trigger che ho spento");
+            RibaltoneManagerUtils.enableTrigger(repositoryFactory);
         } catch (JacksonException | RibaltoneHttpException ex) {
             errorDescription = ex.getMessage();
             throw new RibaltoneHttpException(ex);
@@ -95,9 +102,9 @@ public class RibaltoneTotaleManager {
     }
 
     public Operations ribaltaWithUserReportAndCacheOperation(
-        String codiceAzienda,
-        ConfigRibaltoneView configRibaltoneView,
-        UserReport.UserReportType typeUserReport
+            String codiceAzienda,
+            ConfigRibaltoneView configRibaltoneView,
+            UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         return transactionTemplate.execute(action -> {
@@ -112,11 +119,11 @@ public class RibaltoneTotaleManager {
 
                 DatiDaImportare datiDaImportareValidated = RibaltoneManagerUtils.getSourceDataAndValidateAndTransfer(ribaltoneConfiguration.getObjectMapper(), codiceAzienda, ribaltoneConf, repositoryFactory);
                 OperationsManager operationsManager = new OperationsManager(
-                    datiDaImportareValidated,
-                    codiceAzienda,
-                    configRibaltoneView.getTolleranzaAppartenenti(),
-                    configRibaltoneView.getTolleranzaStrutture(),
-                    repositoryFactory);
+                        datiDaImportareValidated,
+                        codiceAzienda,
+                        configRibaltoneView.getTolleranzaAppartenenti(),
+                        configRibaltoneView.getTolleranzaStrutture(),
+                        repositoryFactory);
 
                 Operations buildedOperations = operationsManager.buildOperations();
                 operationsManager.isQuantitaDatiOk();
@@ -137,10 +144,17 @@ public class RibaltoneTotaleManager {
         OperationsCacheManager operationsCacheManager = new OperationsCacheManager(ribaltoneCache, objectMapper);
         Operations buildedOperations = operationsCacheManager.restore();
         if (buildedOperations != null) {
+            log.info("disabilito i trigger");
+            RibaltoneManagerUtils.disableTrigger(repositoryFactory);
             buildedOperations.execute(repositoryFactory, codiceAzienda);
             try {
                 RibaltoneManagerUtils.updateProgressivoUltimaTrasformazione(idConfiguration, codiceAzienda, repositoryFactory);
                 fromSourceToDatiImportati(ribaltoneConf.getFonte(), repositoryFactory, codiceAzienda);
+                log.info("faccio i check di conformita");
+                QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
+                //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
+                log.info("riabilito i trigger che ho spento");
+                RibaltoneManagerUtils.enableTrigger(repositoryFactory);
             } catch (Exception ex) {
                 descrizioneErrore = ex.getMessage();
                 throw new RibaltoneHttpException(descrizioneErrore, ex);
@@ -254,8 +268,8 @@ public class RibaltoneTotaleManager {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda)
-            .getSingleResult();
+                .setParameter("codice", codiceAzienda)
+                .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
@@ -304,8 +318,8 @@ public class RibaltoneTotaleManager {
     }
 
     private static List<DatiDaImportareAnagrafica> mergeAnagraficheListsOverrideOnCodiceFiscale(
-        List<DatiDaImportareAnagrafica> lista1,
-        List<DatiDaImportareAnagrafica> lista2) {
+            List<DatiDaImportareAnagrafica> lista1,
+            List<DatiDaImportareAnagrafica> lista2) {
 
         Map<String, DatiDaImportareAnagrafica> mappaPerCodiceFiscale = new HashMap<>();
 
