@@ -69,9 +69,8 @@ public class IndiceJsonBuilder {
         jsonMap.put("profilo", profilo);
         List<Map<String, Object>> documentiList = new ArrayList<>();
         Map<String, Object> documento = new HashMap<>();
-        //id del documento (TODO idDoc_nomeFile)
-        String nomeFile = UnimaticaVersatoreUtils.removeExtension(String.valueOf(documentoPrincipale.getNomeFile()));
-        documento.put("id", doc.getId() + "_" + nomeFile);
+        //id del documento (sarà l'id dell'allegato)
+        documento.put("id", String.valueOf(documentoPrincipale.getIdFile()));
         Map<String, Object> chiave = new HashMap<>();
         //numero registro
         chiave.put("numero", String.valueOf(registroDocDocumento.getNumero()));
@@ -92,7 +91,7 @@ public class IndiceJsonBuilder {
         documento.put("hash", hashDocumentoPrincipale);
         //dati dei metadati
         Map<String, Object> metadati = new HashMap<>();
-        metadati.put("nomeFile", doc.getId() + "_" + nomeFile + ".xml");
+        metadati.put("nomeFile", String.valueOf(documentoPrincipale.getIdFile()) + ".xml");
         Map<String, Object> hashMetadati = new HashMap<>();
         hashMetadati.put("impronta", sha256HexMetadati);
         hashMetadati.put("codifica", parametriVersamento.get("codifica"));
@@ -109,7 +108,7 @@ public class IndiceJsonBuilder {
         List<Map<String, Object>> allegatiList = new ArrayList<>();
         for (AllegatoUnimatica allegatoUnimaticaSecondario : allegatiSecondariList) {
             Map<String, Object> allegato = new HashMap<>();
-            allegato.put("id", allegatoUnimaticaSecondario.getIdFile());
+            allegato.put("id", String.valueOf(allegatoUnimaticaSecondario.getIdFile()));
             allegato.put("nomeFile", allegatoUnimaticaSecondario.getNomeFile());
             allegato.put("formatoFile", allegatoUnimaticaSecondario.getFormato());
             Map<String, Object> hashAllegato = new HashMap<>();

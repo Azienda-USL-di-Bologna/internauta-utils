@@ -93,7 +93,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         //TODO la gestione degli errori deve essere provata, in base a cosa poi unimatica restituisce
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
         //Reperisoco i risultati del versamento
-        //TODO aggiornare la firma senza miniowrapper ecc.. (vedi SDICO)
+        //TODO aggiornare la firma della funzione senza miniowrapper ecc.. (vedi SDICO)
         mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, entityManager, versatoreRepositoryConfiguration, objectMapper, null, null);
         ResponseUnimatica response = (ResponseUnimatica) mappaResultAndAllegati.get("response");
         String responseJson = (String) mappaResultAndAllegati.get("responseJson");
@@ -304,10 +304,26 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 if (paccoFiles != null) {
                     for (PaccoFile paccoFile : paccoFiles) {
                         log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+                        //prendo l'idAllegato per costruire il nome del file da inviare
+                        Integer idAllegatoDaVersare = null;
+                        if (documentoPrincipale.getNomeFile().equals(paccoFile.getFileName())) {
+                            idAllegatoDaVersare = documentoPrincipale.getIdFile();
+                        } else {
+                            for (AllegatoUnimatica allegatoDaVersare : allegatiSecondariList) {
+                                if (allegatoDaVersare.getNomeFile().equals(paccoFile.getFileName())) {
+                                    idAllegatoDaVersare = allegatoDaVersare.getIdFile();
+                                    break;
+                                }
+                            }
+                        }
+                        if (idAllegatoDaVersare == null) {
+                            log.error("Non si riesce a individuare l'id dell'allegato da versare, possibile problema di costruzione dell'oggetto PaccoFile");
+                            throw new VersatorePluginException("Non si riesce a individuare l'id dell'allegato da versare, possibile problema di costruzione dell'oggetto PaccoFile");
+                        }
                         byte[] bytes;
                         try (InputStream is = paccoFile.getInputStream()) {
                             bytes = IOUtils.toByteArray(is);
-                            buildernew.addFormDataPart("documenti", idDoc + "_" + nomeFileDocumentoPrincipale, RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                            buildernew.addFormDataPart("documenti", String.valueOf(idAllegatoDaVersare), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
                         } catch (Exception ex) {
                             log.error("Problemi con l'inputstream dei file", ex);
                             throw new VersatorePluginExceptionRitentabile("Problemi con l'inputstream dei file");
@@ -359,13 +375,18 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         String resBodyString = resp.body().string();
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
-                        try {
+                        ErroreUnimatica erroreGenerale = new ErroreUnimatica();
+                        erroreGenerale.setDescrizione(resBodyString);
+                        erroreGenerale.setCodice(ERRORE_PLUG_IN);
+                        //TODO toglere?
+                        //risultatoEVersamentiAllegati.put("responseJson", resBodyString);
+                        /*try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
 
                         } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
-                        }
-                        /*TODO response.setErrorMessage(resp.toString());
+                        }*/
+ /*TODO response.setErrorMessage(resp.toString());
                         if (resp.code() == 500) {
                             response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                         } else {
