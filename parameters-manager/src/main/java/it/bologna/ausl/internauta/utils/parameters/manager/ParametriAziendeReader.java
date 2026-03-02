@@ -39,6 +39,7 @@ public class ParametriAziendeReader {
         firmaRemota,
         firmaRemotaConfiguration,
         fascicoliSAI,
+        fascicoliParlanti,
         downloader,
         versatoreConfiguration,
         attivitaMailSender,
@@ -61,7 +62,9 @@ public class ParametriAziendeReader {
         notificaGestioneMassivaArchiviPerUtentiCoinvolti,
         alwaysReplaceHostWithCurrentHost,
         dimensioniMassimeAllegatoSenzaBabelshare,
-        onlyoffice
+        onlyoffice,
+        pdfConverterUrl,
+        giorniPESenzaFascicolazioneSollecito
     }
 
     @Autowired
