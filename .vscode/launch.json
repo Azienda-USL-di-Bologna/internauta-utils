@@ -1,0 +1,35 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Current File",
+      "request": "launch",
+      "mainClass": "${file}"
+    },
+    {
+      "type": "java",
+      "name": "InternautaApplication",
+      "request": "launch",
+      "mainClass": "it.bologna.ausl.internauta.service.InternautaApplication",
+      "projectName": "internauta-service"
+    },
+    {
+      "type": "java",
+      "name": "testInad",
+      "request": "launch",
+      "mainClass": "testInad",
+      "projectName": "internauta-service"
+    },
+    {
+      "type": "java",
+      "name": "testmio",
+      "request": "launch",
+      "mainClass": "testmio",
+      "projectName": "internauta-service"
+    }
+  ]
+}
