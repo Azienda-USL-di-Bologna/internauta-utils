@@ -208,6 +208,12 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
                 ribaltoneDaLanciare.setGestito(Boolean.TRUE);
             }
+            case "errore" -> {
+                ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
+                ribaltoneDaLanciare.setStato("ERRORE");
+                ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
+                ribaltoneDaLanciare.setGestito(Boolean.FALSE);
+            }
             default -> {
                 throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");
             }

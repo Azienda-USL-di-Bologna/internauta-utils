@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.ribaltone.finalChecks;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.internauta.utils.ribaltone.RibaltoneTotaleManager;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.ribaltonedati.checks.QRibaltoneValidationCheck;
@@ -10,6 +11,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.util.StringUtils;
 
@@ -19,13 +22,15 @@ import org.springframework.util.StringUtils;
  */
 public class QueryChecks {
 
+    private static final Logger log = LoggerFactory.getLogger(RibaltoneTotaleManager.class);
+
     public static void confomalsDataChecks(RepositoryFactory repositoryFactory, String codiceAzienda) {
 
         List<RibaltoneValidationCheck> findCheckActiveByCodiceAzienda = repositoryFactory.getRibaltoneValidationCheckRepository().findCheckActiveByCodiceAzienda(codiceAzienda);
         ZonedDateTime now = ZonedDateTime.now();
         String formattedDateTime = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         for (RibaltoneValidationCheck ribaltoneValidationCheck : findCheckActiveByCodiceAzienda) {
-
+            log.info("query check con id " + ribaltoneValidationCheck.getId());
             switch (ribaltoneValidationCheck.getRegolaDiSuccesso()) {
                 case ZERO_ROWS -> {
                     String query = ribaltoneValidationCheck.getQuery();
