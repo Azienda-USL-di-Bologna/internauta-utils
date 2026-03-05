@@ -1025,7 +1025,7 @@ public class OperationsUtils {
         return afferenza;
     }
 
-    public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Struttura strutturaSuCuiSpentereUtente, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
+    public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Struttura strutturaSuCuiSpentereUtente, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList, boolean fromUnificazione) {
         Persona persona = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq(entitaDaChiudere.getCodiceFiscale()).and(qPersona.attiva)).fetchFirst();
         if (persona != null) {
             Utente utente = OperationsUtils.getUtenteDiIdAzienda(queryFactory, idAziendaDestinazione, persona);//                    strutturaAppartenteOriginale = OperationsUtils.getStrutturaFromIdCasellaAndIdAziendaAndAttiva(queryFactory, entitaDaInserire.getIdCasella(), entitaDaInserire.getIdAzienda(), qStruttura);
@@ -1033,7 +1033,11 @@ public class OperationsUtils {
             //chiudere in baborg utenti se non ci sono afferenze attive
             //chiudere in baborg persone se non ci sono utenti attivi
             UtenteStruttura utenteStruttura = getUtenteStrutturaAttivoByidCasella(queryFactory, strutturaSuCuiSpentereUtente, utente);
-            if (utenteStruttura != null) {
+            boolean isUnificata = utenteStruttura != null
+                    && utenteStruttura.getIdAfferenzaStruttura().getCodice()
+                            .equals(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA);
+            if (utenteStruttura != null
+                    && ((fromUnificazione && isUnificata) || (!fromUnificazione && !isUnificata))) {
                 utenteStruttura.setAttivo(Boolean.FALSE);
                 utenteStruttura.setAttivoAl(ZonedDateTime.now());
                 //spengni tutti i permessi veicolati
@@ -1142,6 +1146,11 @@ public class OperationsUtils {
                 }
             }
         }
+
+    }
+
+    public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Struttura strutturaSuCuiSpentereUtente, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
+        chiudiUtenteStruttura(entitaDaChiudere, strutturaSuCuiSpentereUtente, idAziendaDestinazione, queryFactory, permissionManager, entityManager, utenteStrutturaDaChiudereList, false);
     }
 
     private static UtenteStruttura getUtenteStrutturaAttivoByidCasella(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
