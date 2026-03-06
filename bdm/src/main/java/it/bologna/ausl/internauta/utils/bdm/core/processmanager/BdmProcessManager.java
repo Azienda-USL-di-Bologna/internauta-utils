@@ -65,12 +65,12 @@ public class BdmProcessManager {
         }
     }
 
-    public BdmProcess getProcess(String id) {
+    public <T extends BdmProcess> T getProcess(String id) {
         try {
             BdmProcess p = psm.loadProcess(id);
             p.setEntityManager(entityManager);
             p.setProcessBag(processBag);
-            return p;
+            return (T) p;
         } catch (StorageException ex) {
             String error = String.format("unable to get process %s", id);
             log.error(error, ex);
