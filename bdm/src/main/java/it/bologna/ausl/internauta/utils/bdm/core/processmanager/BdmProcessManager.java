@@ -141,7 +141,7 @@ public class BdmProcessManager {
         return status;
     }
 
-    public String stepToStep(String processId, String stepId, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
+    public BdmStatus stepToStep(String processId, String stepId, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
         BdmProcess p;
         try {
             p = psm.loadProcess(processId);
@@ -154,7 +154,7 @@ public class BdmProcessManager {
         p.setProcessBag(processBag);
         BdmStatus status = p.stepTo(stepId, parameters);
         psm.saveProcess(p);
-        return status.toString();
+        return status;
 
     }
 
