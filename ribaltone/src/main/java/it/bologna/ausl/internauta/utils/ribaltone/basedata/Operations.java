@@ -75,7 +75,6 @@ public class Operations implements Serializable {
         workToDo = new HashMap<Integer, List<Integer>>();
         //devo disabilitare dei trigger che rallenterebbero troppo il ribaltone
         log.info("ribalto le strutture");
-        RibaltoneManagerUtils.disableTrigger(repositoryFactory);
         for (OperationStruttura operation : listOfOperationStruttura) {
             operation.esegui(workToDo, repositoryFactory);
             operation.menageContattoStruttura(repositoryFactory);
@@ -130,16 +129,9 @@ public class Operations implements Serializable {
         RibaltoneManagerUtils.eliminaProtocontatti(repositoryFactory);
         log.info("spegniPermessiVeicolatiInvalidi");
         repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
-
-        log.info("faccio i check fdi conformita");
-        QueryChecks.confomalsDataChecks(repositoryFactory, codiceAzienda);
-
         //devo ricalcolare la gerarchia delle entita
         log.info("ricarcolo la gerarchia entita per le aziende");
         ricalcolaGerarchiePerAziende(listOfOperationUnificazioneStruttura, codiceAzienda, repositoryFactory);
-        //devo abilitare dei trigger che avrebbbero rallentato troppo il ribaltone
-        log.info("riabilito i trigger che ho spento");
-        RibaltoneManagerUtils.enableTrigger(repositoryFactory);
 
     }
 

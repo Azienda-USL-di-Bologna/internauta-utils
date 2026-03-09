@@ -190,7 +190,6 @@ public class ConfigParams {
      */
     public String getExternalSignAndCertificateValidatorValidateDocumentUrl() {
         return (String) this.externalSignAndCertificateValidatorParams.get(ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl.toString());
-                
     }
     
     

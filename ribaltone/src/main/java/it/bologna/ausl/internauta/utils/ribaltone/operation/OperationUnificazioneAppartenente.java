@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,11 +181,12 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
                                                 .and(qStruttura.idStrutturaReplicata.idCasella.eq(entitaDaChiudere.getIdCasella()))
                                                 .and(qStruttura.idAzienda.id.eq(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId()))
                                 ).fetchOne();
-
+                    } else {
+                        strutturaDiUtenteDaRimuovere = Objects.equals(strutturaUnificata.getIdStrutturaDestinazione().getIdAzienda().getId(), entitaDaChiudere.getIdAzienda()) ? strutturaUnificata.getIdStrutturaSorgente() : strutturaUnificata.getIdStrutturaDestinazione();
                     }
                     if (strutturaDiUtenteDaRimuovere != null) {
                         log.info("rimuovo utente unificato " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
-                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList);
+                        OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, strutturaDiUtenteDaRimuovere.getIdAzienda().getId(), jPAQueryFactory, repositoryFactory.getPermissionManager(), getEntityManager(), utenteStrutturaDaSpegnereList, true);
                     }
                 }
 
