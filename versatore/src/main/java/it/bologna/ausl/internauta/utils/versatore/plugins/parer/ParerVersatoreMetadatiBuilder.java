@@ -25,6 +25,7 @@ import it.bologna.ausl.model.entities.scripta.QArchivio;
 import it.bologna.ausl.model.entities.scripta.QArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
 import it.bologna.ausl.model.entities.scripta.QDocDetail;
+import it.bologna.ausl.model.entities.scripta.Step;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.riversamento.builder.DatiSpecificiBuilder;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
@@ -150,10 +151,10 @@ public final class ParerVersatoreMetadatiBuilder {
             datiSpecificiBuilder.insertNewTag("ModalitaTrasmissione", "BABEL");
         }
         for (AttoreDoc attore : attori) {
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.RESPONSABILE_PROCEDIMENTO) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.RESPONSABILE_PROCEDIMENTO)) {
                 nomeResponsabile = attore.getIdPersona().getDescrizione() + " (" + attore.getIdStruttura().getNome() + ")";
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.VISTI) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.VISTI)) {
                 String descrizione;
                 if (attore.getIdPersona() != null) {
                     descrizione = attore.getIdPersona().getDescrizione();
@@ -166,23 +167,23 @@ public final class ParerVersatoreMetadatiBuilder {
                     vistiString = vistiString + "; " + descrizione;
                 }
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.FIRMA)) {
                 if (firmatariString.equals("")) {
                     firmatariString = firmatariString + "&amp;lt;nominativo&amp;gt;" + attore.getIdPersona().getDescrizione() + "&amp;lt;/nominativo&amp;gt;";
                 } else {
                     firmatariString = firmatariString + "; " + "&amp;lt;nominativo&amp;gt;" + attore.getIdPersona().getDescrizione() + "&amp;lt;/nominativo&amp;gt;";
                 }
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_AMMINISTRATIVO) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_AMMINISTRATIVO)) {
                 nomeDirettoreAmministrativo = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_SANITARIO) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_SANITARIO)) {
                 nomeDirettoreSanitario = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_GENERALE)) {
                 nomeDirettoreGenerale = attore.getIdPersona().getDescrizione();
             }
-            if (attore.getRuolo() == AttoreDoc.RuoloAttoreDoc.RICEZIONE) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.RICEZIONE)) {
                 operatoreDiProtocollo = attore.getIdPersona().getCodiceFiscale();
             }
         }

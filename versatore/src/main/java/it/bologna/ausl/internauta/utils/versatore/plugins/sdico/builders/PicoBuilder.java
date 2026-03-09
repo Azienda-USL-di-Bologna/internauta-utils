@@ -14,6 +14,8 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.DocDetailInterface;
 import it.bologna.ausl.model.entities.scripta.Registro;
+import it.bologna.ausl.model.entities.scripta.Step;
+
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -169,9 +171,9 @@ public class PicoBuilder {
             List<AttoreDoc> listaAttori = doc.getAttoriList();
             tipologiaDiFlusso = (String) tipiDiFlusso.get("esterno");
             for (AttoreDoc attore : listaAttori) {
-                if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
+                if (attore.getIdStep().getId().equals(Step.StepIds.ASSEGNAZIONE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.RESPONSABILE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.SEGRETERIA)) {
                     tipologiaDiFlusso = (String) tipiDiFlusso.get("interno");
                     break;
                 }
