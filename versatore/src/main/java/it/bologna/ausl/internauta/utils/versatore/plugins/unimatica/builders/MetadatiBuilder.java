@@ -593,7 +593,7 @@ public class MetadatiBuilder {
         //--Indice di classificazione
         classificazione.setIndiceDiClassificazione(archivioPrincipale.getIdTitolo().getClassificazione());
         //--Descrizione
-        classificazione.setDescrizione(archivioPrincipale.getIdTitolo().getDescrizione());
+        classificazione.setDescrizione(archivioPrincipale.getIdTitolo().getNome());
         //TODO piano di classificazione opz
         documentoAmministrativoInformatico.setClassificazione(classificazione);
 
