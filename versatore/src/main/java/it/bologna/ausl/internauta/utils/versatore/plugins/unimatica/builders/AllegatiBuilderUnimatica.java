@@ -5,10 +5,12 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.IdentityFileUnimatica;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
+import it.bologna.ausl.model.entities.scripta.AllegatoInterface;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.riversamento.builder.IdentityFile;
 import java.io.IOException;
@@ -51,7 +53,7 @@ public class AllegatiBuilderUnimatica {
     public Map<String, Object> buildAllegati(List<Allegato> allegatiList, Doc doc) throws MinIOWrapperException, VersatorePluginExceptionRitentabile, VersatorePluginException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
-        List<IdentityFile> identityFiles = new ArrayList<>();
+        List<IdentityFileUnimatica> identityFiles = new ArrayList<>();
         AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
         for (Allegato allegato : allegatiList) {
@@ -59,13 +61,13 @@ public class AllegatiBuilderUnimatica {
             if (allegato.getFirmato()) {
                 //guardo se è firmato e in tal caso lo processo
                 Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
+                IdentityFileUnimatica identityFile = getAllegatoInformation(originaleFirmato, allegato.getId());
                 identityFiles.add(identityFile);
                 Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
                 VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                 versamentiAllegatiInfo.add(allegatoInformation);
                 AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                    allegato.getDettagli().getOriginale().getNome(),
+                    originaleFirmato.getNome(),
                     identityFile.getHash(),
                     allegato.getFirmato(),
                     originaleFirmato.getMimeType()
@@ -86,21 +88,21 @@ public class AllegatiBuilderUnimatica {
                     || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
                     || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
                     && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))
-                    || allegato.getNome().equalsIgnoreCase("segnatura.xml")) {
+                    || AllegatoInterface.SottotipoAllegato.SEGNATURA.equals(allegato.getSottotipo())) {
                     //guardo se è la stampa unica
                     //oppure l'allegato principale di un pe o di un rgpico
                     //oppure il testo omissis o la stampa unica omissis di una dete o una deli
                     //oppure è la segnatura
                     //in quel caso la processo
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-                    IdentityFile identityFile = getAllegatoInformation(originale);
+                    IdentityFileUnimatica identityFile = getAllegatoInformation(originale, allegato.getId());
                     identityFiles.add(identityFile);
                     Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     //assegno il documento principale
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                        allegato.getDettagli().getOriginale().getNome(),
+                        originale.getNome(),
                         identityFile.getHash(),
                         allegato.getFirmato(),
                         originale.getMimeType()
@@ -136,7 +138,7 @@ public class AllegatiBuilderUnimatica {
      * @return
      * @throws MinIOWrapperException
      */
-    private IdentityFile getAllegatoInformation(Allegato.DettaglioAllegato dettaglio) throws MinIOWrapperException, VersatorePluginException {
+    private IdentityFileUnimatica getAllegatoInformation(Allegato.DettaglioAllegato dettaglio, Integer idAllegato) throws MinIOWrapperException, VersatorePluginException {
         //Controllo se nel nome del file è già inserita l'estensione
         int lastDotIndex = dettaglio.getNome().lastIndexOf(".");
         String estensione = "";
@@ -146,12 +148,14 @@ public class AllegatiBuilderUnimatica {
         //Nel caso dei documenti provenienti da argo l'estensione del file è già inserita nel nome del file; per quelli invece caricati da internauta
         //in "dettagli" nome del file ed estensione sono separati. Al momento solo i doc GEDI (tiplogia DOCUMENT_UTENTE) vengono caricati direttamente da
         //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
-        IdentityFile identityFile = new IdentityFile(dettaglio.getNome()
+        IdentityFileUnimatica identityFile = new IdentityFileUnimatica(dettaglio.getNome()
             + (!(dettaglio.getEstensione().equals(estensione)) ? "." + dettaglio.getEstensione() : ""),
             getUuidMinIObyFileId(dettaglio.getIdRepository()),
             dettaglio.getHashSha256(),
             null,
-            dettaglio.getMimeType());
+            dettaglio.getMimeType(),
+            idAllegato
+        );
         //if (identityFile.getUuidMongo() == null) {
         identityFile.setFileBase64(dettaglio.getIdRepository());
         //}
@@ -187,7 +191,7 @@ public class AllegatiBuilderUnimatica {
      * @return
      */
     private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato,
-        IdentityFile identityFile,
+        IdentityFileUnimatica identityFile,
         Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato) {
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
         allegatoInformation.setIdAllegato(idAllegato);
@@ -205,7 +209,7 @@ public class AllegatiBuilderUnimatica {
      * @throws MinIOWrapperException
      * @throws VersatorePluginException
      */
-    private IdentityFile calcolaSHA256(IdentityFile identityFile) throws MinIOWrapperException, VersatorePluginException {
+    private IdentityFileUnimatica calcolaSHA256(IdentityFileUnimatica identityFile) throws MinIOWrapperException, VersatorePluginException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         InputStream is = identityFile.getUuidMongo() != null
             ? minIOWrapper.getByUuid(identityFile.getUuidMongo())

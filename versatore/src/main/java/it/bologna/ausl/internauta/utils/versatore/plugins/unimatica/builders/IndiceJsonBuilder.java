@@ -2,6 +2,7 @@ package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders;
 
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.AllegatoUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
+import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
@@ -40,6 +41,10 @@ public class IndiceJsonBuilder {
      * @return
      */
     public Map<String, Object> build() throws VersatorePluginException {
+        //estraggo i parametri per la tipologia di documento
+        String tipoDocumento = doc.getTipologia().toString();
+        Map<String, Object> mappaParametri = (Map<String, Object>) parametriVersamento.get(tipoDocumento);
+
         Map<String, Object> jsonMap = new HashMap<>();
         Map<String, Object> profilo = new HashMap<>();
         //tenant
@@ -60,17 +65,17 @@ public class IndiceJsonBuilder {
         if (registro == null) {
             throw new VersatorePluginException("Non è presente un registro ufficiale e attivo per il documento con id " + doc.getId());
         }
-        profilo.put("classeDocumentale", registro.getDescrizione());
+        profilo.put("classeDocumentale", (String) mappaParametri.get("classeDocumentale"));
         jsonMap.put("profilo", profilo);
         List<Map<String, Object>> documentiList = new ArrayList<>();
         Map<String, Object> documento = new HashMap<>();
-        //id del documento
-        documento.put("id", doc.getId());
+        //id del documento (sarà l'id dell'allegato)
+        documento.put("id", String.valueOf(documentoPrincipale.getIdFile()));
         Map<String, Object> chiave = new HashMap<>();
         //numero registro
-        chiave.put("numero", registroDocDocumento.getNumero());
+        chiave.put("numero", String.valueOf(registroDocDocumento.getNumero()));
         //anno registro
-        chiave.put("anno", registroDocDocumento.getAnno());
+        chiave.put("anno", String.valueOf(registroDocDocumento.getAnno()));
         //registro
         chiave.put("registro", registro.getCodice());
         documento.put("chiave", chiave);
@@ -86,23 +91,23 @@ public class IndiceJsonBuilder {
         documento.put("hash", hashDocumentoPrincipale);
         //dati dei metadati
         Map<String, Object> metadati = new HashMap<>();
-        metadati.put("nomeFile", doc.getId().toString() + ".xml");
+        metadati.put("nomeFile", String.valueOf(documentoPrincipale.getIdFile()) + ".xml");
         Map<String, Object> hashMetadati = new HashMap<>();
         hashMetadati.put("impronta", sha256HexMetadati);
         hashMetadati.put("codifica", parametriVersamento.get("codifica"));
         hashMetadati.put("algoritmo", parametriVersamento.get("algoritmo"));
         metadati.put("hash", hashMetadati);
+        documento.put("metadati", metadati);
         //parametri
         Map<String, Object> parametriDocumento = new HashMap();
-        //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...
-        parametriDocumento.put("aggiungiFirma", (boolean) parametriVersamento.get("aggiungiFirma"));
-        parametriDocumento.put("verificaFirma", documentoPrincipale.getFirmato());
+        parametriDocumento.put("aggiungiFirma", (boolean) mappaParametri.get("aggiungiFirma"));
+        parametriDocumento.put("verificaFirma", (boolean) mappaParametri.get("verificaFirma"));
         documento.put("parametriDocumento", parametriDocumento);
         //allegati
         List<Map<String, Object>> allegatiList = new ArrayList<>();
         for (AllegatoUnimatica allegatoUnimaticaSecondario : allegatiSecondariList) {
             Map<String, Object> allegato = new HashMap<>();
-            allegato.put("id", allegatoUnimaticaSecondario.getIdFile());
+            allegato.put("id", String.valueOf(allegatoUnimaticaSecondario.getIdFile()));
             allegato.put("nomeFile", allegatoUnimaticaSecondario.getNomeFile());
             allegato.put("formatoFile", allegatoUnimaticaSecondario.getFormato());
             Map<String, Object> hashAllegato = new HashMap<>();
@@ -110,11 +115,9 @@ public class IndiceJsonBuilder {
             hashAllegato.put("codifica", parametriVersamento.get("codifica"));
             hashAllegato.put("algoritmo", parametriVersamento.get("algoritmo"));
             allegato.put("hash", hashAllegato);
-            //TODO non penso di passare l'xml per ogni allegato
             Map<String, Object> parametriAllegato = new HashMap();
-            //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...
-            parametriAllegato.put("aggiungiFirma", allegatoUnimaticaSecondario.getFirmato());
-            parametriAllegato.put("verificaFirma", allegatoUnimaticaSecondario.getFirmato());
+            parametriAllegato.put("aggiungiFirma", (boolean) parametriVersamento.get("aggiungiFirmaAllegato"));
+            parametriAllegato.put("verificaFirma", (boolean) parametriVersamento.get("verificaFirmaAllegato"));
             allegato.put("parametriDocumento", parametriAllegato);
             allegatiList.add(allegato);
         }

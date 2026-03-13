@@ -368,6 +368,7 @@ public class SdicoVersatoreService extends VersatoreDocs {
                             buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
                         } catch (Exception ex) {
                             log.error("Problemi con l'inputstream dei file", ex);
+                            throw new VersatorePluginExceptionRitentabile("Problemi con l'inputstream dei file");
                         }
                     }
                 }
