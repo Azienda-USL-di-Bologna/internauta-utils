@@ -42,7 +42,7 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
                 List<ArchivioDoc> archiviDocList = doc.getArchiviDocList()
                     .stream().filter(archivioListObj -> archivioListObj.getDataEliminazione() == null)
                     .collect(Collectors.toList());
-                if (doc.getDataRegistrazione().isAfter(ZonedDateTime.now().minusDays(10)) && archiviDocList != null && !archiviDocList.isEmpty()) {
+                if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(10)) && archiviDocList != null && !archiviDocList.isEmpty()) {
                     idoneo = true;
                     log.info("Prendo da versare il documento id: " + id);
                 }
