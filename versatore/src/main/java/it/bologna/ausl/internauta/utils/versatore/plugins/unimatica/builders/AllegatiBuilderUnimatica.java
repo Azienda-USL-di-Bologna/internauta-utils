@@ -176,6 +176,7 @@ public class AllegatiBuilderUnimatica {
     private String getUuidMinIObyFileId(String fileId) throws MinIOWrapperException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         MinIOWrapperFileInfo fileInfoByFileId = minIOWrapper.getFileInfoByFileId(fileId);
+        //se fileInfoByFileId è vuoto potrebbe essere perché su minIo il file risulta deleted = true
         return fileInfoByFileId.getMongoUuid();
     }
 

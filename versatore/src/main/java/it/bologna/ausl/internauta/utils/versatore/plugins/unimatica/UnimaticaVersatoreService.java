@@ -351,9 +351,12 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         risultatoEVersamentiAllegati.put("responseJson", resBodyString);
                         try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
-
                         } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
+                            ErroreUnimatica erroreGenerale = new ErroreUnimatica();
+                            erroreGenerale.setDescrizione("Errore nel parsing della response arrivata da Unimatica");
+                            erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
+                            risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
                         }
                         risultatoEVersamentiAllegati.put("response", response);
                     } else {
