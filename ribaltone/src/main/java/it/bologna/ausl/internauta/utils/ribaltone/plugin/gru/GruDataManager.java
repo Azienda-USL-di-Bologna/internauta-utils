@@ -29,7 +29,7 @@ import tools.jackson.databind.ObjectMapper;
  *
  * @author Top
  */
-public class GruDataManager extends SourceDataManager {
+public class GruDataManager extends SourceDataManager implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GruDataManager.class);
 
@@ -153,6 +153,13 @@ public class GruDataManager extends SourceDataManager {
 
     private void setGruSpecificData(GruSpecificData gruSpecificData) {
         this.gruSpecificData = gruSpecificData;
+    }
+    
+    @Override
+    public void close() {
+        if (this.gruSpecificData != null && this.gruSpecificData.getConnessione() != null) {
+            this.gruSpecificData.getConnessione().close();
+        }
     }
 
     private List<DatiDaImportareAppartenente> mergeAccendiSpegniUtentiWithRespo(List<Appartenente> appartenenti, List<Responsabile> responsabili, List<String> personeDaAccendere, List<String> personeDaSpegnere) {

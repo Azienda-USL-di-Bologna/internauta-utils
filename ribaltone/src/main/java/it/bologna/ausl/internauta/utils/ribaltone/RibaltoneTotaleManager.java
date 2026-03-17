@@ -283,11 +283,13 @@ public class RibaltoneTotaleManager {
                 if (idAzienda == null) {
                     throw new RibaltoneHttpException("impossibile trovare l'azienda corrispondente");
                 } else {
-                    sourceDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId());
-                    appartenenti = sourceDataManager.getAppartenenti();
-                    anagrafiche = sourceDataManager.getAnagrafica();
-                    strutture = sourceDataManager.getStrutture();
-                    trasformazioni = sourceDataManager.getTrasformazioni();
+                    try (GruDataManager gruDataManager = new GruDataManager(gruSpecificData, objectMapper, codiceAzienda, idAzienda.getId())) {
+                        sourceDataManager = gruDataManager;
+                        appartenenti = sourceDataManager.getAppartenenti();
+                        anagrafiche = sourceDataManager.getAnagrafica();
+                        strutture = sourceDataManager.getStrutture();
+                        trasformazioni = sourceDataManager.getTrasformazioni();
+                    }
                     progressivoUltimaTrasformazione = gruSpecificData.getQueryRecuperoDati().getProgressivoUltimaTrasformazione();
 
                 }
