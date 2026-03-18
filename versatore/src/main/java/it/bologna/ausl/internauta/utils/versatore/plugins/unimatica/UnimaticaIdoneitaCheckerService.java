@@ -38,11 +38,14 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
             //verso solo i protocolli registrati da più di 10 giorni
             case PROTOCOLLO_IN_ENTRATA:
             case PROTOCOLLO_IN_USCITA:
-                //TODO mettere before, vedere come
                 List<ArchivioDoc> archiviDocList = doc.getArchiviDocList()
                     .stream().filter(archivioListObj -> archivioListObj.getDataEliminazione() == null)
                     .collect(Collectors.toList());
-                if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(10)) && archiviDocList != null && !archiviDocList.isEmpty()) {
+                /*if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(10)) && archiviDocList != null && !archiviDocList.isEmpty()) {
+                    idoneo = true;
+                    log.info("Prendo da versare il documento id: " + id);
+                }*/
+                if (doc.getDataRegistrazione().isAfter(ZonedDateTime.now().minusDays(1)) && archiviDocList != null && !archiviDocList.isEmpty()) {
                     idoneo = true;
                     log.info("Prendo da versare il documento id: " + id);
                 }
@@ -53,9 +56,6 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
 
     @Override
     public Boolean checkArchivioImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
-        //TODO
-        //log.info("Prendo da versare il fasciolo id: " + id);
-        //return true;
         return false;
     }
 

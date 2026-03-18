@@ -1,12 +1,9 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
@@ -19,21 +16,12 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.Err
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.IdentityFileUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.PaccoFileUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ResponseUnimatica;
-import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
-import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
-import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.QPersona;
-import it.bologna.ausl.model.entities.baborg.QUtente;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
-import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
-import it.bologna.ausl.riversamento.builder.IdentityFile;
-import it.bologna.ausl.riversamento.sender.PaccoFile;
-import jakarta.persistence.EntityManager;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import okhttp3.Credentials;
-import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -151,12 +138,6 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
             }
         } else if (errore != null) {
             switch (errore.getCodice()) {
-                /*case CANCELLATO: {
-                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ANNULLATO);
-                    versamentoDocInformation.setRapporto(response.getErrorMessage());
-                    log.warn("Il versamento del documento " + versamentoDocInformation.getIdDoc() + " è stato annullato, in quanto: " + response.getErrorMessage());
-                    break;
-                }*/
                 case ERRORE_PLUG_IN_RITENTABILE:
                 case ERRORE_PLUG_IN: {
                     Versamento.StatoVersamento statoVersamento = errore.getCodice().equals(ERRORE_PLUG_IN)
@@ -298,22 +279,6 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                     for (PaccoFileUnimatica paccoFile : paccoFiles) {
                         log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
                         Integer idAllegatoDaVersare = paccoFile.getIdAllegato();
-                        //prendo l'idAllegato per costruire il nome del file da inviare
-                        /*Integer idAllegatoDaVersare = null;
-                        if (documentoPrincipale.getNomeFile().equals(paccoFile.getFileName())) {
-                            idAllegatoDaVersare = documentoPrincipale.getIdFile();
-                        } else {
-                            for (AllegatoUnimatica allegatoDaVersare : allegatiSecondariList) {
-                                if (allegatoDaVersare.getNomeFile().equals(paccoFile.getFileName())) {
-                                    idAllegatoDaVersare = allegatoDaVersare.getIdFile();
-                                    break;
-                                }
-                            }
-                        }
-                        if (idAllegatoDaVersare == null) {
-                            log.error("Non si riesce a individuare l'id dell'allegato da versare, possibile problema di costruzione dell'oggetto PaccoFile");
-                            throw new VersatorePluginException("Non si riesce a individuare l'id dell'allegato da versare, possibile problema di costruzione dell'oggetto PaccoFile");
-                        }*/
                         byte[] bytes;
                         try (InputStream is = paccoFile.getInputStream()) {
                             bytes = IOUtils.toByteArray(is);
@@ -365,13 +330,11 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
                         ErroreUnimatica erroreGenerale = new ErroreUnimatica();
-                        //response.setErrorMessage(resp.toString());
+                        erroreGenerale.setDescrizione(resp.toString());
                         if (resp.code() == 500) {
                             erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
-                            //response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
                         } else {
                             erroreGenerale.setCodice(ERRORE_PLUG_IN);
-                            //response.setResponseCode(ERRORE_PLUG_IN);
                         }
                         risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
                     }
@@ -406,27 +369,6 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         return risultatoEVersamentiAllegati;
     }
 
-    /**
-     * Metodo che dato uno username ti restituisce la persona
-     *
-     * @param codiceFiscale
-     * @return
-     */
-    /*private Persona personaDaUsernameEAzienda(String username, Integer idAzienda) {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-
-        QUtente utente = QUtente.utente;
-        QPersona persona = QPersona.persona;
-
-        Persona result = queryFactory
-            .select(persona)
-            .from(utente)
-            .join(utente.idPersona, persona)
-            .where(utente.idAzienda.id.eq(idAzienda)
-                .and(utente.username.eq(username)))
-            .fetchOne();
-        return result;
-    }*/
     /**
      * Metodo che impacchetta i dati degli allegati, reperisce i file e li
      * prepara per essere versati

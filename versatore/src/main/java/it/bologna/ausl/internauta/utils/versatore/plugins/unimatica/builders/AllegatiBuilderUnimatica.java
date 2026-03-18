@@ -12,7 +12,6 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.AllegatoInterface;
 import it.bologna.ausl.model.entities.scripta.Doc;
-import it.bologna.ausl.riversamento.builder.IdentityFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;

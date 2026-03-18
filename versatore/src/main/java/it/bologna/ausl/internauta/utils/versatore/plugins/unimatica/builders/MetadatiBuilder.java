@@ -36,7 +36,6 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoSoggetto
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
 import it.bologna.ausl.internauta.utils.versatore.utils.IpaUtils;
-import static it.bologna.ausl.internauta.utils.versatore.utils.SdicoVersatoreUtils.buildIdFascicolo;
 import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
@@ -48,7 +47,6 @@ import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PUBBL
 import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.PUBBLICA_AMMINISTRAZIONE_ITALIANA;
 import static it.bologna.ausl.model.entities.rubrica.Contatto.TipoContatto.VARIO;
 import it.bologna.ausl.model.entities.rubrica.Email;
-import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.AttoreDoc;
@@ -62,18 +60,12 @@ import jakarta.xml.bind.Marshaller;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
-import org.apache.tika.detect.zip.IPADetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Comparator;
 import org.springframework.util.StringUtils;
 
@@ -608,13 +600,6 @@ public class MetadatiBuilder {
      * @return
      */
     public static String buildIdFascicolo(Archivio archivio) {
-        /*String numero = archivio.getNumero().toString();
-        if (archivio.getIdArchivioPadre() != null) {
-            numero = archivio.getIdArchivioPadre().getNumero().toString() + "-" + numero;
-            if (archivio.getIdArchivioPadre().getIdArchivioPadre() != null) {
-                numero = archivio.getIdArchivioPadre().getIdArchivioPadre().getNumero() + "-" + numero;
-            }
-        }*/
         return (archivio.getNumerazioneGerarchica() + " [id_" + archivio.getId() + "]");
     }
 
