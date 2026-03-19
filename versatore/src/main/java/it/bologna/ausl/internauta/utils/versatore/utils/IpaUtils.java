@@ -23,20 +23,34 @@ public class IpaUtils {
 
     private static final Logger log = LoggerFactory.getLogger(IpaUtils.class);
 
+    /**
+    Restituisce una mappa che ha come chiave un id contatto e come valore i dati della pai contenuti nel db ipa a cui la funzione si collega
+    @param contattiList lista di contatti di cui si vogliono sapere i dati ipa
+    @param url
+    @param user
+    @param password
+    @return
+    @throws VersatorePluginException
+     */
     public static Map<Integer, Object> getIpaMap(List<Contatto> contattiList, String url, String user, String password) throws VersatorePluginException {
         Map<Integer, Object> ipaMap = new HashMap<>();
+        //voglio i contatti che siano effettivamente solo PAI
         List<Contatto> contattiPaiList = contattiList
             .stream()
             .filter(contattoObj -> contattoObj.getTipo().equals(Contatto.TipoContatto.PUBBLICA_AMMINISTRAZIONE_ITALIANA))
             .collect(Collectors.toList());
         if (contattiPaiList != null && !contattiPaiList.isEmpty()) {
             for (Contatto contatto : contattiPaiList) {
+                //l'id esterno di un contatto ottenuto tramite syncIPA è composto in modo da avere concatenati (secondo una sua logica) i codici della pai.
+                //uso questa funzione per ottenerli
                 Map<String, String> codiciIPAeDescrizioni = getCodiciIPAbyIdEsterno(contatto.getIdEsterno());
                 String cod_amm = codiciIPAeDescrizioni.get("cod_amm");
                 String cod_aoo = codiciIPAeDescrizioni.get("cod_aoo");
                 String cod_ou = codiciIPAeDescrizioni.get("cod_ou");
                 Sql2o sql2o = new Sql2o(url, user, password);
+                //connessione a db IPA
                 try (Connection conn = sql2o.open()) {
+                    //in base ai codici che sono riuscito ad avere dall'id_esterno del contatto posso interrogare il db ipa con query differenti
                     if (StringUtils.hasText(cod_amm)) {
                         if (StringUtils.hasText(cod_ou)) {
                             Table codiciEdescrizioniTable = conn.createQuery(
