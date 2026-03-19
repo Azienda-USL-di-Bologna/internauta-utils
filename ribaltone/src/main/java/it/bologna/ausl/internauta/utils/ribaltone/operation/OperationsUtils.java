@@ -57,6 +57,25 @@ public class OperationsUtils {
     private final static QStruttura qStruttura = QStruttura.struttura;
     private final static QAfferenzaStruttura qffAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
 
+    static void chiudiPermessiStruttura(Struttura strutturaChiusa, RepositoryFactory repositoryFactory) {
+        log.info("chiusura permessiStruttura");
+        try {
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+
+            //elimino i permessi di anagrafe pec, connessione a pool, e permessi struttura su gedi
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.BABORG.toString(), BlackBoxConstants.Tipo.UFFICIO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.PECG.toString(), BlackBoxConstants.Tipo.PEC.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.SCRIPTA.toString(), BlackBoxConstants.Tipo.ARCHIVIO.toString(), "ribaltone");
+
+            //chiudere i permessi veicolati
+            repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaChiusa, "ribaltone");
+        } catch (BlackBoxPermissionException ex) {
+            log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
+        }
+    }
+
     public static enum KeyMapReplica {
         ID_CASELLA,
         ANCESTOR_LIST,

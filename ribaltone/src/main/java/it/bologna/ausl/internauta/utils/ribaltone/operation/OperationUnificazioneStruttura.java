@@ -66,12 +66,12 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                 DatiDaImportareStruttura strutturaInserita = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 if (tipoUnificazione.equals(StrutturaUnificata.TipoUnificazione.REPLICA)) {
                     Struttura strutturaBaborgAperta = jPAQueryFactory
-                        .select(qStruttura)
-                        .from(qStruttura)
-                        .where(qStruttura.idAzienda.id.eq(strutturaInserita.getIdAzienda())
-                            .and(qStruttura.idCasella.eq(strutturaInserita.getIdCasella())
-                                .and(qStruttura.attiva.eq(Boolean.TRUE)))
-                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                            .select(qStruttura)
+                            .from(qStruttura)
+                            .where(qStruttura.idAzienda.id.eq(strutturaInserita.getIdAzienda())
+                                    .and(qStruttura.idCasella.eq(strutturaInserita.getIdCasella())
+                                            .and(qStruttura.attiva.eq(Boolean.TRUE)))
+                            ).orderBy(qStruttura.id.desc()).fetchOne();
                     if (strutturaBaborgAperta != null) {
                         for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
                             StrutturaUnificata unificazione = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
@@ -87,12 +87,12 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                 mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
                                 //ora cerco il padre per collegarlo
                                 Struttura strutturaPadreDaCollegare = jPAQueryFactory
-                                    .select(qStruttura)
-                                    .from(qStruttura)
-                                    .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
-                                        .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaInserita.getIdCasellaPadre()))
-                                        .and(qStruttura.attiva.eq(Boolean.TRUE))
-                                    ).orderBy(qStruttura.id.desc()).fetchOne();
+                                        .select(qStruttura)
+                                        .from(qStruttura)
+                                        .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
+                                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaInserita.getIdCasellaPadre()))
+                                                .and(qStruttura.attiva.eq(Boolean.TRUE))
+                                        ).orderBy(qStruttura.id.desc()).fetchOne();
                                 if (strutturaPadreDaCollegare != null) {
                                     cloneStrutturaForUnificazione.setIdStrutturaPadre(strutturaPadreDaCollegare);
 
@@ -107,13 +107,13 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
 
                                 //ora cerco i miei figli per collegarli a me
                                 List<Struttura> struttureFiglieNonAncoraCollegate = jPAQueryFactory
-                                    .select(qStruttura)
-                                    .from(qStruttura)
-                                    .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
-                                        .and(qStruttura.idStrutturaReplicata.idCasellaPadre.eq(strutturaInserita.getIdCasella()))
-                                        .and(qStruttura.attiva.eq(Boolean.TRUE))
-                                        .and(qStruttura.idStrutturaPadre.isNull())
-                                    ).fetch();
+                                        .select(qStruttura)
+                                        .from(qStruttura)
+                                        .where(qStruttura.idAzienda.id.eq(unificazione.getIdStrutturaDestinazione().getIdAzienda().getId())
+                                                .and(qStruttura.idStrutturaReplicata.idCasellaPadre.eq(strutturaInserita.getIdCasella()))
+                                                .and(qStruttura.attiva.eq(Boolean.TRUE))
+                                                .and(qStruttura.idStrutturaPadre.isNull())
+                                        ).fetch();
                                 if (struttureFiglieNonAncoraCollegate != null && !struttureFiglieNonAncoraCollegate.isEmpty()) {
                                     for (Struttura strutturaFigliaDaCollegare : struttureFiglieNonAncoraCollegate) {
                                         strutturaFigliaDaCollegare.setIdStrutturaPadre(cloneStrutturaForUnificazione);
@@ -140,7 +140,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     // devo fare la stessa cosa per gli utenti che non hanno piu strutture sull'azienda
                     for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaChiusa.getIdCasella())
-                            || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaChiusa.getIdCasella())) {
+                                || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaChiusa.getIdCasella())) {
                             //sono la replica principale quindi devo spegnere la replica,
                             StrutturaUnificata unificazioneDaSpegnere = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                             unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
@@ -148,23 +148,15 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                         }
 
                         Struttura strutturaUnificataBaborgDaChiudere = jPAQueryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaChiusa.getIdCasella()))
-                                .and(qStruttura.attiva)
-                            ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                        .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaChiusa.getIdCasella()))
+                                        .and(qStruttura.attiva)
+                                ).orderBy(qStruttura.id.desc()).limit(1).fetchOne();
                         OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
                         //todo da chiudere i permessi sulla struttura
-                        try {
-                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaUnificataBaborgDaChiudere, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                            //todo chiudere i permessi veicolati
-                            repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaUnificataBaborgDaChiudere, "ribaltone");
-                        } catch (BlackBoxPermissionException ex) {
-                            log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
-                        }
+                        OperationsUtils.chiudiPermessiStruttura(strutturaUnificataBaborgDaChiudere, repositoryFactory);
                         List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
                         if (struttureList == null) {
                             struttureList = new ArrayList<>();
@@ -179,7 +171,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                         //probabilmente non devo fare nulla se non spegnere la fusione
                         //forse potrebbe essere gia spenta
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaChiusa.getIdCasella())
-                            || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaChiusa.getIdCasella())) {
+                                || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaChiusa.getIdCasella())) {
                             StrutturaUnificata unificazioneDaSpegnere = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                             if (unificazioneDaSpegnere != null && unificazioneDaSpegnere.getDataDisattivazione() == null) {
                                 unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
@@ -231,13 +223,13 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             //non devo fare nulla ad aggiornare la l'unificazione ci ha pensato gia lo sposta strutture
                         } else {
                             Struttura strutturaUnificataBaborgDaChiudere = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                    .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaTrasferita.getIdCasella()))
-                                    .and(qStruttura.idStrutturaReplicata.idAzienda.id.eq(strutturaTrasferita.getIdAzienda()))
-                                    .and(qStruttura.attiva)
-                                ).orderBy(qStruttura.id.desc()).fetchOne();
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                            .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaTrasferita.getIdCasella()))
+                                            .and(qStruttura.idStrutturaReplicata.idAzienda.id.eq(strutturaTrasferita.getIdAzienda()))
+                                            .and(qStruttura.attiva)
+                                    ).orderBy(qStruttura.id.desc()).fetchOne();
                             if (strutturaUnificataBaborgDaChiudere != null) {
                                 Struttura strutturaReplicaChiusa = OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
                                 //todo chiudere i permessi struttura e veicolati
@@ -248,18 +240,18 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                 struttureList.add(strutturaUnificataBaborgDaChiudere);
                                 mappStrutturePerGestioneContatti.put(getAzione().toString(), struttureList);
                                 Struttura strutturaBaborgAperta = jPAQueryFactory
-                                    .select(qStruttura)
-                                    .from(qStruttura)
-                                    .where(qStruttura.idAzienda.id.eq(strutturaTrasferita.getIdAzienda())
-                                        .and(qStruttura.idCasella.eq(strutturaTrasferita.getIdCasella())
-                                            .and(qStruttura.attiva))
-                                    ).orderBy(qStruttura.id.desc()).fetchOne();
-                                if (strutturaBaborgAperta != null) {
-                                    List<Struttura> padriSuCuiMiDevoReplicare = jPAQueryFactory
                                         .select(qStruttura)
                                         .from(qStruttura)
-                                        .where(qStruttura.idStrutturaReplicata.id.eq(strutturaBaborgAperta.getIdStrutturaPadre().getId()))
-                                        .fetch();
+                                        .where(qStruttura.idAzienda.id.eq(strutturaTrasferita.getIdAzienda())
+                                                .and(qStruttura.idCasella.eq(strutturaTrasferita.getIdCasella())
+                                                        .and(qStruttura.attiva))
+                                        ).orderBy(qStruttura.id.desc()).fetchOne();
+                                if (strutturaBaborgAperta != null) {
+                                    List<Struttura> padriSuCuiMiDevoReplicare = jPAQueryFactory
+                                            .select(qStruttura)
+                                            .from(qStruttura)
+                                            .where(qStruttura.idStrutturaReplicata.id.eq(strutturaBaborgAperta.getIdStrutturaPadre().getId()))
+                                            .fetch();
                                     for (Struttura strutturaPadre : padriSuCuiMiDevoReplicare) {
                                         Struttura strutturaReplicaNew = strutturaBaborgAperta.cloneStrutturaForUnificazione(unificazione);
                                         strutturaReplicaNew.setIdAzienda(strutturaPadre.getIdAzienda());
@@ -273,11 +265,11 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                         OperationsUtils.inserisciSpostaUtentiStruttura(jPAQueryFactory, getEntityManager(), strutturaReplicaNew, strutturaReplicaChiusa);
                                         if (strutturaPadre.getIdAzienda().getId().equals(strutturaReplicaChiusa.getIdAzienda().getId())) {
                                             OperationsUtils.spostaStruttura(
-                                                getEntityManager(),
-                                                strutturaReplicaChiusa.getId(),
-                                                strutturaReplicaNew.getId(),
-                                                "T",
-                                                ZonedDateTime.now().toString());
+                                                    getEntityManager(),
+                                                    strutturaReplicaChiusa.getId(),
+                                                    strutturaReplicaNew.getId(),
+                                                    "T",
+                                                    ZonedDateTime.now().toString());
                                         }
                                     }
                                 }
@@ -324,20 +316,20 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
                         StrutturaUnificata unificazione = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                         Struttura strutturaBaborgReplicaDaChiudere = jPAQueryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaRinominata.getIdCasella())
-                                    .and(qStruttura.attiva.eq(Boolean.TRUE)))
-                            ).orderBy(qStruttura.id.desc()).fetchOne();
-                        if (strutturaBaborgReplicaDaChiudere != null) {
-                            Struttura idStrutturaReplicata = jPAQueryFactory
                                 .select(qStruttura)
                                 .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaSorgente())
-                                    .and(qStruttura.idCasella.eq(strutturaRinominata.getIdCasella())
-                                        .and(qStruttura.attiva.eq(Boolean.TRUE)))
+                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                        .and(qStruttura.idStrutturaReplicata.idCasella.eq(strutturaRinominata.getIdCasella())
+                                                .and(qStruttura.attiva.eq(Boolean.TRUE)))
                                 ).orderBy(qStruttura.id.desc()).fetchOne();
+                        if (strutturaBaborgReplicaDaChiudere != null) {
+                            Struttura idStrutturaReplicata = jPAQueryFactory
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaSorgente())
+                                            .and(qStruttura.idCasella.eq(strutturaRinominata.getIdCasella())
+                                                    .and(qStruttura.attiva.eq(Boolean.TRUE)))
+                                    ).orderBy(qStruttura.id.desc()).fetchOne();
 
                             Struttura strutturaNew = strutturaBaborgReplicaDaChiudere.cloneStrutturaForUnificazione(unificazione);
                             strutturaNew.setNome(strutturaRinominata.getDescrizione());
@@ -366,10 +358,10 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                             OperationsUtils.chiudiStruttura(strutturaBaborgReplicaDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
                             OperationsUtils.inserisciSpostaUtentiStruttura(jPAQueryFactory, getEntityManager(), strutturaNew, strutturaBaborgReplicaDaChiudere);
                             OperationsUtils.spostaStruttura(getEntityManager(),
-                                strutturaBaborgReplicaDaChiudere.getId(),
-                                strutturaNew.getId(),
-                                "R",
-                                strutturaNew.getDataAttivazione().toString()
+                                    strutturaBaborgReplicaDaChiudere.getId(),
+                                    strutturaNew.getId(),
+                                    "R",
+                                    strutturaNew.getDataAttivazione().toString()
                             );
 
                         }
@@ -391,28 +383,28 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     // devo fare la stessa cosa per gli utenti che non hanno piu strutture sull'azienda
                     for (UnificazioneDaGestire unificazioneDaGestire : unificazioniDaGestire) {
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaConfluita.getIdCasella())
-                            || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaConfluita.getIdCasella())) {
+                                || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaConfluita.getIdCasella())) {
                             //sono la replica principale quindi devo spegnere la replica,
                             StrutturaUnificata unificazioneDaSpegnere = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                             unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
                             getEntityManager().persist(unificazioneDaSpegnere);
                         }
                         Struttura strutturaBaborgChiusa = jPAQueryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(qStruttura.idAzienda.id.eq(strutturaConfluita.getIdAzienda())
-                                .and(qStruttura.idCasella.eq(strutturaConfluita.getIdCasella())
-                                    .and(qStruttura.attiva.eq(Boolean.FALSE)))
-                            ).orderBy(qStruttura.id.desc()).fetchOne();
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(qStruttura.idAzienda.id.eq(strutturaConfluita.getIdAzienda())
+                                        .and(qStruttura.idCasella.eq(strutturaConfluita.getIdCasella())
+                                                .and(qStruttura.attiva.eq(Boolean.FALSE)))
+                                ).orderBy(qStruttura.id.desc()).fetchOne();
                         if (strutturaBaborgChiusa != null) {
                             Integer idStrutturaBaborgSorgenteChiusa = strutturaBaborgChiusa.getId();
 
                             Struttura strutturaUnificataBaborgDaChiudere = jPAQueryFactory
-                                .select(qStruttura)
-                                .from(qStruttura)
-                                .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
-                                    .and(qStruttura.idStrutturaReplicata.id.eq(idStrutturaBaborgSorgenteChiusa))
-                                ).orderBy(qStruttura.id.desc()).fetchOne();
+                                    .select(qStruttura)
+                                    .from(qStruttura)
+                                    .where(qStruttura.idAzienda.id.eq(unificazioneDaGestire.getIdAziendaDestinazione())
+                                            .and(qStruttura.idStrutturaReplicata.id.eq(idStrutturaBaborgSorgenteChiusa))
+                                    ).orderBy(qStruttura.id.desc()).fetchOne();
                             OperationsUtils.chiudiStruttura(strutturaUnificataBaborgDaChiudere, jPAQueryFactory, qStruttura, qStoricoRelazione);
                             List<Struttura> struttureList = mappStrutturePerGestioneContatti.get(getAzione().toString());
                             if (struttureList == null) {
@@ -430,7 +422,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                         //probabilmente non devo fare nulla se non spegnere la fusione
                         //forse potrebbe essere gia spenta
                         if (unificazioneDaGestire.getIdCasellaSorgente().equals(strutturaConfluita.getIdCasella())
-                            || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaConfluita.getIdCasella())) {
+                                || unificazioneDaGestire.getIdCasellaDestinazione().equals(strutturaConfluita.getIdCasella())) {
                             StrutturaUnificata unificazioneDaSpegnere = getEntityManager().find(StrutturaUnificata.class, unificazioneDaGestire.getIdUnificazione());
                             if (unificazioneDaSpegnere != null && unificazioneDaSpegnere.getDataDisattivazione() != null) {
                                 unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
