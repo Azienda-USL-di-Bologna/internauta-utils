@@ -12,6 +12,7 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azione.CONFLUENZA;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
+import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
@@ -20,6 +21,7 @@ import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
 import it.bologna.ausl.model.entities.baborg.StoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.Struttura;
 import it.bologna.ausl.model.entities.baborg.StrutturaUnificata;
+import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.DatiImportatiStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.UnificazioneDaGestire;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
     private List<UnificazioneDaGestire> unificazioniDaGestire;
     private Map<String, List<Struttura>> mappStrutturePerGestioneContatti = new HashMap();
     private OperationUnificazioneAppartenente.UnificazionePair.DirezioneReplica direzioneReplica;
+    private List<UtenteStruttura> utentiStrutturaDaChiuderePerManageContatti = new ArrayList<>();
 
     private static final Logger log = LoggerFactory.getLogger(OperationAppartenente.class);
 
@@ -177,6 +181,22 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                                 unificazioneDaSpegnere.setDataDisattivazione(ZonedDateTime.now());
                                 getEntityManager().persist(unificazioneDaSpegnere);
                             }
+                            //devo necessariamente spegnere tutti gli utenti struttura unificati qui
+
+                            unificazioneDaSpegnere.getIdStrutturaSorgente().getUtenteStrutturaList().stream().forEach(
+                                    us -> {
+                                        if (us.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA)) {
+                                            OperationsUtils.chiudiUtenteStruttra(us, us.getIdUtente().getIdPersona(), repositoryFactory.getPermissionManager(), us.getIdUtente(), jPAQueryFactory, repositoryFactory.getEntityManager(), utentiStrutturaDaChiuderePerManageContatti);
+
+                                        }
+                                    });
+                            unificazioneDaSpegnere.getIdStrutturaDestinazione().getUtenteStrutturaList().stream().forEach(
+                                    us -> {
+                                        if (us.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA)) {
+                                            OperationsUtils.chiudiUtenteStruttra(us, us.getIdUtente().getIdPersona(), repositoryFactory.getPermissionManager(), us.getIdUtente(), jPAQueryFactory, repositoryFactory.getEntityManager(), utentiStrutturaDaChiuderePerManageContatti);
+
+                                        }
+                                    });
                         }
 
                     }
@@ -475,7 +495,10 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
 //                        getEntityManager().persist(str);
 //                    }
                 }
-                case CONFLUENZA, CHIUSURA -> {
+                case CONFLUENZA -> {
+                }
+                case CHIUSURA -> {
+
 //                    for (Struttura str : mappStrutturePerGestioneContatti.get(key)) {
 //                        Contatto idContatto = str.getIdContatto();
 //                        idContatto.setEliminato(Boolean.TRUE);
@@ -492,6 +515,8 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
                     throw new AssertionError();
             }
         }
+        //spengo i contatti di utenti unificati che ho dovuto spegnere perche fusi e la fusione non c'è piu
+        OperationsUtils.gestisciContatti(repositoryFactory, null, utentiStrutturaDaChiuderePerManageContatti);
     }
 
     public StrutturaUnificata.TipoUnificazione getTipoUnificazione() {

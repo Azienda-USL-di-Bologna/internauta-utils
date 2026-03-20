@@ -267,54 +267,7 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     }
 
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
-        for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
-            log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
-                    + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
-            repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
-            Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
-            repositoryFactory.getEntityManager().refresh(contattoPersona);
-            List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
-            repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
-            List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
-            DettaglioContatto idDettaglioContatto = null;
-            if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
-                idDettaglioContatto = dettagliContattiDellaPersona.get(0);
-            }
-            if (idDettaglioContatto != null) {
-                String descrizione = utenteStrutturaNew.getIdStruttura().getNome();
-                if (utenteStrutturaNew.getIdStruttura().getIdCasella() != null) {
-                    descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdCasella().toString() + "]";
-                }
-                descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdAzienda().getNome() + "]";
-                idDettaglioContatto.setDescrizione(descrizione);
-                idDettaglioContatto.setPrincipale(utenteStrutturaNew.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
-                idDettaglioContatto.setEliminato(false);
-//                for (DettaglioContatto dettaglioContatto : idDettaglioContatto.getIdContatto().getDettaglioContattoList()) {
-//                    dettaglioContatto.setPrincipale(dettaglioContatto.getUtenteStruttura().getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
-//                    getEntityManager().persist(dettaglioContatto);
-//                }
-                getEntityManager().persist(idDettaglioContatto);
-            } else {
-                JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
-
-                if (idDettaglioContatto != null) {
-                    //devo creare il dettaglio contatto
-                    idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
-                    getEntityManager().persist(idDettaglioContatto);
-                    getEntityManager().flush();
-                }
-                utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
-                getEntityManager().persist(utenteStrutturaNew);
-
-            }
-        }
-        for (UtenteStruttura utenteStrutturaOld : utenteStrutturaDaSpegnereList) {
-            DettaglioContatto idDettaglioContatto = utenteStrutturaOld.getIdDettaglioContatto();
-            if (idDettaglioContatto != null) {
-                idDettaglioContatto.setEliminato(Boolean.TRUE);
-                getEntityManager().persist(idDettaglioContatto);
-            }
-        }
+        OperationsUtils.gestisciContatti(repositoryFactory, utenteStrutturaDaInserireList, utenteStrutturaDaSpegnereList);
     }
 
     public UnificazionePair getPair() {
