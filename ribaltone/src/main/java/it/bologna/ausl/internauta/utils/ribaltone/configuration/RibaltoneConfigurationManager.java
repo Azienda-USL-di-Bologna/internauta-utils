@@ -1,9 +1,9 @@
 package it.bologna.ausl.internauta.utils.ribaltone.configuration;
 
 import it.bologna.ausl.internauta.utils.ribaltone.pluginutils.RibaltoneParamConf;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 /**
  *
  * @author Top

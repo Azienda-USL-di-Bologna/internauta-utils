@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.pdftoolkit.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.internauta.utils.authorizationutils.DownloaderTokenCreator;
 import it.bologna.ausl.internauta.utils.authorizationutils.exceptions.AuthorizationUtilsException;
 import it.bologna.ausl.internauta.utils.pdftoolkit.configuration.PdfToolkitConfiguration;
@@ -29,6 +27,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * @author Giuseppe Russo <g.russo@dilaxia.com>

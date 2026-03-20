@@ -28,3 +28,5 @@ versatore/prova.txt
 .idea/
 **/target/
 nbactions.xml
+flying-saucer-core/bin/
+flying-saucer-pdf/bin/

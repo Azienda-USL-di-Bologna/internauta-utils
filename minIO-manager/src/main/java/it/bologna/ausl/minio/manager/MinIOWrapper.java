@@ -1,8 +1,5 @@
 package it.bologna.ausl.minio.manager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -12,6 +9,7 @@ import io.minio.CopySource;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveBucketArgs;
 import io.minio.RemoveObjectArgs;
@@ -39,7 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
@@ -52,6 +49,9 @@ import org.springframework.util.StringUtils;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -495,6 +495,8 @@ public class MinIOWrapper {
      */
     public MinIOWrapperFileInfo putWithBucket(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String mongoUuid, String bucket) throws MinIOWrapperException {
         MinioClient minIOClient = null;
+        String physicalPath = null;
+        Integer serverId = null;
         try {
             // wrappo lo stream dentro uno DigestInputStream per poter calcolare md5
             DigestInputStream digestInputStream = new DigestInputStream(obj, MessageDigest.getInstance("MD5"));
@@ -503,7 +505,7 @@ public class MinIOWrapper {
             path = StringUtils.trimTrailingCharacter(StringUtils.cleanPath(path), '/');
 
             // in base all'azienda passata, prendo il serverId sul quale il file andrà caricato
-            Integer serverId = minIOServerAziendaMap.get(codiceAzienda);
+            serverId = minIOServerAziendaMap.get(codiceAzienda);
 
             // in base al serveId letto prendo l'istanza del repository
             minIOClient = minIOServerClientMap.get(serverId);
@@ -512,7 +514,7 @@ public class MinIOWrapper {
 
             // calcolo il path fisico sul quale fare l'upload del file
             String uuid = UUID.randomUUID().toString();
-            String physicalPath = generatePhysicalPath(fileName, uuid);
+            physicalPath = generatePhysicalPath(fileName, uuid);
 
             // il nome del bucket sul quale andrà fatto l'upload del file (se non passato è il codiceAzienda)
             String bucketName;
@@ -578,7 +580,7 @@ public class MinIOWrapper {
 
                 // upload del file presente nello stream "digestInputStream" sul bucket "bucketName" nel path "physicalPath"
                 try {
-                    minIOClient.putObject(PutObjectArgs.builder().bucket(bucketName).object(physicalPath).stream(digestInputStream, -1, 10485760).build());
+                    ObjectWriteResponse putObject = minIOClient.putObject(PutObjectArgs.builder().bucket(bucketName).object(physicalPath).stream(digestInputStream, -1, 10485760).build());
                 } catch (Exception ex) {
                     String errorMessage = String.format("errore nel putObject: bucketName: %s - physicalPath: %s", bucketName, physicalPath);
                     logger.error(errorMessage, ex);
@@ -657,6 +659,19 @@ public class MinIOWrapper {
                 return uploadRes;
             }
         } catch (Exception ex) {
+            String error = String.format("errore nell'upload del file con path %s fileName %s mongoUuid %s fileId %s su serverId %s", path, fileName, mongoUuid, physicalPath, serverId);
+            logger.error(error, ex);
+            if (physicalPath != null && serverId != null) {
+                try {
+                    logger.info("cerco di cancellare il file pendente da minIO...");
+                    remove(fileName, bucket, serverId);
+                    logger.info("file pendente cancellato da minIO...");
+                } catch (Exception subEx) {
+                    error = String.format("errore nel cancellare il file pendente con fileId %s su serverId %s", physicalPath, serverId);
+                    logger.error(error, ex);
+                    throw new MinIOWrapperException(error, ex);
+                }
+            }
             throw new MinIOWrapperException("errore nell'upload del file", ex);
         } finally {
             if (minIOClient != null) {
@@ -681,7 +696,7 @@ public class MinIOWrapper {
         return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
     }
 
-    private String metadataToStringNullSafe(Map<String, Object> metadata) throws JsonProcessingException {
+    private String metadataToStringNullSafe(Map<String, Object> metadata) throws JacksonException {
         if (metadata != null) {
             return objectMapper.writeValueAsString(metadata);
         } else {

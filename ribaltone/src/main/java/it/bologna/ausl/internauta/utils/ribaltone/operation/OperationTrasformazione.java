@@ -289,15 +289,23 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     List<UtenteStruttura> usAttivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> us.getAttivo()).toList();
                     List<UtenteStruttura> usDisattivi = strutturaAttiva.getUtenteStrutturaList().stream().filter(us -> !us.getAttivo()).toList();
                     if (usAttivi != null && !usAttivi.isEmpty()) {
+                        for (UtenteStruttura utenteStruttura : usAttivi) {
+                            DettaglioContatto idDettaglioContatto = utenteStruttura.getIdDettaglioContatto();
+                            if (idDettaglioContatto != null) {
+                                idDettaglioContatto.setDescrizione(descrizioneContattoStruttura);
+                            } else {
+                                idDettaglioContatto = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(
+                                    qDettaglioContatto.idContatto.id.eq(utenteStruttura.getIdUtente().getIdPersona().getIdContatto().getId())
+                                        .and(qDettaglioContatto.idContattoEsterno.id.eq(utenteStruttura.getIdStruttura().getIdContatto().getId()))
+                                ).fetchOne();
+                                if (idDettaglioContatto == null) {
+                                    idDettaglioContatto = utenteStruttura.buildDettaglioContatto();
+                                }
 
-                        DettaglioContatto idDettaglioContatto = usAttivi.get(0).getIdDettaglioContatto();
-                        if (idDettaglioContatto != null) {
-                            idDettaglioContatto.setDescrizione(descrizioneContattoStruttura);
-                        } else {
-                            idDettaglioContatto = usAttivi.get(0).buildDettaglioContatto();
+                            }
+                            em.persist(idDettaglioContatto);
 
                         }
-                        em.persist(idDettaglioContatto);
                     }
                     for (UtenteStruttura usDis : usDisattivi) {
                         usDis.setIdDettaglioContatto(null);

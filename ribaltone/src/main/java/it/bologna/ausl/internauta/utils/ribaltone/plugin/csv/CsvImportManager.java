@@ -1,11 +1,9 @@
 package it.bologna.ausl.internauta.utils.ribaltone.plugin.csv;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface;
 import it.bologna.ausl.internauta.utils.ribaltone.basedata.DatiRibaltoneInterface.TipologiaCsv;
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
-import it.bologna.ausl.model.entities.tip.data.ColonneImportazioneOggetto;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -15,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.data.ColonneImportazioneCSVRibaltone;
-import it.bologna.ausl.internauta.utils.ribaltone.utils.service.ConversionServices;
 import it.bologna.ausl.model.entities.baborg.Azienda;
 import it.bologna.ausl.model.entities.baborg.QAzienda;
 import it.bologna.ausl.model.entities.ribaltonedati.CSVDaImportareAnagrafica;
@@ -33,8 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.beans.InvalidPropertyException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.util.StringUtils;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -100,13 +100,18 @@ public class CsvImportManager {
     private void validateDataAndImport(TipologiaCsv tipologia, File csvFile, String name, String separatore, Azienda azienda) throws FileNotFoundException, IOException {
         try (
             Reader csvReader = new FileReader(csvFile); CSVParser csvParser = getCSVParser(csvReader, separatore);) {
+            Integer rowNumber = 0;
+            String errori = "";
             for (CSVRecord csvRecord : csvParser) {
                 Map<String, String> csvRowMap = buildCsvRowMap(csvParser, csvRecord);
                 switch (tipologia) {
                     case APPARTENENTI -> {
                         CSVDaImportareAppartenente csvDaImportareAppartenente = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateAppartenente(csvDaImportareAppartenente);
-                        csvDaImportareAppartenente.setErrore(errore);
+                        if (!errore.equals("")) {
+                            errori = errori + "errore sulla riga " + rowNumber + " " + errore + "/n";
+                        }
+                        //csvDaImportareAppartenente.setErrore(errore);
                         csvDaImportareAppartenente.setIdAzienda(azienda.getId());
                         csvDaImportareAppartenente.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareAppartenente);
@@ -114,7 +119,10 @@ public class CsvImportManager {
                     case STRUTTURE -> {
                         CSVDaImportareStruttura csvDaImportareStruttura = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateStruttura(csvDaImportareStruttura);
-                        csvDaImportareStruttura.setErrore(errore);
+                        if (!errore.equals("")) {
+                            errori = errori + "errore sulla riga " + rowNumber + " " + errore + "/n";
+                        }
+//                        csvDaImportareStruttura.setErrore(errore);
                         csvDaImportareStruttura.setIdAzienda(azienda.getId());
                         csvDaImportareStruttura.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareStruttura);
@@ -122,7 +130,10 @@ public class CsvImportManager {
                     case ANAGRAFICHE -> {
                         CSVDaImportareAnagrafica csvDaImportareAnagrafica = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateAnagrafica(csvDaImportareAnagrafica);
-                        csvDaImportareAnagrafica.setErrore(errore);
+                        if (!errore.equals("")) {
+                            errori = errori + "errore sulla riga " + rowNumber + " " + errore + "/n";
+                        }
+//                        csvDaImportareAnagrafica.setErrore(errore);
                         csvDaImportareAnagrafica.setIdAzienda(azienda.getId());
                         csvDaImportareAnagrafica.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareAnagrafica);
@@ -130,7 +141,10 @@ public class CsvImportManager {
                     case TRASFORMAZIONI -> {
                         CSVDaImportareTrasformazione csvDaImportareTrasformazione = buildImportazioneCSVRow(tipologia, csvRowMap);
                         String errore = validateTrasformazione(csvDaImportareTrasformazione);
-                        csvDaImportareTrasformazione.setErrore(errore);
+                        if (!errore.equals("")) {
+                            errori = errori + "errore sulla riga " + rowNumber + " " + errore + "/n";
+                        }
+//                        csvDaImportareTrasformazione.setErrore(errore);
                         csvDaImportareTrasformazione.setIdAzienda(azienda.getId());
                         csvDaImportareTrasformazione.setCodiceAzienda(azienda.getCodice());
                         entityManager.persist(csvDaImportareTrasformazione);
@@ -138,7 +152,12 @@ public class CsvImportManager {
                     default ->
                         throw new AssertionError();
                 }
+                rowNumber++;
             }
+            if (!errori.equals("")) {
+                throw new RibaltoneHttpException(errori);
+            }
+
         }
     }
 
@@ -261,8 +280,8 @@ public class CsvImportManager {
         BeanWrapper wrapper = new BeanWrapperImpl(rigaCsvDatiRibaltone);
 
         /*
-        per ogni header bisogna capire in che campo della classe ImportazioneOggetto scriverlo. Per farlo viene usato un enum che ha come chiave il nome del campo
-        della classe e come valori i possibili nomi degli header associati
+         * per ogni header bisogna capire in che campo della classe ImportazioneOggetto scriverlo. Per farlo viene usato un enum che ha come chiave il nome del campo
+         * della classe e come valori i possibili nomi degli header associati
          */
         wrapper.setConversionService(conversionService);
         for (String headerName : csvRowMap.keySet()) {
@@ -270,15 +289,16 @@ public class CsvImportManager {
             ColonneImportazioneCSVRibaltone colonnaEnum = ColonneImportazioneCSVRibaltone.findKey(headerName, tipologia);
             if (colonnaEnum != null) {
                 /*
-                se trovo il campo, ne setto il valore tramite il wrapper istanziato prima
-                ignorando la colonna errore cosi che se qualcuno carica il csv di errore
-                noi lo prendiamo bene lo stesso
+                 * se trovo il campo, ne setto il valore tramite il wrapper istanziato prima
+                 * ignorando la colonna errore cosi che se qualcuno carica il csv di errore
+                 * noi lo prendiamo bene lo stesso
                  */
                 if (colonnaEnum != colonnaEnum.getErroriColumn()) {
                     String value = null;
                     if (StringUtils.hasText(csvRowMap.get(headerName))) {
                         value = csvRowMap.get(headerName);
                     }
+
                     Object convertedValue = wrapper.convertIfNecessary(value, wrapper.getPropertyDescriptor(colonnaEnum.toString()).getPropertyType());
 
                     wrapper.setPropertyValue(colonnaEnum.toString(), convertedValue);

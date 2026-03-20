@@ -1,7 +1,5 @@
 package it.bologna.ausl.documentgenerator;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoException;
 import it.bologna.ausl.documentgenerator.exceptions.Http400ResponseException;
 import it.bologna.ausl.documentgenerator.exceptions.Http403ResponseException;
@@ -42,6 +40,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -58,7 +58,7 @@ public class GeneratePE {
     GeneratorUtils generatorUtils;
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Value("${babel-suite.webapi.genera-protocollo-url}")
     private String generaProtocolloUrl;
@@ -302,7 +302,7 @@ public class GeneratePE {
             params.put("ID_CHIAMATA", ID_CHIAMATA);
             params.put("insert_doc_check", false);
             // chiamo la web-api su Pico
-            String urlChiamata = "";
+            String urlChiamata;
 
             urlChiamata = aziendaParamsManager.getAziendaParam(codiceAzienda).getBabelSuiteWebApiUrl() + generaProtocolloUrl;  // altri ambienti
             // decommentare questo per i test in locale

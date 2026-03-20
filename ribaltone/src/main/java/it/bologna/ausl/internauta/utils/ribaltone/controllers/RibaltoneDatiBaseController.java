@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.ribaltone.controllers;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.internauta.utils.ribaltone.configuration.nextsdr.RibaltoneRestControllerEngineImpl;
-import it.bologna.ausl.internauta.utils.ribaltone.plugin.csv.CsvImportManager;
 import it.bologna.ausl.model.entities.ribaltonedati.ImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.QRibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;

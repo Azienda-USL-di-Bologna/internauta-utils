@@ -1,6 +1,6 @@
 package it.bologna.ausl.internauta.utils.downloader.plugin;
 
-import it.bologna.ausl.internauta.utils.downloader.configuration.RepositoryManager;
+import it.bologna.ausl.internauta.utils.downloader.configuration.DownloaderRepositoryManager;
 import it.bologna.ausl.internauta.utils.downloader.exceptions.DownloaderUploadException;
 import java.io.InputStream;
 import java.util.Map;
@@ -14,14 +14,14 @@ public abstract class DownloaderUploadPlugin implements DownloaderPlugin {
 
     protected Map<String, Object> params;
    
-    protected RepositoryManager repositoryManager;
+    protected DownloaderRepositoryManager repositoryManager;
     
     /**
      * Questo costruttore andrà esteso nella classe concreta passando i params letti dal token e il repositoryManager
      * @param params params letti dal token, nei quali ci sono i dettagli per lo scaricamento del file
      * @param repositoryManager l'oggetto RepositoryManager settato dall'applicazione che include il modulo di Downloader (attualmetne internauta)
      */
-    protected DownloaderUploadPlugin(Map<String, Object> params, RepositoryManager repositoryManager) {
+    protected DownloaderUploadPlugin(Map<String, Object> params, DownloaderRepositoryManager repositoryManager) {
         this.params = params;
         this.repositoryManager = repositoryManager;
     }
