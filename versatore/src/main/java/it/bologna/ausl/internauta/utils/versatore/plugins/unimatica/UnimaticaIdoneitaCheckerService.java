@@ -23,12 +23,23 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
 
     private static final Logger log = LoggerFactory.getLogger(UnimaticaIdoneitaCheckerService.class);
 
+    private final String UNIMATICA = "unimatica";
+    private final String DATA_REGISTRAZIONE = "dataRegistrazione";
+    private final String DAYS = "days";
+    private final String DIRECTION = "direction";
+    private final String AFTER = "after";
+    private final String BEFORE = "before";
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
     @Override
     public Boolean checkDocImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
         Boolean idoneo = false;
         log.debug("Sto calcolando l'idoneita del doc " + id.toString());
         Doc doc = entityManager.find(Doc.class, id);
-        //verso sempre gli RGPICO
         switch (doc.getTipologia()) {
             //verso sempre gli RGPICO
             case RGPICO:
@@ -41,15 +52,36 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
                 List<ArchivioDoc> archiviDocList = doc.getArchiviDocList()
                     .stream().filter(archivioListObj -> archivioListObj.getDataEliminazione() == null)
                     .collect(Collectors.toList());
-                /*if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(10)) && archiviDocList != null && !archiviDocList.isEmpty()) {
-                    idoneo = true;
-                    log.info("Prendo da versare il documento id: " + id);
-                }*/
-                if (doc.getDataRegistrazione().isAfter(ZonedDateTime.now().minusDays(1)) && archiviDocList != null && !archiviDocList.isEmpty()) {
-                    idoneo = true;
-                    log.info("Prendo da versare il documento id: " + id);
+                if (archiviDocList != null && !archiviDocList.isEmpty()) {
+                    if (configParams.getIdoneitaEligibilityConditionsParams() != null) {
+                        Map<String, Object> condizioniUnimatica = (Map<String, Object>) configParams.getIdoneitaEligibilityConditionsParams().get(UNIMATICA);
+                        Map<String, Object> condizioniDataRegistrazione = (Map<String, Object>) condizioniUnimatica.get(DATA_REGISTRAZIONE);
+                        Integer days = (Integer) condizioniDataRegistrazione.get(DAYS);
+                        String direction = (String) condizioniDataRegistrazione.get(DIRECTION);
+                        switch (direction) {
+                            case AFTER:
+                                if (doc.getDataRegistrazione().isAfter(ZonedDateTime.now().minusDays(days))) {
+                                    idoneo = true;
+                                    log.info("Prendo da versare il documento id: " + id);
+                                }
+                                break;
+                            case BEFORE:
+                                if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(days))) {
+                                    idoneo = true;
+                                    log.info("Prendo da versare il documento id: " + id);
+                                }
+                                break;
+                        }
+                    } else {
+                        idoneo = true;
+                        log.info("Prendo da versare il documento id: " + id);
+                    }
                 }
                 break;
+        }
+        //non verso pregressi
+        if (doc.getPregresso()) {
+            idoneo = false;
         }
         return idoneo;
     }
