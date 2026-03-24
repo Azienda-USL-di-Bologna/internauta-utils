@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.utils;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
-import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.UnimaticaVersatoreService;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import java.util.HashMap;
 import java.util.List;
