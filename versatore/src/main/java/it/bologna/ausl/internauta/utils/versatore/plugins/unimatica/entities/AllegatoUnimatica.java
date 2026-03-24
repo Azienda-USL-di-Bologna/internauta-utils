@@ -1,7 +1,5 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  *
  * @author boria
@@ -10,7 +8,7 @@ public class AllegatoUnimatica {
 
     private Integer idFile;
     private String nomeFile;
-    private byte[] impronta;
+    private String impronta;
     private Boolean firmato;
     private String formato;
 
@@ -20,7 +18,7 @@ public class AllegatoUnimatica {
     public AllegatoUnimatica(Integer idFile, String nomeFile, String impronta, Boolean firmato, String formato) {
         this.idFile = idFile;
         this.nomeFile = nomeFile;
-        this.impronta = impronta.getBytes(StandardCharsets.UTF_8);
+        this.impronta = impronta;
         this.firmato = firmato;
         this.formato = formato;
 
@@ -42,11 +40,11 @@ public class AllegatoUnimatica {
         this.nomeFile = nomeFile;
     }
 
-    public byte[] getImpronta() {
+    public String getImpronta() {
         return impronta;
     }
 
-    public void setImpronta(byte[] impronta) {
+    public void setImpronta(String impronta) {
         this.impronta = impronta;
     }
 

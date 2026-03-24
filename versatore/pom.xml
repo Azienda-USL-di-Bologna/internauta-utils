@@ -165,6 +165,11 @@
             <artifactId>json</artifactId>
             <version>20251224</version>
         </dependency>
+        <dependency>
+            <groupId>org.sql2o</groupId>
+            <artifactId>sql2o</artifactId>
+            <version>1.6.0</version>
+        </dependency>
     </dependencies>
     <build>
         <resources>

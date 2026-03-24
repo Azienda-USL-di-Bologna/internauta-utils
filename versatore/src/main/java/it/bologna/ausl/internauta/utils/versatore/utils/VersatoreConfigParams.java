@@ -15,11 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 /**
- * Questa classe legge, i parametri di configurazione dal database (tabella firma.parameters)
- * 
+ * Questa classe legge, i parametri di configurazione dal database (tabella versatore.parameters)
+ *
  * @author gdm
  */
 @Service
@@ -31,29 +30,43 @@ public class VersatoreConfigParams {
         downloader,
         minIOConfig,
         externalCheckCertificate,
+        idoneitaEligibilityConditions
     }
-    
+
     @Autowired
     @Qualifier("VersatoreParameterRepository")
     private ParameterRepository parameterRepository;
-        
+
     private List<Map<String, Object>> versatoreParams;
-       
+
+    private Map<String, Object> idoneitaEligibilityConditionsParams;
+
+    public Map<String, Object> getIdoneitaEligibilityConditionsParams() {
+        return idoneitaEligibilityConditionsParams;
+    }
+
     /**
      * Questo metodo viene eseguito in fase di boot dell'applicazione.
      * Inizializza il tutto
      * @throws UnknownHostException
      * @throws IOException
-     * @throws VersatoreProcessingException 
+     * @throws VersatoreProcessingException
      */
     @PostConstruct
     public void init() throws UnknownHostException, IOException, VersatoreProcessingException {
-        
+
         // lettura dei parametri
         List<Parameter> parameters = parameterRepository.findAll();
         if (!parameters.isEmpty()) {
             this.versatoreParams = new ArrayList<>();
             parameters.stream().forEach(p -> this.versatoreParams.add(p.getValue()));
         }
-    }    
+
+        // assegnamento specifici parametri
+        idoneitaEligibilityConditionsParams = (Map<String, Object>) parameters.stream()
+            .filter(parametro -> ParameterIds.idoneitaEligibilityConditions.name().equals(parametro.getId()))
+            .findFirst()
+            .map(Parameter::getValue) // estrai il valore dalla entity
+            .orElse(null);
+    }
 }
