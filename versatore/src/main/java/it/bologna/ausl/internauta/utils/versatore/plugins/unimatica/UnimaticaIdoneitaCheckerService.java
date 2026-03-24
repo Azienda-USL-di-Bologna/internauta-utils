@@ -1,12 +1,19 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
+import com.querydsl.core.util.StringUtils;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.IdoneitaChecker;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA;
+import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGPICO;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +32,15 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
 
     private final String UNIMATICA = "unimatica";
     private final String DATA_REGISTRAZIONE = "dataRegistrazione";
+    private final String PROTOCOLLO = "protocollo";
+    private final String DAL = "dal";
+    private final String AL = "al";
     private final String DAYS = "days";
     private final String DIRECTION = "direction";
     private final String AFTER = "after";
     private final String BEFORE = "before";
+
+    private static final ZoneId ROME = ZoneId.of("Europe/Rome");
 
     @Override
     protected void finalize() throws Throwable {
@@ -36,59 +48,160 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
     }
 
     @Override
-    public Boolean checkDocImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
-        Boolean idoneo = false;
-        log.debug("Sto calcolando l'idoneita del doc " + id.toString());
-        Doc doc = entityManager.find(Doc.class, id);
-        switch (doc.getTipologia()) {
-            //verso sempre gli RGPICO
-            case RGPICO:
-                idoneo = true;
-                log.info("Prendo da versare il documento id: " + id);
-                break;
-            //verso solo i protocolli registrati da più di 10 giorni
-            case PROTOCOLLO_IN_ENTRATA:
-            case PROTOCOLLO_IN_USCITA:
-                List<ArchivioDoc> archiviDocList = doc.getArchiviDocList()
-                    .stream().filter(archivioListObj -> archivioListObj.getDataEliminazione() == null)
-                    .collect(Collectors.toList());
-                if (archiviDocList != null && !archiviDocList.isEmpty()) {
-                    if (configParams.getIdoneitaEligibilityConditionsParams() != null) {
-                        Map<String, Object> condizioniUnimatica = (Map<String, Object>) configParams.getIdoneitaEligibilityConditionsParams().get(UNIMATICA);
-                        Map<String, Object> condizioniDataRegistrazione = (Map<String, Object>) condizioniUnimatica.get(DATA_REGISTRAZIONE);
-                        Integer days = (Integer) condizioniDataRegistrazione.get(DAYS);
-                        String direction = (String) condizioniDataRegistrazione.get(DIRECTION);
-                        switch (direction) {
-                            case AFTER:
-                                if (doc.getDataRegistrazione().isAfter(ZonedDateTime.now().minusDays(days))) {
-                                    idoneo = true;
-                                    log.info("Prendo da versare il documento id: " + id);
-                                }
-                                break;
-                            case BEFORE:
-                                if (doc.getDataRegistrazione().isBefore(ZonedDateTime.now().minusDays(days))) {
-                                    idoneo = true;
-                                    log.info("Prendo da versare il documento id: " + id);
-                                }
-                                break;
-                        }
-                    } else {
-                        idoneo = true;
-                        log.info("Prendo da versare il documento id: " + id);
-                    }
-                }
-                break;
-        }
-        //non verso pregressi
-        if (doc.getPregresso()) {
-            idoneo = false;
-        }
-        return idoneo;
+    public Boolean checkArchivioImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
+        return false;
     }
 
     @Override
-    public Boolean checkArchivioImpl(Integer id, Map<String, Object> params) throws VersatoreProcessingException {
-        return false;
+    public Boolean checkDocImpl(Integer id, Map<String, Object> params)
+        throws VersatoreProcessingException {
+
+        Doc doc = entityManager.find(Doc.class, id);
+
+        log.debug("Sto calcolando l'idoneita del doc id " + id + ", registrato il " + doc.getDataRegistrazione());
+
+        boolean idoneo = resolveIdoneitaByDateRange(doc);
+
+        // I documenti pregressi non vengono mai versati
+        if (Boolean.TRUE.equals(doc.getPregresso())) {
+            idoneo = false;
+        }
+
+        if (idoneo) {
+            log.info("Prendo da versare il documento id " + id + ", registrato il " + doc.getDataRegistrazione());
+        }
+
+        return idoneo;
+    }
+
+    /**
+     * Controllo se viene passato un range di date in cui scegliere i documenti da versare.
+     * Se il range non c'è pocedo col check.
+     */
+    private boolean resolveIdoneitaByDateRange(Doc doc) {
+        //nel caso la mappa ritornata sia empty vuol dire che non sono state date condizioni di data, perciò, in quel caso, eseguo il controllo di idoneità sempre
+        return getCurrentConfigMap(UNIMATICA, DATA_REGISTRAZIONE)
+            .map(cond -> {
+                String dal = (String) cond.get(DAL);
+                String al = (String) cond.get(AL);
+                return isInDateRange(doc.getDataRegistrazione(), dal, al)
+                    ? checkIdoneitaDoc(doc)
+                    : false;
+            })
+            .orElseGet(() -> checkIdoneitaDoc(doc));
+    }
+
+    /**
+     * Controllo l'idoneità del doc in base alla tipologia
+    @param doc
+    @return
+     */
+    public Boolean checkIdoneitaDoc(Doc doc) {
+        switch (doc.getTipologia()) {
+
+            case RGPICO:
+                // Gli RGPICO vengono versati sempre
+                return true;
+
+            case PROTOCOLLO_IN_ENTRATA:
+            case PROTOCOLLO_IN_USCITA:
+                return checkIdoneitaProtocollo(doc);
+
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Verifica l'idoneità per PROTOCOLLO_IN_ENTRATA / PROTOCOLLO_IN_USCITA.
+     * Un protocollo deve avere almeno un'associazione archivio attiva e soddisfare
+     * la condizione giorni-direzione configurata (se presente).
+     */
+    private boolean checkIdoneitaProtocollo(Doc doc) {
+        //il protocollo deve essere fascicolato
+        List<ArchivioDoc> activeArchivi = doc.getArchiviDocList()
+            .stream()
+            .filter(a -> a.getDataEliminazione() == null)
+            .collect(Collectors.toList());
+
+        if (activeArchivi.isEmpty()) {
+            return false;
+        }
+
+        //se ho impostato delle condizioni temporali eseguo il controllo:
+        //days sono i giorni da sottrarre alla data di oggi e la direzione (before/after) indica se prendere prima o dopo  di quella data.
+        //ad esempio se la direzione è before e days 10 prendo quei doc registrati da almeno 10 giorni
+        //se invece la direzione è after e days è 1 prenderò quelli registrati da non più di un giorno
+        return getCurrentConfigMap(UNIMATICA, PROTOCOLLO, DATA_REGISTRAZIONE)
+            .map(cond -> {
+                Integer days = (Integer) cond.get(DAYS);
+                String direction = (String) cond.get(DIRECTION);
+                return isDateMatchingDirection(doc.getDataRegistrazione(), days, direction);
+            })
+            .orElse(true); // nessuna condizione configurata → sempre idoneo
+    }
+
+    /**
+     * Controlla se la dataRegistrazione è nel range passato
+     */
+    private boolean isInDateRange(ZonedDateTime dataRegistrazione,
+        String dal, String al) {
+        boolean afterDal = StringUtils.isNullOrEmpty(dal)
+            || dataRegistrazione.isAfter(parseDate(dal));
+
+        boolean beforeAl = StringUtils.isNullOrEmpty(al)
+            || dataRegistrazione.isBefore(parseDate(al));
+
+        return afterDal && beforeAl;
+    }
+
+    /**
+     * Restituisce true quando dataRegistrazione soddisfa la condizione
+     * giorni-direzione configurata:  AFTER → la registrazione è successiva a (oggi - giorni);
+     *                                BEFORE → la registrazione è precedente a (oggi - giorni).
+     */
+    private boolean isDateMatchingDirection(ZonedDateTime dataRegistrazione,
+        Integer days, String direction) {
+        ZonedDateTime threshold = ZonedDateTime.now().minusDays(days);
+
+        switch (direction) {
+            case AFTER:
+                return dataRegistrazione.isAfter(threshold);
+            case BEFORE:
+                return dataRegistrazione.isBefore(threshold);
+            default:
+                log.warn("Direzione non riconosciuta: {}", direction);
+                return false;
+        }
+    }
+
+    /** Parses una data stringa ISO-8601 a midnight Rome time. */
+    private ZonedDateTime parseDate(String date) {
+        return LocalDate.parse(date).atStartOfDay(ROME);
+    }
+
+    /**
+     * Funzione che, partendo dai configParams, naviga le mappe fino ad arrivare all'ultima passata in firma
+     * Ciclanedole restituisce quindi quella voluta risalendo la struttura
+     * (es. "unimatica" -> "protocollo" -> "dataRegistrazione", ultima chiave passata e mappa che voglio come risultato)
+     * Se un gradino manca restituisce empty
+     */
+    @SuppressWarnings("unchecked")
+    private Optional<Map<String, Object>> getCurrentConfigMap(String... keys) {
+        if (configParams.getIdoneitaEligibilityConditionsParams() == null) {
+            return Optional.empty();
+        }
+
+        Map<String, Object> currentMap = configParams.getIdoneitaEligibilityConditionsParams();
+
+        for (String key : keys) {
+            if (!(currentMap.get(key) instanceof Map)) {
+                return Optional.empty();
+            }
+            currentMap = (Map<String, Object>) currentMap.get(key);
+        }
+
+        return Optional.of(currentMap);
     }
 
 }

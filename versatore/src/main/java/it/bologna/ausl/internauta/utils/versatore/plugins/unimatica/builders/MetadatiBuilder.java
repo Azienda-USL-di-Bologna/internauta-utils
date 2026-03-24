@@ -54,6 +54,7 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Related;
+import it.bologna.ausl.model.entities.titolario.Titolo;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -583,9 +584,23 @@ public class MetadatiBuilder {
         //-Classificazione
         ClassificazioneType classificazione = new ClassificazioneType();
         //--Indice di classificazione
-        classificazione.setIndiceDiClassificazione(archivioPrincipale.getIdTitolo().getClassificazione());
+        //prendo il titolo, se l'archivio principale e sottofascicolo o inserto e non è specificato il titolo prendo quello dell'archivio radice
+        Titolo titolo = new Titolo();
+        if (archivioPrincipale.getIdTitolo() != null) {
+            titolo = archivioPrincipale.getIdTitolo();
+        } else if (archivioPrincipale.getIdArchivioPadre() != null) {
+            titolo = archivioPrincipale.getIdArchivioRadice().getIdTitolo();
+        } else {
+            log.error("Non esiste titolo associato al fascicolo principale");
+            throw new VersatorePluginException("Non esiste titolo associato al fascicolo principale");
+        }
+        if (titolo == null) {
+            log.error("Non esiste titolo associato al fascicolo principale");
+            throw new VersatorePluginException("Non esiste titolo associato al fascicolo principale");
+        }
+        classificazione.setIndiceDiClassificazione(titolo.getClassificazione());
         //--Descrizione
-        classificazione.setDescrizione(archivioPrincipale.getIdTitolo().getNome());
+        classificazione.setDescrizione(titolo.getNome());
         //TODO piano di classificazione opz
         documentoAmministrativoInformatico.setClassificazione(classificazione);
 
