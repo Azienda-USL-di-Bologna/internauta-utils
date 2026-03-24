@@ -54,6 +54,7 @@ import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
 import it.bologna.ausl.model.entities.scripta.Related;
+import it.bologna.ausl.model.entities.scripta.Step;
 import it.bologna.ausl.model.entities.titolario.Titolo;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -191,9 +192,9 @@ public class MetadatiBuilder {
             List<AttoreDoc> listaAttori = doc.getAttoriList();
             tipologiaDiFlusso = (String) tipiDiFlusso.get("esterno");
             for (AttoreDoc attore : listaAttori) {
-                if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
+                if (attore.getIdStep().getId().equals(Step.StepIds.ASSEGNAZIONE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.RESPONSABILE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.SEGRETERIA)) {
                     tipologiaDiFlusso = (String) tipiDiFlusso.get("interno");
                     break;
                 }
@@ -361,7 +362,7 @@ public class MetadatiBuilder {
                 //se pu gli autori sono i firmatari
                 List<AttoreDoc> firmatariList = doc.getAttoriList()
                     .stream()
-                    .filter(attoreObj -> attoreObj.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.FIRMA))
+                    .filter(attoreObj -> attoreObj.getIdStep().getId().equals(Step.StepIds.FIRMA))
                     .collect(Collectors.toList());
                 if (firmatariList == null || firmatariList.isEmpty()) {
                     log.error("Il Protocollo in Uscita non ha autori (firmatari)");
