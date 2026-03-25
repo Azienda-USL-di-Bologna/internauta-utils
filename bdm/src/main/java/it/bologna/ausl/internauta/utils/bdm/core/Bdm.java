@@ -19,7 +19,7 @@ public class Bdm {
     public static void main(String[] args) {
         // TODO code application logic here
 
-//        Bag p = new Bag();
+//        Map<String, Object> p = new HashMap();
 //        ZonedDateTime dt = ZonedDateTime.now();
 //        String[] ss = {"a", "b", "c"};
 //        p.put("ciccio", "pasticcio");
@@ -29,7 +29,7 @@ public class Bdm {
 //        String j = p.dump();
 //
 //        System.out.println(j);
-//        Bag p2 = Dumpable.load(j, Bag.class);
+//        Map<String, Object> p2 = Dumpable.load(j, Map<String, Object>.class);
 //        System.out.println(p2.dump());
 //        System.out.println(((ArrayList<String>) p2.get("ss")).get(0));
 //        System.out.println(((ArrayList<String>) p2.get("ss")).get(0));

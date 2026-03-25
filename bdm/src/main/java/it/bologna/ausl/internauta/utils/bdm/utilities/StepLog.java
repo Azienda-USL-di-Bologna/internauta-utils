@@ -2,9 +2,10 @@ package it.bologna.ausl.internauta.utils.bdm.utilities;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -18,7 +19,7 @@ public class StepLog implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssZ")
     protected ZonedDateTime executionDate;
 
-    private Bag logData;
+    private Map<String, Object> logData;
 
     public StepLog() {
     }
@@ -30,7 +31,7 @@ public class StepLog implements Serializable {
         this.logData = null;
     }
 
-    public StepLog(String stepId, String stepType, ZonedDateTime executionDate, Bag logData) {
+    public StepLog(String stepId, String stepType, ZonedDateTime executionDate, Map<String, Object> logData) {
         this.stepId = stepId;
         this.stepType = stepType;
         this.executionDate = executionDate;
@@ -61,18 +62,18 @@ public class StepLog implements Serializable {
         this.executionDate = executionDate;
     }
 
-    public Bag getLogData() {
+    public Map<String, Object> getLogData() {
         return logData;
     }
 
-    public void setLogData(Bag logData) {
+    public void setLogData(Map<String, Object> logData) {
         this.logData = logData;
     }
 
     @JsonIgnore
     public void putInLogData(String key, Object value) {
         if (logData == null)
-            logData = new Bag();
+            logData = new HashMap();
 
         logData.put(key, value);
     }

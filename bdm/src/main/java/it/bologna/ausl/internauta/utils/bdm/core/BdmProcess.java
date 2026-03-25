@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import it.bologna.ausl.internauta.utils.bdm.utilities.StepLog;
 import it.bologna.ausl.internauta.utils.bdm.workflows.processes.SampleProcess;
@@ -17,6 +16,7 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +56,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     private String processVersion;
     private String processType;
     private String processId = UUID.randomUUID().toString();
-    protected Bag context;
+    protected Map<String, Object> context;
     
     /*
     contiene quello che gli si passa in fase di creazione della classe bdmProcessManager
@@ -65,7 +65,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     Map<String, Object> processBag;
     
 //    @JsonIgnore
-    protected Bag runningContext = new Bag();
+    protected Map<String, Object> runningContext = new HashMap();
     private List<Step> stepList = new ArrayList<>();
     private List<String> executedStepList = new ArrayList<>();
     // protected String processVersion = null;
@@ -77,8 +77,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     
     private List<StepLog> stepsLog = new ArrayList<>();
 
-    ///////////////////
-    public void init(Bag parameters) {
+    public void init(Map<String, Object> parameters) {
         setContext(parameters);
         Step s = new Step("SampleStep", "Sample Process", Step.StepLogic.SEQ, Arrays.asList(Step.StepLogic.SEQ, Step.StepLogic.ALL));
         addStep(s);
@@ -96,7 +95,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     }
 
     
-//    public abstract void init(Bag parameters);
+//    public abstract void init(Map<String, Object> parameters);
 //
 //    public abstract String getProcessType();
 //    
@@ -161,7 +160,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         return processId;
     }
 
-    public Bag getContext() {
+    public Map<String, Object> getContext() {
         return context;
     }
 
@@ -185,7 +184,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         this.processBag = processBag;
     }
 
-    public void setContext(Bag c) {
+    public void setContext(Map<String, Object> c) {
         context = c;
     }
 
@@ -210,12 +209,12 @@ public  class BdmProcess implements Dumpable, Serializable {
     }
 
     @JsonIgnore
-    public Bag getRunningContext() {
+    public Map<String, Object> getRunningContext() {
         return runningContext;
     }
 
     @JsonIgnore
-    public void setRunningContext(Bag runningContext) {
+    public void setRunningContext(Map<String, Object> runningContext) {
         this.runningContext = runningContext;
     }
     
@@ -241,7 +240,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     }
 
     @JsonIgnore
-    public BdmStatus stepOn(Bag params) throws IllegalStepStateException, ProcessWorkFlowException {
+    public BdmStatus stepOn(Map<String, Object> params) throws IllegalStepStateException, ProcessWorkFlowException {
         runningContext.put(CURRENT_PROCESS, this);
         status = BdmStatus.RUNNING;
         stepOnts = ZonedDateTime.now();
@@ -343,7 +342,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     }
 
     @JsonIgnore
-    public BdmStatus stepTo(String stepId, Bag params) throws IllegalStepStateException, ProcessWorkFlowException {
+    public BdmStatus stepTo(String stepId, Map<String, Object> params) throws IllegalStepStateException, ProcessWorkFlowException {
         //annulliamo lo step attuale
         Step currentStep = stepList.get(currentStepIndex);
         currentStep.setEntityManager(entityManager);

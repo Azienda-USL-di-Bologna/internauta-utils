@@ -8,7 +8,6 @@ import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmExeption;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.List;
@@ -49,10 +48,10 @@ public class BdmProcessManager {
         return null;
     }
 
-    public BdmProcess addProcess(Bag parameters) throws BdmExeption {
+    public BdmProcess addProcess(Map<String, Object> parameters) throws BdmExeption {
         try {
             String processType = (String) parameters.get(ADDING_PROCESS_TYPE);
-            Bag processParameters = (Bag) parameters.get(ADDING_PROCESS_PARAMS);
+            Map<String, Object> processParameters = (Map<String, Object>) parameters.get(ADDING_PROCESS_PARAMS);
 
             BdmProcess p = (BdmProcess) Class.forName("it.bologna.ausl.internauta.utils.bdm.workflows.processes." + processType).newInstance();
             p.init(processParameters);
@@ -125,7 +124,7 @@ public class BdmProcessManager {
         return true;
     }
 
-    public BdmStatus stepOnProcess(String id, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
+    public BdmStatus stepOnProcess(String id, Map<String, Object> parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
         BdmProcess p;
         try {
             p = psm.loadProcess(id);
@@ -141,7 +140,7 @@ public class BdmProcessManager {
         return status;
     }
 
-    public BdmStatus stepToStep(String processId, String stepId, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
+    public BdmStatus stepToStep(String processId, String stepId, Map<String, Object> parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
         BdmProcess p;
         try {
             p = psm.loadProcess(processId);
@@ -158,7 +157,7 @@ public class BdmProcessManager {
 
     }
 
-    public String addTask(String taskType, Bag taskParameters, String processId, String stepId) throws StorageException, BdmExeption {
+    public String addTask(String taskType, Map<String, Object> taskParameters, String processId, String stepId) throws StorageException, BdmExeption {
         Objects.requireNonNull(taskType);
         Objects.requireNonNull(processId);
         Objects.requireNonNull(stepId);
@@ -180,7 +179,7 @@ public class BdmProcessManager {
         }
     }
     
-    public void setContext(String processId, Bag context) throws StorageException, BdmExeption {
+    public void setContext(String processId, Map<String, Object> context) throws StorageException, BdmExeption {
         Objects.requireNonNull(processId);
 
         BdmProcess p = psm.loadProcess(processId);
@@ -190,17 +189,17 @@ public class BdmProcessManager {
         psm.saveProcess(p);
     }
     
-    public void addInContext(String processId, Bag values) throws StorageException {
+    public void addInContext(String processId, Map<String, Object> values) throws StorageException {
         Objects.requireNonNull(processId);
         Objects.requireNonNull(values);
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
         p.setProcessBag(processBag);
-        Bag currentContext = p.getContext();
+        Map<String, Object> currentContext = p.getContext();
         
-        Map<String, Object> parameters = values.getParameters();
-        Set<String> keys = parameters.keySet();
+//        Map<String, Object> parameters = values.getParameters();
+        Set<String> keys = values.keySet();
         for (String key: keys) {
             currentContext.put(key, values.get(key));
         }

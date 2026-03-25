@@ -2,7 +2,6 @@ package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,7 +114,7 @@ public class FileProcessStorageManager implements ProcessStorageManager {
     }
 
     @Override
-    public List<String> getProcessList(Bag queryParams) throws StorageException {
+    public List<String> getProcessList(Map<String, Object> queryParams) throws StorageException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

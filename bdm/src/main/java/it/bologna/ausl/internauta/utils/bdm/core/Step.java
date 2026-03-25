@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
@@ -178,7 +177,7 @@ public class Step implements Dumpable {
         forwardStepList.add(stepId);
     }
 
-    public void undo(Bag runningContext, Bag context, Bag params) {
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) {
 
 //        if (1 == 1) {
 //            throw new UnsupportedOperationException("Se tutti i passi hanno fatto e la politica e' ANY non disfare ?!?!?");
@@ -235,7 +234,7 @@ public class Step implements Dumpable {
         }
     }
 
-    public void executeOnEnterTasks(Bag runningContext, Bag context, Bag params) throws ProcessWorkFlowException {
+    public void executeOnEnterTasks(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
         if (enterDone) {
             return;
         }
@@ -252,7 +251,7 @@ public class Step implements Dumpable {
         enterDone = true;
     }
     
-    public void executeOnExitTasks(Bag runningContext, Bag context, Bag params) throws ProcessWorkFlowException {
+    public void executeOnExitTasks(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
         if (exitDone) {
             return;
         }
@@ -399,7 +398,7 @@ public class Step implements Dumpable {
 //        taskMap.put(task.getId(), task);
     }
 
-    public BdmStatus stepOn(Bag runningContext, Bag context, Bag params) throws IllegalStepStateException, ProcessWorkFlowException {
+    public BdmStatus stepOn(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws IllegalStepStateException, ProcessWorkFlowException {
         if (stepStatus == BdmStatus.ERROR || stepStatus == BdmStatus.ABORTED || stepStatus == BdmStatus.FINISHED) {
             throw new IllegalStepStateException("cannot stepon with StepStatus: " + stepStatus.toString());
         } 

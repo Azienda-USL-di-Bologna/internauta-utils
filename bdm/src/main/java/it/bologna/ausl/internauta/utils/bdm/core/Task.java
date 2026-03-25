@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
@@ -29,7 +28,7 @@ public abstract class Task implements Dumpable {
     private String taskId = UUID.randomUUID().toString();
     private String taskType;
     protected BdmStatus status = BdmStatus.NOT_STARTED;
-    protected Bag params;
+    protected Map<String, Object> params;
     protected Boolean auto = false;
     
     @JsonIgnore
@@ -68,15 +67,15 @@ public abstract class Task implements Dumpable {
     }
     
     @JsonIgnore
-    public void init(Bag p) {
+    public void init(Map<String, Object> p) {
         this.params = p;
     }
 
-    public Bag getParams() {
+    public Map<String, Object> getParams() {
         return params;
     }
 
-    public void setParams(Bag params) {
+    public void setParams(Map<String, Object> params) {
         this.params = params;
     }
 
@@ -91,7 +90,7 @@ public abstract class Task implements Dumpable {
 //    public abstract void setTaskType(String taskType); {
 //        this.taskType = taskType;
 //    }
-    abstract public Result execute(Bag runningContext, Bag context, Bag params);
+    abstract public Result execute(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params);
 
     /**
      * Lanciata quando il task diventa il passo corrente
@@ -99,7 +98,7 @@ public abstract class Task implements Dumpable {
      * @param c contesto del processo
      * @param p parametri da passare al passo
      */
-    //abstract public void stepIn(Context c, Bag p);
+    //abstract public void stepIn(Context c, Map<String, Object> p);
 
     public String getTaskId() {
         return taskId;
@@ -134,7 +133,7 @@ public abstract class Task implements Dumpable {
     }
 
     @JsonIgnore
-    public void undo(Bag runningContext, Bag context, Bag parameters) {
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> parameters) {
         status = BdmStatus.NOT_STARTED;
     }
 
