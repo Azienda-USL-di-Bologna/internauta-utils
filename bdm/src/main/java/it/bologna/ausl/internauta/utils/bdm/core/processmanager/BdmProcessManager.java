@@ -65,12 +65,12 @@ public class BdmProcessManager {
         }
     }
 
-    public BdmProcess getProcess(String id) {
+    public <T extends BdmProcess> T getProcess(String id) {
         try {
             BdmProcess p = psm.loadProcess(id);
             p.setEntityManager(entityManager);
             p.setProcessBag(processBag);
-            return p;
+            return (T) p;
         } catch (StorageException ex) {
             String error = String.format("unable to get process %s", id);
             log.error(error, ex);
@@ -141,7 +141,7 @@ public class BdmProcessManager {
         return status;
     }
 
-    public String stepToStep(String processId, String stepId, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
+    public BdmStatus stepToStep(String processId, String stepId, Bag parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
         BdmProcess p;
         try {
             p = psm.loadProcess(processId);
@@ -154,7 +154,7 @@ public class BdmProcessManager {
         p.setProcessBag(processBag);
         BdmStatus status = p.stepTo(stepId, parameters);
         psm.saveProcess(p);
-        return status.toString();
+        return status;
 
     }
 

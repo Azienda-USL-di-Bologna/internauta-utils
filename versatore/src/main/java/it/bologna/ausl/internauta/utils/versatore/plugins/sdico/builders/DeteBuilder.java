@@ -9,6 +9,8 @@ import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
+import it.bologna.ausl.model.entities.scripta.Step;
+
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -75,7 +77,7 @@ public class DeteBuilder {
         String ufficioProduttore = null;
         List<AttoreDoc> attoriDocList = doc.getAttoriList();
         for (AttoreDoc attoreDoc : attoriDocList) {
-            if (attoreDoc.getRuolo() == AttoreDoc.RuoloAttoreDoc.FIRMA) {
+            if (attoreDoc.getIdStep().getId().equals(Step.StepIds.FIRMA)) {
                 ufficioProduttore = attoreDoc.getIdStruttura().getNome();
             }
         }

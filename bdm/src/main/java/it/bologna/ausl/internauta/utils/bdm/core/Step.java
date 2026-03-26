@@ -441,6 +441,9 @@ public class Step implements Dumpable {
                         currentTaskIndex++;
                         while (currentTaskIndex < taskList.size() && taskList.get(currentTaskIndex).getAuto()) {
                             currentTask = taskList.get(currentTaskIndex);
+                            currentTask.setEntityManager(entityManager);
+                            currentTask.setProcessBag(processBag);
+                            currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                             res = currentTask.execute(runningContext, context, params);
                             if (res.getStatus() != BdmStatus.FINISHED) {
                                 throw new ProcessWorkFlowException("Automatic task didn't finish!");

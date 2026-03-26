@@ -34,6 +34,7 @@ import it.bologna.ausl.model.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
+import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Map;
@@ -56,6 +57,25 @@ public class OperationsUtils {
     private final static QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
     private final static QStruttura qStruttura = QStruttura.struttura;
     private final static QAfferenzaStruttura qffAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
+
+    static void chiudiPermessiStruttura(Struttura strutturaChiusa, RepositoryFactory repositoryFactory) {
+        log.info("chiusura permessiStruttura");
+        try {
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
+
+            //elimino i permessi di anagrafe pec, connessione a pool, e permessi struttura su gedi
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.BABORG.toString(), BlackBoxConstants.Tipo.UFFICIO.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.PECG.toString(), BlackBoxConstants.Tipo.PEC.toString(), "ribaltone");
+            repositoryFactory.getPermissionManager().deletePermission(strutturaChiusa, null, null, null, null, null, BlackBoxConstants.Ambito.SCRIPTA.toString(), BlackBoxConstants.Tipo.ARCHIVIO.toString(), "ribaltone");
+
+            //chiudere i permessi veicolati
+            repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaChiusa, "ribaltone");
+        } catch (BlackBoxPermissionException ex) {
+            log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
+        }
+    }
 
     public static enum KeyMapReplica {
         ID_CASELLA,
@@ -1038,9 +1058,74 @@ public class OperationsUtils {
                             .equals(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA);
             if (utenteStruttura != null
                     && ((fromUnificazione && isUnificata) || (!fromUnificazione && !isUnificata))) {
-                utenteStruttura.setAttivo(Boolean.FALSE);
-                utenteStruttura.setAttivoAl(ZonedDateTime.now());
-                //spengni tutti i permessi veicolati
+                chiudiUtenteStruttra(utenteStruttura, persona, permissionManager, utente, queryFactory, entityManager, utenteStrutturaDaChiudereList);
+            }
+        }
+    }
+
+    public static void chiudiUtenteStruttra(UtenteStruttura utenteStruttura, Persona persona, PermissionManager permissionManager, Utente utente, JPAQueryFactory queryFactory, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
+        utenteStruttura.setAttivo(Boolean.FALSE);
+        utenteStruttura.setAttivoAl(ZonedDateTime.now());
+        //spengni tutti i permessi veicolati
+        try {
+            permissionManager.deletePermission(
+                    persona,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                    "ribaltone",
+                    utenteStruttura.getIdStruttura());
+            //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
+            permissionManager.deletePermission(
+                    utente,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
+                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
+                    "ribaltone",
+                    utenteStruttura.getIdStruttura());
+        } catch (BlackBoxPermissionException ex) {
+            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+        }
+        if (!utenteHasOtherStrutture(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
+            utente.setAttivo(false);
+            utente.setDataSpegnimento(ZonedDateTime.now());
+            //spegnere tutti i permessi utente
+            try {
+                String[] ambitiDaSpegnere = {
+                    BlackBoxConstants.Ambito.PICO.toString(),
+                    BlackBoxConstants.Ambito.DELI.toString(),
+                    BlackBoxConstants.Ambito.DETE.toString()};
+                for (String ambitoDaSpegnere : ambitiDaSpegnere) {
+
+                    permissionManager.deletePermission(
+                            utente,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            ambitoDaSpegnere,
+                            BlackBoxConstants.Tipo.FLUSSO.toString(),
+                            "ribaltone"
+                    );
+                }
+            } catch (BlackBoxPermissionException ex) {
+                throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+            }
+            if (!personaHasOtherUtenti(queryFactory, persona)) {
+                persona.setAttiva(Boolean.FALSE);
+                persona.setDataSpegnimento(ZonedDateTime.now());
+                //serve per salvare tutto alla fine
+                utente.setIdPersona(persona);
+                //spegni tutti i permessi persona
                 try {
                     permissionManager.deletePermission(
                             persona,
@@ -1051,102 +1136,40 @@ public class OperationsUtils {
                             null,
                             BlackBoxConstants.Ambito.SCRIPTA.toString(),
                             BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                            "ribaltone",
-                            utenteStruttura.getIdStruttura());
-                    //spengo anche questi anche se ad oggi non abbiamo permessi veicolati sugli utenti
-                    permissionManager.deletePermission(
-                            utente,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                            BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                            "ribaltone",
-                            utenteStruttura.getIdStruttura());
-                } catch (BlackBoxPermissionException ex) {
-                    throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                }
-                if (!utenteHasOtherStrutture(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
-                    utente.setAttivo(false);
-                    utente.setDataSpegnimento(ZonedDateTime.now());
-                    //spegnere tutti i permessi utente
-                    try {
-                        String[] ambitiDaSpegnere = {
-                            BlackBoxConstants.Ambito.PICO.toString(),
-                            BlackBoxConstants.Ambito.DELI.toString(),
-                            BlackBoxConstants.Ambito.DETE.toString()};
-                        for (String ambitoDaSpegnere : ambitiDaSpegnere) {
-
-                            permissionManager.deletePermission(
-                                    utente,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    ambitoDaSpegnere,
-                                    BlackBoxConstants.Tipo.FLUSSO.toString(),
-                                    "ribaltone"
-                            );
-                        }
-                    } catch (BlackBoxPermissionException ex) {
-                        throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                    }
-                    if (!personaHasOtherUtenti(queryFactory, persona)) {
-                        persona.setAttiva(Boolean.FALSE);
-                        persona.setDataSpegnimento(ZonedDateTime.now());
-                        //serve per salvare tutto alla fine
-                        utente.setIdPersona(persona);
-                        //spegni tutti i permessi persona
-                        try {
-                            permissionManager.deletePermission(
-                                    persona,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    null,
-                                    BlackBoxConstants.Ambito.SCRIPTA.toString(),
-                                    BlackBoxConstants.Tipo.ARCHIVIO.toString(),
-                                    "ribaltone");
-                        } catch (BlackBoxPermissionException ex) {
-                            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
-                        }
-                    }
-                    //serve per salvare tutto alla fine
-                    utenteStruttura.setIdUtente(utente);
-                }
-                entityManager.persist(utenteStruttura);
-                if (utenteStrutturaDaChiudereList != null) {
-                    utenteStrutturaDaChiudereList.add(utenteStruttura);
-                }
-                //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
-                try {
-                    String[] ambitiDaSpegnere = {
-                        BlackBoxConstants.Ambito.PICO.toString(),
-                        BlackBoxConstants.Ambito.DELI.toString(),
-                        BlackBoxConstants.Ambito.DETE.toString()};
-                    for (String ambitoDaSpegnere : ambitiDaSpegnere) {
-
-                        permissionManager.deletePermission(
-                                utente,
-                                utenteStruttura.getIdStruttura(),
-                                null,
-                                null,
-                                Boolean.FALSE,
-                                Boolean.FALSE,
-                                ambitoDaSpegnere,
-                                BlackBoxConstants.Tipo.FLUSSO.toString(),
-                                "ribaltone");
-                    }
+                            "ribaltone");
                 } catch (BlackBoxPermissionException ex) {
                     throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
                 }
             }
+            //serve per salvare tutto alla fine
+            utenteStruttura.setIdUtente(utente);
         }
+        entityManager.persist(utenteStruttura);
+        if (utenteStrutturaDaChiudereList != null) {
+            utenteStrutturaDaChiudereList.add(utenteStruttura);
+        }
+        //chiudere tutti i permessi di flusso e veicolati per la struttura di riferimento
+        try {
+            String[] ambitiDaSpegnere = {
+                BlackBoxConstants.Ambito.PICO.toString(),
+                BlackBoxConstants.Ambito.DELI.toString(),
+                BlackBoxConstants.Ambito.DETE.toString()};
+            for (String ambitoDaSpegnere : ambitiDaSpegnere) {
 
+                permissionManager.deletePermission(
+                        utente,
+                        utenteStruttura.getIdStruttura(),
+                        null,
+                        null,
+                        Boolean.FALSE,
+                        Boolean.FALSE,
+                        ambitoDaSpegnere,
+                        BlackBoxConstants.Tipo.FLUSSO.toString(),
+                        "ribaltone");
+            }
+        } catch (BlackBoxPermissionException ex) {
+            throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
+        }
     }
 
     public static void chiudiUtenteStruttura(DatiImportatiAppartenente entitaDaChiudere, Struttura strutturaSuCuiSpentereUtente, Integer idAziendaDestinazione, JPAQueryFactory queryFactory, PermissionManager permissionManager, EntityManager entityManager, List<UtenteStruttura> utenteStrutturaDaChiudereList) {
@@ -1438,4 +1461,58 @@ public class OperationsUtils {
 //
 //        }
 //    }
+    public static void gestisciContatti(RepositoryFactory repositoryFactory, List<UtenteStruttura> utenteStrutturaDaInserireList, List<UtenteStruttura> utenteStrutturaDaSpegnereList) {
+        if (utenteStrutturaDaInserireList != null) {
+            for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
+                log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
+                        + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
+                repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
+                Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
+                repositoryFactory.getEntityManager().refresh(contattoPersona);
+                List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
+                repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
+                List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+                DettaglioContatto idDettaglioContatto = null;
+                if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
+                    idDettaglioContatto = dettagliContattiDellaPersona.get(0);
+                }
+                if (idDettaglioContatto != null) {
+                    String descrizione = utenteStrutturaNew.getIdStruttura().getNome();
+                    if (utenteStrutturaNew.getIdStruttura().getIdCasella() != null) {
+                        descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdCasella().toString() + "]";
+                    }
+                    descrizione = descrizione + " [" + utenteStrutturaNew.getIdStruttura().getIdAzienda().getNome() + "]";
+                    idDettaglioContatto.setDescrizione(descrizione);
+                    idDettaglioContatto.setPrincipale(utenteStrutturaNew.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
+                    idDettaglioContatto.setEliminato(false);
+//                for (DettaglioContatto dettaglioContatto : idDettaglioContatto.getIdContatto().getDettaglioContattoList()) {
+//                    dettaglioContatto.setPrincipale(dettaglioContatto.getUtenteStruttura().getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA));
+//                    getEntityManager().persist(dettaglioContatto);
+//                }
+                    repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                } else {
+                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+
+                    if (idDettaglioContatto != null) {
+                        //devo creare il dettaglio contatto
+                        idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
+                        repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                        repositoryFactory.getEntityManager().flush();
+                    }
+                    utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
+                    repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
+
+                }
+            }
+        }
+        if (utenteStrutturaDaSpegnereList != null) {
+            for (UtenteStruttura utenteStrutturaOld : utenteStrutturaDaSpegnereList) {
+                DettaglioContatto idDettaglioContatto = utenteStrutturaOld.getIdDettaglioContatto();
+                if (idDettaglioContatto != null) {
+                    idDettaglioContatto.setEliminato(Boolean.TRUE);
+                    repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                }
+            }
+        }
+    }
 }

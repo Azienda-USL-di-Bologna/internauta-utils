@@ -76,8 +76,6 @@ public class DSSValidatorManager {
     }
 
     public DSSValidatorReponse callDssValidator(ConfigParams.ExternalSignAndCertificateValidatorParamsKey paramKey, LocalDateTime validationDate, byte[] file) throws DssResponseException, IOException, NoSignException {
-        
-        
         String url = configParams.getExternalSignAndCertificateValidator(paramKey);
 //        url = "http://localhost:10008/dss-validator-api/validator/validateDocument";
         log.info(String.format("url: %s", url));

@@ -65,14 +65,14 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 DatiDaImportareStruttura entitaDaInserire = (DatiDaImportareStruttura) getEntitaCoinvolta();
                 log.info("sto gestendo inserimento struttura con id_casella = " + entitaDaInserire.getIdCasella());
                 strutturaNew = OperationsUtils.inserisciStruttura(
-                    em,
-                    queryFactory,
-                    entitaDaInserire.getIdAzienda(),
-                    entitaDaInserire.getIdCasella(),
-                    entitaDaInserire.getDescrizione(),
-                    entitaDaInserire.getIdPadre(),
-                    qStruttura,
-                    struttureDaAggiornareConPadreNonAncoraInserito
+                        em,
+                        queryFactory,
+                        entitaDaInserire.getIdAzienda(),
+                        entitaDaInserire.getIdCasella(),
+                        entitaDaInserire.getDescrizione(),
+                        entitaDaInserire.getIdPadre(),
+                        qStruttura,
+                        struttureDaAggiornareConPadreNonAncoraInserito
                 );
                 break;
             //ora gestisco il caso in cui inserisco la struttura e tocco un'unificazione
@@ -85,24 +85,16 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg storico relazione
                 //chiudere su baborg strutture unificate
                 Struttura strutturaSorgenteDaChiudere = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.attiva.and(
-                        qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
-                        qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
-                    ).fetchOne();
+                        .select(qStruttura)
+                        .from(qStruttura)
+                        .where(qStruttura.attiva.and(
+                                qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())).and(
+                                qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                        ).fetchOne();
 
                 strutturaChiusa = OperationsUtils.chiudiStruttura(strutturaSorgenteDaChiudere, queryFactory, qStruttura, qStoricoRelazione);
 
-                try {
-                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.PICO.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DELI.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                    repositoryFactory.getPermissionManager().deletePermissionByObject(strutturaChiusa, null, null, null, null, BlackBoxConstants.Ambito.DETE.toString(), BlackBoxConstants.Tipo.FLUSSO.toString(), "ribaltone");
-                    //todo chiudere i permessi veicolati
-                    repositoryFactory.getPermissionManager().deleteVeicoledPermission(strutturaChiusa, "ribaltone");
-                } catch (BlackBoxPermissionException ex) {
-                    log.error("non sono stati rimossi i permessi di struttura con id " + strutturaChiusa.getId());
-                }
+                OperationsUtils.chiudiPermessiStruttura(strutturaSorgenteDaChiudere, repositoryFactory);
 
                 break;
 
@@ -114,38 +106,38 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
                 //chiudere su baborg strutture old
                 //chiudere su baborg storico relazione old
                 Struttura strutturaSorgenteDaChiudereR = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.attiva.and(
-                        qStruttura.idCasella.eq(entitaDaCambio.getIdCasella())).and(
-                        qStruttura.idAzienda.id.eq(entitaDaCambio.getIdAzienda()))
-                    ).fetchOne();
+                        .select(qStruttura)
+                        .from(qStruttura)
+                        .where(qStruttura.attiva.and(
+                                qStruttura.idCasella.eq(entitaDaCambio.getIdCasella())).and(
+                                qStruttura.idAzienda.id.eq(entitaDaCambio.getIdAzienda()))
+                        ).fetchOne();
 
                 strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    strutturaSorgenteDaChiudereR,
-                    queryFactory,
-                    qStruttura,
-                    qStoricoRelazione);
+                        strutturaSorgenteDaChiudereR,
+                        queryFactory,
+                        qStruttura,
+                        qStoricoRelazione);
                 getEntityManager().refresh(strutturaChiusa);
                 //Inserire su baborg strutture new
                 //Inserire su baborg storico relazione new
                 strutturaNew = OperationsUtils.inserisciStruttura(
-                    em,
-                    queryFactory,
-                    entitaDaCambio.getIdAzienda(),
-                    entitaDaCambio.getIdCasella(),
-                    entitaDaCambio.getDescrizione(),
-                    entitaDaCambio.getIdPadre(),
-                    qStruttura,
-                    struttureDaAggiornareConPadreNonAncoraInserito
+                        em,
+                        queryFactory,
+                        entitaDaCambio.getIdAzienda(),
+                        entitaDaCambio.getIdCasella(),
+                        entitaDaCambio.getDescrizione(),
+                        entitaDaCambio.getIdPadre(),
+                        qStruttura,
+                        struttureDaAggiornareConPadreNonAncoraInserito
                 );
                 getEntityManager().refresh(strutturaNew);
                 //se sono nel caso di rinomina della radice (e non solo)devo aggiornare anche gli storici relazione di tutti quelli che sono collegati a me
                 queryFactory
-                    .update(qStruttura)
-                    .set(qStruttura.idStrutturaPadre, strutturaNew)
-                    .where(qStruttura.idStrutturaPadre.id.eq(strutturaChiusa.getId()).and(qStruttura.attiva.eq(Boolean.TRUE)))
-                    .execute();
+                        .update(qStruttura)
+                        .set(qStruttura.idStrutturaPadre, strutturaNew)
+                        .where(qStruttura.idStrutturaPadre.id.eq(strutturaChiusa.getId()).and(qStruttura.attiva.eq(Boolean.TRUE)))
+                        .execute();
                 List<StoricoRelazione> storiciRelazioneDaChiudereERiaprire = queryFactory.select(qStoricoRelazione).from(qStoricoRelazione).where(qStoricoRelazione.idStrutturaPadre.id.eq(strutturaChiusa.getId())).fetch();
                 for (StoricoRelazione storicoRelazione : storiciRelazioneDaChiudereERiaprire) {
                     storicoRelazione.setAttivaAl(ZonedDateTime.now());
@@ -206,9 +198,9 @@ public class OperationStruttura extends Operation<DatiRibaltoneInterface> implem
             case CHIUSURA -> {
                 DatiImportatiStruttura entitaDaChiudere = (DatiImportatiStruttura) getEntitaCoinvolta();
                 Struttura s = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
-                        .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
-                        .and(qStruttura.attiva)).fetchOne();
+                        .where(qStruttura.idCasella.eq(entitaDaChiudere.getIdCasella())
+                                .and(qStruttura.idAzienda.id.eq(entitaDaChiudere.getIdAzienda()))
+                                .and(qStruttura.attiva)).fetchOne();
                 if (s != null) {
                     Contatto idContatto = s.getIdContatto();
                     idContatto.setEliminato(true);

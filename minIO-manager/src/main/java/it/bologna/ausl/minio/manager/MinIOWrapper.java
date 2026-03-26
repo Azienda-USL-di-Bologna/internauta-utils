@@ -693,7 +693,8 @@ public class MinIOWrapper {
     public String getFileNameForNotOverwrite(Connection conn, String fileName) {
         Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
             .executeAndFetchFirst(Integer.class);
-        return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
+        String filenameExtension = StringUtils.getFilenameExtension(fileName);
+        return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + (StringUtils.hasText(filenameExtension) ? "." + filenameExtension : "");
     }
 
     private String metadataToStringNullSafe(Map<String, Object> metadata) throws JacksonException {
