@@ -56,63 +56,65 @@ public class AllegatiBuilderUnimatica {
         AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
         for (Allegato allegato : allegatiList) {
-            log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
-            if (allegato.getFirmato()) {
-                //guardo se è firmato e in tal caso lo processo
-                Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                IdentityFileUnimatica identityFile = getAllegatoInformation(originaleFirmato, allegato.getId());
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
-                AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                    originaleFirmato.getNome(),
-                    identityFile.getHash(),
-                    allegato.getFirmato(),
-                    originaleFirmato.getMimeType()
-                );
-                //assegno il documento principale
-                if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
-                    || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) && allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
-                    //se sono in un pe guardo se è l'allegato principale
-                    //oppure sono in un pu ed è di tipo testo (la lettera),
-                    //in quel caso lo aggiungo come allegato principale
-                    documentoPrincipale = allegatoUnimatica;
-                } else {
-                    //altrimenti lo aggiungo agli allegati secondari
-                    allegatiSecondariList.add(allegatoUnimatica);
-                }
-            } else {
-                if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)
-                    || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
-                    || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
-                    && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))
-                    || AllegatoInterface.SottotipoAllegato.SEGNATURA.equals(allegato.getSottotipo())) {
-                    //guardo se è la stampa unica
-                    //oppure l'allegato principale di un pe o di un rgpico
-                    //oppure il testo omissis o la stampa unica omissis di una dete o una deli
-                    //oppure è la segnatura
-                    //in quel caso la processo
-                    Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-                    IdentityFileUnimatica identityFile = getAllegatoInformation(originale, allegato.getId());
+            if (!allegato.getEliminato()) {
+                log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
+                if (allegato.getFirmato()) {
+                    //guardo se è firmato e in tal caso lo processo
+                    Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
+                    IdentityFileUnimatica identityFile = getAllegatoInformation(originaleFirmato, allegato.getId());
                     identityFiles.add(identityFile);
-                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
-                    //assegno il documento principale
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                        originale.getNome(),
+                        originaleFirmato.getNome(),
                         identityFile.getHash(),
                         allegato.getFirmato(),
-                        originale.getMimeType()
+                        originaleFirmato.getMimeType()
                     );
-                    if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale()) {
-                        //se sono in un pe o in un rgpico guardo se è l'allegato principale,
+                    //assegno il documento principale
+                    if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
+                        || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA) && allegato.getTipo().equals(Allegato.TipoAllegato.TESTO)) {
+                        //se sono in un pe guardo se è l'allegato principale
+                        //oppure sono in un pu ed è di tipo testo (la lettera),
                         //in quel caso lo aggiungo come allegato principale
                         documentoPrincipale = allegatoUnimatica;
                     } else {
                         //altrimenti lo aggiungo agli allegati secondari
                         allegatiSecondariList.add(allegatoUnimatica);
+                    }
+                } else {
+                    if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)
+                        || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
+                        || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
+                        && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))
+                        || AllegatoInterface.SottotipoAllegato.SEGNATURA.equals(allegato.getSottotipo())) {
+                        //guardo se è la stampa unica
+                        //oppure l'allegato principale di un pe o di un rgpico
+                        //oppure il testo omissis o la stampa unica omissis di una dete o una deli
+                        //oppure è la segnatura
+                        //in quel caso la processo
+                        Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
+                        IdentityFileUnimatica identityFile = getAllegatoInformation(originale, allegato.getId());
+                        identityFiles.add(identityFile);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                        //assegno il documento principale
+                        AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
+                            originale.getNome(),
+                            identityFile.getHash(),
+                            allegato.getFirmato(),
+                            originale.getMimeType()
+                        );
+                        if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale()) {
+                            //se sono in un pe o in un rgpico guardo se è l'allegato principale,
+                            //in quel caso lo aggiungo come allegato principale
+                            documentoPrincipale = allegatoUnimatica;
+                        } else {
+                            //altrimenti lo aggiungo agli allegati secondari
+                            allegatiSecondariList.add(allegatoUnimatica);
+                        }
                     }
                 }
             }

@@ -234,12 +234,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
             // In questa lista ci saranno gli id di tutti gli allegati che saranno versati con i rispettivi dettagli
             List<String> idAllegatiWithTipoDettaglio = new ArrayList<>();
             for (Allegato allegato : allegati) {
-                for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
-                    Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
-                    // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
-                    if (dettaglioAllegato != null) {
-                        pairsAllegati.add(Pair.of(allegato, tipoDettaglioAllegato));
-                        idAllegatiWithTipoDettaglio.add(allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                if (!allegato.getEliminato()) {
+                    for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
+                        Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
+                        // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
+                        if (dettaglioAllegato != null) {
+                            pairsAllegati.add(Pair.of(allegato, tipoDettaglioAllegato));
+                            idAllegatiWithTipoDettaglio.add(allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                        }
                     }
                 }
             }
