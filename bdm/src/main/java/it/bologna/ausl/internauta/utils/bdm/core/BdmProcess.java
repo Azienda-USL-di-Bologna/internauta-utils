@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
@@ -401,19 +402,32 @@ public  class BdmProcess implements Dumpable, Serializable {
         int n = executedStepList.lastIndexOf(nextStep.getStepId());
         if (n != -1) {
             List<String> stepIdToUndo = executedStepList.subList(n, executedStepList.size());
+            // non devo fare undo sullo step di destinazione
+            stepIdToUndo.remove(nextStep.getStepId());
             //esegui undo per tutti i task nella lista di quelli eseguiti
 //            stepList.stream().filter((t) -> (stepIdToUndo.indexOf(t.getStepId()) != -1)).forEach((t) -> {
 //                t.undo(context, params);
 //            });
             
-            // filtro nella lista degli step quelli da undoare ed eseguo l'undo scorrendolinell'ordine inverso
-            stepList.stream().filter((s) -> (stepIdToUndo.indexOf(s.getStepId()) != -1)).
+            // filtro nella lista degli step quelli da undoare ed eseguo l'undo scorrendoli nell'ordine inverso
+            try {
+                stepList.stream().filter((s) -> (stepIdToUndo.indexOf(s.getStepId()) != -1)).
                     collect(Collectors.toCollection(LinkedList<Step>::new)).
                     descendingIterator().
                         forEachRemaining((s) -> {
-//                            runningContext.put(CURRENT_STEP, s);
-                            s.undo(runningContext, context, params);
-            });
+                    try {
+                        //                            runningContext.put(CURRENT_STEP, s);
+                        s.undo(runningContext, context, params);
+                    } catch (ProcessWorkFlowException ex) {
+                        throw new BdmRuntimeExceptionContainer(ex);
+                    }
+                });
+            } catch (BdmRuntimeExceptionContainer t) {
+                if (t.getException() instanceof ProcessWorkFlowException ex)
+                    throw ex;
+                else
+                    throw new ProcessWorkFlowException("error executing task", t);
+            }
 
             executedStepList.removeAll(stepIdToUndo);
         }

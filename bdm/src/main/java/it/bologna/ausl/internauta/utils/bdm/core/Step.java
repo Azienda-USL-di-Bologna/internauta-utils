@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
+import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
@@ -181,7 +182,7 @@ public class Step implements Dumpable {
         forwardStepList.add(stepId);
     }
 
-    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) {
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
 
 //        if (1 == 1) {
 //            throw new UnsupportedOperationException("Se tutti i passi hanno fatto e la politica e' ANY non disfare ?!?!?");
@@ -206,38 +207,56 @@ public class Step implements Dumpable {
 //        taskResults = new ArrayList<>();
 
         runningContext.put(BdmProcess.CURRENT_STEP, this);
-
-        if (exitTaskList != null) {
-            exitTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+        try {
+            if (exitTaskList != null) {
+                exitTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setObjectMapper(objectMapper);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
-        }
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.undo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
 
-        if (taskList != null) {
-            taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+            if (taskList != null) {
+                taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setObjectMapper(objectMapper);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
-        }
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.undo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
 
-        if (enterTaskList != null) {
-            enterTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+            if (enterTaskList != null) {
+                enterTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setObjectMapper(objectMapper);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.undo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
+        } catch (BdmRuntimeExceptionContainer t) {
+            if (t.getException() instanceof ProcessWorkFlowException ex)
+                throw ex;
+            else
+                throw new ProcessWorkFlowException("error executing task", t);
         }
     }
 
