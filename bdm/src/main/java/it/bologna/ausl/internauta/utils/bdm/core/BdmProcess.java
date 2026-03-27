@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.CLASS,
@@ -74,6 +75,9 @@ public  class BdmProcess implements Dumpable, Serializable {
     
     @JsonIgnore
     protected EntityManager entityManager;
+    
+    @JsonIgnore
+    protected ObjectMapper objectMapper;
     
     private List<StepLog> stepsLog = new ArrayList<>();
 
@@ -173,7 +177,18 @@ public  class BdmProcess implements Dumpable, Serializable {
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
+    
+    @JsonIgnore
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+    
+    @JsonIgnore
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
+    
     @JsonIgnore
     public Map<String, Object> getProcessBag() {
         return processBag;
@@ -246,6 +261,8 @@ public  class BdmProcess implements Dumpable, Serializable {
         stepOnts = ZonedDateTime.now();
         Step step = stepList.get(currentStepIndex);
         step.setEntityManager(entityManager);
+        step.setObjectMapper(objectMapper);
+        
         step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
 
@@ -272,6 +289,7 @@ public  class BdmProcess implements Dumpable, Serializable {
                     if (stepChanged) {
                         step = stepList.get(currentStepIndex);
                         step.setEntityManager(entityManager);
+                        step.setObjectMapper(objectMapper);
                         step.setProcessBag(processBag);
                         runningContext.put(CURRENT_STEP, step);
 //                        step.reset();
@@ -346,6 +364,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         //annulliamo lo step attuale
         Step currentStep = stepList.get(currentStepIndex);
         currentStep.setEntityManager(entityManager);
+        currentStep.setObjectMapper(objectMapper);
         currentStep.setProcessBag(processBag);
         runningContext.put(CURRENT_PROCESS, this);
         runningContext.put(CURRENT_STEP, currentStep);
@@ -366,6 +385,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         }
         
         nextStep.setEntityManager(entityManager);
+        nextStep.setObjectMapper(objectMapper);
         nextStep.setProcessBag(processBag);
 
         //controllo che non sia uno stepTo allo step corrente
@@ -401,6 +421,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         
         Step step = stepList.get(currentStepIndex);
         step.setEntityManager(entityManager);
+        step.setObjectMapper(objectMapper);
         step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
 //        step.reset();

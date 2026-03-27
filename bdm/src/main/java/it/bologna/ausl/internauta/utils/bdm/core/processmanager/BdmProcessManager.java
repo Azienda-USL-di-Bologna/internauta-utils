@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -29,11 +30,13 @@ public class BdmProcessManager {
     public static final String ADDING_PROCESS_PARAMS = "process_params";
     private final ProcessStorageManager psm;
     private final EntityManager entityManager;
+    private final ObjectMapper objectMapper;
     private Map<String, Object> processBag;
 
-    public BdmProcessManager(ProcessStorageManager psm, EntityManager entityManager, Map<String, Object> processBag) {
+    public BdmProcessManager(ProcessStorageManager psm, EntityManager entityManager, ObjectMapper objectMapper, Map<String, Object> processBag) {
         this.psm = psm;
         this.entityManager = entityManager;
+        this.objectMapper = objectMapper;
         this.processBag = processBag;
     }
 
@@ -68,6 +71,7 @@ public class BdmProcessManager {
         try {
             BdmProcess p = psm.loadProcess(id);
             p.setEntityManager(entityManager);
+            p.setObjectMapper(objectMapper);
             p.setProcessBag(processBag);
             return (T) p;
         } catch (StorageException ex) {
@@ -88,6 +92,7 @@ public class BdmProcessManager {
             return false;
         }
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         p.setStatus(BdmStatus.ABORTED);
         try {
@@ -134,6 +139,7 @@ public class BdmProcessManager {
             return null;
         }
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         BdmStatus status = p.stepOn(parameters);
         psm.saveProcess(p);
@@ -150,6 +156,7 @@ public class BdmProcessManager {
             return null;
         }
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         BdmStatus status = p.stepTo(stepId, parameters);
         psm.saveProcess(p);
@@ -164,6 +171,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         Step s = p.getStep(stepId);
         try {
@@ -184,6 +192,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         p.setContext(context);
         psm.saveProcess(p);
@@ -195,6 +204,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         Map<String, Object> currentContext = p.getContext();
         
@@ -214,6 +224,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         Step step = p.getStep(stepId);
         step.setStepLogic(stepLogic);
@@ -227,6 +238,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         Step s = null;
         if (stepId != null) {
@@ -264,6 +276,7 @@ public class BdmProcessManager {
         Objects.nonNull(stepDescription);
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         Step s = new Step(stepType, stepDescription, stepLogic, allowedStepLogic);
         p.getStepList().add(s);
@@ -277,6 +290,7 @@ public class BdmProcessManager {
 
         BdmProcess p = psm.loadProcess(processId);
         p.setEntityManager(entityManager);
+        p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
         p.getStepList().remove(p.getStep(stepId));
         psm.saveProcess(p);

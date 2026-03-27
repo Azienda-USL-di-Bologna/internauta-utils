@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -33,6 +34,9 @@ public abstract class Task implements Dumpable {
     
     @JsonIgnore
     protected EntityManager entityManager;
+    
+    @JsonIgnore
+    protected ObjectMapper objectMapper;
     
     @JsonIgnore
     protected Map<String, Object> processBag;
@@ -122,6 +126,14 @@ public abstract class Task implements Dumpable {
 
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> getProcessBag() {

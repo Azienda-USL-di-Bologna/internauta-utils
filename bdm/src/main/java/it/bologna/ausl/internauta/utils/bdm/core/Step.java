@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -54,6 +55,9 @@ public class Step implements Dumpable {
 
     @JsonIgnore
     protected EntityManager entityManager;
+    
+    @JsonIgnore
+    protected ObjectMapper objectMapper;
     
     @JsonIgnore
     protected Map<String, Object> processBag;
@@ -208,6 +212,7 @@ public class Step implements Dumpable {
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
                             t.setEntityManager(entityManager);
+                            t.setObjectMapper(objectMapper);
                             t.setProcessBag(processBag);
                             t.undo(runningContext, context, params);
             });
@@ -218,6 +223,7 @@ public class Step implements Dumpable {
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
                             t.setEntityManager(entityManager);
+                            t.setObjectMapper(objectMapper);
                             t.setProcessBag(processBag);
                             t.undo(runningContext, context, params);
             });
@@ -228,6 +234,7 @@ public class Step implements Dumpable {
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
                             t.setEntityManager(entityManager);
+                            t.setObjectMapper(objectMapper);
                             t.setProcessBag(processBag);
                             t.undo(runningContext, context, params);
             });
@@ -241,6 +248,7 @@ public class Step implements Dumpable {
         if (enterTaskList != null) {
             for (Task t : enterTaskList) {
                 t.setEntityManager(entityManager);
+                t.setObjectMapper(objectMapper);
                 t.setProcessBag(processBag);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
@@ -258,6 +266,7 @@ public class Step implements Dumpable {
         if (exitTaskList != null) {
             for (Task t : exitTaskList) {
                 t.setEntityManager(entityManager);
+                t.setObjectMapper(objectMapper);
                 t.setProcessBag(processBag);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
@@ -273,6 +282,7 @@ public class Step implements Dumpable {
         if (taskList != null) {
             Task currentTask = taskList.get(currentTaskIndex);
             currentTask.setEntityManager(entityManager);
+            currentTask.setObjectMapper(objectMapper);
             currentTask.setProcessBag(processBag);
             return currentTask;
             
@@ -392,6 +402,7 @@ public class Step implements Dumpable {
 
     public void addTask(Task task) {
         task.setEntityManager(entityManager);
+        task.setObjectMapper(objectMapper);
         task.setProcessBag(processBag);
         taskList.add(task);
         taskResults.add(null);
@@ -429,6 +440,7 @@ public class Step implements Dumpable {
                 case SEQ:
                     Task currentTask = taskList.get(currentTaskIndex);
                     currentTask.setEntityManager(entityManager);
+                    currentTask.setObjectMapper(objectMapper);
                     currentTask.setProcessBag(processBag);
                     currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                     res = currentTask.execute(runningContext, context, params);
@@ -441,6 +453,7 @@ public class Step implements Dumpable {
                         while (currentTaskIndex < taskList.size() && taskList.get(currentTaskIndex).getAuto()) {
                             currentTask = taskList.get(currentTaskIndex);
                             currentTask.setEntityManager(entityManager);
+                            currentTask.setObjectMapper(objectMapper);
                             currentTask.setProcessBag(processBag);
                             currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                             res = currentTask.execute(runningContext, context, params);
@@ -466,6 +479,7 @@ public class Step implements Dumpable {
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
                         t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
                         t.setProcessBag(processBag);
                         if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
                             if (t.getAuto() || !finishedOne) {
@@ -493,6 +507,7 @@ public class Step implements Dumpable {
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
                         t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
                         t.setProcessBag(processBag);
                         if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
                             res = t.execute(runningContext, context, params);
@@ -544,6 +559,14 @@ public class Step implements Dumpable {
 
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> getProcessBag() {
