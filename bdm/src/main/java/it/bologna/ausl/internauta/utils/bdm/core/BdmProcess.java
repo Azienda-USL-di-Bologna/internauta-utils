@@ -384,7 +384,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         if (nextStep == null || nextStepIndex == null) {
             throw new ProcessWorkFlowException("Unable to find next step :" + stepId);
         }
-        
+        nextStep.reset();
         nextStep.setEntityManager(entityManager);
         nextStep.setObjectMapper(objectMapper);
         nextStep.setProcessBag(processBag);
@@ -438,7 +438,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         step.setObjectMapper(objectMapper);
         step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
-//        step.reset();
+        step.reset();
 //        step.executeOnEnterTasks(runningContext, context, params);
         
         return stepOn(params);

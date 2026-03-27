@@ -182,20 +182,7 @@ public class Step implements Dumpable {
         forwardStepList.add(stepId);
     }
 
-    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
-
-//        if (1 == 1) {
-//            throw new UnsupportedOperationException("Se tutti i passi hanno fatto e la politica e' ANY non disfare ?!?!?");
-//        }
-        
-//        
-//        currentTaskIndex = 0;
-//        stepStatus = BdmStatus.NOT_STARTED;
-//        taskResults = new ArrayList<>();
-//        taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).forEach((t) -> {
-//            t.undo(context, params);
-//        });
-
+    public void reset() {
         enterDone = false;
         exitDone = false;
         stepStatus = BdmStatus.NOT_STARTED;
@@ -204,7 +191,10 @@ public class Step implements Dumpable {
         for (int i = 0; i < taskResults.size(); i++) {
             taskResults.set(i, null);
         }
-//        taskResults = new ArrayList<>();
+    }
+    
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
+        reset();
 
         runningContext.put(BdmProcess.CURRENT_STEP, this);
         try {
