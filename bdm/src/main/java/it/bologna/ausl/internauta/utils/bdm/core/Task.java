@@ -145,8 +145,10 @@ public abstract class Task implements Dumpable {
     }
 
     @JsonIgnore
-    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> parameters) {
+    public final void taskUndo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> parameters) {
         status = BdmStatus.NOT_STARTED;
+        undo(runningContext, context, parameters);
     }
 
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> parameters) {}
 }

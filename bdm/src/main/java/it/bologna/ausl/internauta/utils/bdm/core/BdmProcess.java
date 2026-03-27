@@ -275,7 +275,7 @@ public  class BdmProcess implements Dumpable, Serializable {
             step.executeOnEnterTasks(runningContext, context, params);
         }
         
-        BdmStatus stepStatus = step.stepOn(runningContext, context, params);
+        BdmStatus stepStatus = step.stepOn(runningContext, context, params, false);
         switch (stepStatus) {
             case ABORTED:
             case FINISHED:
@@ -300,7 +300,7 @@ public  class BdmProcess implements Dumpable, Serializable {
                     }
                     if ((step.getStepLogic() == Step.StepLogic.SEQ && step.getTaskList().get(step.getCurrentTaskIndex()).getAuto())
                             || (step.getStepLogic() != Step.StepLogic.SEQ && !step.getNotExecutedAutoTask().isEmpty())) {
-                        stepStatus = step.stepOn(runningContext, context, params);
+                        stepStatus = step.stepOn(runningContext, context, params, true);
                         if (stepStatus == BdmStatus.FINISHED) {
                             // lo step è finito, eseguo gli eventuali task on exit dello step corrente
                             step.executeOnExitTasks(runningContext, context, params);
@@ -406,7 +406,7 @@ public  class BdmProcess implements Dumpable, Serializable {
             stepIdToUndo.remove(nextStep.getStepId());
             //esegui undo per tutti i task nella lista di quelli eseguiti
 //            stepList.stream().filter((t) -> (stepIdToUndo.indexOf(t.getStepId()) != -1)).forEach((t) -> {
-//                t.undo(context, params);
+//                t.taskUndo(context, params);
 //            });
             
             // filtro nella lista degli step quelli da undoare ed eseguo l'undo scorrendoli nell'ordine inverso
