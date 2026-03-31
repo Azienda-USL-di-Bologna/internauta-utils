@@ -188,13 +188,14 @@ public class Step implements Dumpable {
         stepStatus = BdmStatus.NOT_STARTED;
         currentTaskIndex = 0;
         stepOnTimeStamp = null;
+        taskList.forEach(t -> t.setStatus(BdmStatus.NOT_STARTED));
         for (int i = 0; i < taskResults.size(); i++) {
             taskResults.set(i, null);
         }
     }
     
     public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
-        reset();
+
 
         runningContext.put(BdmProcess.CURRENT_STEP, this);
         try {
@@ -242,6 +243,7 @@ public class Step implements Dumpable {
                         }
                 });
             }
+            reset();
         } catch (BdmRuntimeExceptionContainer t) {
             if (t.getException() instanceof ProcessWorkFlowException ex)
                 throw ex;

@@ -141,7 +141,7 @@ public class BdmProcessManager {
         p.setEntityManager(entityManager);
         p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
-        BdmStatus status = p.stepOn(parameters);
+        BdmStatus status = p.stepOn(parameters, false, true);
         psm.saveProcess(p);
         return status;
     }

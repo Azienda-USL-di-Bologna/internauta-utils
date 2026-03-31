@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
+import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
@@ -151,4 +152,8 @@ public abstract class Task implements Dumpable {
     }
 
     public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> parameters) {}
+    
+    public Map<String, Object> buildLogData(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
+        return null;
+    }
 }

@@ -256,7 +256,7 @@ public  class BdmProcess implements Dumpable, Serializable {
     }
 
     @JsonIgnore
-    public BdmStatus stepOn(Map<String, Object> params) throws IllegalStepStateException, ProcessWorkFlowException {
+    public BdmStatus stepOn(Map<String, Object> params, boolean onlyAuto, boolean writeLogData) throws IllegalStepStateException, ProcessWorkFlowException {
         runningContext.put(CURRENT_PROCESS, this);
         status = BdmStatus.RUNNING;
         stepOnts = ZonedDateTime.now();
@@ -267,15 +267,16 @@ public  class BdmProcess implements Dumpable, Serializable {
         step.setProcessBag(processBag);
         runningContext.put(CURRENT_STEP, step);
 
-        // inserisco i dati necessari nella lista di StepLog
-        stepsLog.add(new StepLog(step.getStepId(), step.getStepType(), ZonedDateTime.now()));
+        if (writeLogData) {
+            writeLogData(step, params);
+        }
 
         // se lo step sta partendo ora eseguo i task in entrata
         if (step.getStepStatus() == BdmStatus.NOT_STARTED) {
             step.executeOnEnterTasks(runningContext, context, params);
         }
         
-        BdmStatus stepStatus = step.stepOn(runningContext, context, params, false);
+        BdmStatus stepStatus = step.stepOn(runningContext, context, params, onlyAuto);
         switch (stepStatus) {
             case ABORTED:
             case FINISHED:
@@ -294,7 +295,7 @@ public  class BdmProcess implements Dumpable, Serializable {
                         step.setProcessBag(processBag);
                         runningContext.put(CURRENT_STEP, step);
 //                        step.reset();
-                        stepsLog.add(new StepLog(step.getStepId(), step.getStepType(), ZonedDateTime.now()));
+//                        stepsLog.add(new StepLog(step.getStepId(), step.getStepType(), ZonedDateTime.now()));
                         step.executeOnEnterTasks(runningContext, context, params);
                         stepChanged = false;
                     }
@@ -359,6 +360,21 @@ public  class BdmProcess implements Dumpable, Serializable {
 
         return status;
     }
+    
+    private void writeLogData(Step step, Map<String, Object> params) throws ProcessWorkFlowException {
+        Map<String, Object> logData = new HashMap<>();
+        for (Task task : step.getTaskList()) {
+            task.setEntityManager(entityManager);
+            task.setObjectMapper(objectMapper);
+            Map<String, Object> taskLogData = task.buildLogData(runningContext, context, params);
+            if (taskLogData != null) {
+                logData.put(task.getTaskType(), taskLogData);
+            }
+        }
+
+        // inserisco i dati necessari nella lista di StepLog
+        stepsLog.add(new StepLog(step.getStepId(), step.getStepType(), ZonedDateTime.now(), logData));
+    }
 
     @JsonIgnore
     public BdmStatus stepTo(String stepId, Map<String, Object> params) throws IllegalStepStateException, ProcessWorkFlowException {
@@ -369,6 +385,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         currentStep.setProcessBag(processBag);
         runningContext.put(CURRENT_PROCESS, this);
         runningContext.put(CURRENT_STEP, currentStep);
+        writeLogData(currentStep, params);
         currentStep.undo(runningContext, context, params);
         //Troviamo dove andare
         Step nextStep = null;
@@ -391,7 +408,7 @@ public  class BdmProcess implements Dumpable, Serializable {
 
         //controllo che non sia uno stepTo allo step corrente
         if (currentStep.getStepId().equals(nextStep.getStepId())) {
-            return stepOn(params);
+            return stepOn(params, true, false);
         }
 
         //controllo che il nextStep sia previsto tra i possibili
@@ -441,7 +458,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         step.reset();
 //        step.executeOnEnterTasks(runningContext, context, params);
         
-        return stepOn(params);
+        return stepOn(params, true, false);
     }
 
 
