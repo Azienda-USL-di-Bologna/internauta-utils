@@ -1,13 +1,16 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins;
 
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.RecuperoRapportoDiVersamentoPluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
+import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
@@ -24,11 +27,18 @@ public abstract class RecuperoRapportoDiVersamento {
     @PersistenceContext
     protected EntityManager entityManager;
 
+    @Autowired
+    protected VersatoreConfigParams configParams;
+
+    protected VersatoreConfiguration versatoreConfiguration;
+
+    public void init(VersatoreConfiguration versatoreConfiguration) {
+        this.versatoreConfiguration = versatoreConfiguration;
+    }
+
     /**
     contatta il servizio di conservazione per recuperare i rapporti di versamento
-    @return
-    @throws VersatoreProcessingException
      */
-    public abstract RapportoDiVersamento recuperaRapportiDiVersamento() throws VersatoreProcessingException;
+    public abstract RapportoDiVersamento recuperaRapportiDiVersamento(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException;
 
 }

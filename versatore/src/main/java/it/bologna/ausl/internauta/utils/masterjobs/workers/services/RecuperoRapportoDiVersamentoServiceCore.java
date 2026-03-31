@@ -39,6 +39,12 @@ public class RecuperoRapportoDiVersamentoServiceCore {
             // hostId del servizio di versamento, indica il servizio che sarà utilizzato (sono definiti nella tabella versatore.configurations)
             String hostId = (String) versatoreConfigAziendaValue.get("hostId");
 
+            // numero massimo di thread paralleli che il job di versamento istanzierà per effettuare i versamenti
+            Integer threadPoolSize = (Integer) versatoreConfigAziendaValue.get("threadPoolSize");
+
+            //parametri per il versamento
+            Map<String, Object> params = (Map<String, Object>) versatoreConfigAziendaValue.get("params");
+
             // dai parametri leggo se il servizio di recupero del rapporto di versamento deve essere esguito.
             // se il parametro non c'è lo interpreto come false
             boolean eseguiRecuperoRapportoDiVersamento = Boolean.TRUE.equals(
@@ -47,7 +53,7 @@ public class RecuperoRapportoDiVersamentoServiceCore {
 
             if (eseguiRecuperoRapportoDiVersamento) {
                 // richiama il metodo sul core che si occupa dell'accodamento del job
-                queueAziendaJob(idAzienda, hostId, app);
+                queueAziendaJob(idAzienda, hostId, threadPoolSize, app, params);
             }
 
         }
@@ -58,8 +64,8 @@ public class RecuperoRapportoDiVersamentoServiceCore {
      * @param idAzienda azienda per la quale il job lavorerà
      * @param hostId hostId del servizio di versamento da usare
      */
-    private void queueAziendaJob(Integer idAzienda, String hostId, String app) {
-        RecuperoRapportoDiVersamentoJobWorkerData recuperoRapportoDiVersamentoJobWorkerData = new RecuperoRapportoDiVersamentoJobWorkerData(hostId); //TODO mettere i valori
+    private void queueAziendaJob(Integer idAzienda, String hostId, Integer poolsize, String app, Map<String, Object> params) {
+        RecuperoRapportoDiVersamentoJobWorkerData recuperoRapportoDiVersamentoJobWorkerData = new RecuperoRapportoDiVersamentoJobWorkerData(idAzienda, hostId, poolsize, params); //TODO mettere i valori
         RecuperoRapportoDiVersamentoJobWorker jobWorker = null;
         try { // istanzia il worker
             jobWorker = masterjobsObjectsFactory.getJobWorker(RecuperoRapportoDiVersamentoJobWorker.class, recuperoRapportoDiVersamentoJobWorkerData, false);

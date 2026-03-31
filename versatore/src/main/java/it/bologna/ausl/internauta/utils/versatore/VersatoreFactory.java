@@ -93,6 +93,7 @@ public class VersatoreFactory {
                     versatoreDocsInstance.init(configuration);
                     idoneitaCheckerInstance = beanFactory.getBean(UnimaticaIdoneitaCheckerService.class);
                     recuperoRapportoDiVersamentoInstance = beanFactory.getBean(UnimaticaRecuperoRapportoDiVersamentoService.class);
+                    recuperoRapportoDiVersamentoInstance.init(configuration);
                     break;
                 default:
                     throw new VersatoreProcessingException("Provider: " + provider + " not found");
