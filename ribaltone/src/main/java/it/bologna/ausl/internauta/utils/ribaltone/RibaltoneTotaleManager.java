@@ -167,7 +167,7 @@ public class RibaltoneTotaleManager {
         //return buildOperations;
     }
 
-    public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from, Boolean soloLocale) throws RibaltoneHttpException {
+    public Integer lanciaRibaltTree(String codiceAzienda, String idFonteSelezionata, Utente utente, String note, Integer idRibaltTree, String from, Boolean soloLocale, String ex) throws RibaltoneHttpException {
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         QAzienda qAzienda = QAzienda.azienda;
         Azienda idAzienda = queryFactory.select(qAzienda).from(qAzienda).where(qAzienda.codice.eq(codiceAzienda)).fetchOne();
@@ -209,10 +209,23 @@ public class RibaltoneTotaleManager {
                 ribaltoneDaLanciare.setGestito(Boolean.TRUE);
             }
             case "errore" -> {
-                ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
+                if (idRibaltTree != null) {
+                    ribaltoneDaLanciare = repositoryFactory.getEntityManager().find(RibaltoneDaLanciare.class, idRibaltTree);
+                } else {
+                    ribaltoneDaLanciare = new RibaltoneDaLanciare();
+                    ribaltoneDaLanciare.setRibaltaArgo(Boolean.TRUE);
+                    ribaltoneDaLanciare.setCodiceAzienda(codiceAzienda);
+                    ribaltoneDaLanciare.setIdUtente(utente);
+                    ribaltoneDaLanciare.setRibaltaInternauta(!soloLocale);
+                    ribaltoneDaLanciare.setNote(note);
+                    ribaltoneDaLanciare.setIdAzienda(idAzienda);
+                    ribaltoneDaLanciare.setFonteRibaltone(idFonteSelezionata);
+                    ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
+                }
                 ribaltoneDaLanciare.setStato("ERRORE");
                 ribaltoneDaLanciare.setDataUltimaModifica(ZonedDateTime.now());
                 ribaltoneDaLanciare.setGestito(Boolean.FALSE);
+                ribaltoneDaLanciare.setLog(ex);
             }
             default -> {
                 throw new RibaltoneHttpException("errore nella creazione della riga di ribaltone da lanciare");

@@ -13,6 +13,8 @@ import static it.bologna.ausl.internauta.utils.ribaltone.basedata.Operation.Azio
 import it.bologna.ausl.internauta.utils.ribaltone.exceptions.http.RibaltoneHttpException;
 import it.bologna.ausl.internauta.utils.ribaltone.repository.RepositoryFactory;
 import it.bologna.ausl.model.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.model.entities.baborg.Persona;
+import it.bologna.ausl.model.entities.baborg.QPersona;
 import it.bologna.ausl.model.entities.baborg.QStoricoRelazione;
 import it.bologna.ausl.model.entities.baborg.QStruttura;
 import it.bologna.ausl.model.entities.baborg.QStrutturaUnificata;
@@ -61,37 +63,37 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 //se si tratta di una confluenza
                 DatiDaImportareTrasformazione trasformazioneDaEseguire = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 Struttura strutturaSorgenteDaChiudere = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.attiva.and(
-                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza())).and(
-                        qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()))
-                    ).fetchOne();
+                        .select(qStruttura)
+                        .from(qStruttura)
+                        .where(qStruttura.attiva.and(
+                                qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaPartenza())).and(
+                                qStruttura.idAzienda.id.eq(trasformazioneDaEseguire.getIdAzienda()))
+                        ).fetchOne();
 
                 Struttura strutturaChiusa = OperationsUtils.chiudiStruttura(
-                    strutturaSorgenteDaChiudere,
-                    queryFactory,
-                    qStruttura,
-                    qStoricoRelazione);
+                        strutturaSorgenteDaChiudere,
+                        queryFactory,
+                        qStruttura,
+                        qStoricoRelazione);
 
                 List<Struttura> struttureArrivo = queryFactory
-                    .select(qStruttura)
-                    .from(qStruttura)
-                    .where(qStruttura.attiva.and(
-                        qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
-                            qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaArrivo())))
-                    ).fetch();
+                        .select(qStruttura)
+                        .from(qStruttura)
+                        .where(qStruttura.attiva.and(
+                                qStruttura.idAzienda.codice.eq(trasformazioneDaEseguire.getCodiceAzienda()).and(
+                                        qStruttura.idCasella.eq(trasformazioneDaEseguire.getIdCasellaArrivo())))
+                        ).fetch();
                 if (struttureArrivo == null || struttureArrivo.isEmpty() || struttureArrivo.size() > 1) {
                     throw new RibaltoneHttpException("non trovata struttura destinazione o trovate piu di una struttura attiva con id casella " + trasformazioneDaEseguire.getIdCasellaArrivo().toString());
                 }
                 //aggiustare unificazione
                 Struttura strutturaDestinazione = struttureArrivo.get(0);
                 OperationsUtils.aggiustaUnificazioni(
-                    trasformazioneDaEseguire.getIdCasellaPartenza(),
-                    strutturaDestinazione,
-                    em,
-                    queryFactory,
-                    qStrutturaUnificata);
+                        trasformazioneDaEseguire.getIdCasellaPartenza(),
+                        strutturaDestinazione,
+                        em,
+                        queryFactory,
+                        qStrutturaUnificata);
                 //lanciare sposta strutture
                 OperationsUtils.spostaStruttura(em, strutturaChiusa.getId(), strutturaDestinazione.getId(), "X", strutturaDestinazione.getDataAttivazione().toString());
 
@@ -125,15 +127,18 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
     }
 
     /**
-     * per quanto riguarda le strutture
-     * nel caso di una rinomina e cambio padre della struttura l'idCasella non cambia quindi
-     * in caso di rinomina andrò a cercare il contatto lo andrò a updatare con nuovo nome e nuovo puntamento
-     * in caso di un cambio padre della struttura il nome resta il medesimo quindi solo nuovo puntamento
-     * in caso di confluenza devo togliere dai gruppi il vecchio contatto e mettere quello della struttura conlfuita
-     * per quanto riguarda gli appartenenti
-     * il dettaglio di tipo UTENTE_STRUTTURA nel caso di confluenza è un nuovo dettaglio e devo cambiarlo anche nei gruppi
-     * il dettaglio di tipo UTENTE_STRUTTURA nel caso di rinomina è lo stesso ma col nome nuovo (cosi non devo gestire i gruppi)
-     * il dettaglio di tipo UTENTE_STRUTTURA nel caso di cambio padre è lo stesso non devo fare nulla
+     * per quanto riguarda le strutture nel caso di una rinomina e cambio padre
+     * della struttura l'idCasella non cambia quindi in caso di rinomina andrò a
+     * cercare il contatto lo andrò a updatare con nuovo nome e nuovo puntamento
+     * in caso di un cambio padre della struttura il nome resta il medesimo
+     * quindi solo nuovo puntamento in caso di confluenza devo togliere dai
+     * gruppi il vecchio contatto e mettere quello della struttura conlfuita per
+     * quanto riguarda gli appartenenti il dettaglio di tipo UTENTE_STRUTTURA
+     * nel caso di confluenza è un nuovo dettaglio e devo cambiarlo anche nei
+     * gruppi il dettaglio di tipo UTENTE_STRUTTURA nel caso di rinomina è lo
+     * stesso ma col nome nuovo (cosi non devo gestire i gruppi) il dettaglio di
+     * tipo UTENTE_STRUTTURA nel caso di cambio padre è lo stesso non devo fare
+     * nulla
      *
      * @param repositoryFactory
      */
@@ -155,13 +160,13 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 DatiDaImportareTrasformazione trasformazione = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
 
                 List<Struttura> strutturaPartenzaList = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda())))
-                    .orderBy(qStruttura.dataAttivazione.desc()).fetch();
+                        .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaPartenza())
+                                .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda())))
+                        .orderBy(qStruttura.dataAttivazione.desc()).fetch();
 
                 List<Struttura> strutturaDestinazioneList = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaArrivo())
-                        .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetch();
+                        .where(qStruttura.idCasella.eq(trasformazione.getIdCasellaArrivo())
+                                .and(qStruttura.idAzienda.codice.eq(trasformazione.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(1).fetch();
                 if (strutturaPartenzaList != null && !strutturaPartenzaList.isEmpty() && strutturaDestinazioneList != null && !strutturaDestinazioneList.isEmpty()) {
                     Struttura strutturaPartenza = strutturaPartenzaList.get(0);
                     Struttura strutturaDestinazione = strutturaDestinazioneList.get(0);
@@ -170,10 +175,10 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     idContattoPartenza.setEliminatoDa("ribaltone");
                     em.persist(idContattoPartenza);
                     queryFactory
-                        .update(qDettaglioContatto)
-                        .set(qDettaglioContatto.eliminato, true)
-                        .where(qDettaglioContatto.idContatto.id.eq(idContattoPartenza.getId()))
-                        .execute();
+                            .update(qDettaglioContatto)
+                            .set(qDettaglioContatto.eliminato, true)
+                            .where(qDettaglioContatto.idContatto.id.eq(idContattoPartenza.getId()))
+                            .execute();
 
                     Contatto idContattoDestinazione = strutturaDestinazione.getIdContatto();
                     List<GruppiContatti> gruppiDelContattoDaRimuovoreList = idContattoPartenza.getGruppiDelContattoList();
@@ -191,14 +196,14 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                     }
                     // 1 cercare contatto utente struttura da morire
                     List<UtenteStruttura> usDaConsiderare = strutturaPartenza.getUtenteStrutturaList().stream().filter(us -> us.getIdDettaglioContatto() != null)
-                        .collect(Collectors.collectingAndThen(
-                            Collectors.toMap(
-                                us -> Arrays.asList(us.getIdUtente().getId(), us.getIdStruttura().getId()),
-                                Function.identity(),
-                                (us1, us2) -> us1
-                            ),
-                            map -> new ArrayList<>(map.values())
-                        ));
+                            .collect(Collectors.collectingAndThen(
+                                    Collectors.toMap(
+                                            us -> Arrays.asList(us.getIdUtente().getId(), us.getIdStruttura().getId()),
+                                            Function.identity(),
+                                            (us1, us2) -> us1
+                                    ),
+                                    map -> new ArrayList<>(map.values())
+                            ));
 
                     for (UtenteStruttura us : usDaConsiderare) {
                         List<GruppiContatti> gruppiDelDettaglioList = us.getIdDettaglioContatto().getGruppiDelDettaglioList();
@@ -238,8 +243,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 //devo cambiare il puntamento
                 DatiDaImportareTrasformazione entitaCambioPadre = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entitaCambioPadre.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.codice.eq(entitaCambioPadre.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                        .where(qStruttura.idCasella.eq(entitaCambioPadre.getIdCasellaPartenza())
+                                .and(qStruttura.idAzienda.codice.eq(entitaCambioPadre.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null) {
@@ -262,14 +267,21 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                 //per gli appartenenti devo cambiare la descrizione del dettaglio
                 DatiDaImportareTrasformazione entitaRinominata = (DatiDaImportareTrasformazione) getEntitaCoinvolta();
                 List<Struttura> struttureCoinvolte = queryFactory.select(qStruttura).from(qStruttura)
-                    .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
-                        .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
+                        .where(qStruttura.idCasella.eq(entitaRinominata.getIdCasellaPartenza())
+                                .and(qStruttura.idAzienda.codice.eq(entitaRinominata.getCodiceAzienda()))).orderBy(qStruttura.dataAttivazione.desc()).limit(2).fetch();
                 Struttura strutturaAttiva;
                 Struttura strutturaDisattiva;
                 if (struttureCoinvolte != null && struttureCoinvolte.size() == 2) {
                     strutturaAttiva = struttureCoinvolte.get(0);
                     strutturaDisattiva = struttureCoinvolte.get(1);
                     Contatto idContattoStruttura = strutturaDisattiva.getIdContatto();
+                    if (idContattoStruttura == null) {
+                        QPersona qPersona = QPersona.persona;
+                        Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchOne();
+                        Integer[] idAziende = new Integer[1];
+                        idAziende[0] = strutturaDisattiva.getIdAzienda().getId();
+                        idContattoStruttura = strutturaDisattiva.buildContattoAndDettaglio(p.getUtenteList().get(0), p, idAziende);
+                    }
                     strutturaDisattiva.setIdContatto(null);
                     em.persist(strutturaDisattiva);
                     strutturaAttiva.setIdContatto(idContattoStruttura);
@@ -295,8 +307,8 @@ public class OperationTrasformazione extends Operation<DatiRibaltoneInterface> i
                                 idDettaglioContatto.setDescrizione(descrizioneContattoStruttura);
                             } else {
                                 idDettaglioContatto = queryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(
-                                    qDettaglioContatto.idContatto.id.eq(utenteStruttura.getIdUtente().getIdPersona().getIdContatto().getId())
-                                        .and(qDettaglioContatto.idContattoEsterno.id.eq(utenteStruttura.getIdStruttura().getIdContatto().getId()))
+                                        qDettaglioContatto.idContatto.id.eq(utenteStruttura.getIdUtente().getIdPersona().getIdContatto().getId())
+                                                .and(qDettaglioContatto.idContattoEsterno.id.eq(utenteStruttura.getIdStruttura().getIdContatto().getId()))
                                 ).fetchOne();
                                 if (idDettaglioContatto == null) {
                                     idDettaglioContatto = utenteStruttura.buildDettaglioContatto();

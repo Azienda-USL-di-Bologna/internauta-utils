@@ -1468,10 +1468,23 @@ public class OperationsUtils {
                         + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
                 Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
-                repositoryFactory.getEntityManager().refresh(contattoPersona);
+
                 List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
-                List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+                //List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+                List<DettaglioContatto> dettagliContattiDellaPersona = new ArrayList<>();
+
+                for (DettaglioContatto dc : dettagliContattiDellaPersonaList) {
+                    Contatto idContattoEsterno = dc.getIdContattoEsterno();
+                    Struttura idStruttura = utenteStrutturaNew.getIdStruttura();
+                    Contatto idContatto = utenteStrutturaNew.getIdStruttura().getIdContatto();
+                    if (idContattoEsterno != null
+                            && idContattoEsterno.getId().equals(idContatto.getId())) {
+                        dettagliContattiDellaPersona.add(dc);
+                    }
+                }
+
+                dettagliContattiDellaPersona = List.copyOf(dettagliContattiDellaPersona); // per renderla immutabile
                 DettaglioContatto idDettaglioContatto = null;
                 if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
                     idDettaglioContatto = dettagliContattiDellaPersona.get(0);
@@ -1491,14 +1504,14 @@ public class OperationsUtils {
 //                }
                     repositoryFactory.getEntityManager().persist(idDettaglioContatto);
                 } else {
-                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+//                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
 
-                    if (idDettaglioContatto != null) {
-                        //devo creare il dettaglio contatto
-                        idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
-                        repositoryFactory.getEntityManager().persist(idDettaglioContatto);
-                        repositoryFactory.getEntityManager().flush();
-                    }
+//                    if (idDettaglioContatto != null) {
+                    //devo creare il dettaglio contatto
+                    idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
+                    repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                    repositoryFactory.getEntityManager().flush();
+//                    }
                     utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
                     repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
 
