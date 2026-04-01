@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
 public interface RibaltoneValidationCheckRepository extends QuerydslPredicateExecutor<RibaltoneValidationCheck>, JpaRepository<RibaltoneValidationCheck, Integer> {
 
     @Query(value = "SELECT r.* FROM ribaltone_dati.ribaltone_validation_checks r "
-        + "JOIN baborg.aziende a ON a.id = ANY(r.id_aziende) "
-        + "WHERE r.attivo = true AND a.codice = :codiceAzienda",
-        nativeQuery = true)
+            + "JOIN baborg.aziende a ON a.id = ANY(r.id_aziende) "
+            + "WHERE r.attivo = true AND a.codice = :codiceAzienda order by r.id",
+            nativeQuery = true)
     List<RibaltoneValidationCheck> findCheckActiveByCodiceAzienda(@Param("codiceAzienda") String codiceAzienda);
 
 }

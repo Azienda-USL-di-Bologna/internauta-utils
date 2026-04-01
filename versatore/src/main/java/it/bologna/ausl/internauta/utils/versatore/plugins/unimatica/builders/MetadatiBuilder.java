@@ -36,6 +36,7 @@ import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.Registro;
 import it.bologna.ausl.model.entities.scripta.RegistroDoc;
+import it.bologna.ausl.model.entities.scripta.Step;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
@@ -162,9 +163,9 @@ public class MetadatiBuilder {
             List<AttoreDoc> listaAttori = doc.getAttoriList();
             tipologiaDiFlusso = (String) tipiDiFlusso.get("esterno");
             for (AttoreDoc attore : listaAttori) {
-                if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.ASSEGNATARIO)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.RESPONSABILE)
-                    || attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.SEGRETARIO)) {
+                if (attore.getIdStep().getId().equals(Step.StepIds.ASSEGNAZIONE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.RESPONSABILE)
+                    || attore.getIdStep().getId().equals(Step.StepIds.SEGRETERIA)) {
                     tipologiaDiFlusso = (String) tipiDiFlusso.get("interno");
                     break;
                 }
