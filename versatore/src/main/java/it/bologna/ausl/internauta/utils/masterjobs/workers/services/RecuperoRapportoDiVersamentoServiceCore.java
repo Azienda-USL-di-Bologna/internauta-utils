@@ -36,15 +36,6 @@ public class RecuperoRapportoDiVersamentoServiceCore {
         for (Integer idAzienda : aziendeAttiveConParametri.keySet()) {
             Map<String, Object> versatoreConfigAziendaValue = aziendeAttiveConParametri.get(idAzienda);
 
-            // hostId del servizio di versamento, indica il servizio che sarà utilizzato (sono definiti nella tabella versatore.configurations)
-            String hostId = (String) versatoreConfigAziendaValue.get("hostId");
-
-            // numero massimo di thread paralleli che il job di versamento istanzierà per effettuare i versamenti
-            Integer threadPoolSize = (Integer) versatoreConfigAziendaValue.get("threadPoolSize");
-
-            //parametri per il versamento
-            Map<String, Object> params = (Map<String, Object>) versatoreConfigAziendaValue.get("params");
-
             // dai parametri leggo se il servizio di recupero del rapporto di versamento deve essere esguito.
             // se il parametro non c'è lo interpreto come false
             boolean eseguiRecuperoRapportoDiVersamento = Boolean.TRUE.equals(
@@ -52,6 +43,15 @@ public class RecuperoRapportoDiVersamentoServiceCore {
             );
 
             if (eseguiRecuperoRapportoDiVersamento) {
+                // hostId del servizio di versamento, indica il servizio che sarà utilizzato (sono definiti nella tabella versatore.configurations)
+                String hostId = (String) versatoreConfigAziendaValue.get("hostId");
+
+                // numero massimo di thread paralleli che il job di versamento istanzierà per effettuare i versamenti
+                Integer threadPoolSize = (Integer) versatoreConfigAziendaValue.get("threadPoolSize");
+
+                //parametri per il versamento
+                Map<String, Object> params = (Map<String, Object>) versatoreConfigAziendaValue.get("params");
+
                 // richiama il metodo sul core che si occupa dell'accodamento del job
                 queueAziendaJob(idAzienda, hostId, threadPoolSize, app, params);
             }
@@ -80,9 +80,9 @@ public class RecuperoRapportoDiVersamentoServiceCore {
              * ci sarebbe il job che era in esecuzione, che riprenderebbe da capo e l'eventuale nuovo job aggiunto dal servizio.
              * NB: se il job riviene eseguito per lo stesso versamento aggiungerà semplicemente una riga con il rapporto aggiornato
              */
-            masterjobsJobsQueuer.queue(jobWorker, "recupero_rapporto_di_versamento_" + idAzienda, "Versatore", app, true, Set.SetPriority.NORMAL, null);
+            masterjobsJobsQueuer.queue(jobWorker, "recupero_rapporto_di_versamento_" + idAzienda, "RecuperoRapportoDiVersamento", app, true, Set.SetPriority.NORMAL, null);
         } catch (Exception ex) {
-            String errorMessage = "errore nell'accodamento del job IdoneitaChecker";
+            String errorMessage = "errore nella creazione del job RecuperoRapportoDiVersamento";
             log.error(errorMessage, ex);
         }
     }

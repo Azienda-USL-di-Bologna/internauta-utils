@@ -76,7 +76,7 @@ public class RecuperoRapportoDiVersamentoJobWorker extends JobWorker<RecuperoRap
                 ).fetch();
         });
 
-        log.info("Numero versamenti da recuperare: " + versamentiDaProcessareList.size());
+        log.info("Numero rapporti di versamento da recuperare: " + versamentiDaProcessareList.size());
 
         if (versamentiDaProcessareList != null && !versamentiDaProcessareList.isEmpty()) {
             List<RecuperoRapportoDiVersamentoThread> recuperoRapportoDiVersamentoThreadsList;
@@ -88,9 +88,12 @@ public class RecuperoRapportoDiVersamentoJobWorker extends JobWorker<RecuperoRap
                 throw new MasterjobsWorkerException(message, ex);
             }
             List<RapportoDiVersamento> rapportoDiVersamentoResultList = executeAllRecuperoRapportoDiVersamentoThreads(recuperoRapportoDiVersamentoThreadsList);
-            //TODO salvo i rapporti di versamento
+
+            //levo dallo stato da ritentare i rapporti ritentati
+            togliDaRitentare(queryFactory);
+            //salvo i rapporti di versamento
             persistRapportiRecupertati(rapportoDiVersamentoResultList);
-            //TODO levo dallo stato da ritentare i rapporti ritentati
+
         }
 
         return null;
@@ -120,6 +123,13 @@ public class RecuperoRapportoDiVersamentoJobWorker extends JobWorker<RecuperoRap
         return recuperoRapportoDiVersamentoThreadsList;
     }
 
+    /**
+     * Lancia i threads per il recupero dei rapporti di versamento e attende che tutti abbiamo finito
+     * NB: il massimo di threads contemporanei è indicato del parametro "poolSize" del job
+    @param recuperoRapportoDiVersamentoThreads
+    @return
+    @throws MasterjobsWorkerException
+     */
     private List<RapportoDiVersamento> executeAllRecuperoRapportoDiVersamentoThreads(List<RecuperoRapportoDiVersamentoThread> recuperoRapportoDiVersamentoThreads) throws MasterjobsWorkerException {
         Integer poolSize = getWorkerData().getPoolSize();
         ExecutorService executorService = Executors.newFixedThreadPool(poolSize);
@@ -147,10 +157,44 @@ public class RecuperoRapportoDiVersamentoJobWorker extends JobWorker<RecuperoRap
         }
     }
 
+    /**
+    Persistenza dei rapporti recuperati
+    @param rapportiDiVersamentoList
+     */
     private void persistRapportiRecupertati(List<RapportoDiVersamento> rapportiDiVersamentoList) {
         transactionTemplate.executeWithoutResult(a -> {
             for (RapportoDiVersamento rapportoDiVersamento : rapportiDiVersamentoList) {
                 entityManager.persist(rapportoDiVersamento);
+            }
+        });
+    }
+
+    /**
+    Setto a false tutti i daRitentare per l'azienda che sta eseguendo il job
+    @param queryFactory
+     */
+    private void togliDaRitentare(JPAQueryFactory queryFactory) {
+        transactionTemplate.executeWithoutResult(a -> {
+            QRapportoDiVersamento rdv = QRapportoDiVersamento.rapportoDiVersamento;
+            QVersamento v = QVersamento.versamento;
+            QSessioneVersamento sv = QSessioneVersamento.sessioneVersamento;
+
+            // Subquery per ottenere gli id dei rapporti da aggiornare
+            List<Integer> ids = queryFactory
+                .select(rdv.id)
+                .from(rdv)
+                .join(rdv.idVersamento, v)
+                .join(v.idSessioneVersamento, sv)
+                .where(rdv.daRitentare.eq(Boolean.TRUE)
+                    .and(sv.idAzienda.id.eq(getWorkerData().getIdAzienda())))
+                .fetch();
+
+            if (!ids.isEmpty()) {
+                queryFactory
+                    .update(rdv)
+                    .set(rdv.daRitentare, Boolean.FALSE)
+                    .where(rdv.id.in(ids))
+                    .execute();
             }
         });
     }

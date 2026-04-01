@@ -1,22 +1,12 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
-import com.querydsl.core.types.Visitor;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.RecuperoRapportoDiVersamentoPluginException;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.RecuperoRapportoDiVersamento;
-import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import java.io.ByteArrayInputStream;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,6 +93,8 @@ public class UnimaticaRecuperoRapportoDiVersamentoService extends RecuperoRappor
 
         //preparo il client per la connessione a Unimatica
         OkHttpClient okHttpClient = versatoreHttpClientConfiguration.getHttpClientManager().getOkHttpClient();
+
+        //effettuo la chiamata
         try (Response response = okHttpClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 log.info("Message: " + response.message());
@@ -145,17 +137,13 @@ public class UnimaticaRecuperoRapportoDiVersamentoService extends RecuperoRappor
 
     /**
     Uso questa funzione per estrarre l'xml di risposta che ci serve dalla response sporca che da unimatica
-    @param input
+    @param string
     @return
      */
-    public static String extractXml(String input) {
-        Pattern pattern = Pattern.compile("<\\?xml.*?>.*?</.+?>", Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(input);
-
-        if (matcher.find()) {
-            return matcher.group();
-        }
-        return null;
+    public static String extractXml(String string) {
+        Pattern p = Pattern.compile("<RapportoDiVersamento>.*?</RapportoDiVersamento>", Pattern.DOTALL);
+        Matcher m = p.matcher(string);
+        return m.find() ? m.group() : null;
     }
 
     /**
@@ -178,7 +166,7 @@ public class UnimaticaRecuperoRapportoDiVersamentoService extends RecuperoRappor
             Node node = children.item(i);
 
             if (node.getNodeType() == Node.ELEMENT_NODE
-                && node.getNodeName().equals("esito")) {
+                && node.getNodeName().equals("Esito")) {
 
                 return node.getTextContent();
             }

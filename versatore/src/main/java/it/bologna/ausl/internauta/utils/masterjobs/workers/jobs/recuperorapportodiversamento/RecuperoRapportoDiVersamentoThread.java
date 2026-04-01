@@ -5,7 +5,6 @@ import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import org.hibernate.resource.jdbc.internal.LogicalConnectionLogging_$logger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
