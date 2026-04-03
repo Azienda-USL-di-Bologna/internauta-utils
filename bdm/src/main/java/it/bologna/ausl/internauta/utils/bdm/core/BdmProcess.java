@@ -299,9 +299,19 @@ public  class BdmProcess implements Dumpable, Serializable {
                         step.executeOnEnterTasks(runningContext, context, params);
                         stepChanged = false;
                     }
-                    if ((step.getStepLogic() == Step.StepLogic.SEQ && step.getTaskList().get(step.getCurrentTaskIndex()).getAuto())
-                            || (step.getStepLogic() != Step.StepLogic.SEQ && !step.getNotExecutedAutoTask().isEmpty())) {
-                        stepStatus = step.stepOn(runningContext, context, params, true);
+                    if ( 
+                        (step.getTaskList() == null || step.getTaskList().isEmpty()) ||
+                        (
+                            step.getStepLogic() == Step.StepLogic.SEQ && 
+                            step.getTaskList().get(step.getCurrentTaskIndex()).getAuto()
+                        ) ||
+                        (step.getStepLogic() != Step.StepLogic.SEQ && !step.getNotExecutedAutoTask().isEmpty())
+                    ) {
+                        if (step.getTaskList() != null && !step.getTaskList().isEmpty()) {
+                            stepStatus = step.stepOn(runningContext, context, params, true);
+                        } else {
+                            stepStatus = BdmStatus.FINISHED;
+                        }
                         if (stepStatus == BdmStatus.FINISHED) {
                             // lo step è finito, eseguo gli eventuali task on exit dello step corrente
                             step.executeOnExitTasks(runningContext, context, params);
@@ -504,7 +514,7 @@ public  class BdmProcess implements Dumpable, Serializable {
         throw new ProcessWorkFlowException("step not found");
     }
     
-     @JsonIgnore
+    @JsonIgnore
     public boolean isLastStep(Step step) throws ProcessWorkFlowException {
         return isLastStep(step.getStepId());
     }
