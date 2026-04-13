@@ -129,7 +129,17 @@ public class BdmProcessManager {
         return true;
     }
 
-    public BdmStatus stepOnProcess(String id, Map<String, Object> parameters) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
+    /**
+     * 
+     * @param id
+     * @param parameters
+     * @param start indica se è il primo stepon, cioè quello chiamato allo start del processo
+     * @return
+     * @throws IllegalStepStateException
+     * @throws ProcessWorkFlowException
+     * @throws StorageException 
+     */
+    public BdmStatus stepOnProcess(String id, Map<String, Object> parameters, boolean start) throws IllegalStepStateException, ProcessWorkFlowException, StorageException {
         BdmProcess p;
         try {
             p = psm.loadProcess(id);
@@ -141,7 +151,7 @@ public class BdmProcessManager {
         p.setEntityManager(entityManager);
         p.setObjectMapper(objectMapper);
         p.setProcessBag(processBag);
-        BdmStatus status = p.stepOn(parameters, false, true);
+        BdmStatus status = p.stepOn(parameters, start, true);
         psm.saveProcess(p);
         return status;
     }
