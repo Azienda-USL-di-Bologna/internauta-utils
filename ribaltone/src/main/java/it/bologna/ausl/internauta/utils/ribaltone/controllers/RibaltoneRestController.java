@@ -185,7 +185,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         CacheUtils.setRibaltoneCacheInCorso(configRibaltoneView.getFonteSelezionata(), realUser, repositoryFactory, objectMapper, transactionTemplate);
                         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta", false, null);
-                    } catch (RibaltoneHttpException | JacksonException ex) {
+                    } catch (Exception ex) {
                         if (ex instanceof RibaltoneHttpException ribaltoneHttpException) {
                             throw ribaltoneHttpException;
                         } else {

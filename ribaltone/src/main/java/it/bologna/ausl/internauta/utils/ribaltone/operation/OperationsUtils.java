@@ -1094,7 +1094,8 @@ public class OperationsUtils {
         } catch (BlackBoxPermissionException ex) {
             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
         }
-        if (!utenteHasOtherStrutture(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
+        if (!utenteHasOtherStruttureDiAfferenzaNonUfficio(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
+            chiudiUtenteStrutturaAfferenzaUfficio(queryFactory, utente);
             utente.setAttivo(false);
             utente.setDataSpegnimento(ZonedDateTime.now());
             //spegnere tutti i permessi utente
@@ -1203,15 +1204,32 @@ public class OperationsUtils {
         }
     }
 
-    private static Boolean utenteHasOtherStrutture(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
+    private static Boolean utenteHasOtherStruttureDiAfferenzaNonUfficio(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
         if (struttura != null && utente != null) {
             return queryFactory
                     .select(qUtenteStruttura.id)
                     .from(qUtenteStruttura)
                     .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
-                            .and(qUtenteStruttura.attivo)).limit(1).fetchFirst() != null;
+                            .and(qUtenteStruttura.attivo).and(
+                            qUtenteStruttura.idAfferenzaStruttura.codice.ne(
+                                    AfferenzaStruttura.CodiciAfferenzaStruttura.UFFICIO.toString()
+                            ))).limit(1).fetchFirst() != null;
         } else {
             return null;
+        }
+    }
+
+    private static void chiudiUtenteStrutturaAfferenzaUfficio(JPAQueryFactory queryFactory, Utente utente) {
+        if (utente != null) {
+            queryFactory.update(qUtenteStruttura)
+                    .set(qUtenteStruttura.attivo, Boolean.FALSE)
+                    .set(qUtenteStruttura.attivoAl, ZonedDateTime.now())
+                    .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
+                            .and(qUtenteStruttura.attivo).and(
+                            qUtenteStruttura.idAfferenzaStruttura.codice.eq(
+                                    AfferenzaStruttura.CodiciAfferenzaStruttura.UFFICIO.toString()
+                            ))).execute();
+
         }
     }
 
