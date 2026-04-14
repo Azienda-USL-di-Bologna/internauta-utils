@@ -49,7 +49,7 @@ public abstract class RecuperoRapportoDiVersamento {
     }
 
     /**
-    metodo che contatta effettivamento il servizio di conservazione per recuperare i rapporti di versamento
+    metodo che contatta effettivamente il servizio di conservazione per recuperare i rapporti di versamento
      */
     public abstract RapportoDiVersamento recuperaRapportiDiVersamentoImpl(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException;
 
