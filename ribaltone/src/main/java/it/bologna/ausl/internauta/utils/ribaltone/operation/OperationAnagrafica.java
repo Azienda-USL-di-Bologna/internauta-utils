@@ -49,24 +49,24 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
         JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
         DatiDaImportareAnagrafica entitaDaInserireOModificare = (DatiDaImportareAnagrafica) getEntitaCoinvolta();
         log.info("inizio a gestire la mail di cf "
-            + entitaDaInserireOModificare.getCodiceFiscale()
-            + " codice matricola "
-            + entitaDaInserireOModificare.getCodiceMatricola()
-            + " codice ente "
-            + entitaDaInserireOModificare.getCodiceEnte()
+                + entitaDaInserireOModificare.getCodiceFiscale()
+                + " codice matricola "
+                + entitaDaInserireOModificare.getCodiceMatricola()
+                + " codice ente "
+                + entitaDaInserireOModificare.getCodiceEnte()
         );
 
         Utente utente = queryFactory
-            .select(qUtente)
-            .from(qPersona)
-            .join(qUtente).on(qUtente.idPersona.eq(qPersona))
-            .where(
-                qPersona.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale())
-                    .and(
-                        qUtente.idAzienda.id.eq(entitaDaInserireOModificare.getIdAzienda()).and(qUtente.attivo)
-                    )
-            )
-            .fetchOne();
+                .select(qUtente)
+                .from(qPersona)
+                .join(qUtente).on(qUtente.idPersona.eq(qPersona))
+                .where(
+                        qPersona.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale())
+                                .and(
+                                        qUtente.idAzienda.id.eq(entitaDaInserireOModificare.getIdAzienda()).and(qUtente.attivo)
+                                )
+                )
+                .fetchOne();
         if (utente != null) {
 
             switch (getAzione()) {
@@ -75,12 +75,12 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                     if (entitaDaInserireOModificare.getEmail() != null) {
                         String nuovaEmail = entitaDaInserireOModificare.getEmail();
                         DatiImportatiAnagrafica anagraficaVecchia = queryFactory.select(qDatiImportatiAnagrafica)
-                            .from(qDatiImportatiAnagrafica)
-                            .where(
-                                qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale()).and(
-                                    qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserireOModificare.getCodiceMatricola())).and(
-                                    qDatiImportatiAnagrafica.codiceEnte.eq(entitaDaInserireOModificare.getCodiceEnte()))
-                            ).fetchOne();
+                                .from(qDatiImportatiAnagrafica)
+                                .where(
+                                        qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserireOModificare.getCodiceFiscale()).and(
+                                                qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserireOModificare.getCodiceMatricola())).and(
+                                                qDatiImportatiAnagrafica.codiceEnte.eq(entitaDaInserireOModificare.getCodiceEnte()))
+                                ).fetchOne();
                         if (anagraficaVecchia != null && anagraficaVecchia.getEmail() != null) {
                             String oldEmail = anagraficaVecchia.getEmail();
                             if (utente.getEmails() == null) {
@@ -88,9 +88,9 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                                 utente.setEmails(arrayList);
                             }
                             utente.setEmails(
-                                Stream.concat(Arrays.stream(utente.getEmails()).filter(e -> e != null && !e.equals(oldEmail)), // rimuove il vecchio elemento
-                                    Stream.of(nuovaEmail) // aggiunge in coda il nuovo
-                                ).toArray(String[]::new));
+                                    Stream.concat(Arrays.stream(utente.getEmails()).filter(e -> e != null && !e.equals(oldEmail)), // rimuove il vecchio elemento
+                                            Stream.of(nuovaEmail) // aggiunge in coda il nuovo
+                                    ).toArray(String[]::new));
                         }
 
                     }
@@ -102,11 +102,11 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                         String[] nuoveEmails = null;
                         if (utente.getEmails() != null) {
                             nuoveEmails = Stream.concat(Arrays.stream(utente.getEmails()), Stream.of(nuovaEmail))
-                                .filter(Objects::nonNull)
-                                .map(String::trim)
-                                .filter(s -> !s.isEmpty())
-                                .distinct()
-                                .toArray(String[]::new);
+                                    .filter(Objects::nonNull)
+                                    .map(String::trim)
+                                    .filter(s -> !s.isEmpty())
+                                    .distinct()
+                                    .toArray(String[]::new);
 
                         } else {
                             nuoveEmails = List.of(nuovaEmail).toArray(new String[0]);
@@ -129,13 +129,14 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
 
             case EDIT -> {
                 DatiDaImportareAnagrafica entitaDaInserire = (DatiDaImportareAnagrafica) getEntitaCoinvolta();
+                log.info("sto gestendo cf " + entitaDaInserire.getCodiceFiscale() + " con azienda " + entitaDaInserire.getIdAzienda());
                 DatiImportatiAnagrafica datiImportatiAnagrafica
-                    = queryFactory.select(qDatiImportatiAnagrafica)
-                        .from(qDatiImportatiAnagrafica)
-                        .where(qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())
-                            .and(qDatiImportatiAnagrafica.idAzienda.eq(entitaDaInserire.getIdAzienda()))
-                            .and(qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserire.getCodiceMatricola())))
-                        .fetchOne();
+                        = queryFactory.select(qDatiImportatiAnagrafica)
+                                .from(qDatiImportatiAnagrafica)
+                                .where(qDatiImportatiAnagrafica.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale())
+                                        .and(qDatiImportatiAnagrafica.idAzienda.eq(entitaDaInserire.getIdAzienda()))
+                                        .and(qDatiImportatiAnagrafica.codiceMatricola.eq(entitaDaInserire.getCodiceMatricola())))
+                                .fetchOne();
                 if (StringUtils.hasText(entitaDaInserire.getEmail())) {
                     Persona p = queryFactory.select(qPersona).from(qPersona).where(qPersona.attiva.and(qPersona.codiceFiscale.eq(entitaDaInserire.getCodiceFiscale()))).fetchOne();
                     if (p != null && datiImportatiAnagrafica != null) {
@@ -143,16 +144,20 @@ public class OperationAnagrafica extends Operation<DatiRibaltoneInterface> imple
                         if (c == null) {
                             Persona ribaltone = queryFactory.select(qPersona).from(qPersona).where(qPersona.attiva.and(qPersona.codiceFiscale.eq("RIBALTONE"))).fetchOne();
                             c = p.buildContatto(
-                                new Integer[]{entitaDaInserire.getIdAzienda()},
-                                ribaltone,
-                                ribaltone.getUtenteList().stream().filter(user -> user.getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())).toList().get(0)
+                                    new Integer[]{entitaDaInserire.getIdAzienda()},
+                                    ribaltone,
+                                    ribaltone.getUtenteList().stream().filter(user -> user.getIdAzienda().getId().equals(entitaDaInserire.getIdAzienda())).toList().get(0)
                             );
                         }
-                        List<DettaglioContatto> dcList = null;
+                        log.info("persona con id " + p.getId().toString());
+                        List<DettaglioContatto> dcList = new ArrayList<>();
                         if (c.getDettaglioContattoList() != null) {
-                            dcList = c.getDettaglioContattoList().stream().filter(dc -> dc.getDescrizione().equals(datiImportatiAnagrafica.getEmail())).toList();
-                        } else {
-                            dcList = new ArrayList<>();
+                            for (DettaglioContatto dc : c.getDettaglioContattoList()) {
+                                if (dc.getDescrizione() != null
+                                        && dc.getDescrizione().equals(datiImportatiAnagrafica.getEmail())) {
+                                    dcList.add(dc);
+                                }
+                            }
                         }
                         if (dcList != null && !dcList.isEmpty()) {
                             DettaglioContatto dc = dcList.get(0);

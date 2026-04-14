@@ -108,8 +108,8 @@ public class OperationAppartenente extends Operation<DatiRibaltoneInterface> imp
                             ).orderBy(qStruttura.dataCessazione.desc()).limit(1).fetchOne();
                 }
 
-                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
                 log.info("tolgo utente " + entitaDaChiudere.getCodiceFiscale() + " alla struttura con id " + strutturaDiUtenteDaRimuovere.getId());
+                OperationsUtils.chiudiUtenteStruttura(entitaDaChiudere, strutturaDiUtenteDaRimuovere, entitaDaChiudere.getIdAzienda(), queryFactory, permissionManager, getEntityManager(), null);
             }
             case EDIT -> {
                 //sicuramente non ha cambiato struttura perche questa operazione si traduce in una insert e una chiusura
