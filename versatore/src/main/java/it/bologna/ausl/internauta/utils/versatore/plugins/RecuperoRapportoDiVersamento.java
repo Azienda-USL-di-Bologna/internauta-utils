@@ -1,6 +1,7 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.RecuperoRapportoDiVersamentoPluginException;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
@@ -9,6 +10,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -27,13 +30,27 @@ public abstract class RecuperoRapportoDiVersamento {
 
     protected VersatoreConfiguration versatoreConfiguration;
 
+    @Autowired
+    protected TransactionTemplate transactionTemplate;
+
     public void init(VersatoreConfiguration versatoreConfiguration) {
         this.versatoreConfiguration = versatoreConfiguration;
     }
 
+    public RapportoDiVersamento recuperaRapportiDiVersamento(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException {
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return transactionTemplate.execute(a -> {
+            try {
+                return recuperaRapportiDiVersamentoImpl(versamento, params);
+            } catch (RecuperoRapportoDiVersamentoPluginException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+    }
+
     /**
-    contatta il servizio di conservazione per recuperare i rapporti di versamento
+    metodo che contatta effettivamento il servizio di conservazione per recuperare i rapporti di versamento
      */
-    public abstract RapportoDiVersamento recuperaRapportiDiVersamento(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException;
+    public abstract RapportoDiVersamento recuperaRapportiDiVersamentoImpl(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException;
 
 }

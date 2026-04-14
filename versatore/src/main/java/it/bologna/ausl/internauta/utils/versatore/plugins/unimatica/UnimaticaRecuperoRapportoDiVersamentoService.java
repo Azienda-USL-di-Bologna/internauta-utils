@@ -61,7 +61,7 @@ public class UnimaticaRecuperoRapportoDiVersamentoService extends RecuperoRappor
     }
 
     @Override
-    public RapportoDiVersamento recuperaRapportiDiVersamento(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException {
+    public RapportoDiVersamento recuperaRapportiDiVersamentoImpl(Versamento versamento, Map<String, Object> params) throws RecuperoRapportoDiVersamentoPluginException {
 
         //prendo il pdvuuid del versamento
         log.info("Inizio il recupero del rapporto del versamento id " + versamento.getId());
