@@ -1,14 +1,20 @@
 package it.bologna.ausl.internauta.utils.sendintegration;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.service.sendintegration.controller.ErogatoreApiDelegate;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto.DownloadLottoJobWorker;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.downloadlotto.DownloadLottoJobWorkerData;
+import it.bologna.ausl.internauta.utils.sendintegration.exceptions.RuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.sendintegration.model.Lotto;
 import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBase;
+import it.bologna.ausl.internauta.utils.sendintegration.model.LottoBaseConEventualiErrori;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendResponseStatusException;
 import it.bologna.ausl.model.entities.masterjobs.Set;
+import it.bologna.ausl.model.entities.sendintegration.DocumentoLottoEntity;
+import it.bologna.ausl.model.entities.sendintegration.QDocumentoLottoEntity;
 import it.bologna.ausl.model.entities.sendintegration.SendIntegrationConfiguration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -24,6 +30,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -42,6 +51,9 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
     @Autowired
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+    
     @PersistenceContext
     private EntityManager entityManager;
     
@@ -54,10 +66,21 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
     @Override
     public ResponseEntity<LottoBase> elaboraLotto(Lotto lotto) {
         if (sendIntegrationActive) {
+            String paId = null;
+            String lottoId = null;
+            if (lotto != null) {
+                paId = lotto.getPaId();
+                lottoId = lotto.getLottoId();
+            } else {
+                String error = String.format("non sono stati indicati correttamente i dati del lotto, il lotto è nullo");
+                LOGGER.error(error);
+                throw new SendResponseStatusException(HttpStatus.BAD_REQUEST, error);
+            }
             SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
             LOGGER.info("Richiesta di elaborazione del lotto ricevuta: paId={}, lottoId={}",
-                lotto != null ? lotto.getPaId() : "n/d",
-                lotto != null ? lotto.getLottoId() : "n/d");
+                StringUtils.hasText(paId) ? paId : "n/d",
+                StringUtils.hasText(lottoId) ? lottoId : "n/d"
+            );
             
             Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
             Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
@@ -74,8 +97,24 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
                         false
                     );
 
-                    jobWorker.doWork(); // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
-                    if (false) {
+                    if (true) { // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
+                        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                        try {
+                            transactionTemplate.execute(a -> {
+                                try { 
+                                    return jobWorker.doWork();
+                                } catch (MasterjobsWorkerException ex) {
+                                    throw new RuntimeExceptionContainer(ex);
+                                }
+                            });
+                        } catch (Throwable ex) {
+                            if (ex instanceof RuntimeExceptionContainer rexc) {
+                                throw rexc.getException();
+                            } else {
+                                throw ex;
+                            }
+                        }
+                    } else {
                         masterjobsJobsQueuer.queueOnCommit(
                             Arrays.asList(jobWorker),
                             null, // ObjectID 
@@ -86,7 +125,7 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
                             null
                         );
                     }
-                } catch (Exception ex) {
+                } catch (Throwable ex) {
                     //return ResponseEntity.internalServerError().body("Errore interno");
                     LOGGER.error("errore nell'accodamento del job", ex);
                     throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Errore interno", ex);
@@ -110,4 +149,46 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
         }
     }
 
+    @Override
+    public ResponseEntity<LottoBase> lottoElaboratoRicevuto(LottoBaseConEventualiErrori lottoBaseConEventualiErrori) {
+        if (sendIntegrationActive) {
+            String paId = null;
+            String lottoId = null;
+            if (lottoBaseConEventualiErrori != null) {
+                paId = lottoBaseConEventualiErrori.getPaId();
+                lottoId = lottoBaseConEventualiErrori.getLottoId();
+            } else {
+                String error = String.format("non sono stati indicati correttamente i dati del lotto, il lotto è nullo");
+                LOGGER.error(error);
+                throw new SendResponseStatusException(HttpStatus.BAD_REQUEST, error);
+            }
+            SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
+            LOGGER.info("Richiesta di elaborazione del lotto ricevuta: paId={}, lottoId={}",
+                StringUtils.hasText(paId) ? paId : "n/d",
+                StringUtils.hasText(lottoId) ? lottoId : "n/d");
+            
+            Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
+            Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lottoBaseConEventualiErrori.getPaId());
+            boolean aziendaActive = (boolean) paConfiguration.get("active");
+            if (aziendaActive) {
+                SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
+                LottoBase risposta = new LottoBase()
+                    .paId(lottoBaseConEventualiErrori.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
+                    .lottoId(lottoBaseConEventualiErrori.getLottoId())
+                    .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
+                    .numeroDocumenti(lottoBaseConEventualiErrori.getNumeroDocumenti());
+
+                LOGGER.info("Richiesta di elaborazione lotto {} accettata", lottoBaseConEventualiErrori.getLottoId());
+                return ResponseEntity.ok(risposta);
+            } else {
+                String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lottoBaseConEventualiErrori.getPaId());
+                LOGGER.warn(error);
+                throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+            }
+        } else {
+            LOGGER.warn("L'integrazione con send è disabilitata nell'application.properties, sulla proprietà: openapi.send-integration.active");
+            throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "L'integrazione con send non è attiva");
+        }
+    }
+  
 }

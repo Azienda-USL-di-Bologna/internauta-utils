@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -119,8 +120,8 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                     for (Documento documento : documenti) {
                         String filePath = String.format("%s/%s", lotto.getInputBasePath(), documento.getInputFileName());
                         if (sftpManager.existsPath(filePath)) {
-                            try (InputStream file = sftpManager.retriveFile(filePath)) {
-                                File tmpFile = File.createTempFile(String.format("lotto_%s_job%s_%s", lotto.getLottoId(), getJobId(), documento.getInputFileName()), PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
+                            try (InputStream file = sftpManager.downloadFile(filePath)) {
+                                File tmpFile = File.createTempFile(String.format("lotto_%s_job_%s_%s", lotto.getLottoId(), getName(), documento.getInputFileName()), "." + PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
                                 tmpFile.deleteOnExit();
                                 tmpFiles.add(tmpFile);
                                 try (OutputStream tmpFileOs = new FileOutputStream(tmpFile)) {
@@ -143,7 +144,7 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                                         String repoFileId = repoFileInfo.getFileId();
                                         repoFileIds.add(repoFileId);
                                         // creo l'entità da salvare su db e la aggiungo alla lista
-                                        documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileId));
+                                        documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileInfo.getBucketName(), repoFileId, repoFileInfo.getMd5()));
                                         
                                     } else {
                                         errori.add(new Errore().documentoId(documento.getDocumentoId()).code("HASH_ NON_VALIDO").detail("Valore del campo 'hash' non valido"));
@@ -181,9 +182,13 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
         
         if (!internalError) {
             try {
-                entityManager.persist(documentoLottoEntityList);
+                for (DocumentoLottoEntity documentoLottoEntity : documentoLottoEntityList) {
+                    log.info(String.format("salvataggio documentoLotto %s con id %s", documentoLottoEntity.getInputFileName(), documentoLottoEntity.getId()));
+                    entityManager.persist(documentoLottoEntity);
+                }
                 LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(
-                    lotto.getPaId(), lotto.getLottoId()
+                    lotto.getPaId(), lotto.getLottoId(), lotto.getFirmatario(), lotto.getNumeroDocumenti(), 
+                    lotto.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), lotto.getOutputBasePath() 
                 );
                 LottiSignerAndRegisterJobWorker lottiSignerAndRegisterJobWorker = masterjobsObjectsFactory
                     .getJobWorker(LottiSignerAndRegisterJobWorker.class,  lottiSignerAndRegisterJobWorkerData, false
@@ -196,11 +201,19 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                     .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
                 );
                 
-                masterjobsJobsQueuer.queueOnCommit(Arrays.asList(lottiSignerAndRegisterJobWorker, restCallToSendJobWorker), String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()), "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                lottiSignerAndRegisterJobWorker.doWork(); // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
+                //restCallToSendJobWorker.doWork();
+                if (false) {
+                    masterjobsJobsQueuer.queueOnCommit(
+                            Arrays.asList(restCallToSendJobWorker, lottiSignerAndRegisterJobWorker),
+                            String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()),
+                            "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                }
                 entityManager.flush();
             } catch (Exception ex) {
                 String error = "Errore nella chiamata finale del job";
-                throw new MasterjobsWorkerException(error);
+                log.error(error, ex);
+                throw new MasterjobsWorkerException(error, ex);
             }
         } else {
             String error = String.format(
@@ -213,11 +226,25 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
         return null;
     }
 
-    private DocumentoLottoEntity buildDocumentoLottoEntity(Lotto lotto, Documento doc, String repoFileId) {
-        DocumentoLottoEntity docLotto = new DocumentoLottoEntity(
-            lotto.getPaId(), lotto.getLottoId(), lotto.getTimestamp().toZonedDateTime(), lotto.getNumeroDocumenti(), lotto.getFirmatario(), 
-            lotto.getInputBasePath(), lotto.getOutputBasePath(), doc.getDocumentoId(), doc.getInputFileName(), doc.getInputFileHash(), repoFileId
-        );
+    private DocumentoLottoEntity buildDocumentoLottoEntity(Lotto lotto, Documento doc, String bucket, String repoFileId, String md5) {
+        String mimeType = "application/pdf";
+        DocumentoLottoEntity docLotto = new DocumentoLottoEntity.Builder()
+                .paId(lotto.getPaId())
+                .lottoId(lotto.getLottoId())
+                .timestamp(lotto.getTimestamp().toZonedDateTime())
+                .numeroDocumenti(lotto.getNumeroDocumenti())
+                .firmatario(lotto.getFirmatario())
+                .bucket(bucket)
+                .documentoId(doc.getDocumentoId())
+                .inputBasePath(lotto.getInputBasePath())
+                .inputFileName(doc.getInputFileName())
+                .inputMimeType(mimeType)
+                .inputFileSha256(doc.getInputFileHash())
+                .inputFileMd5(md5)
+                .inputFileRepoId(repoFileId)
+                .outputBasePath(lotto.getOutputBasePath())
+                .status(DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_DA_COMUNICARE)
+                .build();
         return docLotto;
     }
     

@@ -1,5 +1,9 @@
 package it.bologna.ausl.internauta.utils.sendintegration;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import it.bologna.ausl.model.entities.sendintegration.DocumentoLottoEntity;
+import it.bologna.ausl.model.entities.sendintegration.QDocumentoLottoEntity;
+import jakarta.persistence.EntityManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,10 +34,26 @@ public class SendIntegrationUtils {
     
     public static boolean isPdf(File file) {
         try (PdfReader reader = new PdfReader(file.getAbsolutePath())) {
+            reader.close();
             return true;
         } catch (IOException ex) {
             log.error("errore nella lettura del file pdf", ex);
             return false;
         }
+    }
+    
+      
+    public static long updateDocumentiLotto(String paId, String lottoId, DocumentoLottoEntity.DocumentiLottoStatus status, EntityManager entityManager) {
+        QDocumentoLottoEntity qDocumentoLottoEntity = QDocumentoLottoEntity.documentoLottoEntity;
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        long updatedRows = queryFactory
+            .update(qDocumentoLottoEntity)
+            .set(qDocumentoLottoEntity.status, status)
+            .where(
+                qDocumentoLottoEntity.paId.eq(paId).and(
+                qDocumentoLottoEntity.lottoId.eq(lottoId))
+            )
+            .execute();
+        return updatedRows;
     }
 }

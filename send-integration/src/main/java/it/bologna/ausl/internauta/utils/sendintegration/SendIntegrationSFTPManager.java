@@ -34,22 +34,27 @@ public class SendIntegrationSFTPManager {
     @PersistenceContext
     private EntityManager entityManager;
     
+    private String basePath;
+    
     private Map<String, Object> SFTPConnectionParams;
-    private File sftpKeyFile;
+//    private File sftpKeyFile;
     private final ThreadLocal<Pair<Session, ChannelSftp>> sftpConnection = new ThreadLocal<>();
     
     
     @PostConstruct
     public void init() throws SendIntegrationException {
-        //TODO: devo mettere il false altrumenti non parte, poi si deve rimuovuore quando abbiamo il file per la connessione al server sftp
-        if (false && sendIntegrationActive) {
+        if (sendIntegrationActive) {
             SendIntegrationConfiguration lepidaSFTPConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaSFTPConfiguration);
             this.SFTPConnectionParams = lepidaSFTPConfiguration.getValue();
-            this.sftpKeyFile = new File((String) this.SFTPConnectionParams.get("keyPath"));
-            if (!this.sftpKeyFile.exists()) {
-                String error = String.format("il file della chiave per la connessione al servizio SFTP non esiste nel percorso indicato: %s", sftpKeyFile);
-                throw new SendIntegrationException(error);
+            this.basePath = (String) this.SFTPConnectionParams.get("basePath");
+            if (!this.basePath.endsWith("/")) {
+                this.basePath += "/";
             }
+//            this.sftpKeyFile = new File((String) this.SFTPConnectionParams.get("keyPath"));
+//            if (!this.sftpKeyFile.exists()) {
+//                String error = String.format("il file della chiave per la connessione al servizio SFTP non esiste nel percorso indicato: %s", sftpKeyFile);
+//                throw new SendIntegrationException(error);
+//            }
         }
     }
     
@@ -61,17 +66,18 @@ public class SendIntegrationSFTPManager {
         String host = (String) this.SFTPConnectionParams.get("host");
         Integer port = (Integer) this.SFTPConnectionParams.get("port");
         String user = (String) this.SFTPConnectionParams.get("user");
-        String keyPassword = (String) this.SFTPConnectionParams.get("keyPassword");
+        String password = (String) this.SFTPConnectionParams.get("password");
         
-        if (this.sftpKeyFile != null) {
-            if (StringUtils.hasText(keyPassword)) {
-                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath(), keyPassword);
-            } else {
-                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath());
-            }
-            LOGGER.info("Private Key Added.");
-        }
+//        if (this.sftpKeyFile != null) {
+//            if (StringUtils.hasText(keyPassword)) {
+//                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath(), keyPassword);
+//            } else {
+//                jSch.addIdentity(this.sftpKeyFile.getAbsolutePath());
+//            }
+//            LOGGER.info("Private Key Added.");
+//        }
         Session session = jSch.getSession(user, host, port);
+        session.setPassword(password);
         LOGGER.info("SFTP Session created.");
 
         java.util.Properties config = new java.util.Properties();
@@ -108,9 +114,10 @@ public class SendIntegrationSFTPManager {
     }
     
     public boolean existsPath(String path) throws SftpException {
+        if (path.startsWith("/")) path = path.substring(1);
         ChannelSftp sftpChannel = sftpConnection.get().getSecond();
         try {
-            sftpChannel.stat(path);
+            sftpChannel.stat(this.basePath + path);
             return true;
         } catch (SftpException ex) {
             if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
@@ -121,8 +128,15 @@ public class SendIntegrationSFTPManager {
         }
     }
     
-    public InputStream retriveFile(String filePath) throws SftpException {
+    public InputStream downloadFile(String path) throws SftpException {
+        if (path.startsWith("/")) path = path.substring(1);
         ChannelSftp sftpChannel = sftpConnection.get().getSecond();
-        return sftpChannel.get(filePath);
+        return sftpChannel.get(this.basePath + path);
+    }
+    
+    public void uploadFile(InputStream file, String targetPath) throws SftpException {
+        if (targetPath.startsWith("/")) targetPath = targetPath.substring(1);
+        ChannelSftp sftpChannel = sftpConnection.get().getSecond();
+        sftpChannel.put(file, this.basePath + targetPath);
     }
 }
