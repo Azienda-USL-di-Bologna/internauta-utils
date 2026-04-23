@@ -15,7 +15,6 @@ import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -101,11 +100,12 @@ public class DeteBuilder {
         }
         stringaDiFirmatari = stringaDiFirmatari.substring(0, stringaDiFirmatari.length() - 2);
         String numeroProposta = docDetail.getAnnoProposta().toString() + "-" + df.format(docDetail.getNumeroProposta());
-        HashMap<String, Object> additionalData = doc.getAdditionalData();
+        Doc.AdditionalDataDoc additionalData = doc.getAdditionalData();
         String dataEsecutivita;
         if (additionalData != null) {
-            if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
-                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+            Object datiPubblicazioneObj = additionalData.getDatiPubblicazione();
+            if (datiPubblicazioneObj != null) {
+                Map<String, Object> datiPubblicazione = (Map<String, Object>) datiPubblicazioneObj;
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita") + ".000";
                 } else {
