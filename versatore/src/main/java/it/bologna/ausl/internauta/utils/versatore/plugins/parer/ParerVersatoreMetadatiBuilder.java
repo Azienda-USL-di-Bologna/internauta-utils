@@ -225,11 +225,9 @@ public final class ParerVersatoreMetadatiBuilder {
             } else {
                 datiSpecificiBuilder.insertNewTag("CausaleAssenzaDG", "assente");
             }
-            HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
-
-            additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
+            Doc.AdditionalDataDoc additionalDataDoc = (Doc.AdditionalDataDoc) doc.getAdditionalData();
 //            additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
-            Boolean controlloRegionale = (Boolean) additionalDataDoc.get("controllo_regionale");
+            Boolean controlloRegionale = (Boolean) additionalDataDoc.getControlloRegionale();
             if (controlloRegionale) {
                 datiSpecificiBuilder.insertNewTag("ControlloRegionale", "SI");
             } else {
@@ -241,10 +239,9 @@ public final class ParerVersatoreMetadatiBuilder {
             if (doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
                 datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
             }
-            HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
-            additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
+            Doc.AdditionalDataDoc additionalDataDoc  = (Doc.AdditionalDataDoc) doc.getAdditionalData();
             HashMap<String, Object> datiPubblicazione = new HashMap<String, Object>();
-            datiPubblicazione = (HashMap<String, Object>) additionalDataDoc.get("dati_pubblicazione");
+            datiPubblicazione = (HashMap<String, Object>) additionalDataDoc.getDatiPubblicazione();
             LocalDateTime dataEsecutivita = null;
             LocalDateTime inizioPubblicazione = null;
             LocalDateTime finePubblicazione = null;
@@ -258,7 +255,7 @@ public final class ParerVersatoreMetadatiBuilder {
                 datiSpecificiBuilder.insertNewTag("EsecutivitaData", dataEsecutivita.toLocalDate().toString());
             }
             if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
-                String noteEsecutivita = (String) additionalDataDoc.get("note_esecutivita");
+                String noteEsecutivita = (String) additionalDataDoc.getNoteEsecutivita();
                 datiSpecificiBuilder.insertNewTag("EsecutivitaNote", noteEsecutivita);
             }
             if (doc.getTipologia() == Doc.TipologiaDoc.DELIBERA) {
@@ -292,11 +289,10 @@ public final class ParerVersatoreMetadatiBuilder {
 
         }
         if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
-            HashMap<String, Object> additionalDataDoc = new HashMap<String, Object>();
-            additionalDataDoc = (HashMap<String, Object>) doc.getAdditionalData();
+            Doc.AdditionalDataDoc additionalDataDoc = (Doc.AdditionalDataDoc) doc.getAdditionalData();
             HashMap<String, Object> metadatiTrasparenza = new HashMap<String, Object>();
-            if (additionalDataDoc != null && additionalDataDoc.get("metadati_trasparenza") != null) {
-                metadatiTrasparenza = (HashMap<String, Object>) additionalDataDoc.get("metadati_trasparenza");
+            if (additionalDataDoc != null && additionalDataDoc.getMetadatiTrasparenza() != null) {
+                metadatiTrasparenza = (HashMap<String, Object>) additionalDataDoc.getMetadatiTrasparenza();
                 String descrizione = (String) metadatiTrasparenza.get("descrizione");
                 String tipoProvvedimento = (String) metadatiTrasparenza.get("id_tipo_provvedimento");
                 if (descrizione != null || !descrizione.equals("")) {
