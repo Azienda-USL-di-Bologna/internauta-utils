@@ -460,10 +460,10 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
 
     public void menageContattoStutturaUnificata(RepositoryFactory repositoryFactory) {
         repositoryFactory.getEntityManager();
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(getEntityManager());
         QPersona qPersona = QPersona.persona;
         //forse sposta struttura ci pensa gia alla  gestione dei contatti cambiati di padre o rinominati o chiusi o confluiti
-        Persona ribaltonePersona = jPAQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchFirst();
+        Persona ribaltonePersona = jpaQueryFactory.select(qPersona).from(qPersona).where(qPersona.codiceFiscale.eq("RIBALTONE")).fetchFirst();
         for (String key : mappStrutturePerGestioneContatti.keySet()) {
             switch (Azione.valueOf(key)) {
                 case INSERT -> {
@@ -516,7 +516,7 @@ public class OperationUnificazioneStruttura extends Operation<DatiRibaltoneInter
             }
         }
         //spengo i contatti di utenti unificati che ho dovuto spegnere perche fusi e la fusione non c'è piu
-        OperationsUtils.gestisciContatti(repositoryFactory, null, utentiStrutturaDaChiuderePerManageContatti);
+        OperationsUtils.gestisciContatti(repositoryFactory, null, utentiStrutturaDaChiuderePerManageContatti, jpaQueryFactory);
     }
 
     public StrutturaUnificata.TipoUnificazione getTipoUnificazione() {
