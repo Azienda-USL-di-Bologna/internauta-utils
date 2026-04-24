@@ -100,9 +100,8 @@ public class IndiceJsonBuilder {
         documento.put("metadati", metadati);
         //parametri
         Map<String, Object> parametriDocumento = new HashMap();
-        //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...
-        parametriDocumento.put("aggiungiFirma", (boolean) parametriVersamento.get("aggiungiFirma"));
-        parametriDocumento.put("verificaFirma", documentoPrincipale.getFirmato());
+        parametriDocumento.put("aggiungiFirma", (boolean) mappaParametri.get("aggiungiFirma"));
+        parametriDocumento.put("verificaFirma", (boolean) mappaParametri.get("verificaFirma"));
         documento.put("parametriDocumento", parametriDocumento);
         //allegati
         List<Map<String, Object>> allegatiList = new ArrayList<>();
@@ -116,11 +115,9 @@ public class IndiceJsonBuilder {
             hashAllegato.put("codifica", parametriVersamento.get("codifica"));
             hashAllegato.put("algoritmo", parametriVersamento.get("algoritmo"));
             allegato.put("hash", hashAllegato);
-            //TODO non penso di passare l'xml per ogni allegato
             Map<String, Object> parametriAllegato = new HashMap();
-            //TODO vedere come impostarli - da parametri db?, forse se è firmato o meno...
-            parametriAllegato.put("aggiungiFirma", allegatoUnimaticaSecondario.getFirmato());
-            parametriAllegato.put("verificaFirma", allegatoUnimaticaSecondario.getFirmato());
+            parametriAllegato.put("aggiungiFirma", (boolean) parametriVersamento.get("aggiungiFirmaAllegato"));
+            parametriAllegato.put("verificaFirma", (boolean) parametriVersamento.get("verificaFirmaAllegato"));
             allegato.put("parametriDocumento", parametriAllegato);
             allegatiList.add(allegato);
         }

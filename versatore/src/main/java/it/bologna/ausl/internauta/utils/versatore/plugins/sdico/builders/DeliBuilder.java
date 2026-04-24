@@ -121,11 +121,11 @@ public class DeliBuilder {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         }
         stringaAllegati = stringaAllegati.substring(0, stringaAllegati.length() - 3);
-        HashMap<String, Object> additionalData = doc.getAdditionalData();
+        Doc.AdditionalDataDoc additionalData = doc.getAdditionalData();
         String dataEsecutivita;
         if (additionalData != null) {
-            if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
-                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+            if (additionalData.getDatiPubblicazione() != null) {
+                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.getDatiPubblicazione();
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
                 } else {

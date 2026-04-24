@@ -1094,7 +1094,8 @@ public class OperationsUtils {
         } catch (BlackBoxPermissionException ex) {
             throw new RibaltoneHttpException("errore nella rimozione del permesso per il responsabile " + persona.getDescrizione() + " " + persona.getCodiceFiscale(), ex);
         }
-        if (!utenteHasOtherStrutture(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
+        if (!utenteHasOtherStruttureDiAfferenzaNonUfficio(queryFactory, utenteStruttura.getIdStruttura(), utente)) {
+            chiudiUtenteStrutturaAfferenzaUfficio(queryFactory, utente);
             utente.setAttivo(false);
             utente.setDataSpegnimento(ZonedDateTime.now());
             //spegnere tutti i permessi utente
@@ -1203,15 +1204,32 @@ public class OperationsUtils {
         }
     }
 
-    private static Boolean utenteHasOtherStrutture(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
+    private static Boolean utenteHasOtherStruttureDiAfferenzaNonUfficio(JPAQueryFactory queryFactory, Struttura struttura, Utente utente) {
         if (struttura != null && utente != null) {
             return queryFactory
                     .select(qUtenteStruttura.id)
                     .from(qUtenteStruttura)
                     .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
-                            .and(qUtenteStruttura.attivo)).limit(1).fetchFirst() != null;
+                            .and(qUtenteStruttura.attivo).and(
+                            qUtenteStruttura.idAfferenzaStruttura.codice.ne(
+                                    AfferenzaStruttura.CodiciAfferenzaStruttura.UFFICIO.toString()
+                            ))).limit(1).fetchFirst() != null;
         } else {
             return null;
+        }
+    }
+
+    private static void chiudiUtenteStrutturaAfferenzaUfficio(JPAQueryFactory queryFactory, Utente utente) {
+        if (utente != null) {
+            queryFactory.update(qUtenteStruttura)
+                    .set(qUtenteStruttura.attivo, Boolean.FALSE)
+                    .set(qUtenteStruttura.attivoAl, ZonedDateTime.now())
+                    .where(qUtenteStruttura.idUtente.id.eq(utente.getId())
+                            .and(qUtenteStruttura.attivo).and(
+                            qUtenteStruttura.idAfferenzaStruttura.codice.eq(
+                                    AfferenzaStruttura.CodiciAfferenzaStruttura.UFFICIO.toString()
+                            ))).execute();
+
         }
     }
 
@@ -1468,10 +1486,23 @@ public class OperationsUtils {
                         + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
                 Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
-                repositoryFactory.getEntityManager().refresh(contattoPersona);
+
                 List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
-                List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+                //List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
+                List<DettaglioContatto> dettagliContattiDellaPersona = new ArrayList<>();
+
+                for (DettaglioContatto dc : dettagliContattiDellaPersonaList) {
+                    Contatto idContattoEsterno = dc.getIdContattoEsterno();
+                    Struttura idStruttura = utenteStrutturaNew.getIdStruttura();
+                    Contatto idContatto = utenteStrutturaNew.getIdStruttura().getIdContatto();
+                    if (idContattoEsterno != null
+                            && idContattoEsterno.getId().equals(idContatto.getId())) {
+                        dettagliContattiDellaPersona.add(dc);
+                    }
+                }
+
+                dettagliContattiDellaPersona = List.copyOf(dettagliContattiDellaPersona); // per renderla immutabile
                 DettaglioContatto idDettaglioContatto = null;
                 if (dettagliContattiDellaPersona != null && !dettagliContattiDellaPersona.isEmpty() && dettagliContattiDellaPersona.size() == 1) {
                     idDettaglioContatto = dettagliContattiDellaPersona.get(0);
@@ -1491,14 +1522,14 @@ public class OperationsUtils {
 //                }
                     repositoryFactory.getEntityManager().persist(idDettaglioContatto);
                 } else {
-                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
+//                    JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
 
-                    if (idDettaglioContatto != null) {
-                        //devo creare il dettaglio contatto
-                        idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
-                        repositoryFactory.getEntityManager().persist(idDettaglioContatto);
-                        repositoryFactory.getEntityManager().flush();
-                    }
+//                    if (idDettaglioContatto != null) {
+                    //devo creare il dettaglio contatto
+                    idDettaglioContatto = utenteStrutturaNew.buildDettaglioContatto();
+                    repositoryFactory.getEntityManager().persist(idDettaglioContatto);
+                    repositoryFactory.getEntityManager().flush();
+//                    }
                     utenteStrutturaNew.setIdDettaglioContatto(idDettaglioContatto);
                     repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
 

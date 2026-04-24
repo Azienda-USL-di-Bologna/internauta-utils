@@ -59,12 +59,11 @@ public class ResponseUnimatica {
         this.esitoConsegnaUnimatica = esitoConsegnaUnimatica;
     }
 
-    public String getResponseCode() {
+    /*public String getResponseCode() {
         return erroriGeneraliList.get(0).getCodice();
     }
 
     public String getErrorMessage() {
         return erroriGeneraliList.get(0).getDescrizione();
-    }
-
+    }*/
 }

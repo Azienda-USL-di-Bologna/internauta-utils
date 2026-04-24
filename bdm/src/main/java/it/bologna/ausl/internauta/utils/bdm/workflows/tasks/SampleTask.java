@@ -1,10 +1,9 @@
 package it.bologna.ausl.internauta.utils.bdm.workflows.tasks;
 
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
-import it.bologna.ausl.internauta.utils.bdm.core.Context;
 import it.bologna.ausl.internauta.utils.bdm.core.Result;
 import it.bologna.ausl.internauta.utils.bdm.core.Task;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -21,7 +20,7 @@ public class SampleTask extends Task {
     }
 
     @Override
-    public Result execute(Bag runningContext, Bag context, Bag params) {
+    public Result execute(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) {
         status = BdmStatus.RUNNING;
         log.info("executing task " + getTaskType() + "...");
         Boolean ok = false;

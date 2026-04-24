@@ -1,7 +1,7 @@
 package it.bologna.ausl.internauta.utils.bdm.core;
 
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
+import java.util.Map;
 
 
 
@@ -12,13 +12,13 @@ import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 public class Result {
 
     private BdmStatus status;
-    private Bag bag;
+    private Map<String, Object> bag;
     private String message;
 
     public Result() {
     }
 
-    public Result(BdmStatus status, Bag bag, String message) {
+    public Result(BdmStatus status, Map<String, Object> bag, String message) {
         this.status = status;
         this.bag = bag;
         this.message = message;
@@ -32,11 +32,11 @@ public class Result {
         this.status = status;
     }
 
-    public Bag getBag() {
+    public Map<String, Object> getBag() {
         return bag;
     }
 
-    public void setBag(Bag bag) {
+    public void setBag(Map<String, Object> bag) {
         this.bag = bag;
     }
 

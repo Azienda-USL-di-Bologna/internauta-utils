@@ -3,11 +3,10 @@ package it.bologna.ausl.internauta.utils.bdm.workflows.processes;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.core.Step;
 import it.bologna.ausl.internauta.utils.bdm.core.Task;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.workflows.tasks.SampleTask;
-import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  *
@@ -17,7 +16,7 @@ import java.util.Arrays;
 public class SampleProcess extends BdmProcess implements Serializable{
 
 //    @Override
-    public void init(Bag parameters) {
+    public void init(Map<String, Object> parameters) {
         setContext(parameters);
         Step s = new Step("SampleStep", "Sample Process", Step.StepLogic.SEQ, Arrays.asList(Step.StepLogic.SEQ, Step.StepLogic.ALL));
 //        addStep(s);

@@ -88,6 +88,7 @@ import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  *
@@ -170,8 +171,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      */
     @RequestMapping(value = "/ribalta", method = RequestMethod.POST)
     public void ribalta(
-        @RequestParam(required = true) String codiceAzienda,
-        @RequestBody(required = true) ConfigRibaltoneView configRibaltoneView
+            @RequestParam(required = true) String codiceAzienda,
+            @RequestBody(required = true) ConfigRibaltoneView configRibaltoneView
     ) throws RibaltoneHttpException, JacksonException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         if (!CacheUtils.isRibaltoneInCorsoFromCache(configRibaltoneView.getFonteSelezionata(), repositoryFactory, objectMapper, transactionTemplate)) {
@@ -183,8 +184,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     try {
                         CacheUtils.setRibaltoneCacheInCorso(configRibaltoneView.getFonteSelezionata(), realUser, repositoryFactory, objectMapper, transactionTemplate);
                         ribaltoneTotaleManager.ribaltaWithOutUserReport(codiceAzienda, configRibaltoneView);
-                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta", false);
-                    } catch (RibaltoneHttpException | JacksonException ex) {
+                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "ribalta", false, null);
+                    } catch (Exception ex) {
                         if (ex instanceof RibaltoneHttpException ribaltoneHttpException) {
                             throw ribaltoneHttpException;
                         } else {
@@ -193,7 +194,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     }
                 });
             } catch (RibaltoneHttpException ex) {
-//                transactionTemplate.executeWithoutResult(action -> {
+                transactionTemplate.executeWithoutResult(action -> {
+                    Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+                    realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
+                    ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, configRibaltoneView.getNote(), null, "errore", false, null);
+                });
 //                    try {
                 CacheUtils.setRibaltoneCacheFinito(configRibaltoneView.getFonteSelezionata(), repositoryFactory, objectMapper, transactionTemplate);
 //                    } catch (RibaltoneHttpException | JsonProcessingException e) {
@@ -208,9 +213,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
     @RequestMapping(value = "downloadCSVUploaded", method = RequestMethod.GET)
     public void downloadCSVUploaded(
-        @RequestParam("id") Integer id,
-        HttpServletResponse response,
-        HttpServletRequest request) throws MinIOWrapperException {
+            @RequestParam("id") Integer id,
+            HttpServletResponse response,
+            HttpServletRequest request) throws MinIOWrapperException {
         ImportazioniOrganigramma importazioniOrganigramma = repositoryFactory.getEntityManager().find(ImportazioniOrganigramma.class, id);
         if (importazioniOrganigramma != null) {
             InputStream fileIS = ribaltoneConfiguration.getMinIOWrapper().getByFileId(importazioniOrganigramma.getPath_csv_error());
@@ -227,23 +232,23 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 //    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/importaCSV", method = RequestMethod.POST)
     public ResponseEntity<String> importaCSV(
-        @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
-        @RequestBody(required = true) MultipartFile csv,
-        @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
-        @RequestParam(required = true, name = "separatore") String separatore,
-        @RequestParam(required = true, name = "idSelectedConfiguration") String idSelectedConfiguration
+            @RequestParam(required = true, name = "codiceAzienda") String codiceAzienda,
+            @RequestBody(required = true) MultipartFile csv,
+            @RequestParam(required = true, name = "tipologia") TipologiaCsv tipologia,
+            @RequestParam(required = true, name = "separatore") String separatore,
+            @RequestParam(required = true, name = "idSelectedConfiguration") String idSelectedConfiguration
     ) throws RibaltoneHttpException, JacksonException {
         AuthenticatedSessionData authenticatedUserProperties = authenticatedSessionDataBuilder.getAuthenticatedUserProperties();
         Utente utente = authenticatedUserProperties.getRealUser() != null
-            ? authenticatedUserProperties.getRealUser()
-            : authenticatedUserProperties.getUser();
+                ? authenticatedUserProperties.getRealUser()
+                : authenticatedUserProperties.getUser();
 
         // Verifica se c'è già un'importazione in corso
         if (CacheUtils.isImportazioneCSVInCorsoFromCache(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate)) {
             RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(
-                repositoryFactory.getEntityManager(), idSelectedConfiguration);
+                    repositoryFactory.getEntityManager(), idSelectedConfiguration);
             RibaltoneCache ribaltoneCache = getRibaltoneCache(
-                objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
+                    objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
             Utente user = repositoryFactory.getEntityManager().find(Utente.class, ribaltoneCache.getIdUserImportingCSV());
             return ResponseEntity.status(HttpStatus.IM_USED).body("Importazione già in corso da parte dell'utente: " + user.getIdPersona().getDescrizione());
         }
@@ -253,7 +258,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         try {
             // Segna l'importazione come in corso
             CacheUtils.setImportazioneCSVInCorso(idSelectedConfiguration, utente,
-                repositoryFactory, objectMapper, transactionTemplate);
+                    repositoryFactory, objectMapper, transactionTemplate);
 
             // Salva il file temporaneamente - ORA È FINAL
             final File csvFile = File.createTempFile("uploadCSVribaltone_" + csv.getOriginalFilename() + "_", "");
@@ -295,14 +300,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 QAzienda qAzienda = QAzienda.azienda;
 
                 Utente ut = jPAQueryFactory.select(qUtente)
-                    .from(qUtente)
-                    .where(qUtente.id.eq(idUtente))
-                    .fetchOne();
+                        .from(qUtente)
+                        .where(qUtente.id.eq(idUtente))
+                        .fetchOne();
 
                 Azienda azienda = jPAQueryFactory.select(qAzienda)
-                    .from(qAzienda)
-                    .where(qAzienda.codice.eq(codiceAzienda))
-                    .fetchOne();
+                        .from(qAzienda)
+                        .where(qAzienda.codice.eq(codiceAzienda))
+                        .fetchOne();
 
                 if (ut == null) {
                     throw new IllegalStateException("Utente non trovato con ID: " + idUtente);
@@ -334,7 +339,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
             if (idImportazioneOrganigramma == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Errore nella creazione del record di importazione");
+                        .body("Errore nella creazione del record di importazione");
             }
 
             // Esegui l'importazione vera e propria
@@ -347,31 +352,31 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                     switch (tipologia) {
                         case APPARTENENTI ->
                             jPAQueryFactory
-                                .delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente)
-                                .where(QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda))
-                                .execute();
+                                    .delete(QCSVDaImportareAppartenente.cSVDaImportareAppartenente)
+                                    .where(QCSVDaImportareAppartenente.cSVDaImportareAppartenente.codiceAzienda.eq(codiceAzienda))
+                                    .execute();
                         case STRUTTURE ->
                             jPAQueryFactory
-                                .delete(QCSVDaImportareStruttura.cSVDaImportareStruttura)
-                                .where(QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda))
-                                .execute();
+                                    .delete(QCSVDaImportareStruttura.cSVDaImportareStruttura)
+                                    .where(QCSVDaImportareStruttura.cSVDaImportareStruttura.codiceAzienda.eq(codiceAzienda))
+                                    .execute();
                         case ANAGRAFICHE ->
                             jPAQueryFactory
-                                .delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica)
-                                .where(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda))
-                                .execute();
+                                    .delete(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica)
+                                    .where(QCSVDaImportareAnagrafica.cSVDaImportareAnagrafica.codiceAzienda.eq(codiceAzienda))
+                                    .execute();
                         case TRASFORMAZIONI ->
                             jPAQueryFactory
-                                .delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione)
-                                .where(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda))
-                                .execute();
+                                    .delete(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione)
+                                    .where(QCSVDaImportareTrasformazione.cSVDaImportareTrasformazione.codiceAzienda.eq(codiceAzienda))
+                                    .execute();
                         default ->
                             throw new IllegalArgumentException("Tipologia non supportata: " + tipologia);
                     }
 
                     // Importa il CSV - csvFile è accessibile perché è final
                     CsvImportManager csvImportManager = new CsvImportManager(
-                        objectMapper, repositoryFactory.getEntityManager(), conversionService);
+                            objectMapper, repositoryFactory.getEntityManager(), conversionService);
                     csvImportManager.csvImportAndValidate(separatore, csvFile, tipologia, codiceAzienda);
 
                     return true;
@@ -385,7 +390,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, esito ? "OK" : "ERRORE");
             CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
             return ResponseEntity.status(esito ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(esito ? "OK" : "ERRORE");
+                    .body(esito ? "OK" : "ERRORE");
 
         } catch (Exception ex) {
             LOGGER.error("Errore durante l'importazione CSV", ex);
@@ -394,11 +399,11 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                 setImportazioneOrganigrammaFinito(idImportazioneOrganigramma, "ERRORE");
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Errore: " + ex.getMessage());
+                    .body("Errore: " + ex.getMessage());
         } finally {
             // Pulisci lo stato della cache
             CacheUtils.setImportazioneCSVFinito(idSelectedConfiguration,
-                repositoryFactory, objectMapper, transactionTemplate);
+                    repositoryFactory, objectMapper, transactionTemplate);
 
             // Il cleanup del file temporaneo non può essere fatto qui
             // perché csvFile è dichiarato nel blocco try
@@ -417,9 +422,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 //    @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaAndGetUserReport", method = RequestMethod.POST)
     public Object ribaltaAndGetUserReport(
-        @RequestBody ConfigRibaltoneView configRibaltoneView,
-        @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) UserReport.UserReportType typeUserReport
+            @RequestBody ConfigRibaltoneView configRibaltoneView,
+            @RequestParam(required = true) String codiceAzienda,
+            @RequestParam(required = true) UserReport.UserReportType typeUserReport
     ) throws RibaltoneHttpException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         LOGGER.info("Inizio fase 1 del ribaltone per il codiceAzienda " + codiceAzienda);
@@ -443,7 +448,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         } else {
                             infoRibaltone.put("operations", ribaltoneTotaleManager.ribaltaWithUserReportAndCacheOperation(codiceAzienda, configRibaltoneView, typeUserReport));
                         }
-                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport", false);
+                        Integer lanciaRibaltTree = ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, configRibaltoneView.getFonteSelezionata(), realUser, codiceAzienda, null, "ribaltaAndGetUserReport", false, null);
                         infoRibaltone.put("idRibaltTree", lanciaRibaltTree);
                         return new ResponseEntity(infoRibaltone, HttpStatus.OK);
                     } catch (RibaltoneHttpException | ClassNotFoundException | JacksonException | StaleObjectStateException ex) {
@@ -485,10 +490,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
      */
     @RequestMapping(value = "/ribaltaPostUserReport", method = RequestMethod.POST)
     public Object ribaltaPostUserReport(
-        @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idSelectedConfiguration,
-        @RequestParam(required = true) Integer idRibaltTree,
-        @RequestParam(required = false) String mailDaNotificare
+            @RequestParam(required = true) String codiceAzienda,
+            @RequestParam(required = true) String idSelectedConfiguration,
+            @RequestParam(required = true) Integer idRibaltTree,
+            @RequestParam(required = false) String mailDaNotificare
     ) throws RibaltoneHttpException, JacksonException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
@@ -506,22 +511,33 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         }
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
                         ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, mailDaNotificareList);
-                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport", false);
+                        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport", false, null);
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
                         ribaltoneCache.cleanDataCache();
                         CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
                         return new ResponseEntity("tutto ok", HttpStatus.OK);
                     } catch (Exception ex) {
+                        LOGGER.error("errore nel ribaltone ", ex);
+
+                        CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
                         throw new RibaltoneHttpException(ex);
+//                    return new ResponseEntity("tutto errore nel ribaltone", HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 });
                 return response;
             } catch (RibaltoneHttpException ex) {
+                transactionTemplate.executeWithoutResult(action -> {
+                    Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
+                    ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "errore", false, ExceptionUtils.getStackTrace(ex));
 
+                });
                 CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-                throw ex;
+//
+//                CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
+//                throw ex;
             }
+            return new ResponseEntity("tutto errore nel ribaltone", HttpStatus.INTERNAL_SERVER_ERROR);
         } else {
             return new ResponseEntity("non puoi lanicare il ribaltone perche non ne hai il permesso", HttpStatus.UNAUTHORIZED);
         }
@@ -530,9 +546,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/ribaltaDeleteCache", method = RequestMethod.POST)
     public void ribaltaDeleteCache(
-        @RequestParam(required = true) String codiceAzienda,
-        @RequestParam(required = true) String idSelectedConfiguration,
-        @RequestParam(required = true) Integer idRibaltTree
+            @RequestParam(required = true) String codiceAzienda,
+            @RequestParam(required = true) String idSelectedConfiguration,
+            @RequestParam(required = true) Integer idRibaltTree
     ) throws RibaltoneHttpException, JacksonException {
         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());
@@ -541,28 +557,28 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         Utente realUser = authenticatedUserProperties.getRealUser() != null ? authenticatedUserProperties.getRealUser() : authenticatedUserProperties.getUser();
         realUser = repositoryFactory.getEntityManager().find(Utente.class, realUser.getId());
         CacheUtils.setRibaltoneCacheFinito(idSelectedConfiguration, repositoryFactory, objectMapper, transactionTemplate);
-        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache", false);
+        ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, codiceAzienda, idRibaltTree, "ribaltaDeleteCache", false, null);
     }
 
     @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/strutturaunificata/unifica", method = RequestMethod.POST)
     public void unifica(
-        @RequestBody(required = true) Integer[] idUnificazioni
+            @RequestBody(required = true) Integer[] idUnificazioni
     ) throws RibaltoneHttpException {
         if (hoPermessoPerLanciareRibaltone()) {
             JPAQueryFactory queryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
             QStrutturaUnificata qStrutturaUnificata = QStrutturaUnificata.strutturaUnificata;
             QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
             AfferenzaStruttura idAfferenzaStruttura = queryFactory
-                .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
+                    .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
             for (Integer idUnificazione : idUnificazioni) {
 
                 StrutturaUnificata unificazione = queryFactory
-                    .select(qStrutturaUnificata)
-                    .from(qStrutturaUnificata)
-                    .where(
-                        qStrutturaUnificata.id.eq(idUnificazione)
-                    ).fetchOne();
+                        .select(qStrutturaUnificata)
+                        .from(qStrutturaUnificata)
+                        .where(
+                                qStrutturaUnificata.id.eq(idUnificazione)
+                        ).fetchOne();
 
                 if (unificazione == null) {
                     throw new RibaltoneHttpException("unificazione non attivabile perche non esiste");
@@ -611,9 +627,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                             try {
                                 permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
-                                    daAggiungereASorgente.getIdUtente(),
-                                    daAggiungereASorgente.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
-                                    utenteStrutturaNew.getIdStruttura());
+                                        daAggiungereASorgente.getIdUtente(),
+                                        daAggiungereASorgente.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
+                                        utenteStrutturaNew.getIdStruttura());
 
                             } catch (BlackBoxPermissionException ex) {
                                 LOGGER.error("errore nella copia dei permessi da unificare", ex);
@@ -651,9 +667,9 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             repositoryFactory.getEntityManager().persist(utenteStrutturaNew);
                             try {
                                 permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
-                                    daAggiungereADestinazione.getIdUtente(),
-                                    daAggiungereADestinazione.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
-                                    utenteStrutturaNew.getIdStruttura());
+                                        daAggiungereADestinazione.getIdUtente(),
+                                        daAggiungereADestinazione.getIdStruttura(), utenteStrutturaNew.getIdUtente(),
+                                        utenteStrutturaNew.getIdStruttura());
                             } catch (BlackBoxPermissionException ex) {
                                 LOGGER.error("errore nella copia dei permessi da unificare", ex);
                                 throw new RibaltoneHttpException("errore nella copia dei permessi da unificare", ex);
@@ -719,8 +735,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                             try {
                                 permissionManager.copyActiveFlowPermissionsFromSubjectObjectToSubjectObject(
-                                    utenteStruttura.getIdUtente(),
-                                    utenteStruttura.getIdStruttura(), us.getIdUtente(), us.getIdStruttura());
+                                        utenteStruttura.getIdUtente(),
+                                        utenteStruttura.getIdStruttura(), us.getIdUtente(), us.getIdStruttura());
                             } catch (BlackBoxPermissionException ex) {
                                 throw new RibaltoneHttpException("errore nel copiare i permessi di " + utenteStruttura.getIdUtente().getId(), ex);
                             }
@@ -738,7 +754,7 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     @Transactional(rollbackOn = Throwable.class)
     @RequestMapping(value = "/strutturaunificata/spegniunificazione", method = RequestMethod.POST)
     public void spegniUnificazione(
-        @RequestBody(required = true) Integer idUnificazione
+            @RequestBody(required = true) Integer idUnificazione
     ) throws RibaltoneHttpException {
         if (hoPermessoPerLanciareRibaltone()) {
 
@@ -748,15 +764,15 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             QAfferenzaStruttura qAfferenzaStruttura = QAfferenzaStruttura.afferenzaStruttura;
             QStoricoRelazione qStoricoRelazione = QStoricoRelazione.storicoRelazione;
             AfferenzaStruttura idAfferenzaStruttura = queryFactory
-                .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
+                    .select(qAfferenzaStruttura).from(qAfferenzaStruttura).where(qAfferenzaStruttura.codice.equalsIgnoreCase(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())).fetchOne();
             if (idAfferenzaStruttura != null) {
 
                 StrutturaUnificata unificazione = queryFactory
-                    .select(qStrutturaUnificata)
-                    .from(qStrutturaUnificata)
-                    .where(
-                        qStrutturaUnificata.id.eq(idUnificazione)
-                    ).fetchOne();
+                        .select(qStrutturaUnificata)
+                        .from(qStrutturaUnificata)
+                        .where(
+                                qStrutturaUnificata.id.eq(idUnificazione)
+                        ).fetchOne();
 
                 if (unificazione == null) {
                     throw new RibaltoneHttpException("unificazione non spegnibile perche non esiste");
@@ -771,14 +787,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
 
                     case FUSIONE -> {
                         List<UtenteStruttura> sorgenteUtentiStrutturaDaSpegnereList = sorgente.getUtenteStrutturaList().stream().filter(
-                            us -> us.getAttivo()
-                            && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
-                            && us.getIdAziendaDerivazioneUnificazione().getId().equals(destinazione.getIdAzienda().getId())
+                                us -> us.getAttivo()
+                                && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
+                                && us.getIdAziendaDerivazioneUnificazione().getId().equals(destinazione.getIdAzienda().getId())
                         ).toList();
 
                         List<UtenteStruttura> destinazioneUtenteStrutturaDaSpegnereList = destinazione.getUtenteStrutturaList().stream().filter(
-                            us -> us.getAttivo() && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
-                            && us.getIdAziendaDerivazioneUnificazione().getId().equals(sorgente.getIdAzienda().getId())
+                                us -> us.getAttivo() && us.getIdAfferenzaStruttura().getId().equals(idAfferenzaStruttura.getId())
+                                && us.getIdAziendaDerivazioneUnificazione().getId().equals(sorgente.getIdAzienda().getId())
                         ).toList();
 
                         for (UtenteStruttura daSpegnereASorgente : sorgenteUtentiStrutturaDaSpegnereList) {
@@ -801,16 +817,16 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                         unificazione.getIdStrutturaSorgente();
 
                         List<Struttura> struttureDaChiudereList = queryFactory
-                            .select(qStruttura)
-                            .from(qStruttura)
-                            .where(
-                                qStruttura.idStrutturaUnificata.id.eq(unificazione.getId()).and(qStruttura.attiva)).fetch();
+                                .select(qStruttura)
+                                .from(qStruttura)
+                                .where(
+                                        qStruttura.idStrutturaUnificata.id.eq(unificazione.getId()).and(qStruttura.attiva)).fetch();
                         for (Struttura struttura : struttureDaChiudereList) {
                             OperationsUtils.chiudiStruttura(
-                                struttura,
-                                queryFactory,
-                                qStruttura,
-                                qStoricoRelazione);
+                                    struttura,
+                                    queryFactory,
+                                    qStruttura,
+                                    qStoricoRelazione);
                             for (UtenteStruttura usDaSpegnere : struttura.getUtenteStrutturaList()) {
                                 spegniUtenteStruttura(usDaSpegnere, repositoryFactory.getEntityManager());
                                 spegniPermessiUtenteStrutturaMorto(usDaSpegnere, permissionManager, "spegni unificazione id " + unificazione.getId());
@@ -840,37 +856,37 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     private void spegniPermessiUtenteStrutturaMorto(UtenteStruttura us, PermissionManager pm, String spentoDa) {
         try {
             pm.deletePermission(
-                us.getIdUtente(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                BlackBoxConstants.Ambito.PICO.toString(),
-                BlackBoxConstants.Tipo.FLUSSO.toString(),
-                spentoDa
+                    us.getIdUtente(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    BlackBoxConstants.Ambito.PICO.toString(),
+                    BlackBoxConstants.Tipo.FLUSSO.toString(),
+                    spentoDa
             );
             pm.deletePermission(
-                us.getIdUtente(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                BlackBoxConstants.Ambito.DELI.toString(),
-                BlackBoxConstants.Tipo.FLUSSO.toString(),
-                spentoDa
+                    us.getIdUtente(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    BlackBoxConstants.Ambito.DELI.toString(),
+                    BlackBoxConstants.Tipo.FLUSSO.toString(),
+                    spentoDa
             );
             pm.deletePermission(
-                us.getIdUtente(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                BlackBoxConstants.Ambito.DETE.toString(),
-                BlackBoxConstants.Tipo.FLUSSO.toString(),
-                spentoDa
+                    us.getIdUtente(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    BlackBoxConstants.Ambito.DETE.toString(),
+                    BlackBoxConstants.Tipo.FLUSSO.toString(),
+                    spentoDa
             );
 
         } catch (BlackBoxPermissionException ex) {
@@ -890,15 +906,15 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
         Integer bitRuoliUtente = realUser != null ? realUser.getBitRuoli() : user.getBitRuoli();
 
         List<Ruolo> ruoli = queryFactory.select(qRuolo).from(qRuolo).where(
-            qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CA.toString()).or(
-                qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.SD.toString()))
+                qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.CA.toString()).or(
+                        qRuolo.nomeBreve.eq(Ruolo.CodiciRuolo.SD.toString()))
         ).fetch();
 
         Boolean lanciaRibaltone = false;
         for (Ruolo ruolo : ruoli) {
             if (((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.CA) && (bitRuoliUtente & ruolo.getMascheraBit()) == ruolo.getMascheraBit()))
-                || ((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.SD))
-                && (bitRuoliPersona & ruolo.getMascheraBit()) == ruolo.getMascheraBit())) {
+                    || ((ruolo.getNomeBreve().equals(Ruolo.CodiciRuolo.SD))
+                    && (bitRuoliPersona & ruolo.getMascheraBit()) == ruolo.getMascheraBit())) {
                 lanciaRibaltone = true;
                 break;
             }
@@ -912,10 +928,10 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(repositoryFactory.getEntityManager());
             QImportazioniOrganigramma qImportazioniOrganigramma = QImportazioniOrganigramma.importazioniOrganigramma;
             jPAQueryFactory
-                .update(qImportazioniOrganigramma)
-                .set(qImportazioniOrganigramma.esito, esito)
-                .where(qImportazioniOrganigramma.id.eq(idImportazioneOgranigramma))
-                .execute();
+                    .update(qImportazioniOrganigramma)
+                    .set(qImportazioniOrganigramma.esito, esito)
+                    .where(qImportazioniOrganigramma.id.eq(idImportazioneOgranigramma))
+                    .execute();
         });
     }
 

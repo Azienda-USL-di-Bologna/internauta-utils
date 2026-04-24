@@ -56,6 +56,7 @@ public class GruSpecificData extends SpecificData {
         
         private Boolean inizialized = false;
         private Sql2o sql2oConnecion;
+        private HikariDataSource hikariDataSource;
 
         public Connessione(String driver, String url, String port, String username, String password, String sql2oMinIdleSize, String sql2oMaxPoolSize, String sql2oConnectionTimeout,String tipologia) {
             this.driver = driver;
@@ -69,8 +70,8 @@ public class GruSpecificData extends SpecificData {
             this.tipologia = tipologia;
                  
         }
-        public Boolean build(){
-            
+        public synchronized Boolean build(){
+            close();
             this.sql2oConnecion = getConnection();
             
             if (this.sql2oConnecion != null) {
@@ -170,7 +171,7 @@ public class GruSpecificData extends SpecificData {
             this.tipologia = tipologia;
         }
         
-        public Sql2o getConnection() {
+        public synchronized Sql2o getConnection() {
             HikariConfig hikariConfig = new HikariConfig();
             hikariConfig.setDriverClassName(this.getDriver());
             if (StringUtils.hasText(this.getUrl()) && StringUtils.hasText(this.getPort())) {
@@ -185,8 +186,17 @@ public class GruSpecificData extends SpecificData {
             hikariConfig.setMinimumIdle(Integer.parseInt(this.getSql2oMinIdleSize()));
             hikariConfig.setMaximumPoolSize(Integer.parseInt(this.getSql2oMaxPoolSize()));
             hikariConfig.setConnectionTimeout(Integer.parseInt(this.getSql2oConnectionTimeout()));
-            HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
-            return new Sql2o(hikariDataSource);
+            this.hikariDataSource = new HikariDataSource(hikariConfig);
+            return new Sql2o(this.hikariDataSource);
+        }
+        
+        public synchronized void close() {
+            this.sql2oConnecion = null;
+            this.inizialized = false;
+            if (this.hikariDataSource != null && !this.hikariDataSource.isClosed()) {
+                this.hikariDataSource.close();
+            }
+            this.hikariDataSource = null;
         }
 
     }    

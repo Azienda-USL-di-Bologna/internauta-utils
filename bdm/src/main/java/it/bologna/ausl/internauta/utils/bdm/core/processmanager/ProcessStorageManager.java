@@ -2,8 +2,8 @@ package it.bologna.ausl.internauta.utils.bdm.core.processmanager;
 
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -19,6 +19,6 @@ public interface ProcessStorageManager {
 
     public List<String> getProcessList() throws StorageException;
 
-    public List<String> getProcessList(Bag queryParams) throws StorageException;
+    public List<String> getProcessList(Map<String, Object> queryParams) throws StorageException;
 
 }
