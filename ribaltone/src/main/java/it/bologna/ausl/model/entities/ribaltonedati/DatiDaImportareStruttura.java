@@ -226,7 +226,7 @@ public class DatiDaImportareStruttura implements Serializable, DatiRibaltoneInte
 
         output.setIdCasella(this.idCasella);
         output.setIdPadre(this.idPadre);
-        output.setDescrizione(WordUtils.capitalizeFully(this.descrizione).trim());
+        output.setDescrizione(this.descrizione.trim().replaceAll("\\s+", " "));
         output.setDatain(this.datain);
         output.setDatafi(this.datafi);
         output.setTipoLegame(this.tipoLegame);

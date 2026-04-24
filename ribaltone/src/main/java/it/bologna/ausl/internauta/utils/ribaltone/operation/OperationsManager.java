@@ -225,7 +225,7 @@ public class OperationsManager {
                     log.info("inizio manageOperationUnificazioniStruttura");
                     manageOperationUnificazioniStruttura(daImportareStruttura, Operation.Azione.CAMBIO_PADRE, queryFactory);
                     log.info("fine manageOperationUnificazioniStruttura");
-                } else if (!WordUtils.capitalizeFully(struttureImportate.get(posizione).getDescrizione().trim()).equals(daImportareStruttura.getDescrizione())) {
+                } else if (!struttureImportate.get(posizione).getDescrizione().trim().replaceAll("\\s+", " ").equals(daImportareStruttura.getDescrizione())) {
                     //rinomina
                     HashMap<String, String> descrizioniAggiuntive = new HashMap<>();
                     descrizioniAggiuntive.put("descrizioneCasellaVecchia", struttureImportate.get(posizione).getDescrizione());
