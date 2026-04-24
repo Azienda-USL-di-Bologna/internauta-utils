@@ -138,31 +138,34 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
         
         sftpManager.connect();
         try {
-            if (sftpManager.existsPath(outputBasePath)) {
+            if (!sftpManager.existsPath(outputBasePath)) {
+                sftpManager.createDirectory(outputBasePath);
+            }
             MinIOWrapper minIOWrapper = repositoryConfiguration.getRepositoryManager().getMinIOWrapper();
-    //        AtomicInteger index = new AtomicInteger(0);
+//        AtomicInteger index = new AtomicInteger(0);
 
-                documentiLottoStream.forEach(documentoLotto -> {
-                    DocumentoElaborato documentoElaborato = 
-                        new DocumentoElaborato()
-                        .documentoId(documentoLotto.getDocumentoId())
-                        .outputFileName(documentoLotto.getOutputFileName())
-                        .outputFileHash(documentoLotto.getOutputFileSha256());
+            documentiLottoStream.forEach(documentoLotto -> {
+                DocumentoElaborato documentoElaborato = 
+                    new DocumentoElaborato()
+                    .documentoId(documentoLotto.getDocumentoId())
+                    .outputFileName(documentoLotto.getOutputFileName())
+                    .outputFileHash(documentoLotto.getOutputFileSha256());
 
-                    String filePath = String.format("%s/%s", outputBasePath, documentoElaborato.getOutputFileName());
-                    try {
-                        sftpManager.uploadFile(minIOWrapper.getByFileId(documentoLotto.getOutputFileRepoId()), filePath);
-                    } catch (Exception ex) {
-                        String error = String.format("errore nell'upload del file della riga con id %s sul server sftp", documentoLotto.getId());
-                        log.error(error, ex);
-                        throw new RuntimeExceptionContainer(new SendIntegrationException(error, ex));
-                    }
+                String filePath = String.format("%s/%s", outputBasePath, documentoElaborato.getOutputFileName());
+                try {
+                    sftpManager.uploadFile(minIOWrapper.getByFileId(documentoLotto.getOutputFileRepoId()), filePath);
+                } catch (Exception ex) {
+                    String error = String.format("errore nell'upload del file della riga con id %s sul server sftp", documentoLotto.getId());
+                    log.error(error, ex);
+                    throw new RuntimeExceptionContainer(new SendIntegrationException(error, ex));
+                }
 
-                    lottoElaborato.addDocumentiElaboratiItem(documentoElaborato);
-                });
-            } 
+                lottoElaborato.addDocumentiElaboratiItem(documentoElaborato);
+            });
         } catch (RuntimeExceptionContainer ex) {
-            throw new MasterjobsWorkerException(timestamp, ex.getException());
+            String error = "errore nel caricamento dei file firmatori sul sftp";
+            log.error(error, ex);
+            throw new MasterjobsWorkerException(error, ex.getException());
         } finally {
             // si disconnette dal server SFTP
             sftpManager.disconnect();

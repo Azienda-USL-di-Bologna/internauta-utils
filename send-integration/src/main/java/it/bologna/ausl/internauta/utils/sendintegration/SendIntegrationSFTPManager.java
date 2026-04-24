@@ -128,6 +128,12 @@ public class SendIntegrationSFTPManager {
         }
     }
     
+    public void createDirectory(String path) throws SftpException {
+        if (path.startsWith("/")) path = path.substring(1);
+        ChannelSftp sftpChannel = sftpConnection.get().getSecond();
+        sftpChannel.mkdir(this.basePath + path);
+    }
+    
     public InputStream downloadFile(String path) throws SftpException {
         if (path.startsWith("/")) path = path.substring(1);
         ChannelSftp sftpChannel = sftpConnection.get().getSecond();
