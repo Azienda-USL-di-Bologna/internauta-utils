@@ -35,6 +35,8 @@ import it.bologna.ausl.model.entities.baborg.Utente;
 import it.bologna.ausl.model.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
 import it.bologna.ausl.model.entities.rubrica.DettaglioContatto;
+import it.bologna.ausl.model.entities.rubrica.QDettaglioContatto;
+import it.bologna.ausl.model.entities.rubrica.projections.generated.ContattoWithDettaglioContattoList;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.Map;
@@ -1479,15 +1481,15 @@ public class OperationsUtils {
 //
 //        }
 //    }
-    public static void gestisciContatti(RepositoryFactory repositoryFactory, List<UtenteStruttura> utenteStrutturaDaInserireList, List<UtenteStruttura> utenteStrutturaDaSpegnereList) {
+    public static void gestisciContatti(RepositoryFactory repositoryFactory, List<UtenteStruttura> utenteStrutturaDaInserireList, List<UtenteStruttura> utenteStrutturaDaSpegnereList, JPAQueryFactory jpaQueryFactory) {
         if (utenteStrutturaDaInserireList != null) {
             for (UtenteStruttura utenteStrutturaNew : utenteStrutturaDaInserireList) {
                 log.info("sto gestendo utente con cf: " + utenteStrutturaNew.getIdUtente().getIdPersona().getCodiceFiscale() + " su struttura " + utenteStrutturaNew.getIdStruttura().getNome()
                         + " su azienda " + utenteStrutturaNew.getIdStruttura().getIdAzienda().getId());
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew);
                 Contatto contattoPersona = repositoryFactory.getEntityManager().find(Contatto.class, utenteStrutturaNew.getIdUtente().getIdPersona().getIdContatto().getId());
-
-                List<DettaglioContatto> dettagliContattiDellaPersonaList = contattoPersona.getDettaglioContattoList();
+                QDettaglioContatto qDettaglioContatto = QDettaglioContatto.dettaglioContatto;
+                List<DettaglioContatto> dettagliContattiDellaPersonaList = jpaQueryFactory.select(qDettaglioContatto).from(qDettaglioContatto).where(qDettaglioContatto.idContatto.id.eq(contattoPersona.getId())).fetch();
                 repositoryFactory.getEntityManager().refresh(utenteStrutturaNew.getIdStruttura());
                 //List<DettaglioContatto> dettagliContattiDellaPersona = dettagliContattiDellaPersonaList.stream().filter(dc -> dc.getIdContattoEsterno() != null && dc.getIdContattoEsterno().getId().equals(utenteStrutturaNew.getIdStruttura().getIdContatto().getId())).toList();
                 List<DettaglioContatto> dettagliContattiDellaPersona = new ArrayList<>();
