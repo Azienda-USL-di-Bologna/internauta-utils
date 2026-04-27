@@ -261,6 +261,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
                 String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
                 risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
+                log.info("Indice JSON:\n" + indiceJsonString);
 
                 // --Sezione di collegamento con UNIMATICA e versamento--
                 //creazione del multipart
