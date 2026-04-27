@@ -86,8 +86,8 @@ public class RibaltoneManagerUtils {
         Integer progressivoUltimaTrasformazione;
         // NB: in JPQL si deve usare il nome dell'entità Java, in questo caso Azienda
         Azienda idAzienda = repositoryFactory.getEntityManager().createQuery("select a from Azienda a where codice = :codice", Azienda.class)
-            .setParameter("codice", codiceAzienda)
-            .getSingleResult();
+                .setParameter("codice", codiceAzienda)
+                .getSingleResult();
         switch (ribaltoneConf.getFonte()) {
             case "GRU" -> {
                 GruSpecificData gruSpecificData = objectMapper.convertValue(ribaltoneConf.getSpecifiche(), GruSpecificData.class);
@@ -136,8 +136,8 @@ public class RibaltoneManagerUtils {
     }
 
     public static List<DatiDaImportareAppartenente> unisciListeUnichePerCodiceFiscaleIdCasella(
-        List<DatiDaImportareAppartenente> appartenenti,
-        List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti) {
+            List<DatiDaImportareAppartenente> appartenenti,
+            List<DatiDaImportareAppartenente> fonteAggiuntaAppartenenti) {
 
         // Mappa con chiave composta: codiceFiscale_idCasella
         Map<String, DatiDaImportareAppartenente> mappa = new HashMap<>();
@@ -156,8 +156,8 @@ public class RibaltoneManagerUtils {
     }
 
     private static List<DatiDaImportareAnagrafica> mergeAnagraficheListsOverrideOnCodiceFiscale(
-        List<DatiDaImportareAnagrafica> lista1,
-        List<DatiDaImportareAnagrafica> lista2) {
+            List<DatiDaImportareAnagrafica> lista1,
+            List<DatiDaImportareAnagrafica> lista2) {
 
         Map<String, DatiDaImportareAnagrafica> mappaPerCodiceFiscale = new HashMap<>();
 
@@ -180,8 +180,8 @@ public class RibaltoneManagerUtils {
     }
 
     public static List<DatiDaImportareStruttura> mergeDatiDaImportareStruttureListsOnConflicIdCasellaExpandIntervallo(
-        List<DatiDaImportareStruttura> lista1,
-        List<DatiDaImportareStruttura> lista2) {
+            List<DatiDaImportareStruttura> lista1,
+            List<DatiDaImportareStruttura> lista2) {
 
         Map<Integer, DatiDaImportareStruttura> mappaPerIdCasella = new HashMap<>();
 
@@ -244,7 +244,7 @@ public class RibaltoneManagerUtils {
                     WHERE t.id = ?;
                     """;
                 repositoryFactory.getJdbcTemplate()
-                    .update(sql, max, fonte);
+                        .update(sql, max, fonte);
 
             }
         }
@@ -300,6 +300,7 @@ public class RibaltoneManagerUtils {
             "ALTER TABLE permessi.permessi DISABLE TRIGGER default_attivo_dal;",
             "ALTER TABLE permessi.permessi DISABLE TRIGGER copia_permessi_su_entita_unificate;",
             "ALTER TABLE permessi.permessi DISABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi DISABLE TRIGGER check_attore_archivio_removed;",
             "ALTER TABLE permessi.permessi DISABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
         };
         for (String trigger : triggerDaDisabilitare) {
@@ -315,6 +316,7 @@ public class RibaltoneManagerUtils {
             "ALTER TABLE permessi.permessi ENABLE TRIGGER default_attivo_dal;",
             "ALTER TABLE permessi.permessi ENABLE TRIGGER copia_permessi_su_entita_unificate;",
             "ALTER TABLE permessi.permessi ENABLE TRIGGER z_finally_unify_permission_trigger;",
+            "ALTER TABLE permessi.permessi ENABLE TRIGGER check_attore_archivio_removed;",
             "ALTER TABLE permessi.permessi ENABLE TRIGGER aggiungi_rimuovi_pool_figlio_connesso;"
         };
         for (String trigger : triggerDaDisabilitare) {
