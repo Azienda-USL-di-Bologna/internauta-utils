@@ -628,7 +628,7 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                         if (debuggingCanExecuteJob(job.getName()) && worker._isExecutable()) {
                             
                             // eseguo il job tramite il worker
-                            JobWorkerResult res = worker.doWork();
+                            JobWorkerResult res = worker.doWork(true);
                             /* 
                             se l'esecuzione è andata a buon fine cancello il job dal DB (se il job è l'ultimo verrà cancellato
                             anche il set e l'ObjectStatus (se presente)

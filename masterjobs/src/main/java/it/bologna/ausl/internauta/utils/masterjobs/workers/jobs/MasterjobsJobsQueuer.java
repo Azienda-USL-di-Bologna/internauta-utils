@@ -104,6 +104,7 @@ public class MasterjobsJobsQueuer {
      * @return i jobs che che sono stati creati
      */
     public MasterjobsQueueData queueOnCommit(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, String ip) {
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             try {
                 MasterjobsQueueData _queueData = this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip);

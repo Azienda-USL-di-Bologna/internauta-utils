@@ -97,12 +97,12 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
                         false
                     );
 
-                    if (true) { // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
+                    if (false) { // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
                         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
                         try {
                             transactionTemplate.execute(a -> {
                                 try { 
-                                    return jobWorker.doWork();
+                                    return jobWorker.doWork(false);
                                 } catch (MasterjobsWorkerException ex) {
                                     throw new RuntimeExceptionContainer(ex);
                                 }
@@ -117,10 +117,10 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
                     } else {
                         masterjobsJobsQueuer.queueOnCommit(
                             Arrays.asList(jobWorker),
-                            null, // ObjectID 
-                            null,
-                            null,
-                            false, // waitForObject
+                            String.format("%s_%s", paId, lottoId),
+                            "lotto",
+                            "send-integration",
+                            true, // waitForObject
                             Set.SetPriority.NORMAL,
                             null
                         );

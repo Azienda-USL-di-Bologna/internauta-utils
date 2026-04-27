@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.TransactionDefinition;
 
 /**
  *
@@ -65,49 +66,60 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info("sono in do doWork() di {}", getName());
-        
-        LottiSignerAndRegisterJobWorkerData workerData = getWorkerData();
-        // leggo la configurazione dell'azienda a cui il lotto è associato, l'azienda è identificata dal paId del lotto
-        SendIntegrationConfiguration lepidaAziendaConfiguration = 
-                entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
-            Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
-            Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(workerData.getPaId());
-        // controllo che l'integrazione con send sia attiva per l'azienda indicata
-        boolean aziendaActive = (boolean) paConfiguration.get("active");
-        if (aziendaActive) {
-        } else {
-            String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", workerData.getPaId());
-            log.error(error);
-            throw new MasterjobsWorkerException(error);
-        }
-        SendIntegrationScriptaWrapperManager scriptaWrapperManger = sendIntegrationScriptaWrapperConfiguration.getScriptaWrapperManger();
+       
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         try {
-            InfoRegistrazioneLotto infoRegistrazioneLotto = scriptaWrapperManger.generaDocumentoPUProtocollato(
-                workerData.getPaId(), workerData.getLottoId(), workerData.getFirmatario(), workerData.getOutputBasePath(), paConfiguration);
-            LottoElaborato lottoElaborato = getLottoElaborato(
-                workerData.getLottoId(), workerData.getPaId(), 
-                workerData.getFirmatario(), workerData.getNumeroDocumenti(),
-                workerData.getTimestamp(), workerData.getOutputBasePath(), infoRegistrazioneLotto
-            );
-            RestCallToSendJobWorkerData restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildLottoElaborato(
-                lottoElaborato
-            );
-            RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
-                .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
-            );
-            restCallToSendJobWorker.doWork(); // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
-            if (false) {
-                masterjobsJobsQueuer.queueOnCommit(
-                    Arrays.asList(restCallToSendJobWorker),
-                    String.format("%s_%s", lottoElaborato.getPaId(), lottoElaborato.getLottoId()),
-                    "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
-            }
-        } catch (Exception ex) {
-            String error = String.format("errore nella generazione del protocollo per il lotto %s", workerData.getLottoId());
-            log.error(error, ex);
-            throw new MasterjobsWorkerException(error, ex);
+            transactionTemplate.executeWithoutResult(a -> {
+                LottiSignerAndRegisterJobWorkerData workerData = getWorkerData();
+                // leggo la configurazione dell'azienda a cui il lotto è associato, l'azienda è identificata dal paId del lotto
+                SendIntegrationConfiguration lepidaAziendaConfiguration = 
+                        entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
+                    Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
+                    Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(workerData.getPaId());
+                // controllo che l'integrazione con send sia attiva per l'azienda indicata
+                boolean aziendaActive = (boolean) paConfiguration.get("active");
+                if (aziendaActive) {
+                } else {
+                    String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", workerData.getPaId());
+                    log.error(error);
+                    throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
+                }
+                SendIntegrationScriptaWrapperManager scriptaWrapperManger = sendIntegrationScriptaWrapperConfiguration.getScriptaWrapperManger();
+                try {
+                    InfoRegistrazioneLotto infoRegistrazioneLotto = scriptaWrapperManger.generaDocumentoPUProtocollato(
+                        workerData.getPaId(), workerData.getLottoId(), workerData.getFirmatario(), workerData.getOutputBasePath(), paConfiguration);
+                    LottoElaborato lottoElaborato = getLottoElaborato(
+                        workerData.getLottoId(), workerData.getPaId(), 
+                        workerData.getFirmatario(), workerData.getNumeroDocumenti(),
+                        workerData.getTimestamp(), workerData.getOutputBasePath(), infoRegistrazioneLotto
+                    );
+                    RestCallToSendJobWorkerData restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildLottoElaborato(
+                        lottoElaborato
+                    );
+                    RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
+                        .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
+                    );
+                    
+                    if (true) {
+                        masterjobsJobsQueuer.queueOnCommit(
+                            Arrays.asList(restCallToSendJobWorker),
+                            String.format("%s_%s", lottoElaborato.getPaId(), lottoElaborato.getLottoId()),
+                            "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                    } else {
+                        restCallToSendJobWorker.doWork(false); // Eseguo sincrono per le prove 
+                    }
+                } catch (Exception ex) {
+                    String error = String.format("errore nella generazione del protocollo per il lotto %s", workerData.getLottoId());
+                    log.error(error, ex);
+                    throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                }
+            });
+        } catch (Throwable ex) {
+            if (ex instanceof RuntimeExceptionContainer re)
+                throw new MasterjobsWorkerException(re.getException());
+            else 
+                throw new MasterjobsWorkerException(ex);
         }
-        
         log.info("job finito!");
         return null;
     }
@@ -133,7 +145,7 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
         Stream<DocumentoLottoEntity> documentiLottoStream = queryFactory
                 .select(qDocumentoLottoEntity)
                 .from(qDocumentoLottoEntity)
-                .where(qDocumentoLottoEntity.lottoId.eq(lottoId).and(qDocumentoLottoEntity.paId.eq(lottoId)))
+                .where(qDocumentoLottoEntity.lottoId.eq(lottoId).and(qDocumentoLottoEntity.paId.eq(paId)))
                 .stream();
         
         sftpManager.connect();

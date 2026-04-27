@@ -23,7 +23,7 @@ public class FooServiceWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {
+    public WorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info("sono il FooServiceWorker e sto funzionando...");
         return null;
     }

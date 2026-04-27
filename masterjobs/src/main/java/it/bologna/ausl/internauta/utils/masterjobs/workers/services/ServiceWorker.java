@@ -2,9 +2,11 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.services;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.hypersistence.utils.hibernate.type.range.Range;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
+import it.bologna.ausl.internauta.utils.masterjobs.workers.WorkerResult;
 import it.bologna.ausl.model.entities.masterjobs.QService;
 import it.bologna.ausl.model.entities.masterjobs.Service;
 import java.time.ZonedDateTime;
@@ -49,6 +51,38 @@ public abstract class ServiceWorker extends Worker implements Runnable {
      * @throws it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException
      */
     public void preWork() throws MasterjobsWorkerException {}
+
+    @Override
+    public WorkerResult doWork(boolean newConnection) throws MasterjobsWorkerException {
+        if (newConnection) {
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        } else {
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        }
+        WorkerResult res;
+        try {
+            res = transactionTemplate.execute(a -> {
+                try {
+                    return doRealWork();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
+                }
+            });
+        } catch (Throwable ex) {
+            if (ex instanceof MasterjobsRuntimeExceptionWrapper mrew) {
+                String error = "error on doRealWork";
+                log.error(error, mrew.getOriginalException());
+                throw new MasterjobsWorkerException(error, mrew.getOriginalException());
+            } else {
+                String error = "error on doRealWork";
+                log.error(error, ex);
+                throw new MasterjobsWorkerException(error, ex);
+            }
+        }
+        return res;
+    }
+    
+    public abstract WorkerResult doRealWork() throws MasterjobsWorkerException;
     
     /**
      * Da fare l'override nel caso si voglia eseguire un'operazione dopo la doWork()
@@ -121,7 +155,7 @@ public abstract class ServiceWorker extends Worker implements Runnable {
 
             transactionTemplate.execute(t -> {
                 try {
-                    return doWork();
+                    return doWork(true);
                 } catch (Throwable ex) {
                     String errorMessage = String.format("error on executing doWork of service %s", getName());
                     log.error(errorMessage, ex);

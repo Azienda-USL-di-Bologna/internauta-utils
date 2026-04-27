@@ -1,6 +1,7 @@
 package it.bologna.ausl.model.entities.sendintegration;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Cacheable;
@@ -387,6 +388,11 @@ public class DocumentoLottoEntity implements Serializable {
     public void setInsertTs(ZonedDateTime insertTs) {
         this.insertTs = insertTs;
     }
+    
+    @JsonIgnore
+    public Builder getBuilder() {
+        return new Builder(this);
+    }
 
     @Override
     public int hashCode() {
@@ -518,9 +524,15 @@ public class DocumentoLottoEntity implements Serializable {
     
     public static class Builder {
         
-        private final DocumentoLottoEntity entity = new DocumentoLottoEntity();
+        private final DocumentoLottoEntity entity;
         
-        public Builder() {}
+        public Builder() {
+            this.entity = new DocumentoLottoEntity();
+        }
+        
+        private Builder(DocumentoLottoEntity entity) {
+            this.entity = entity;
+        }
         
         public Builder id(UUID id) {
             entity.setId(id);
@@ -616,8 +628,8 @@ public class DocumentoLottoEntity implements Serializable {
             return this;
         }
         
-        public Builder outputMimeType(String outputMimeType) {
-            entity.setOutputFileMimeType(outputMimeType);
+        public Builder outputFileMimeType(String outputFileMimeType) {
+            entity.setOutputFileMimeType(outputFileMimeType);
             return this;
         }
         

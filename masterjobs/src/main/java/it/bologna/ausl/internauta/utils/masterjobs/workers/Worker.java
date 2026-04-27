@@ -40,7 +40,7 @@ public abstract class Worker {
     protected String ip;
     protected Integer port;
     
-    public abstract WorkerResult doWork() throws MasterjobsWorkerException;
+    public abstract WorkerResult doWork(boolean newConnection) throws MasterjobsWorkerException;
 
     /**
      * torna il nome del job/service che il worker sa eseguire.
