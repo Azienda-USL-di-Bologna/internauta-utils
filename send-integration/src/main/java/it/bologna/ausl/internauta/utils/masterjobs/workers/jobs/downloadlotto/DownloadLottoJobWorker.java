@@ -212,9 +212,9 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                         //restCallToSendJobWorker.doWork();
                         else {
                             masterjobsJobsQueuer.queueOnCommit(
-                                    Arrays.asList(restCallToSendJobWorker, lottiSignerAndRegisterJobWorker),
-                                    String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()),
-                                    "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                                Arrays.asList(restCallToSendJobWorker, lottiSignerAndRegisterJobWorker),
+                                String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()),
+                                "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
                         }
                         //entityManager.flush();
                     } catch (Exception ex) {
