@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.HexFormat;
 import org.openpdf.text.pdf.PdfReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,12 @@ public class SendIntegrationUtils {
 
         String base64Sha256 = Base64.getEncoder().encodeToString(sha256);
 
+        return base64Sha256;
+    }
+    
+    public static String getSha256Base64EncodedFromSha256Hex(String sha256Hex) {
+        byte[] bytes = HexFormat.of().parseHex(sha256Hex);
+        String base64Sha256 = Base64.getEncoder().encodeToString(bytes);
         return base64Sha256;
     }
     

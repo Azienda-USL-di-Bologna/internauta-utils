@@ -79,8 +79,8 @@ public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerDa
                             DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_DA_COMUNICARE;
                             statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_COMUNICATO;
                             if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoBaseConEventualiErrori().getPaId(), jobData.getLottoBaseConEventualiErrori().getLottoId(), statusDaVerificare)) {
-                                //resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(jobData.getLottoBaseConEventualiErrori());
-                                resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoBaseConEventualiErrori().getLottoId()));
+                                resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(jobData.getLottoBaseConEventualiErrori());
+                                //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoBaseConEventualiErrori().getLottoId()));
                             } else {
                                 String error = String.format(
                                     "impossibile eseguire la chiamata POST al %s perché lo status di tutti i documenti del lotto non è %s", 
@@ -99,8 +99,8 @@ public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerDa
                             DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_DA_COMUNICARE;
                             statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_COMUNICATO;
                             if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoElaborato().getPaId(), jobData.getLottoElaborato().getLottoId(), statusDaVerificare)) {
-                                //resp = fruitoreApi.lottoElaboratoWithHttpInfo(jobData.getLottoElaborato());
-                                resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoElaborato().getLottoId()));
+                                resp = fruitoreApi.lottoElaboratoWithHttpInfo(jobData.getLottoElaborato());
+                                //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoElaborato().getLottoId()));
 
                             } else {
                                 String error = String.format(
