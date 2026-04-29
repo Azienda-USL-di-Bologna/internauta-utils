@@ -1,6 +1,8 @@
 package it.bologna.ausl.internauta.utils.sendintegration.configuration;
 
-import it.bologna.ausl.internauta.utils.sendintegration.model.LottoElaborato;
+import it.bologna.ausl.internauta.utils.sendintegration.exceptions.SendIntegrationException;
+import it.bologna.ausl.internauta.utils.sendintegration.model.InfoRegistrazioneLotto;
+import java.util.Map;
 
 /**
  * Classe astratta che descrive i metodi che internauta deve implementare per potersi integrare con il modulo send-integration
@@ -12,5 +14,5 @@ import it.bologna.ausl.internauta.utils.sendintegration.model.LottoElaborato;
  */
 public abstract class SendIntegrationScriptaWrapperManager {
     
-    public abstract LottoElaborato generaDocumentoPUProtocollato();
+    public abstract InfoRegistrazioneLotto generaDocumentoPUProtocollato(String paId, String lottoId, String cfFirmatario, String outputBasePath, Map<String, Object> paConfiguration) throws SendIntegrationException ;
 }

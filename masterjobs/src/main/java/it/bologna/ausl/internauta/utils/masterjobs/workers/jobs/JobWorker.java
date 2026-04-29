@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.masterjobs.workers.jobs;
 import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingObject;
+import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsRuntimeExceptionWrapper;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.repository.JobReporitory;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.Worker;
@@ -101,17 +102,43 @@ public abstract class JobWorker<T extends JobWorkerData, R extends JobWorkerResu
      * da richiamare per far eseguire il job.
      * Se il worker è deferred, verranno prima calcolati i WorkerData richiamando il metodo astratto toWorkerData
      * sui deferred data. Questo metodo è implementato dalle classi WorkerDeferredData concrete
+     * @param newConnection se true, il job verrà eseguito in una nuova connessione e poi committato al termine dello stesso
      * @return il risultato della chiamata al metodo doRealWork
      * @throws MasterjobsWorkerException 
      */
     //@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @Override
-    public R doWork() throws MasterjobsWorkerException {
+    public R doWork(boolean newConnection) throws MasterjobsWorkerException {
         log.info(String.format("executing job %s with jobId: %s ", getName(), getJobId()));
         if (deferred) {
             this._workerData = this._workerDeferredData.toWorkerData();
         }
-        R res = doRealWork();
+        if (newConnection) {
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        } else {
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        }
+        R res;
+        try {
+            res = transactionTemplate.execute(a -> {
+                try {
+                    return doRealWork();
+                } catch (MasterjobsWorkerException ex) {
+                    throw new MasterjobsRuntimeExceptionWrapper(ex);
+                }
+            });
+        } catch (Throwable ex) {
+            if (ex instanceof MasterjobsRuntimeExceptionWrapper mrew) {
+                String error = "error on doRealWork";
+                log.error(error, mrew.getOriginalException());
+                throw new MasterjobsWorkerException(error, mrew.getOriginalException());
+            } else {
+                String error = "error on doRealWork";
+                log.error(error, ex);
+                throw new MasterjobsWorkerException(error, ex);
+            }
+        }
+        //R res = doRealWork();
         log.info(String.format("job %s with jobId: %s ended", getName(), getJobId()));
         return res;
     }

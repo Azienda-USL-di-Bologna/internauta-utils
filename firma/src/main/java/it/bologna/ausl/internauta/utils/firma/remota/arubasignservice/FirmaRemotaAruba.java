@@ -425,7 +425,9 @@ public class FirmaRemotaAruba extends FirmaRemota {
                 }
             } else {
                 if (userInformation.getFirmaDelegata()) {
-                    identity.setDelegatedPassword(CREDENTIAL_PROXY_PASS);
+                    // per la firma delega uso sempre il credential manager interno
+                    identity.setDelegatedPassword(internalCredentialManager.getPlainPassword(firmaDelega.getUsername(), configuration.getHostId()));
+                    //identity.setDelegatedPassword(CREDENTIAL_PROXY_PASS);
                 } else {
                     identity.setUserPWD(CREDENTIAL_PROXY_PASS);
                 }

@@ -33,7 +33,7 @@ public class AutoRelaunchJobsWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {
+    public WorkerResult doRealWork() throws MasterjobsWorkerException {
         Long errorQueueSize = redisTemplate.opsForList().size(masterjobsApplicationConfig.getErrorQueue());
         if (errorQueueSize != null && errorQueueSize > 0) {
             log.info(String.format("found %s jobs in error, relaunch...", errorQueueSize));

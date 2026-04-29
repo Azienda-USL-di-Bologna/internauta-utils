@@ -23,7 +23,7 @@ import org.hibernate.annotations.Type;
  * @author gdm
  */
 @Entity
-@Table(name = "configuration", schema = "sendintegration", catalog = "internauta")
+@Table(name = "configuration", schema = "send_integration", catalog = "internauta")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Cacheable(false)
 //@GenerateProjections({})

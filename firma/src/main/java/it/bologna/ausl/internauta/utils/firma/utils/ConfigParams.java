@@ -39,7 +39,9 @@ public class ConfigParams {
     
     public enum DownloaderParamsKey {
         uploadUrl,
+        uploadUrlInternal,
         downloadUrl,
+        downloadUrlInternal,
         uploaderBucket
     }
     
@@ -116,6 +118,22 @@ public class ConfigParams {
             .replace("{scheme}", scheme)
             .replace("{hostname}", hostname)
             .replace("{port}", port.toString());
+    }
+    
+    /**
+     * Torna l'url del downloder interno, da utilizzare nel caso il download lo dovrà effettuare il backend e non il browser
+     * @return 
+     */
+    public String getDownloaderUrlInternal() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrlInternal.toString()));
+    }
+    
+    /**
+     * Torna l'url dell'uploader interno, da utilizzare nel caso il download lo dovrà effettuare il backend e non il browser
+     * @return 
+     */
+    public String getUploaderUrlInternal() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrlInternal.toString()));
     }
     
     /**

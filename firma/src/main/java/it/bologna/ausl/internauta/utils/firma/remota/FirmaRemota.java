@@ -138,12 +138,19 @@ public abstract class FirmaRemota {
             }
             logger.info(String.format("uploading file %s to Uploader...", file.getFileId()));
             
-            String scheme = request.getScheme();
-            String hostname = CommonUtils.getHostname(request);
-            Integer port = request.getServerPort();
-
-            String downloadUrl = this.configParams.getDownloaderUrl(scheme, hostname, port);
-            String uploadUrl = this.configParams.getUploaderUrl(scheme, hostname, port);
+            String downloadUrl;
+            String uploadUrl;
+            if (request != null) {
+                String scheme = request.getScheme();
+                String hostname = CommonUtils.getHostname(request);
+                Integer port = request.getServerPort();
+                downloadUrl = this.configParams.getDownloaderUrl(scheme, hostname, port);
+                uploadUrl = this.configParams.getUploaderUrl(scheme, hostname, port);
+            } else {
+                downloadUrl = this.configParams.getDownloaderUrlInternal();
+                uploadUrl = this.configParams.getUploaderUrlInternal();
+            }
+            
             // invio il file all'uploader e ottengo l'url per il suo scaricamento
             String res = firmaRemotaDownloaderUtils.uploadToUploader(signedFileInputStream, signedFileName, signedMimeType, false, downloadUrl, uploadUrl);
             

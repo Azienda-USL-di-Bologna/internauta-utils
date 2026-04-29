@@ -11,10 +11,10 @@ import it.bologna.ausl.internauta.utils.sendintegration.model.LottoElaborato;
 public class RestCallToSendJobWorkerData extends JobWorkerData {
     public static enum RestCalls {ELABORA_LOTTO_RICEVUTO, LOTTO_ELABORATO}
     
-    private final String paId;
-    private final RestCalls restCall;
-    private final LottoBaseConEventualiErrori lottoBaseConEventualiErrori;
-    private final LottoElaborato lottoElaborato;
+    private String paId;
+    private RestCalls restCall;
+    private LottoBaseConEventualiErrori lottoBaseConEventualiErrori;
+    private LottoElaborato lottoElaborato;
 
     public static RestCallToSendJobWorkerData buildElaboraLottoRicevuto(LottoBaseConEventualiErrori lottoBaseConEventualiErrori) {
         return new RestCallToSendJobWorkerData(RestCalls.ELABORA_LOTTO_RICEVUTO, lottoBaseConEventualiErrori);
@@ -22,6 +22,9 @@ public class RestCallToSendJobWorkerData extends JobWorkerData {
     
     public static RestCallToSendJobWorkerData buildLottoElaborato(LottoElaborato lottoElaborato) {
         return new RestCallToSendJobWorkerData(RestCalls.LOTTO_ELABORATO, lottoElaborato);
+    }
+
+    public RestCallToSendJobWorkerData() {
     }
     
     private RestCallToSendJobWorkerData(RestCalls restCall, LottoBaseConEventualiErrori lottoBaseConEventualiErrori) {

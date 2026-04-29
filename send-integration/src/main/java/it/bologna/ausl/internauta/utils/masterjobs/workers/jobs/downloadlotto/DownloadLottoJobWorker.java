@@ -17,6 +17,7 @@ import it.bologna.ausl.internauta.utils.sendintegration.SendIntegrationUtils;
 import it.bologna.ausl.internauta.utils.sendintegration.authorization.SendIntegrationAuthorizationUtils;
 import it.bologna.ausl.internauta.utils.sendintegration.configuration.SendIntegrationHttpClientConfiguration;
 import it.bologna.ausl.internauta.utils.sendintegration.configuration.SendIntegrationRepositoryConfiguration;
+import it.bologna.ausl.internauta.utils.sendintegration.exceptions.RuntimeExceptionContainer;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.model.entities.masterjobs.SetInterface;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +40,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.TransactionDefinition;
 
 /**
  *
@@ -69,155 +72,201 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
     public JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info("sono in do doWork() di {}", getName());
         
-        DownloadLottoJobWorkerData jobData = getWorkerData();
-        Lotto lotto = jobData.getLotto();
-        boolean internalError = false;
-        List<Errore> errori = new ArrayList<>();
-        List<DocumentoLottoEntity> documentoLottoEntityList = new ArrayList<>();
-        
-        // raccolgo i file temporanei creati per poterli cancellare alla fine (o ion caso di errore)
-        List<File> tmpFiles = new ArrayList<>();
-        
-        // raccolgo i fileId caricati sul repository per poterli cancellare in caso di errore
-        List<String> repoFileIds = new ArrayList<>();
-        
-        Integer idAzienda;
-        String codiceRegione;
-        String codiceAzienda;
-        String basePath = null;
         try {
-            MinIOWrapper minIOWrapper = repositoryConfiguration.getRepositoryManager().getMinIOWrapper();
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+            transactionTemplate.executeWithoutResult(a -> {
+
+                DownloadLottoJobWorkerData jobData = getWorkerData();
+                Lotto lotto = jobData.getLotto();
+                boolean internalError = false;
+                List<Errore> errori = new ArrayList<>();
+                List<DocumentoLottoEntity> documentoLottoEntityList = new ArrayList<>();
+
+                // raccolgo i file temporanei creati per poterli cancellare alla fine (o ion caso di errore)
+                List<File> tmpFiles = new ArrayList<>();
+
+                // raccolgo i fileId caricati sul repository per poterli cancellare in caso di errore
+                List<String> repoFileIds = new ArrayList<>();
+
+                Integer idAzienda;
+                String codiceRegione;
+                String codiceAzienda;
+                String basePath = null;
+                try {
+                    MinIOWrapper minIOWrapper = repositoryConfiguration.getRepositoryManager().getMinIOWrapper();
 
 
-            // leggo la configurazione dell'azienda a cui il lotto è associato, l'azienda è identificata dal paId del lotto
-            SendIntegrationConfiguration lepidaAziendaConfiguration = 
-                entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
-            Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
-            Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
-            // controllo che l'integrazione con send sia attiva per l'azienda indicata
-            boolean aziendaActive = (boolean) paConfiguration.get("active");
-            if (aziendaActive) {
-            
-                List<Documento> documenti = lotto.getDocumenti();
-                sftpManager.connect();
-                if (sftpManager.existsPath(lotto.getInputBasePath())) {
-                    // questa lista conterrà tutte le entità associate ai documenti del lotto, al termine del ciclo sarà schedulato un job che le gestirà
+                    // leggo la configurazione dell'azienda a cui il lotto è associato, l'azienda è identificata dal paId del lotto
+                    SendIntegrationConfiguration lepidaAziendaConfiguration = 
+                        entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
+                    Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
+                    Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
+                    if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+                        
+                        // controllo che l'integrazione con send sia attiva per l'azienda indicata
+                        boolean aziendaActive = (boolean) paConfiguration.get("active");
+                        if (aziendaActive) {
 
-                    // leggo i parametri di configurazione dell'azienda
-                    idAzienda = (Integer) paConfiguration.get("id_azienda");
-                    codiceRegione = (String) paConfiguration.get("codice_regione");
-                    codiceAzienda = (String) paConfiguration.get("codice_azienda");
-                    basePath = (String) paConfiguration.get("base_path");
+                            List<Documento> documenti = lotto.getDocumenti();
+                            sftpManager.connect();
+                            if (sftpManager.existsPath(lotto.getInputBasePath())) {
+                                // questa lista conterrà tutte le entità associate ai documenti del lotto, al termine del ciclo sarà schedulato un job che le gestirà
 
-                    /*
-                    ciclo su tutti i documenti del lotto:
-                    uno per uno vengono scaricati dal server SFTP
-                    vengono caricati sul nostro repository
-                    viene creata l'entità DocumentoLottoEntity
-                    al termine del ciclo le entità saranno salvata su db e verrà accodato il job che le gestirà
-                    */
-                    for (Documento documento : documenti) {
-                        String filePath = String.format("%s/%s", lotto.getInputBasePath(), documento.getInputFileName());
-                        if (sftpManager.existsPath(filePath)) {
-                            try (InputStream file = sftpManager.retriveFile(filePath)) {
-                                File tmpFile = File.createTempFile(String.format("lotto_%s_job%s_%s", lotto.getLottoId(), getJobId(), documento.getInputFileName()), PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
-                                tmpFile.deleteOnExit();
-                                tmpFiles.add(tmpFile);
-                                try (OutputStream tmpFileOs = new FileOutputStream(tmpFile)) {
-                                    IOUtils.copy(file, tmpFileOs);
-                                } catch (IOException ex) {
-                                    log.error(String.format("file non leggibile", ex));
-                                    errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ LEGGIBILE").detail("File PDF non leggibile"));
-                                    throw ex;
-                                }
-                                if (SendIntegrationUtils.isPdf(tmpFile)) {
-                                    if (SendIntegrationUtils.getSha256Base64Encoded(tmpFile).equals(documento.getInputFileHash())) {
+                                // leggo i parametri di configurazione dell'azienda
+                                idAzienda = (Integer) paConfiguration.get("id_azienda");
+                                codiceRegione = (String) paConfiguration.get("codice_regione");
+                                codiceAzienda = (String) paConfiguration.get("codice_azienda");
+                                basePath = (String) paConfiguration.get("base_path");
 
-                                        // carica il file scaricato dal server SFTP sul repository
-                                        Map<String, Object> metadata = new HashMap<>();
-                                        metadata.put("paId", lotto.getPaId());
-                                        metadata.put("lottoId", lotto.getLottoId());
-                                        metadata.put("documentoId", documento.getDocumentoId());
-                                        String repoPath = String.format("/send-integration/lotto_%s", lotto.getLottoId());
-                                        MinIOWrapperFileInfo repoFileInfo = minIOWrapper.put(tmpFile, codiceAzienda, repoPath, documento.getInputFileName(), metadata, true);
-                                        String repoFileId = repoFileInfo.getFileId();
-                                        repoFileIds.add(repoFileId);
-                                        // creo l'entità da salvare su db e la aggiungo alla lista
-                                        documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileId));
-                                        
+                                /*
+                                ciclo su tutti i documenti del lotto:
+                                uno per uno vengono scaricati dal server SFTP
+                                vengono caricati sul nostro repository
+                                viene creata l'entità DocumentoLottoEntity
+                                al termine del ciclo le entità saranno salvata su db e verrà accodato il job che le gestirà
+                                */
+                                for (Documento documento : documenti) {
+                                    String filePath = String.format("%s/%s", lotto.getInputBasePath(), documento.getInputFileName());
+                                    if (sftpManager.existsPath(filePath)) {
+                                        try (InputStream file = sftpManager.downloadFile(filePath)) {
+                                            File tmpFile = File.createTempFile(String.format("lotto_%s_job_%s_%s", lotto.getLottoId(), getName(), documento.getInputFileName()), "." + PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
+                                            tmpFile.deleteOnExit();
+                                            tmpFiles.add(tmpFile);
+                                            try (OutputStream tmpFileOs = new FileOutputStream(tmpFile)) {
+                                                IOUtils.copy(file, tmpFileOs);
+                                            } catch (IOException ex) {
+                                                log.error(String.format("file non leggibile", ex));
+                                                errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ LEGGIBILE").detail("File PDF non leggibile"));
+                                                throw ex;
+                                            }
+                                            if (SendIntegrationUtils.isPdf(tmpFile)) {
+                                                if (SendIntegrationUtils.getSha256Base64Encoded(tmpFile).equals(documento.getInputFileHash())) {
+
+                                                    // carica il file scaricato dal server SFTP sul repository
+                                                    Map<String, Object> metadata = new HashMap<>();
+                                                    metadata.put("paId", lotto.getPaId());
+                                                    metadata.put("lottoId", lotto.getLottoId());
+                                                    metadata.put("documentoId", documento.getDocumentoId());
+                                                    String repoPath = String.format("/send-integration/lotto_%s", lotto.getLottoId());
+                                                    MinIOWrapperFileInfo repoFileInfo = minIOWrapper.put(tmpFile, codiceAzienda, repoPath, documento.getInputFileName(), metadata, true);
+                                                    String repoFileId = repoFileInfo.getFileId();
+                                                    repoFileIds.add(repoFileId);
+                                                    // creo l'entità da salvare su db e la aggiungo alla lista
+                                                    documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileInfo.getBucketName(), repoFileId, repoFileInfo.getMd5()));
+
+                                                } else {
+                                                    errori.add(new Errore().documentoId(documento.getDocumentoId()).code("HASH_ NON_VALIDO").detail("Valore del campo 'hash' non valido"));
+                                                }
+                                            } else {
+                                                errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FORMATO_ FILE_ERRATO").detail("Formato del file PDF errato"));
+                                            }
+                                        }
                                     } else {
-                                        errori.add(new Errore().documentoId(documento.getDocumentoId()).code("HASH_ NON_VALIDO").detail("Valore del campo 'hash' non valido"));
+                                        errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ TROVATO").detail("File PDF non trovato"));
                                     }
-                                } else {
-                                    errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FORMATO_ FILE_ERRATO").detail("Formato del file PDF errato"));
                                 }
+                            } else {
+                                errori.add(new Errore().code("PATH_NON_ TROVATO").detail("Path PDF non trovato"));
                             }
-                        } else {
-                            errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ TROVATO").detail("File PDF non trovato"));
+                        }  else {
+                            String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", lotto.getPaId());
+                            log.error(error);
+                            throw new MasterjobsWorkerException(error);
                         }
+                    } else {
+                        String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", lotto.getPaId());
+                        log.error(error);
+                        throw new MasterjobsWorkerException(error);
+                    }
+                } catch (Exception ex) {
+                    log.error("errore nel job", ex);
+
+                    deleteRepoFiles(repoFileIds); // elimina i file caricati sul repository
+
+                    // se c'è un eccezione e non è stato inserito neanche un errore nella lista "errori", allora l'errore è un errore nostro e non dei dati che ci sono arrivati
+                    internalError = errori.isEmpty(); 
+                } finally {
+                    // si disconnette dal server SFTP
+                    sftpManager.disconnect();
+
+                    // elimina i files temporanei creati
+                    deleteTmpFiles(tmpFiles);
+                }
+
+                if (!internalError) {
+                    try {
+                        for (DocumentoLottoEntity documentoLottoEntity : documentoLottoEntityList) {
+                            log.info(String.format("salvataggio documentoLotto %s con id %s", documentoLottoEntity.getInputFileName(), documentoLottoEntity.getId()));
+                            entityManager.persist(documentoLottoEntity);
+                            entityManager.flush();
+                        }
+                        LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(
+                            lotto.getPaId(), lotto.getLottoId(), lotto.getFirmatario(), lotto.getNumeroDocumenti(), 
+                            lotto.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), lotto.getOutputBasePath() 
+                        );
+                        LottiSignerAndRegisterJobWorker lottiSignerAndRegisterJobWorker = masterjobsObjectsFactory
+                            .getJobWorker(LottiSignerAndRegisterJobWorker.class,  lottiSignerAndRegisterJobWorkerData, false
+                        );
+
+                        RestCallToSendJobWorkerData  restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildElaboraLottoRicevuto(
+                            getLottoBaseConEventualiErrori(lotto, errori, ZonedDateTime.now())
+                        );
+                        RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
+                            .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
+                        );
+
+                        if (false)
+                            lottiSignerAndRegisterJobWorker.doWork(false); // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
+                        //restCallToSendJobWorker.doWork();
+                        else {
+                            masterjobsJobsQueuer.queueOnCommit(
+                                Arrays.asList(restCallToSendJobWorker, lottiSignerAndRegisterJobWorker),
+                                String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()),
+                                "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                        }
+                        //entityManager.flush();
+                    } catch (Exception ex) {
+                        String error = "Errore nella chiamata finale del job";
+                        log.error(error, ex);
+                        throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
                     }
                 } else {
-                    errori.add(new Errore().code("PATH_NON_ TROVATO").detail("Path PDF non trovato"));
+                    String error = String.format(
+                        "errore interno del job non attribuibile al fuitore, il job %s non è stato accodato, considero il job attuale in errore in modo che riproverà al prossimo giro",
+                        LottiSignerAndRegisterJobWorker.class.getSimpleName());
+                    log.error(error);
+                    throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
                 }
-            }  else {
-                String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", lotto.getPaId());
-                log.error(error);
-                throw new MasterjobsWorkerException(error);
-            }
-        } catch (Exception ex) {
-            log.error("errore nel job", ex);
-            
-            deleteRepoFiles(repoFileIds); // elimina i file caricati sul repository
-                        
-            // se c'è un eccezione e non è stato inserito neanche un errore nella lista "errori", allora l'errore è un errore nostro e non dei dati che ci sono arrivati
-            internalError = errori.isEmpty(); 
-        } finally {
-            // si disconnette dal server SFTP
-            sftpManager.disconnect();
-            
-            // elimina i files temporanei creati
-            deleteTmpFiles(tmpFiles);
-        }
-        
-        if (!internalError) {
-            try {
-                entityManager.persist(documentoLottoEntityList);
-                LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(
-                    lotto.getPaId(), lotto.getLottoId()
-                );
-                LottiSignerAndRegisterJobWorker lottiSignerAndRegisterJobWorker = masterjobsObjectsFactory
-                    .getJobWorker(LottiSignerAndRegisterJobWorker.class,  lottiSignerAndRegisterJobWorkerData, false
-                );
-                
-                RestCallToSendJobWorkerData  restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildElaboraLottoRicevuto(
-                    getLottoBaseConEventualiErrori(lotto, errori, ZonedDateTime.now())
-                );
-                RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
-                    .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
-                );
-                
-                masterjobsJobsQueuer.queueOnCommit(Arrays.asList(lottiSignerAndRegisterJobWorker, restCallToSendJobWorker), String.format("%s_%s", lotto.getPaId(), lotto.getLottoId()), "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
-                entityManager.flush();
-            } catch (Exception ex) {
-                String error = "Errore nella chiamata finale del job";
-                throw new MasterjobsWorkerException(error);
-            }
-        } else {
-            String error = String.format(
-                "errore interno del job non attribuibile al fuitore, il job %s non è stato accodato, considero il job attuale in errore in modo che riproverà al prossimo giro",
-                LottiSignerAndRegisterJobWorker.class.getSimpleName());
-            log.error(error);
-            throw new MasterjobsWorkerException(error);
+            });
+        } catch (Throwable ex) {
+            if (ex instanceof RuntimeExceptionContainer re)
+                throw new MasterjobsWorkerException(re.getException());
+            else 
+                throw new MasterjobsWorkerException(ex);
         }
         log.info("job finito!");
         return null;
     }
 
-    private DocumentoLottoEntity buildDocumentoLottoEntity(Lotto lotto, Documento doc, String repoFileId) {
-        DocumentoLottoEntity docLotto = new DocumentoLottoEntity(
-            lotto.getPaId(), lotto.getLottoId(), lotto.getTimestamp().toZonedDateTime(), lotto.getNumeroDocumenti(), lotto.getFirmatario(), 
-            lotto.getInputBasePath(), lotto.getOutputBasePath(), doc.getDocumentoId(), doc.getInputFileName(), doc.getInputFileHash(), repoFileId
-        );
+    private DocumentoLottoEntity buildDocumentoLottoEntity(Lotto lotto, Documento doc, String bucket, String repoFileId, String md5) {
+        String mimeType = "application/pdf";
+        DocumentoLottoEntity docLotto = new DocumentoLottoEntity.Builder()
+                .paId(lotto.getPaId())
+                .lottoId(lotto.getLottoId())
+                .timestamp(lotto.getTimestamp().toZonedDateTime())
+                .numeroDocumenti(lotto.getNumeroDocumenti())
+                .firmatario(lotto.getFirmatario())
+                .bucket(bucket)
+                .documentoId(doc.getDocumentoId())
+                .inputBasePath(lotto.getInputBasePath())
+                .inputFileName(doc.getInputFileName())
+                .inputMimeType(mimeType)
+                .inputFileSha256(doc.getInputFileHash())
+                .inputFileMd5(md5)
+                .inputFileRepoId(repoFileId)
+                .outputBasePath(lotto.getOutputBasePath())
+                .status(DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_DA_COMUNICARE)
+                .build();
         return docLotto;
     }
     
