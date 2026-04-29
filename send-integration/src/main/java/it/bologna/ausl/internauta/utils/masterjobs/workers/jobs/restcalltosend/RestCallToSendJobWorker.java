@@ -31,6 +31,7 @@ import org.springframework.transaction.TransactionDefinition;
 public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerData, JobWorkerResult> {
     private static final Logger log = LoggerFactory.getLogger(RestCallToSendJobWorker.class);
     private final String name = RestCallToSendJobWorker.class.getSimpleName();
+    private final String SENDER_HEADER = "babel";
     
     @Autowired
     private SendIntegrationAuthorizationUtils authorizationUtils;
@@ -72,7 +73,7 @@ public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerDa
                         throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
                     }
                     FruitoreApi fruitoreApi = new FruitoreApi();
-                    fruitoreApi.getApiClient().setBasePath(basePath).setBearerToken(token);
+                    fruitoreApi.getApiClient().setBasePath(basePath).addDefaultHeader("Sender", SENDER_HEADER).setBearerToken(token);
                     ApiResponse<LottoBase> resp;
                     DocumentoLottoEntity.DocumentiLottoStatus statusDaImpostare;
                     switch (restCall) {
