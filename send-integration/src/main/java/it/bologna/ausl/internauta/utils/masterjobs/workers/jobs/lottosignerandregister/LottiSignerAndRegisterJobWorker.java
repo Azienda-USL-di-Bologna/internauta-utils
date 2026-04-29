@@ -69,7 +69,7 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
                         entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
                     Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
                     Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(workerData.getPaId());
-                if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+                if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("active")) {
 
                     // controllo che l'integrazione con send sia attiva per l'azienda indicata
                     boolean aziendaActive = (boolean) paConfiguration.get("active");

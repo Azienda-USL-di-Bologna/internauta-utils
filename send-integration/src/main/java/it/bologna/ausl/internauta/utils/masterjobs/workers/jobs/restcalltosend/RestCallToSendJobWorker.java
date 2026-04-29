@@ -58,7 +58,7 @@ public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerDa
                     entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
                 Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
                 Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(paId);
-                if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("base_path")) {
+                if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("base_path")) {
                     
                     String basePath = (String) paConfiguration.get("base_path");
 

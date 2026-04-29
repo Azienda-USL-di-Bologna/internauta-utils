@@ -84,7 +84,7 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
             
             Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
             Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
-            if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+            if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("active")) {
                 
                 boolean aziendaActive = (boolean) paConfiguration.get("active");
                 if (aziendaActive) {
@@ -176,7 +176,7 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
             
             Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
             Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lottoBaseConEventualiErrori.getPaId());
-            if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+            if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("active")) {
                 boolean aziendaActive = (boolean) paConfiguration.get("active");
                 if (aziendaActive) {
                     SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
