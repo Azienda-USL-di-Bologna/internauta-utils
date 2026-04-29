@@ -5,13 +5,16 @@ import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
+import it.bologna.ausl.internauta.utils.versatore.exceptions.http.VersatoreHttpException;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.IdentityFileUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreCommonUtils;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.minio.manager.MinIOWrapperFileInfo;
 import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.AllegatoInterface;
 import it.bologna.ausl.model.entities.scripta.Doc;
+import it.bologna.ausl.model.entities.tools.SupportedFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
@@ -37,10 +40,10 @@ public class AllegatiBuilderUnimatica {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(AllegatiBuilderUnimatica.class);
 
-    public Map<String, Object> buildMappaAllegati(Doc doc, List<Allegato> allegatiList) throws VersatorePluginExceptionRitentabile, VersatorePluginException {
+    public Map<String, Object> buildMappaAllegati(Doc doc, List<Allegato> allegatiList, List<SupportedFile> supportedFilesList) throws VersatorePluginExceptionRitentabile, VersatorePluginException, VersatoreHttpException {
         Map<String, Object> mappaAllegati = new HashMap<>();
         try {
-            mappaAllegati = buildAllegati(allegatiList, doc);
+            mappaAllegati = buildAllegati(allegatiList, doc, supportedFilesList);
         } catch (MinIOWrapperException ex) {
             log.error("Errore di comunicazione nel recuperare i dati degli allegati", ex);
             throw new VersatorePluginExceptionRitentabile("Errore di comunicazione nel recuperare i dati degli allegati");
@@ -49,7 +52,7 @@ public class AllegatiBuilderUnimatica {
         return mappaAllegati;
     }
 
-    public Map<String, Object> buildAllegati(List<Allegato> allegatiList, Doc doc) throws MinIOWrapperException, VersatorePluginExceptionRitentabile, VersatorePluginException {
+    public Map<String, Object> buildAllegati(List<Allegato> allegatiList, Doc doc, List<SupportedFile> supportedFilesList) throws MinIOWrapperException, VersatorePluginExceptionRitentabile, VersatorePluginException, VersatoreHttpException {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
         List<IdentityFileUnimatica> identityFiles = new ArrayList<>();
@@ -88,11 +91,15 @@ public class AllegatiBuilderUnimatica {
                         || ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) || doc.getTipologia().equals(Doc.TipologiaDoc.RGPICO)) && allegato.getPrincipale())
                         || ((doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA) || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
                         && (allegato.getTipo().equals(Allegato.TipoAllegato.TESTO_OMISSIS) || allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA_OMISSIS)))
-                        || AllegatoInterface.SottotipoAllegato.SEGNATURA.equals(allegato.getSottotipo())) {
+                        || AllegatoInterface.SottotipoAllegato.SEGNATURA.equals(allegato.getSottotipo())
+                        || (allegato.getTipo().equals(AllegatoInterface.TipoAllegato.ALLEGATO)
+                        && !allegato.getDettagli().getByKey(Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE).getMimeType().equals("application/pdf")
+                        && !VersatoreCommonUtils.isConvertibile(allegato, supportedFilesList))) {
                         //guardo se è la stampa unica
                         //oppure l'allegato principale di un pe o di un rgpico
                         //oppure il testo omissis o la stampa unica omissis di una dete o una deli
                         //oppure è la segnatura
+                        //oppure se l'allegato non è convertibile (perché nella stampa unica apparirà solo il suo segnaposto)
                         //in quel caso la processo
                         Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                         IdentityFileUnimatica identityFile = getAllegatoInformation(originale, allegato.getId());

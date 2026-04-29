@@ -1,7 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins;
 
 import it.bologna.ausl.internauta.utils.versatore.exceptions.RecuperoRapportoDiVersamentoPluginException;
-import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;

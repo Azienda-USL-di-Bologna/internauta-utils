@@ -1,5 +1,6 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import tools.jackson.core.JacksonException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
@@ -20,6 +21,8 @@ import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
+import it.bologna.ausl.model.entities.tools.QSupportedFile;
+import it.bologna.ausl.model.entities.tools.SupportedFile;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
 import java.io.ByteArrayInputStream;
@@ -235,7 +238,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 //gestisco gli allegati, il principale e gli altri secondari
                 List<Allegato> allegati = doc.getAllegati();
                 AllegatiBuilderUnimatica allegatiBuild = new AllegatiBuilderUnimatica(versatoreRepositoryConfiguration);
-                Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, allegati);
+                Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, allegati, getSupportedFiles());
                 AllegatoUnimatica documentoPrincipale = (AllegatoUnimatica) mappaDatiAllegati.get("documentoPrincipale");
                 List<AllegatoUnimatica> allegatiSecondariList = (List<AllegatoUnimatica>) mappaDatiAllegati.get("allegatiSecondari");
                 List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
@@ -261,6 +264,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
                 String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
                 risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
+                log.info("Indice JSON:\n" + indiceJsonString);
 
                 // --Sezione di collegamento con UNIMATICA e versamento--
                 //creazione del multipart
@@ -396,5 +400,15 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
             }
         }
         return filesList;
+    }
+
+    /**
+     *Ritorna la lisata dei file supportati
+    @param entityManager
+    @return
+     */
+    public List<SupportedFile> getSupportedFiles() {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        return queryFactory.selectFrom(QSupportedFile.supportedFile).fetch();
     }
 }
