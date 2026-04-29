@@ -57,93 +57,101 @@ public class RestCallToSendJobWorker extends JobWorker<RestCallToSendJobWorkerDa
                     entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
                 Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
                 Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(paId);
-                String basePath = (String) paConfiguration.get("base_path");
+                if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("base_path")) {
+                    
+                    String basePath = (String) paConfiguration.get("base_path");
 
-                ZonedDateTime now = ZonedDateTime.now();
+                    ZonedDateTime now = ZonedDateTime.now();
 
-                String token;
-                try {
-                    token = authorizationUtils.generateTokenForFruitore(now);
-                } catch (Exception ex) {
-                    String error = String.format("errore nella generazione del token", "elaboraLottoRicevuto");
-                    log.error(error);
-                    throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
-                }
-                FruitoreApi fruitoreApi = new FruitoreApi();
-                fruitoreApi.getApiClient().setBasePath(basePath).setBearerToken(token);
-                ApiResponse<LottoBase> resp;
-                DocumentoLottoEntity.DocumentiLottoStatus statusDaImpostare;
-                switch (restCall) {
-                    case ELABORA_LOTTO_RICEVUTO -> {
-                        try {
-                            DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_DA_COMUNICARE;
-                            statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_COMUNICATO;
-                            if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoBaseConEventualiErrori().getPaId(), jobData.getLottoBaseConEventualiErrori().getLottoId(), statusDaVerificare)) {
-                                resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(jobData.getLottoBaseConEventualiErrori());
-                                //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoBaseConEventualiErrori().getLottoId()));
-                            } else {
-                                String error = String.format(
-                                    "impossibile eseguire la chiamata POST al %s perché lo status di tutti i documenti del lotto non è %s", 
-                                    restCall.toString(), statusDaImpostare);
-                                log.error(error);
-                                throw new MasterjobsWorkerException(error);
-                            }
-                        } catch (Exception ex) {
-                            String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
-                            log.error(error, ex);
-                            throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
-                        }
-                    }
-                    case LOTTO_ELABORATO -> {
-                        try {
-                            DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_DA_COMUNICARE;
-                            statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_COMUNICATO;
-                            if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoElaborato().getPaId(), jobData.getLottoElaborato().getLottoId(), statusDaVerificare)) {
-                                resp = fruitoreApi.lottoElaboratoWithHttpInfo(jobData.getLottoElaborato());
-                                //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoElaborato().getLottoId()));
-
-                            } else {
-                                String error = String.format(
-                                    "impossibile eseguire la chiamata POST al %s perché lo status di tutti i documenti del lotto non è %s", 
-                                    restCall.toString(), statusDaImpostare);
-                                log.error(error);
-                                throw new MasterjobsWorkerException(error);
-                            }
-
-                        } catch (Exception ex) {
-                            String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
-                            log.error(error, ex);
-                            throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
-                        }
-                    }
-                    default -> {
-                        String error = String.format("restCall non prevista %s", restCall);
+                    String token;
+                    try {
+                        token = authorizationUtils.generateTokenForFruitore(now);
+                    } catch (Exception ex) {
+                        String error = String.format("errore nella generazione del token", "elaboraLottoRicevuto");
                         log.error(error);
                         throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
                     }
-                }
-
-                if (resp.getStatusCode() >= 200 && resp.getStatusCode() <= 299) {
-                    if (resp.getData() != null) {
-                        try {
-                            updateDocumentiLotto(resp.getData().getPaId(), resp.getData().getLottoId(), statusDaImpostare);
-                        } catch (Throwable ex) {
-                            String error = String.format("errore nell'update dello status a %s dei documento lotto", statusDaImpostare);
-                            log.error(error, ex);
-                            throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                    FruitoreApi fruitoreApi = new FruitoreApi();
+                    fruitoreApi.getApiClient().setBasePath(basePath).setBearerToken(token);
+                    ApiResponse<LottoBase> resp;
+                    DocumentoLottoEntity.DocumentiLottoStatus statusDaImpostare;
+                    switch (restCall) {
+                        case ELABORA_LOTTO_RICEVUTO -> {
+                            try {
+                                DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_DA_COMUNICARE;
+                                statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.SCARICATO_COMUNICATO;
+                                if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoBaseConEventualiErrori().getPaId(), jobData.getLottoBaseConEventualiErrori().getLottoId(), statusDaVerificare)) {
+                                    resp = fruitoreApi.elaboraLottoRicevutoWithHttpInfo(jobData.getLottoBaseConEventualiErrori());
+                                    //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoBaseConEventualiErrori().getLottoId()));
+                                } else {
+                                    String error = String.format(
+                                        "impossibile eseguire la chiamata POST al %s perché lo status di tutti i documenti del lotto non è %s", 
+                                        restCall.toString(), statusDaImpostare);
+                                    log.error(error);
+                                    throw new MasterjobsWorkerException(error);
+                                }
+                            } catch (Exception ex) {
+                                String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
+                                log.error(error, ex);
+                                throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                            }
                         }
-                        return new RestCallToSendJobWorkerResult(resp.getData());
+                        case LOTTO_ELABORATO -> {
+                            try {
+                                DocumentoLottoEntity.DocumentiLottoStatus statusDaVerificare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_DA_COMUNICARE;
+                                statusDaImpostare = DocumentoLottoEntity.DocumentiLottoStatus.ELABORATO_COMUNICATO;
+                                if (isAllDocumentiLottoEntitiesInStatus(jobData.getLottoElaborato().getPaId(), jobData.getLottoElaborato().getLottoId(), statusDaVerificare)) {
+                                    resp = fruitoreApi.lottoElaboratoWithHttpInfo(jobData.getLottoElaborato());
+                                    //resp = new ApiResponse(200, null, new LottoBase().paId(paId).lottoId(getWorkerData().getLottoElaborato().getLottoId()));
+
+                                } else {
+                                    String error = String.format(
+                                        "impossibile eseguire la chiamata POST al %s perché lo status di tutti i documenti del lotto non è %s", 
+                                        restCall.toString(), statusDaImpostare);
+                                    log.error(error);
+                                    throw new MasterjobsWorkerException(error);
+                                }
+
+                            } catch (Exception ex) {
+                                String error = String.format("eccezione nella chiamata POST al %s", restCall.toString());
+                                log.error(error, ex);
+                                throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                            }
+                        }
+                        default -> {
+                            String error = String.format("restCall non prevista %s", restCall);
+                            log.error(error);
+                            throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
+                        }
+                    }
+
+                    if (resp.getStatusCode() >= 200 && resp.getStatusCode() <= 299) {
+                        if (resp.getData() != null) {
+                            try {
+                                updateDocumentiLotto(resp.getData().getPaId(), resp.getData().getLottoId(), statusDaImpostare);
+                            } catch (Throwable ex) {
+                                String error = String.format("errore nell'update dello status a %s dei documento lotto", statusDaImpostare);
+                                log.error(error, ex);
+                                throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                            }
+                            return new RestCallToSendJobWorkerResult(resp.getData());
+                        } else {
+                            String error = String.format("La risposta della chiamata POST al %s: non ha body", restCall.toString());
+                            log.error(error);
+                            throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
+                        }
                     } else {
-                        String error = String.format("La risposta della chiamata POST al %s: non ha body", restCall.toString());
+                        String error = String.format("errore nella chiamata POST al %s: ha tornato %s", restCall.toString(), resp.getStatusCode());
                         log.error(error);
+                        log.error(resp.toString());
                         throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
                     }
                 } else {
-                    String error = String.format("errore nella chiamata POST al %s: ha tornato %s", restCall.toString(), resp.getStatusCode());
+                    String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", paId);
                     log.error(error);
-                    log.error(resp.toString());
                     throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
                 }
+                
             });
         } catch (Throwable ex) {
             if (ex instanceof RuntimeExceptionContainer re)

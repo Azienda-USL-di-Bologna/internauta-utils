@@ -161,7 +161,9 @@ public class SendIntegrationAuthorizationUtils {
             String apiSecret = apiKeyStoreEntry.getApiSecret().toString();
             JWSVerifier verifier = new MACVerifier(apiSecret);
             if (!signedToken.verify(verifier)) {
-                throw new NotValidJwtException("il token non è valido");
+                String error = "il token non è valido";
+                logger.error(error);
+                throw new NotValidJwtException(error);
             }
         } catch (JOSEException ex) {
             String error = "errore nel parsing del token";

@@ -69,42 +69,49 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
                         entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
                     Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
                     Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(workerData.getPaId());
-                // controllo che l'integrazione con send sia attiva per l'azienda indicata
-                boolean aziendaActive = (boolean) paConfiguration.get("active");
-                if (aziendaActive) {
+                if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+
+                    // controllo che l'integrazione con send sia attiva per l'azienda indicata
+                    boolean aziendaActive = (boolean) paConfiguration.get("active");
+                    if (aziendaActive) {
+                    } else {
+                        String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", workerData.getPaId());
+                        log.error(error);
+                        throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
+                    }
+                    SendIntegrationScriptaWrapperManager scriptaWrapperManger = sendIntegrationScriptaWrapperConfiguration.getScriptaWrapperManger();
+                    try {
+                        InfoRegistrazioneLotto infoRegistrazioneLotto = scriptaWrapperManger.generaDocumentoPUProtocollato(
+                            workerData.getPaId(), workerData.getLottoId(), workerData.getFirmatario(), workerData.getOutputBasePath(), paConfiguration);
+                        LottoElaborato lottoElaborato = getLottoElaborato(
+                            workerData.getLottoId(), workerData.getPaId(), 
+                            workerData.getFirmatario(), workerData.getNumeroDocumenti(),
+                            workerData.getTimestamp(), workerData.getOutputBasePath(), infoRegistrazioneLotto
+                        );
+                        RestCallToSendJobWorkerData restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildLottoElaborato(
+                            lottoElaborato
+                        );
+                        RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
+                            .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
+                        );
+
+                        if (true) {
+                            masterjobsJobsQueuer.queueOnCommit(
+                                Arrays.asList(restCallToSendJobWorker),
+                                String.format("%s_%s", lottoElaborato.getPaId(), lottoElaborato.getLottoId()),
+                                "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
+                        } else {
+                            restCallToSendJobWorker.doWork(false); // Eseguo sincrono per le prove 
+                        }
+                    } catch (Exception ex) {
+                        String error = String.format("errore nella generazione del protocollo per il lotto %s", workerData.getLottoId());
+                        log.error(error, ex);
+                        throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
+                    }
                 } else {
-                    String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", workerData.getPaId());
+                    String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", workerData.getPaId());
                     log.error(error);
                     throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error));
-                }
-                SendIntegrationScriptaWrapperManager scriptaWrapperManger = sendIntegrationScriptaWrapperConfiguration.getScriptaWrapperManger();
-                try {
-                    InfoRegistrazioneLotto infoRegistrazioneLotto = scriptaWrapperManger.generaDocumentoPUProtocollato(
-                        workerData.getPaId(), workerData.getLottoId(), workerData.getFirmatario(), workerData.getOutputBasePath(), paConfiguration);
-                    LottoElaborato lottoElaborato = getLottoElaborato(
-                        workerData.getLottoId(), workerData.getPaId(), 
-                        workerData.getFirmatario(), workerData.getNumeroDocumenti(),
-                        workerData.getTimestamp(), workerData.getOutputBasePath(), infoRegistrazioneLotto
-                    );
-                    RestCallToSendJobWorkerData restCallToSendJobWorkerData = RestCallToSendJobWorkerData.buildLottoElaborato(
-                        lottoElaborato
-                    );
-                    RestCallToSendJobWorker restCallToSendJobWorker = masterjobsObjectsFactory
-                        .getJobWorker(RestCallToSendJobWorker.class,  restCallToSendJobWorkerData, false
-                    );
-                    
-                    if (true) {
-                        masterjobsJobsQueuer.queueOnCommit(
-                            Arrays.asList(restCallToSendJobWorker),
-                            String.format("%s_%s", lottoElaborato.getPaId(), lottoElaborato.getLottoId()),
-                            "lotto", "send-integration", true, SetInterface.SetPriority.NORMAL, null);
-                    } else {
-                        restCallToSendJobWorker.doWork(false); // Eseguo sincrono per le prove 
-                    }
-                } catch (Exception ex) {
-                    String error = String.format("errore nella generazione del protocollo per il lotto %s", workerData.getLottoId());
-                    log.error(error, ex);
-                    throw new RuntimeExceptionContainer(new MasterjobsWorkerException(error, ex));
                 }
             });
         } catch (Throwable ex) {

@@ -101,73 +101,80 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                         entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
                     Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
                     Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
-                    // controllo che l'integrazione con send sia attiva per l'azienda indicata
-                    boolean aziendaActive = (boolean) paConfiguration.get("active");
-                    if (aziendaActive) {
+                    if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+                        
+                        // controllo che l'integrazione con send sia attiva per l'azienda indicata
+                        boolean aziendaActive = (boolean) paConfiguration.get("active");
+                        if (aziendaActive) {
 
-                        List<Documento> documenti = lotto.getDocumenti();
-                        sftpManager.connect();
-                        if (sftpManager.existsPath(lotto.getInputBasePath())) {
-                            // questa lista conterrà tutte le entità associate ai documenti del lotto, al termine del ciclo sarà schedulato un job che le gestirà
+                            List<Documento> documenti = lotto.getDocumenti();
+                            sftpManager.connect();
+                            if (sftpManager.existsPath(lotto.getInputBasePath())) {
+                                // questa lista conterrà tutte le entità associate ai documenti del lotto, al termine del ciclo sarà schedulato un job che le gestirà
 
-                            // leggo i parametri di configurazione dell'azienda
-                            idAzienda = (Integer) paConfiguration.get("id_azienda");
-                            codiceRegione = (String) paConfiguration.get("codice_regione");
-                            codiceAzienda = (String) paConfiguration.get("codice_azienda");
-                            basePath = (String) paConfiguration.get("base_path");
+                                // leggo i parametri di configurazione dell'azienda
+                                idAzienda = (Integer) paConfiguration.get("id_azienda");
+                                codiceRegione = (String) paConfiguration.get("codice_regione");
+                                codiceAzienda = (String) paConfiguration.get("codice_azienda");
+                                basePath = (String) paConfiguration.get("base_path");
 
-                            /*
-                            ciclo su tutti i documenti del lotto:
-                            uno per uno vengono scaricati dal server SFTP
-                            vengono caricati sul nostro repository
-                            viene creata l'entità DocumentoLottoEntity
-                            al termine del ciclo le entità saranno salvata su db e verrà accodato il job che le gestirà
-                            */
-                            for (Documento documento : documenti) {
-                                String filePath = String.format("%s/%s", lotto.getInputBasePath(), documento.getInputFileName());
-                                if (sftpManager.existsPath(filePath)) {
-                                    try (InputStream file = sftpManager.downloadFile(filePath)) {
-                                        File tmpFile = File.createTempFile(String.format("lotto_%s_job_%s_%s", lotto.getLottoId(), getName(), documento.getInputFileName()), "." + PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
-                                        tmpFile.deleteOnExit();
-                                        tmpFiles.add(tmpFile);
-                                        try (OutputStream tmpFileOs = new FileOutputStream(tmpFile)) {
-                                            IOUtils.copy(file, tmpFileOs);
-                                        } catch (IOException ex) {
-                                            log.error(String.format("file non leggibile", ex));
-                                            errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ LEGGIBILE").detail("File PDF non leggibile"));
-                                            throw ex;
-                                        }
-                                        if (SendIntegrationUtils.isPdf(tmpFile)) {
-                                            if (SendIntegrationUtils.getSha256Base64Encoded(tmpFile).equals(documento.getInputFileHash())) {
-
-                                                // carica il file scaricato dal server SFTP sul repository
-                                                Map<String, Object> metadata = new HashMap<>();
-                                                metadata.put("paId", lotto.getPaId());
-                                                metadata.put("lottoId", lotto.getLottoId());
-                                                metadata.put("documentoId", documento.getDocumentoId());
-                                                String repoPath = String.format("/send-integration/lotto_%s", lotto.getLottoId());
-                                                MinIOWrapperFileInfo repoFileInfo = minIOWrapper.put(tmpFile, codiceAzienda, repoPath, documento.getInputFileName(), metadata, true);
-                                                String repoFileId = repoFileInfo.getFileId();
-                                                repoFileIds.add(repoFileId);
-                                                // creo l'entità da salvare su db e la aggiungo alla lista
-                                                documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileInfo.getBucketName(), repoFileId, repoFileInfo.getMd5()));
-
-                                            } else {
-                                                errori.add(new Errore().documentoId(documento.getDocumentoId()).code("HASH_ NON_VALIDO").detail("Valore del campo 'hash' non valido"));
+                                /*
+                                ciclo su tutti i documenti del lotto:
+                                uno per uno vengono scaricati dal server SFTP
+                                vengono caricati sul nostro repository
+                                viene creata l'entità DocumentoLottoEntity
+                                al termine del ciclo le entità saranno salvata su db e verrà accodato il job che le gestirà
+                                */
+                                for (Documento documento : documenti) {
+                                    String filePath = String.format("%s/%s", lotto.getInputBasePath(), documento.getInputFileName());
+                                    if (sftpManager.existsPath(filePath)) {
+                                        try (InputStream file = sftpManager.downloadFile(filePath)) {
+                                            File tmpFile = File.createTempFile(String.format("lotto_%s_job_%s_%s", lotto.getLottoId(), getName(), documento.getInputFileName()), "." + PathUtils.getExtension(new File(documento.getInputFileName()).toPath()));
+                                            tmpFile.deleteOnExit();
+                                            tmpFiles.add(tmpFile);
+                                            try (OutputStream tmpFileOs = new FileOutputStream(tmpFile)) {
+                                                IOUtils.copy(file, tmpFileOs);
+                                            } catch (IOException ex) {
+                                                log.error(String.format("file non leggibile", ex));
+                                                errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ LEGGIBILE").detail("File PDF non leggibile"));
+                                                throw ex;
                                             }
-                                        } else {
-                                            errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FORMATO_ FILE_ERRATO").detail("Formato del file PDF errato"));
+                                            if (SendIntegrationUtils.isPdf(tmpFile)) {
+                                                if (SendIntegrationUtils.getSha256Base64Encoded(tmpFile).equals(documento.getInputFileHash())) {
+
+                                                    // carica il file scaricato dal server SFTP sul repository
+                                                    Map<String, Object> metadata = new HashMap<>();
+                                                    metadata.put("paId", lotto.getPaId());
+                                                    metadata.put("lottoId", lotto.getLottoId());
+                                                    metadata.put("documentoId", documento.getDocumentoId());
+                                                    String repoPath = String.format("/send-integration/lotto_%s", lotto.getLottoId());
+                                                    MinIOWrapperFileInfo repoFileInfo = minIOWrapper.put(tmpFile, codiceAzienda, repoPath, documento.getInputFileName(), metadata, true);
+                                                    String repoFileId = repoFileInfo.getFileId();
+                                                    repoFileIds.add(repoFileId);
+                                                    // creo l'entità da salvare su db e la aggiungo alla lista
+                                                    documentoLottoEntityList.add(buildDocumentoLottoEntity(lotto, documento, repoFileInfo.getBucketName(), repoFileId, repoFileInfo.getMd5()));
+
+                                                } else {
+                                                    errori.add(new Errore().documentoId(documento.getDocumentoId()).code("HASH_ NON_VALIDO").detail("Valore del campo 'hash' non valido"));
+                                                }
+                                            } else {
+                                                errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FORMATO_ FILE_ERRATO").detail("Formato del file PDF errato"));
+                                            }
                                         }
+                                    } else {
+                                        errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ TROVATO").detail("File PDF non trovato"));
                                     }
-                                } else {
-                                    errori.add(new Errore().documentoId(documento.getDocumentoId()).code("FILE_NON_ TROVATO").detail("File PDF non trovato"));
                                 }
+                            } else {
+                                errori.add(new Errore().code("PATH_NON_ TROVATO").detail("Path PDF non trovato"));
                             }
-                        } else {
-                            errori.add(new Errore().code("PATH_NON_ TROVATO").detail("Path PDF non trovato"));
+                        }  else {
+                            String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", lotto.getPaId());
+                            log.error(error);
+                            throw new MasterjobsWorkerException(error);
                         }
-                    }  else {
-                        String error = String.format("L'integrazione con send è stata disabilitata per l'azienda con pdID %s", lotto.getPaId());
+                    } else {
+                        String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", lotto.getPaId());
                         log.error(error);
                         throw new MasterjobsWorkerException(error);
                     }
@@ -191,6 +198,7 @@ public class DownloadLottoJobWorker extends JobWorker<DownloadLottoJobWorkerData
                         for (DocumentoLottoEntity documentoLottoEntity : documentoLottoEntityList) {
                             log.info(String.format("salvataggio documentoLotto %s con id %s", documentoLottoEntity.getInputFileName(), documentoLottoEntity.getId()));
                             entityManager.persist(documentoLottoEntity);
+                            entityManager.flush();
                         }
                         LottiSignerAndRegisterJobWorkerData lottiSignerAndRegisterJobWorkerData = new LottiSignerAndRegisterJobWorkerData(
                             lotto.getPaId(), lotto.getLottoId(), lotto.getFirmatario(), lotto.getNumeroDocumenti(), 

@@ -84,64 +84,71 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
             
             Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
             Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lotto.getPaId());
-            boolean aziendaActive = (boolean) paConfiguration.get("active");
-            if (aziendaActive) {
-                DownloadLottoJobWorkerData jobdata = new DownloadLottoJobWorkerData(
-                    lotto
-                );
-                DownloadLottoJobWorker jobWorker;
-                try {
-                    jobWorker = masterjobsObjectsFactory.getJobWorker(
-                        DownloadLottoJobWorker.class,
-                        jobdata,
-                        false
+            if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+                
+                boolean aziendaActive = (boolean) paConfiguration.get("active");
+                if (aziendaActive) {
+                    DownloadLottoJobWorkerData jobdata = new DownloadLottoJobWorkerData(
+                        lotto
                     );
-
-                    if (false) { // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
-                        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-                        try {
-                            transactionTemplate.execute(a -> {
-                                try { 
-                                    return jobWorker.doWork(false);
-                                } catch (MasterjobsWorkerException ex) {
-                                    throw new RuntimeExceptionContainer(ex);
-                                }
-                            });
-                        } catch (Throwable ex) {
-                            if (ex instanceof RuntimeExceptionContainer rexc) {
-                                throw rexc.getException();
-                            } else {
-                                throw ex;
-                            }
-                        }
-                    } else {
-                        masterjobsJobsQueuer.queueOnCommit(
-                            Arrays.asList(jobWorker),
-                            String.format("%s_%s", paId, lottoId),
-                            "lotto",
-                            "send-integration",
-                            true, // waitForObject
-                            Set.SetPriority.NORMAL,
-                            null
+                    DownloadLottoJobWorker jobWorker;
+                    try {
+                        jobWorker = masterjobsObjectsFactory.getJobWorker(
+                            DownloadLottoJobWorker.class,
+                            jobdata,
+                            false
                         );
-                    }
-                } catch (Throwable ex) {
-                    //return ResponseEntity.internalServerError().body("Errore interno");
-                    LOGGER.error("errore nell'accodamento del job", ex);
-                    throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Errore interno", ex);
-                }
-                LottoBase risposta = new LottoBase()
-                    .paId(lotto.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
-                    .lottoId(lotto.getLottoId())
-                    .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
-                    .numeroDocumenti(lotto.getNumeroDocumenti());
 
-                LOGGER.info("Richiesta di elaborazione lotto {} accettata", lotto.getLottoId());
-                return ResponseEntity.ok(risposta);
+                        if (false) { // Eseguo sincrono per le prove TODO: Rimuovere e metere queue in job notified
+                            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                            try {
+                                transactionTemplate.execute(a -> {
+                                    try { 
+                                        return jobWorker.doWork(false);
+                                    } catch (MasterjobsWorkerException ex) {
+                                        throw new RuntimeExceptionContainer(ex);
+                                    }
+                                });
+                            } catch (Throwable ex) {
+                                if (ex instanceof RuntimeExceptionContainer rexc) {
+                                    throw rexc.getException();
+                                } else {
+                                    throw ex;
+                                }
+                            }
+                        } else {
+                            masterjobsJobsQueuer.queueOnCommit(
+                                Arrays.asList(jobWorker),
+                                String.format("%s_%s", paId, lottoId),
+                                "lotto",
+                                "send-integration",
+                                true, // waitForObject
+                                Set.SetPriority.NORMAL,
+                                null
+                            );
+                        }
+                    } catch (Throwable ex) {
+                        //return ResponseEntity.internalServerError().body("Errore interno");
+                        LOGGER.error("errore nell'accodamento del job", ex);
+                        throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Errore interno", ex);
+                    }
+                    LottoBase risposta = new LottoBase()
+                        .paId(lotto.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
+                        .lottoId(lotto.getLottoId())
+                        .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
+                        .numeroDocumenti(lotto.getNumeroDocumenti());
+
+                    LOGGER.info("Richiesta di elaborazione lotto {} accettata", lotto.getLottoId());
+                    return ResponseEntity.ok(risposta);
+                } else {
+                    String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lotto.getPaId());
+                    LOGGER.warn(error);
+                    throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+                }
             } else {
-                String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lotto.getPaId());
+                String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", paId);
                 LOGGER.warn(error);
-                throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+                throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error);
             }
         } else {
             LOGGER.warn("L'integrazione con send è disabilitata nell'application.properties, sulla proprietà: openapi.send-integration.active");
@@ -169,21 +176,27 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
             
             Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
             Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lottoBaseConEventualiErrori.getPaId());
-            boolean aziendaActive = (boolean) paConfiguration.get("active");
-            if (aziendaActive) {
-                SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
-                LottoBase risposta = new LottoBase()
-                    .paId(lottoBaseConEventualiErrori.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
-                    .lottoId(lottoBaseConEventualiErrori.getLottoId())
-                    .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
-                    .numeroDocumenti(lottoBaseConEventualiErrori.getNumeroDocumenti());
+            if (paConfiguration == null || paConfiguration.isEmpty() || !paConfiguration.containsKey("active")) {
+                boolean aziendaActive = (boolean) paConfiguration.get("active");
+                if (aziendaActive) {
+                    SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
+                    LottoBase risposta = new LottoBase()
+                        .paId(lottoBaseConEventualiErrori.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
+                        .lottoId(lottoBaseConEventualiErrori.getLottoId())
+                        .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
+                        .numeroDocumenti(lottoBaseConEventualiErrori.getNumeroDocumenti());
 
-                LOGGER.info("Richiesta di elaborazione lotto {} accettata", lottoBaseConEventualiErrori.getLottoId());
-                return ResponseEntity.ok(risposta);
-            } else {
-                String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lottoBaseConEventualiErrori.getPaId());
+                    LOGGER.info("Richiesta di elaborazione lotto {} accettata", lottoBaseConEventualiErrori.getLottoId());
+                    return ResponseEntity.ok(risposta);
+                } else {
+                    String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lottoBaseConEventualiErrori.getPaId());
+                    LOGGER.warn(error);
+                    throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+                }
+            }  else {
+                String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", paId);
                 LOGGER.warn(error);
-                throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+                throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error);
             }
         } else {
             LOGGER.warn("L'integrazione con send è disabilitata nell'application.properties, sulla proprietà: openapi.send-integration.active");
