@@ -159,44 +159,45 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
     @Override
     public ResponseEntity<LottoBase> lottoElaboratoRicevuto(LottoBaseConEventualiErrori lottoBaseConEventualiErrori) {
         if (sendIntegrationActive) {
-            String paId = null;
-            String lottoId = null;
             if (lottoBaseConEventualiErrori != null) {
-                paId = lottoBaseConEventualiErrori.getPaId();
-                lottoId = lottoBaseConEventualiErrori.getLottoId();
+                transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                return transactionTemplate.execute(a -> {
+                    String paId = lottoBaseConEventualiErrori.getPaId();
+                    String lottoId = lottoBaseConEventualiErrori.getLottoId();
+                    LOGGER.info("Richiesta di elaborazione del lotto ricevuta: paId={}, lottoId={}",
+                        StringUtils.hasText(paId) ? paId : "n/d",
+                        StringUtils.hasText(lottoId) ? lottoId : "n/d");
+                    SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
+
+                    Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
+                    Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lottoBaseConEventualiErrori.getPaId());
+                    if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("active")) {
+                        boolean aziendaActive = (boolean) paConfiguration.get("active");
+                        if (aziendaActive) {
+                            SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
+                            LottoBase risposta = new LottoBase()
+                                .paId(lottoBaseConEventualiErrori.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
+                                .lottoId(lottoBaseConEventualiErrori.getLottoId())
+                                .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
+                                .numeroDocumenti(lottoBaseConEventualiErrori.getNumeroDocumenti());
+
+                            LOGGER.info("Richiesta di elaborazione lotto {} accettata", lottoBaseConEventualiErrori.getLottoId());
+                            return ResponseEntity.ok(risposta);
+                        } else {
+                            String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lottoBaseConEventualiErrori.getPaId());
+                            LOGGER.warn(error);
+                            throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
+                        }
+                    }  else {
+                        String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", paId);
+                        LOGGER.warn(error);
+                        throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error);
+                    }
+                });
             } else {
                 String error = String.format("non sono stati indicati correttamente i dati del lotto, il lotto è nullo");
                 LOGGER.error(error);
                 throw new SendResponseStatusException(HttpStatus.BAD_REQUEST, error);
-            }
-            SendIntegrationConfiguration lepidaAziendaConfiguration = entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
-            LOGGER.info("Richiesta di elaborazione del lotto ricevuta: paId={}, lottoId={}",
-                StringUtils.hasText(paId) ? paId : "n/d",
-                StringUtils.hasText(lottoId) ? lottoId : "n/d");
-            
-            Map<String, Object>  lepidaAziendaConfigurationMap = lepidaAziendaConfiguration.getValue();
-            Map<String, Object> paConfiguration = (Map<String, Object>) lepidaAziendaConfigurationMap.get(lottoBaseConEventualiErrori.getPaId());
-            if (paConfiguration != null && !paConfiguration.isEmpty() && paConfiguration.containsKey("active")) {
-                boolean aziendaActive = (boolean) paConfiguration.get("active");
-                if (aziendaActive) {
-                    SendIntegrationUtils.updateDocumentiLotto(paId, lottoId, DocumentoLottoEntity.DocumentiLottoStatus.COMPLETATO, entityManager);
-                    LottoBase risposta = new LottoBase()
-                        .paId(lottoBaseConEventualiErrori.getPaId()) // paId, si intende quella del lotto arrivato o quella dell'azienda AUSLBO? o di altra azienda?
-                        .lottoId(lottoBaseConEventualiErrori.getLottoId())
-                        .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
-                        .numeroDocumenti(lottoBaseConEventualiErrori.getNumeroDocumenti());
-
-                    LOGGER.info("Richiesta di elaborazione lotto {} accettata", lottoBaseConEventualiErrori.getLottoId());
-                    return ResponseEntity.ok(risposta);
-                } else {
-                    String error = String.format("L'integrazione con send è disabilitata per l'azienda con pdID %s", lottoBaseConEventualiErrori.getPaId());
-                    LOGGER.warn(error);
-                    throw new SendResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
-                }
-            }  else {
-                String error = String.format("La configurazione Babel per l'azienda con con paID %s non è stata trovata o non è valida", paId);
-                LOGGER.warn(error);
-                throw new SendResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error);
             }
         } else {
             LOGGER.warn("L'integrazione con send è disabilitata nell'application.properties, sulla proprietà: openapi.send-integration.active");
