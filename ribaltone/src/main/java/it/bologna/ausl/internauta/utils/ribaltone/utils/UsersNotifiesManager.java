@@ -605,12 +605,13 @@ public class UsersNotifiesManager {
     }
 
     private String buildMailBody(Operations buildedOperations, String descrizioneErrore) {
-        Map<String, String> mappa = new HashMap<String, String>();
+        Map<SezioneMail, List<String>> sezioni = new LinkedHashMap<>();
 
-        if (buildedOperations == null && descrizioneErrore != null) {
-
-            mappa.put("Dettaglio Errore", descrizioneErrore);
-        } else if (buildedOperations != null) {
+        if (descrizioneErrore != null) {
+            sezioni.computeIfAbsent(SezioneMail.ERRORE, k -> new ArrayList<>())
+                   .add(descrizioneErrore);
+        }
+        if (buildedOperations != null) {
             // ANAGRAFICHE
             if (buildedOperations.getListOfOperationAnagrafica() != null) {
                 for (OperationAnagrafica operation : buildedOperations.getListOfOperationAnagrafica()) {
@@ -619,8 +620,8 @@ public class UsersNotifiesManager {
                         continue;
                     }
                     String descrizione = buildDescrizioneAnagrafica(operation, entita);
-
-                    mappa.put("Modifiche Anagrafica", descrizione);
+                    sezioni.computeIfAbsent(SezioneMail.ANAGRAFICHE, k -> new ArrayList<>())
+                           .add(descrizione);
                 }
             }
 
@@ -632,29 +633,25 @@ public class UsersNotifiesManager {
                         continue;
                     }
                     String descrizione = buildDescrizioneAppartenente(operation, entita);
-
-                    mappa.put("Modifiche Appartenenti", descrizione);
+                    sezioni.computeIfAbsent(SezioneMail.APPARTENENTI, k -> new ArrayList<>())
+                           .add(descrizione);
                 }
             }
 
             // STRUTTURE (escludendo CAMBIO_PADRE e RINOMINA che vanno nelle trasformazioni)
             if (buildedOperations.getListOfOperationStruttura() != null) {
                 for (OperationStruttura operation : buildedOperations.getListOfOperationStruttura()) {
-                    // Escludi CAMBIO_PADRE e RINOMINA che sono gestiti nelle trasformazioni
                     if (operation.getAzione() == Operation.Azione.CAMBIO_PADRE
                         || operation.getAzione() == Operation.Azione.RINOMINA) {
                         continue;
                     }
-
                     StrutturaFields entita = resolveStrutturaFields(operation.getEntitaCoinvolta());
                     if (entita == null) {
                         continue;
                     }
-
                     String descrizione = buildDescrizioneStruttura(operation, entita);
-
-                    mappa.put("Modifiche Strutture", descrizione);
-
+                    sezioni.computeIfAbsent(SezioneMail.STRUTTURE, k -> new ArrayList<>())
+                           .add(descrizione);
                 }
             }
 
@@ -665,25 +662,48 @@ public class UsersNotifiesManager {
                     if (entita == null) {
                         continue;
                     }
-
                     String descrizione = buildDescrizioneTrasformazione(operation, entita);
-
-                    mappa.put("Modifiche Trasformazioni", descrizione);
+                    sezioni.computeIfAbsent(SezioneMail.TRASFORMAZIONI, k -> new ArrayList<>())
+                           .add(descrizione);
                 }
             }
         }
-        StringBuilder html = new StringBuilder();
 
-        for (Map.Entry<String, String> entry : mappa.entrySet()) {
-            html.append("<b>")
-                .append(entry.getKey())
-                .append("</b><br>")
-                .append(entry.getValue())
-                .append("<br><br>");
+        if (sezioni.isEmpty()) {
+            sezioni.computeIfAbsent(SezioneMail.ESITO, k -> new ArrayList<>())
+                   .add("Nessuna modifica rilevata rispetto all'ultima importazione. L'organigramma risulta gia' aggiornato.");
         }
 
-        String result = html.toString();
+        StringBuilder html = new StringBuilder();
+        for (Map.Entry<SezioneMail, List<String>> sezione : sezioni.entrySet()) {
+            html.append("<b>")
+                .append(sezione.getKey().getTitolo())
+                .append("</b><br>");
+            for (String riga : sezione.getValue()) {
+                html.append(riga).append("<br>");
+            }
+            html.append("<br>");
+        }
 
-        return result;
+        return html.toString();
+    }
+
+    private static enum SezioneMail {
+        ERRORE("Dettaglio Errore"),
+        ESITO("Esito"),
+        ANAGRAFICHE("Modifiche Anagrafica"),
+        APPARTENENTI("Modifiche Appartenenti"),
+        STRUTTURE("Modifiche Strutture"),
+        TRASFORMAZIONI("Modifiche Trasformazioni");
+
+        private final String titolo;
+
+        SezioneMail(String titolo) {
+            this.titolo = titolo;
+        }
+
+        public String getTitolo() {
+            return titolo;
+        }
     }
 }
