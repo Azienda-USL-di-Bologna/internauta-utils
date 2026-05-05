@@ -30,6 +30,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareAppartenente;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareStruttura;
 import it.bologna.ausl.model.entities.ribaltonedati.QCSVDaImportareTrasformazione;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.io.File;
@@ -82,6 +83,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.hibernate.StaleObjectStateException;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.util.StreamUtils;
@@ -119,7 +121,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
     private RepositoryFactory repositoryFactory;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
 
     @Autowired
     private RibaltoneConfiguration ribaltoneConfiguration;
