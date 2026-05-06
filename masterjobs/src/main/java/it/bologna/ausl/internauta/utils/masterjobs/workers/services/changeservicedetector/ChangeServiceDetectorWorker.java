@@ -62,7 +62,7 @@ public class ChangeServiceDetectorWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {        
+    public WorkerResult doRealWork() throws MasterjobsWorkerException {        
         Session session = entityManager.unwrap(Session.class);
         session.doWork((Connection connection) -> {
             try {

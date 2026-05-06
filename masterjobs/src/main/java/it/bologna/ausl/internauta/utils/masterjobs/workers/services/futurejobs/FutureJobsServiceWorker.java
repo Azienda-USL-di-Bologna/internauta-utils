@@ -50,7 +50,7 @@ public class FutureJobsServiceWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {
+    public WorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info(String.format("starting %s with polling...", getName()));
         extractCreateAndQueueJobs();
         log.info(String.format("%s ended", getName()));

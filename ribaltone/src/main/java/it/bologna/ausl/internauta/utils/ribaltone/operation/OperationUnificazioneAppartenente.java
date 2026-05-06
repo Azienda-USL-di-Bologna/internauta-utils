@@ -267,7 +267,8 @@ public class OperationUnificazioneAppartenente extends Operation<DatiRibaltoneIn
     }
 
     public void menageContattoAppartenenteUnificato(RepositoryFactory repositoryFactory) {
-        OperationsUtils.gestisciContatti(repositoryFactory, utenteStrutturaDaInserireList, utenteStrutturaDaSpegnereList);
+        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(getEntityManager());
+        OperationsUtils.gestisciContatti(repositoryFactory, utenteStrutturaDaInserireList, utenteStrutturaDaSpegnereList, jPAQueryFactory);
     }
 
     public UnificazionePair getPair() {
