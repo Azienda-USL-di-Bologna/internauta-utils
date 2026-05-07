@@ -75,7 +75,7 @@ public class UsersNotifiesManager {
 
         QPersona qPersona = QPersona.persona;
 
-        if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty() && descrizioneErrore != null) {
+        if (idPersoneDaNotificare != null && !idPersoneDaNotificare.isEmpty()) {
             // Ribaltone automatico: notificare le persone dalla configurazione
             List<Persona> persone = queryFactory.select(qPersona).from(qPersona).where(qPersona.id.in(idPersoneDaNotificare)).fetch();
             personeDaNotificareSuScrivania.addAll(persone);
