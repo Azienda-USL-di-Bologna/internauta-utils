@@ -129,6 +129,8 @@ public class Operations implements Serializable {
         RibaltoneManagerUtils.eliminaProtocontatti(repositoryFactory);
         log.info("spegniPermessiVeicolatiInvalidi");
         repositoryFactory.getPermissionManager().spegniPermessiVeicolatiInvalidi();
+        log.info("riattivo i permessi dei responsabili dei fascicoli spenti ma che hanno di nuovo un'afferenza nell'azienda");
+        repositoryFactory.getPermissionManager().riattivaPermessiResponsabiliArchivi();
         //devo ricalcolare la gerarchia delle entita
         log.info("ricarcolo la gerarchia entita per le aziende");
         ricalcolaGerarchiePerAziende(listOfOperationUnificazioneStruttura, codiceAzienda, repositoryFactory);
