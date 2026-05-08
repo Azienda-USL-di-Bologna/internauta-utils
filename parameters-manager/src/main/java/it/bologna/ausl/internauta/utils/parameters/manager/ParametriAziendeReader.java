@@ -66,7 +66,8 @@ public class ParametriAziendeReader {
         pdfConverterUrl,
         abilitaFlussiInternauta,
         giorniPESenzaFascicolazioneSollecito,
-        parametriDirettoriDelibera
+        parametriDirettoriDelibera,
+        DSC
     }
 
     @Autowired
