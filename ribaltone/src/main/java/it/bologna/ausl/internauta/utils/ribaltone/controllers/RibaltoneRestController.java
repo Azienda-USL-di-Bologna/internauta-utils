@@ -502,7 +502,8 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
             @RequestParam(required = true) String codiceAzienda,
             @RequestParam(required = true) String idSelectedConfiguration,
             @RequestParam(required = true) Integer idRibaltTree,
-            @RequestParam(required = false) String mailDaNotificare
+            @RequestParam(required = false) String mailDaNotificare,
+            @RequestParam(required = false) String idPersoneDaNotificare
     ) throws RibaltoneHttpException, JacksonException {
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
@@ -518,8 +519,14 @@ public class RibaltoneRestController implements ControllerHandledExceptions {
                             mailDaNotificareList = Arrays.asList(mailDaNotificare.split(","));
 
                         }
+                        List<Integer> idPersoneDaNotificareList = null;
+                        if (StringUtils.hasText(idPersoneDaNotificare)) {
+                            idPersoneDaNotificareList = Arrays.stream(idPersoneDaNotificare.split(","))
+                                .map(Integer::parseInt)
+                                .toList();
+                        }
                         LOGGER.info("inizio a ribaltare davvero con questo codice azienda " + codiceAzienda + "con questa configurazione " + idSelectedConfiguration);
-                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, mailDaNotificareList);
+                        ribaltoneTotaleManager.ribaltaFromCachedOperation(codiceAzienda, idSelectedConfiguration, realUser, idPersoneDaNotificareList, mailDaNotificareList);
                         ribaltoneTotaleManager.lanciaRibaltTree(codiceAzienda, idSelectedConfiguration, realUser, null, idRibaltTree, "ribaltaPostUserReport", false, null);
                         RibaltoneDataConfiguration ribaltoneConf = RibaltoneManagerUtils.getRibaltoneConf(repositoryFactory.getEntityManager(), idSelectedConfiguration);
                         RibaltoneCache ribaltoneCache = getRibaltoneCache(objectMapper, ribaltoneConf.getCacheConfig(), repositoryFactory.getEntityManager());

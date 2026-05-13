@@ -67,7 +67,8 @@ public class ParametriAziendeReader {
         abilitaFlussiInternauta,
         giorniPESenzaFascicolazioneSollecito,
         parametriDirettoriDelibera,
-        albi
+        albi,
+        DSC
     }
 
     @Autowired
