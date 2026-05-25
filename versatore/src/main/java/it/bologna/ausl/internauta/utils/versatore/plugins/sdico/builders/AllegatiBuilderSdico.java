@@ -61,7 +61,10 @@ public class AllegatiBuilderSdico {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
-            if (!allegato.getEliminato()) {
+            // Saltiamo gli allegati figli di un contenitore (estratti da EML/zip):
+            // il loro file potrebbe non essere su MinIO (rigenerazione lazy / bucket temp)
+            // e il padre, gia' versato, li contiene gia' come blob.
+            if (!allegato.getEliminato() && allegato.getIdAllegatoPadre() == null) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
                 //prendo l'allegato originale (se è firmato scelgo quello firmato)
                 if (allegato.getFirmato()) {
@@ -80,15 +83,19 @@ public class AllegatiBuilderSdico {
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
-                //se ci sono prendo gli altri tipi di allegato
-                Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
-                if (convertito != null) {
-                    IdentityFile identityFile = getAllegatoInformation(convertito);
-                    identityFiles.add(identityFile);
-                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO;
-                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                    versamentiAllegatiInfo.add(allegatoInformation);
-                }
+                // Il CONVERTITO (non firmato) non viene versato: e' rigenerato on-demand
+                // sul bucket temp e potrebbe non essere piu' presente al momento del versamento.
+                // I CONVERTITO_FIRMATO / CONVERTITO_FIRMATO_P7M restano: essendo firmati,
+                // vengono salvati sul bucket persistente da FirmaInternautaManager.
+//                //se ci sono prendo gli altri tipi di allegato
+//                Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
+//                if (convertito != null) {
+//                    IdentityFile identityFile = getAllegatoInformation(convertito);
+//                    identityFiles.add(identityFile);
+//                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO;
+//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+//                    versamentiAllegatiInfo.add(allegatoInformation);
+//                }
                 Allegato.DettaglioAllegato convertitoFirmato = allegato.getDettagli().getConvertitoFirmato();
                 if (convertitoFirmato != null) {
                     IdentityFile identityFile = getAllegatoInformation(convertitoFirmato);
