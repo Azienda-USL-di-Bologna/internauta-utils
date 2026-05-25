@@ -59,7 +59,12 @@ public class AllegatiBuilderUnimatica {
         AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
         for (Allegato allegato : allegatiList) {
-            if (!allegato.getEliminato()) {
+            // Saltiamo gli allegati figli di un contenitore (estratti da EML):
+            // il loro file potrebbe non essere su MinIO (rigenerazione lazy / bucket temp)
+            // e il padre, gia' versato, li contiene gia' come blob.
+            // Il contenitore (EML, ...) e' sempre versato perche' non e' convertibile
+            // e quindi rientra nella condizione "ALLEGATO non PDF non convertibile" piu' sotto.
+            if (!allegato.getEliminato() && allegato.getIdAllegatoPadre() == null) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
                 if (allegato.getFirmato()) {
                     //guardo se è firmato e in tal caso lo processo
