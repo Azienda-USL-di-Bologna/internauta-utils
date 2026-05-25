@@ -87,7 +87,7 @@ public class AllegatiBuilderSdico {
                 // sul bucket temp e potrebbe non essere piu' presente al momento del versamento.
                 // I CONVERTITO_FIRMATO / CONVERTITO_FIRMATO_P7M restano: essendo firmati,
                 // vengono salvati sul bucket persistente da FirmaInternautaManager.
-//                //se ci sono prendo gli altri tipi di allegato
+//
 //                Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
 //                if (convertito != null) {
 //                    IdentityFile identityFile = getAllegatoInformation(convertito);
@@ -96,6 +96,8 @@ public class AllegatiBuilderSdico {
 //                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
 //                    versamentiAllegatiInfo.add(allegatoInformation);
 //                }
+
+                //se ci sono prendo gli altri tipi di allegato:
                 Allegato.DettaglioAllegato convertitoFirmato = allegato.getDettagli().getConvertitoFirmato();
                 if (convertitoFirmato != null) {
                     IdentityFile identityFile = getAllegatoInformation(convertitoFirmato);
