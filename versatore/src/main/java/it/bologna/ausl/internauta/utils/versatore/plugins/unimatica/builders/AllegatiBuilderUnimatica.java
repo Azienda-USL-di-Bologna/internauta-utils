@@ -68,16 +68,25 @@ public class AllegatiBuilderUnimatica {
                 if (allegato.getFirmato()) {
                     //guardo se è firmato e in tal caso lo processo
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    IdentityFileUnimatica identityFile = getAllegatoInformation(originaleFirmato, allegato.getId());
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale, come Parer, per evitare l'NPE
+                    Allegato.DettaglioAllegato dettaglioFirmato;
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato;
+                    if (originaleFirmato != null) {
+                        dettaglioFirmato = originaleFirmato;
+                        tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+                    } else {
+                        dettaglioFirmato = allegato.getDettagli().getOriginale();
+                        tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                    }
+                    IdentityFileUnimatica identityFile = getAllegatoInformation(dettaglioFirmato, allegato.getId());
                     identityFiles.add(identityFile);
-                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                        originaleFirmato.getNome(),
+                        dettaglioFirmato.getNome(),
                         identityFile.getHash(),
                         allegato.getFirmato(),
-                        originaleFirmato.getMimeType()
+                        dettaglioFirmato.getMimeType()
                     );
                     //assegno il documento principale
                     if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
