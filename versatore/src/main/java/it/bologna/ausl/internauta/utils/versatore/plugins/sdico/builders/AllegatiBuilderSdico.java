@@ -61,10 +61,11 @@ public class AllegatiBuilderSdico {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
-            // Saltiamo gli allegati figli di un contenitore (estratti da EML/zip):
-            // il loro file potrebbe non essere su MinIO (rigenerazione lazy / bucket temp)
-            // e il padre, gia' versato, li contiene gia' come blob.
-            if (!allegato.getEliminato() && allegato.getIdAllegatoPadre() == null) {
+            // Saltiamo i figli di un contenitore (estratti da EML/zip): il padre li contiene
+            // gia' e i loro blob su MinIO non sono affidabili (rigenerazione lazy / bucket temp).
+            // Eccezione: il principale viene versato anche se figlio.
+            if (!allegato.getEliminato()
+                && (allegato.getIdAllegatoPadre() == null || allegato.getPrincipale())) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
                 //prendo l'allegato originale (se è firmato scelgo quello firmato)
                 if (allegato.getFirmato()) {
