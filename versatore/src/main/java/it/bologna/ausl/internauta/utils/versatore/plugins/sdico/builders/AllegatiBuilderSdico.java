@@ -61,7 +61,7 @@ public class AllegatiBuilderSdico {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
-            // Saltiamo i figli di un contenitore (estratti da EML/zip): il padre li contiene
+            // Saltiamo i figli di un contenitore (estratti da EML): il padre li contiene
             // gia' e i loro blob su MinIO non sono affidabili (rigenerazione lazy / bucket temp).
             // Eccezione: il principale viene versato anche se figlio.
             if (!allegato.getEliminato()
@@ -70,12 +70,21 @@ public class AllegatiBuilderSdico {
                 //prendo l'allegato originale (se è firmato scelgo quello firmato)
                 if (allegato.getFirmato()) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
-                    identityFiles.add(identityFile);
-                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
-                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                    versamentiAllegatiInfo.add(allegatoInformation);
-
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale, come Parer, per evitare l'NPE
+                    if (originaleFirmato == null) {
+                        Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
+                        IdentityFile identityFile = getAllegatoInformation(originale);
+                        identityFiles.add(identityFile);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                    } else {
+                        IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
+                        identityFiles.add(identityFile);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                    }
                 } else {
                     Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                     IdentityFile identityFile = getAllegatoInformation(originale);
