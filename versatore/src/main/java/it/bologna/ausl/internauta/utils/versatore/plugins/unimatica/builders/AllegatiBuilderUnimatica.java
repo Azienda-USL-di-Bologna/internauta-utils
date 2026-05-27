@@ -68,7 +68,7 @@ public class AllegatiBuilderUnimatica {
                 if (allegato.getFirmato()) {
                     //guardo se è firmato e in tal caso lo processo
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale, come Parer, per evitare l'NPE
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale
                     Allegato.DettaglioAllegato dettaglioFirmato;
                     Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato;
                     if (originaleFirmato != null) {

@@ -70,7 +70,7 @@ public class AllegatiBuilderSdico {
                 //prendo l'allegato originale (se è firmato scelgo quello firmato)
                 if (allegato.getFirmato()) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale, come Parer, per evitare l'NPE
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale
                     if (originaleFirmato == null) {
                         Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
                         IdentityFile identityFile = getAllegatoInformation(originale);
