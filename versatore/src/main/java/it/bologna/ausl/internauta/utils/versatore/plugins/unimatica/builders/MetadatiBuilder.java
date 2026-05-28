@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Comparator;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.util.StringUtils;
 
 /**
@@ -144,8 +145,9 @@ public class MetadatiBuilder {
         //--Impronta crittografica del documento
         ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumento = new ImprontaCrittograficaDelDocumentoType();
         //---Impronta
-        //impronta del documento principale
-        improntaCrittograficaDelDocumento.setImpronta(documentoPrincipale.getImpronta().getBytes(StandardCharsets.UTF_8));
+        //impronta del documento principale: XSD AgID vuole xs:base64Binary del digest binario,
+        //quindi converto l'hex SHA-256 nei 32 byte raw (poi JAXB lo base64-encoda)
+        improntaCrittograficaDelDocumento.setImpronta(Hex.decodeHex(documentoPrincipale.getImpronta()));
         //---Algoritmo
         //algoritmo del documento principale
         improntaCrittograficaDelDocumento.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
@@ -225,7 +227,8 @@ public class MetadatiBuilder {
             ProtocolloType protocolloType = new ProtocolloType();
             protocolloType.setTipoRegistro("ProtocolloOrdinario\\ProtocolloEmergenza");
             protocolloType.setDataProtocollazioneDocumento(UnimaticaVersatoreUtils.toXMLGregorianDate(registroDocDocumentoPrincipale.getDataRegistrazione()));
-            protocolloType.setNumeroProtocolloDocumento(registroDocDocumentoPrincipale.getNumero().toString());
+            // Padding a 7 cifre: NumProtType dell'XSD AgID richiede pattern [0-9]{7,}
+            protocolloType.setNumeroProtocolloDocumento(String.format("%07d", registroDocDocumentoPrincipale.getNumero()));
             protocolloType.setCodiceRegistro(registro.getCodice().toString());
             tipoRegistro.setProtocolloOrdinarioProtocolloEmergenza(protocolloType);
         } else {
@@ -500,7 +503,8 @@ public class MetadatiBuilder {
                 //---IdDoc
                 IdDocType idDocAllegato = new IdDocType();
                 ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumentoAllegato = new ImprontaCrittograficaDelDocumentoType();
-                improntaCrittograficaDelDocumentoAllegato.setImpronta(allegatoUnimatica.getImpronta().getBytes(StandardCharsets.UTF_8));
+                // hex SHA-256 -> 32 byte raw, come per il documento principale
+                improntaCrittograficaDelDocumentoAllegato.setImpronta(Hex.decodeHex(allegatoUnimatica.getImpronta()));
                 improntaCrittograficaDelDocumentoAllegato.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
                 idDocAllegato.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumentoAllegato);
                 idDocAllegato.setIdentificativo(allegatoUnimatica.getIdFile().toString());
@@ -741,8 +745,8 @@ public class MetadatiBuilder {
      * bonifica della rubrica.
      */
     private List<String> buildIndirizziDigitaliFallback(List<String> mailsContatto,
-                                                        Map<String, String> codiciIpa,
-                                                        String contestoLog) {
+        Map<String, String> codiciIpa,
+        String contestoLog) {
         if (mailsContatto != null && !mailsContatto.isEmpty()) {
             return mailsContatto;
         }
