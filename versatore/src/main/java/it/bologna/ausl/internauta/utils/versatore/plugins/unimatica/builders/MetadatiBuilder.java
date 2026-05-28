@@ -742,8 +742,8 @@ public class MetadatiBuilder {
      * bonifica della rubrica.
      */
     private List<String> buildIndirizziDigitaliFallback(List<String> mailsContatto,
-                                                        Map<String, String> codiciIpa,
-                                                        String contestoLog) {
+        Map<String, String> codiciIpa,
+        String contestoLog) {
         if (mailsContatto != null && !mailsContatto.isEmpty()) {
             return mailsContatto;
         }
