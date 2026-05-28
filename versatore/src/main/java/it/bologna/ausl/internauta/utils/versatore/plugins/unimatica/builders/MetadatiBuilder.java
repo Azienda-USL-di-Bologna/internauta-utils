@@ -36,6 +36,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoSoggetto
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
 import it.bologna.ausl.internauta.utils.versatore.utils.IpaUtils;
+import static it.bologna.ausl.internauta.utils.versatore.utils.IpaUtils.KEY_PEC_PAI;
 import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
@@ -309,10 +310,13 @@ public class MetadatiBuilder {
                                 .stream()
                                 .map(email -> email.getEmail())
                                 .collect(Collectors.toList());
-                            if (mailsMittentePAIPEList == null || mailsMittentePAIPEList.isEmpty()) {
-                                log.error("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto mittente non ha email)");
-                                throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto mittente non ha email)");
-                            }
+                            // Fallback per IndirizziDigitaliDiRiferimento quando il contatto PAI non ha email proprie:
+                            // si tenta la PEC recuperata da IPA (campo pec_pai); in ultima analisi placeholder testuale.
+                            List<String> indirizziPAIMittente = buildIndirizziDigitaliFallback(
+                                mailsMittentePAIPEList,
+                                codiciIPAeDescrizioni,
+                                "Mittente PE (doc id " + doc.getId() + ")"
+                            );
                             tipoMittete.setPAI(
                                 buildPAI(
                                     codiciIPAeDescrizioni.get("des_amm"),
@@ -321,7 +325,7 @@ public class MetadatiBuilder {
                                     codiciIPAeDescrizioni.get("cod_aoo"),
                                     codiciIPAeDescrizioni.get("des_ou"),
                                     codiciIPAeDescrizioni.get("cod_uni_ou"),
-                                    mailsMittentePAIPEList
+                                    indirizziPAIMittente
                                 )
                             );
                             break;
@@ -417,10 +421,12 @@ public class MetadatiBuilder {
                             .stream()
                             .map(email -> email.getEmail())
                             .collect(Collectors.toList());
-                        if (mailsDestinatarioPAIPEList == null || mailsDestinatarioPAIPEList.isEmpty()) {
-                            log.error("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto destinatario non ha email)");
-                            throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto destinatario non ha email)");
-                        }
+                        // Stessa logica di fallback applicata al mittente: PEC IPA → placeholder
+                        List<String> indirizziPAIDestinatario = buildIndirizziDigitaliFallback(
+                            mailsDestinatarioPAIPEList,
+                            codiciIPAeDescrizioni,
+                            "Destinatario (doc id " + doc.getId() + ")"
+                        );
                         tipoDestinatario.setPAI(
                             buildPAI(
                                 codiciIPAeDescrizioni.get("des_amm"),
@@ -429,7 +435,7 @@ public class MetadatiBuilder {
                                 codiciIPAeDescrizioni.get("cod_aoo"),
                                 codiciIPAeDescrizioni.get("des_ou"),
                                 codiciIPAeDescrizioni.get("cod_uni_ou"),
-                                mailsDestinatarioPAIPEList
+                                indirizziPAIDestinatario
                             )
                         );
                         break;
@@ -721,5 +727,35 @@ public class MetadatiBuilder {
             }
         }
         return pAEType;
+    }
+
+    /**
+     * Restituisce gli IndirizziDigitaliDiRiferimento da usare per una PAI con strategia di fallback,
+     * pensata per evitare che il versamento fallisca quando un contatto in rubrica è privo di email.
+     * Ordine applicato:
+     *   1) le email del contatto, se presenti;
+     *   2) la PEC recuperata dal DB IPA tramite IpaUtils (chiave KEY_PEC_PAI nella mappa
+     *      codiciIPAeDescrizioni), se presente;
+     *   3) placeholder testuale "Indirizzi digitali di riferimento non specificati".
+     * Entrambi i fallback (2) e (3) loggano un WARN che riporta il contesto per facilitare la
+     * bonifica della rubrica.
+     */
+    private List<String> buildIndirizziDigitaliFallback(List<String> mailsContatto,
+                                                        Map<String, String> codiciIpa,
+                                                        String contestoLog) {
+        if (mailsContatto != null && !mailsContatto.isEmpty()) {
+            return mailsContatto;
+        }
+        String pecDaIpa = codiciIpa != null ? codiciIpa.get(KEY_PEC_PAI) : null;
+        if (StringUtils.hasText(pecDaIpa)) {
+            log.warn("PAI {} senza email sul contatto; uso PEC recuperata da IPA: {}", contestoLog, pecDaIpa);
+            List<String> out = new ArrayList<>();
+            out.add(pecDaIpa);
+            return out;
+        }
+        log.warn("PAI {} senza email sul contatto e senza PEC su IPA; uso placeholder testuale", contestoLog);
+        List<String> out = new ArrayList<>();
+        out.add("Indirizzi digitali di riferimento non specificati");
+        return out;
     }
 }
