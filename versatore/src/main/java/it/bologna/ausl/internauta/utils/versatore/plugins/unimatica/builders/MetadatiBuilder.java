@@ -347,7 +347,7 @@ public class MetadatiBuilder {
                                 throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Estera (il contatto mittente non ha email)");
                             }
                             tipoMittete.setPAE(buildPAE(mittente.getDescrizione(), mailsMittentePAIPUList));
-
+                            break;
                         case VARIO:
                             tipoMittete.setPG(buildPG(mittente.getDescrizione()));
                             break;
@@ -454,6 +454,7 @@ public class MetadatiBuilder {
                             throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Estera (il contatto destinatario non ha email)");
                         }
                         tipoDestinatario.setPAE(buildPAE(destinatario.getDescrizione(), mailsDestinatarioList));
+                        break;
                     case VARIO:
                         tipoDestinatario.setPG(buildPG(destinatario.getDescrizione()));
                         break;
