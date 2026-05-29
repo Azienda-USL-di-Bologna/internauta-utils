@@ -146,11 +146,13 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
      */
     private boolean isInDateRange(ZonedDateTime dataRegistrazione,
         String dal, String al) {
+        // "dal" incluso: idoneo se registrato a partire da mezzanotte del giorno "dal" (confronto non stretto)
         boolean afterDal = StringUtils.isNullOrEmpty(dal)
-            || dataRegistrazione.isAfter(parseDate(dal));
+            || !dataRegistrazione.isBefore(parseDate(dal));
 
+        // "al" incluso: l'intera giornata "al" è valida, quindi il limite è mezzanotte del giorno successivo
         boolean beforeAl = StringUtils.isNullOrEmpty(al)
-            || dataRegistrazione.isBefore(parseDate(al));
+            || dataRegistrazione.isBefore(parseDate(al).plusDays(1));
 
         return afterDal && beforeAl;
     }
