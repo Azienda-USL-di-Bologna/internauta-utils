@@ -249,6 +249,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                 metadatiBuilder.build();
                 String metadati = metadatiBuilder.toString();
                 risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+                //log.info("XML versato:\n" + metadati);
                 byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
                 //calcolo lo sha 256 del file di metadati
                 String sha256HexMetadati = "";
