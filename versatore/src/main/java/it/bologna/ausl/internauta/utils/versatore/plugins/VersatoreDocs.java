@@ -6,9 +6,11 @@ import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessing
 import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.minio.manager.MinIOWrapper;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
@@ -26,7 +28,14 @@ public abstract class VersatoreDocs {
     protected VersatoreRepositoryConfiguration versatoreRepositoryConfiguration;
         
     @Autowired
+    protected PlatformTransactionManager transactionManager;
+
     protected TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    protected void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Autowired
     protected VersatoreConfigParams configParams;

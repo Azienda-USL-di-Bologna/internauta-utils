@@ -6,9 +6,11 @@ import it.bologna.ausl.internauta.utils.masterjobs.configuration.MasterjobsAppli
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsWorkerInitializationException;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -22,7 +24,14 @@ public abstract class Worker {
     protected EntityManager entityManager;
     
     @Autowired
+    protected PlatformTransactionManager transactionManager;
+
     protected TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    protected void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Autowired
     protected MasterjobsApplicationConfig masterjobsApplicationConfig;

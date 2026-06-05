@@ -59,21 +59,34 @@ public class AllegatiBuilderUnimatica {
         AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
         for (Allegato allegato : allegatiList) {
-            if (!allegato.getEliminato()) {
+            // Saltiamo i figli di un contenitore (estratti da EML): il padre li contiene
+            // gia' e i loro blob su MinIO non sono affidabili (rigenerazione lazy / bucket temp).
+            // Eccezione: il principale viene versato anche se figlio.
+            if (!allegato.getEliminato()
+                && (allegato.getIdAllegatoPadre() == null || allegato.getPrincipale())) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
                 if (allegato.getFirmato()) {
                     //guardo se è firmato e in tal caso lo processo
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                    IdentityFileUnimatica identityFile = getAllegatoInformation(originaleFirmato, allegato.getId());
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale
+                    Allegato.DettaglioAllegato dettaglioFirmato;
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato;
+                    if (originaleFirmato != null) {
+                        dettaglioFirmato = originaleFirmato;
+                        tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+                    } else {
+                        dettaglioFirmato = allegato.getDettagli().getOriginale();
+                        tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                    }
+                    IdentityFileUnimatica identityFile = getAllegatoInformation(dettaglioFirmato, allegato.getId());
                     identityFiles.add(identityFile);
-                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
                     VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, tipoAllegato);
                     versamentiAllegatiInfo.add(allegatoInformation);
                     AllegatoUnimatica allegatoUnimatica = new AllegatoUnimatica(allegato.getId(),
-                        originaleFirmato.getNome(),
+                        dettaglioFirmato.getNome(),
                         identityFile.getHash(),
                         allegato.getFirmato(),
-                        originaleFirmato.getMimeType()
+                        dettaglioFirmato.getMimeType()
                     );
                     //assegno il documento principale
                     if (doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA) && allegato.getPrincipale()
@@ -85,6 +98,38 @@ public class AllegatiBuilderUnimatica {
                     } else {
                         //altrimenti lo aggiungo agli allegati secondari
                         allegatiSecondariList.add(allegatoUnimatica);
+                    }
+                    // Se l'allegato e' firmato, versa anche il CONVERTITO_FIRMATO (sempre come
+                    // allegato secondario): risiede sul bucket persistente, quindi non rischia
+                    // il cleaning del bucket temp.
+                    Allegato.DettaglioAllegato convertitoFirmato = allegato.getDettagli().getConvertitoFirmato();
+                    if (convertitoFirmato != null) {
+                        IdentityFileUnimatica identityFileConvFirmato = getAllegatoInformation(convertitoFirmato, allegato.getId());
+                        identityFiles.add(identityFileConvFirmato);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoConvFirmato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO;
+                        VersamentoAllegatoInformation infoConvFirmato = createVersamentoAllegato(allegato.getId(), identityFileConvFirmato, tipoConvFirmato);
+                        versamentiAllegatiInfo.add(infoConvFirmato);
+                        allegatiSecondariList.add(new AllegatoUnimatica(allegato.getId(),
+                            convertitoFirmato.getNome(),
+                            identityFileConvFirmato.getHash(),
+                            allegato.getFirmato(),
+                            convertitoFirmato.getMimeType()
+                        ));
+                    }
+                    // Analogo per CONVERTITO_FIRMATO_P7M (anch'esso sul bucket persistente).
+                    Allegato.DettaglioAllegato convertitoFirmatoP7M = allegato.getDettagli().getConvertitoFirmatoP7m();
+                    if (convertitoFirmatoP7M != null) {
+                        IdentityFileUnimatica identityFileConvFirmatoP7M = getAllegatoInformation(convertitoFirmatoP7M, allegato.getId());
+                        identityFiles.add(identityFileConvFirmatoP7M);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoConvFirmatoP7M = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO_P7M;
+                        VersamentoAllegatoInformation infoConvFirmatoP7M = createVersamentoAllegato(allegato.getId(), identityFileConvFirmatoP7M, tipoConvFirmatoP7M);
+                        versamentiAllegatiInfo.add(infoConvFirmatoP7M);
+                        allegatiSecondariList.add(new AllegatoUnimatica(allegato.getId(),
+                            convertitoFirmatoP7M.getNome(),
+                            identityFileConvFirmatoP7M.getHash(),
+                            allegato.getFirmato(),
+                            convertitoFirmatoP7M.getMimeType()
+                        ));
                     }
                 } else {
                     if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)

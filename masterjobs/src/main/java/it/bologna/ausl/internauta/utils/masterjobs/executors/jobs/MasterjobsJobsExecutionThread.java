@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -50,6 +51,7 @@ import it.bologna.ausl.model.entities.masterjobs.QDebuggingOption;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import jakarta.annotation.PostConstruct;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -85,7 +87,14 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     protected RedisTemplate redisTemplate;
     
     @Autowired
+    protected PlatformTransactionManager transactionManager;
+
     protected TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    protected void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Autowired
     protected ObjectMapper objectMapper;

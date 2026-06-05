@@ -22,6 +22,27 @@ public class IpaUtils {
 
     private static final Logger log = LoggerFactory.getLogger(IpaUtils.class);
 
+    // Chiave usata nella mappa codiciIPAeDescrizioni per la PEC recuperata da IPA come fallback
+    public static final String KEY_PEC_PAI = "pec_pai";
+
+    // Query per il recupero PEC ai vari livelli di granularità (UO → AOO → ipa.pec → amministrazione).
+    // La prima coppia mailN/tipo_mailN con tipo_mail = 'pec' (case insensitive) e mail non vuota è quella scelta.
+    private static final String QUERY_PEC_FROM_OU
+        = "SELECT mail1, tipo_mail1, mail2, tipo_mail2, mail3, tipo_mail3 "
+        + "FROM ipa.ou WHERE cod_amm = :cod_amm AND cod_ou = :cod_ou";
+
+    private static final String QUERY_PEC_FROM_AOO
+        = "SELECT mail1, tipo_mail1, mail2, tipo_mail2, mail3, tipo_mail3 "
+        + "FROM ipa.aoo WHERE cod_amm = :cod_amm AND cod_aoo = :cod_aoo";
+
+    private static final String QUERY_PEC_FROM_TABLE_PEC
+        = "SELECT mail, tipomail FROM ipa.pec WHERE cod_amm = :cod_amm";
+
+    private static final String QUERY_PEC_FROM_AMMINISTRAZIONI
+        = "SELECT mail1, tipo_mail1, mail2, tipo_mail2, mail3, tipo_mail3, "
+        + "       mail4, tipo_mail4, mail5, tipo_mail5 "
+        + "FROM ipa.amministrazioni WHERE cod_amm = :cod_amm";
+
     /**
     Restituisce una mappa che ha come chiave un id contatto e come valore i dati della pai contenuti nel db ipa a cui la funzione si collega
     @param contattiList lista di contatti di cui si vogliono sapere i dati ipa
@@ -97,6 +118,18 @@ public class IpaUtils {
                         log.error("Codice Amministrazione non indicato");
                         throw new VersatorePluginException("Codice Amministrazione non indicato");
                     }
+
+                    // Recupero della PEC con strategia di fallback (UO → AOO → ipa.pec → amministrazione):
+                    // serve a popolare gli IndirizziDigitaliDiRiferimento delle PAI quando il contatto
+                    // in rubrica non ha email proprie. Il cod_aoo eventualmente recuperato sopra è disponibile
+                    // nella mappa codiciIPAeDescrizioni.
+                    String pecPai = recuperaPECPAI(
+                        conn,
+                        cod_amm,
+                        codiciIPAeDescrizioni.get("cod_aoo"),
+                        cod_ou
+                    );
+                    codiciIPAeDescrizioni.put(KEY_PEC_PAI, pecPai);
                 }
                 ipaMap.put(contatto.getId(), codiciIPAeDescrizioni);
             }
@@ -200,6 +233,78 @@ public class IpaUtils {
         }
 
         return sb.toString().trim();
+    }
+
+    /**
+     * Cerca la PEC della PAI partendo dalla granularità più specifica disponibile.
+     * Strategia di lookup (si interrompe al primo risultato valido):
+     *   1) ipa.ou       (se cod_ou presente)
+     *   2) ipa.aoo      (se cod_aoo presente, anche quello recuperato dalla query del livello UO)
+     *   3) ipa.pec      (tabella dedicata, ricerca per cod_amm)
+     *   4) ipa.amministrazioni (ultima risorsa, fino a mail5)
+     * Restituisce null se nessuna PEC è disponibile per l'amministrazione.
+     */
+    private static String recuperaPECPAI(Connection conn, String cod_amm, String cod_aoo, String cod_ou) {
+        // 1) PEC sulla UO
+        if (StringUtils.hasText(cod_ou)) {
+            Table ouTable = conn.createQuery(QUERY_PEC_FROM_OU)
+                .addParameter("cod_amm", cod_amm)
+                .addParameter("cod_ou", cod_ou)
+                .executeAndFetchTable();
+            String pec = findPecInMailRow(ouTable, 3);
+            if (pec != null) {
+                return pec;
+            }
+        }
+        // 2) PEC sull'AOO
+        if (StringUtils.hasText(cod_aoo)) {
+            Table aooTable = conn.createQuery(QUERY_PEC_FROM_AOO)
+                .addParameter("cod_amm", cod_amm)
+                .addParameter("cod_aoo", cod_aoo)
+                .executeAndFetchTable();
+            String pec = findPecInMailRow(aooTable, 3);
+            if (pec != null) {
+                return pec;
+            }
+        }
+        // 3) PEC dalla tabella ipa.pec (lista di PEC istituzionali a livello amministrazione)
+        Table pecTable = conn.createQuery(QUERY_PEC_FROM_TABLE_PEC)
+            .addParameter("cod_amm", cod_amm)
+            .executeAndFetchTable();
+        if (pecTable != null) {
+            for (Row r : pecTable.rows()) {
+                String tipo = r.getString("tipomail");
+                String mail = r.getString("mail");
+                if (tipo != null && "pec".equalsIgnoreCase(tipo) && StringUtils.hasText(mail)) {
+                    return mail;
+                }
+            }
+        }
+        // 4) PEC sulla amministrazione (ultima risorsa, fino a mail5)
+        Table ammTable = conn.createQuery(QUERY_PEC_FROM_AMMINISTRAZIONI)
+            .addParameter("cod_amm", cod_amm)
+            .executeAndFetchTable();
+        return findPecInMailRow(ammTable, 5);
+    }
+
+    /**
+     * Scansiona la prima riga della Table cercando la prima coppia mailN/tipo_mailN
+     * (con N da 1 a maxIdx) il cui tipo_mailN sia "pec" (case insensitive) e
+     * mailN sia non vuota. Ritorna la mail trovata o null.
+     */
+    private static String findPecInMailRow(Table table, int maxIdx) {
+        if (table == null || table.rows() == null || table.rows().isEmpty()) {
+            return null;
+        }
+        Row row = table.rows().get(0);
+        for (int i = 1; i <= maxIdx; i++) {
+            String mail = row.getString("mail" + i);
+            String tipo = row.getString("tipo_mail" + i);
+            if (tipo != null && "pec".equalsIgnoreCase(tipo) && StringUtils.hasText(mail)) {
+                return mail;
+            }
+        }
+        return null;
     }
 
 }

@@ -444,6 +444,12 @@ public  class BdmProcess implements Dumpable, Serializable {
                         forEachRemaining((s) -> {
                     try {
                         //                            runningContext.put(CURRENT_STEP, s);
+                        // MODIFICATO: gli step riavvolti devono ricevere entityManager/objectMapper/processBag
+                        // (come currentStep e nextStep), altrimenti i loro task ricevono un EntityManager nullo
+                        // e l'undo esplode (NPE in operazioni JPA, es. TaskUtils.setSullaScrivania).
+                        s.setEntityManager(entityManager);
+                        s.setObjectMapper(objectMapper);
+                        s.setProcessBag(processBag);
                         s.undo(runningContext, context, params);
                     } catch (ProcessWorkFlowException ex) {
                         throw new BdmRuntimeExceptionContainer(ex);

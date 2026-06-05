@@ -32,7 +32,6 @@ import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersament
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.IN_CARICO_CON_ERRORI;
 import static it.bologna.ausl.model.entities.versatore.Versamento.StatoVersamento.VERSATO;
-import it.nextsw.common.configurations.jackson.ZoneDateTimeDeserializer;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -712,6 +711,9 @@ public class VersatoreJobWorker extends JobWorker<VersatoreJobWorkerData, JobWor
                 break;
             case RITENTA:
                 statoVersamento = Versamento.StatoVersamento.ERRORE_RITENTABILE;
+                break;
+            case MANUALE:
+                statoVersamento = Versamento.StatoVersamento.VERSARE;
                 break;
             default:
                 throw new MasterjobsWorkerException("Tipologia versamento non prevista");

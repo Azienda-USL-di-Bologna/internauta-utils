@@ -36,6 +36,7 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipoSoggetto
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.TipologiaDiFlussoType;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.VerificaType;
 import it.bologna.ausl.internauta.utils.versatore.utils.IpaUtils;
+import static it.bologna.ausl.internauta.utils.versatore.utils.IpaUtils.KEY_PEC_PAI;
 import it.bologna.ausl.internauta.utils.versatore.utils.UnimaticaVersatoreUtils;
 import it.bologna.ausl.model.entities.baborg.Persona;
 import it.bologna.ausl.model.entities.rubrica.Contatto;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Comparator;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.util.StringUtils;
 
 /**
@@ -144,8 +146,9 @@ public class MetadatiBuilder {
         //--Impronta crittografica del documento
         ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumento = new ImprontaCrittograficaDelDocumentoType();
         //---Impronta
-        //impronta del documento principale
-        improntaCrittograficaDelDocumento.setImpronta(documentoPrincipale.getImpronta().getBytes(StandardCharsets.UTF_8));
+        //impronta del documento principale: XSD AgID vuole xs:base64Binary del digest binario,
+        //quindi converto l'hex SHA-256 nei 32 byte raw (poi JAXB lo base64-encoda)
+        improntaCrittograficaDelDocumento.setImpronta(Hex.decodeHex(documentoPrincipale.getImpronta()));
         //---Algoritmo
         //algoritmo del documento principale
         improntaCrittograficaDelDocumento.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
@@ -225,7 +228,8 @@ public class MetadatiBuilder {
             ProtocolloType protocolloType = new ProtocolloType();
             protocolloType.setTipoRegistro("ProtocolloOrdinario\\ProtocolloEmergenza");
             protocolloType.setDataProtocollazioneDocumento(UnimaticaVersatoreUtils.toXMLGregorianDate(registroDocDocumentoPrincipale.getDataRegistrazione()));
-            protocolloType.setNumeroProtocolloDocumento(registroDocDocumentoPrincipale.getNumero().toString());
+            // Padding a 7 cifre: NumProtType dell'XSD AgID richiede pattern [0-9]{7,}
+            protocolloType.setNumeroProtocolloDocumento(String.format("%07d", registroDocDocumentoPrincipale.getNumero()));
             protocolloType.setCodiceRegistro(registro.getCodice().toString());
             tipoRegistro.setProtocolloOrdinarioProtocolloEmergenza(protocolloType);
         } else {
@@ -310,10 +314,13 @@ public class MetadatiBuilder {
                                 .stream()
                                 .map(email -> email.getEmail())
                                 .collect(Collectors.toList());
-                            if (mailsMittentePAIPEList == null || mailsMittentePAIPEList.isEmpty()) {
-                                log.error("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto mittente non ha email)");
-                                throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto mittente non ha email)");
-                            }
+                            // Fallback per IndirizziDigitaliDiRiferimento quando il contatto PAI non ha email proprie:
+                            // si tenta la PEC recuperata da IPA (campo pec_pai); in ultima analisi placeholder testuale.
+                            List<String> indirizziPAIMittente = buildIndirizziDigitaliFallback(
+                                mailsMittentePAIPEList,
+                                codiciIPAeDescrizioni,
+                                "Mittente PE (doc id " + doc.getId() + ")"
+                            );
                             tipoMittete.setPAI(
                                 buildPAI(
                                     codiciIPAeDescrizioni.get("des_amm"),
@@ -322,7 +329,7 @@ public class MetadatiBuilder {
                                     codiciIPAeDescrizioni.get("cod_aoo"),
                                     codiciIPAeDescrizioni.get("des_ou"),
                                     codiciIPAeDescrizioni.get("cod_uni_ou"),
-                                    mailsMittentePAIPEList
+                                    indirizziPAIMittente
                                 )
                             );
                             break;
@@ -347,7 +354,7 @@ public class MetadatiBuilder {
                                 throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Estera (il contatto mittente non ha email)");
                             }
                             tipoMittete.setPAE(buildPAE(mittente.getDescrizione(), mailsMittentePAIPUList));
-
+                            break;
                         case VARIO:
                             tipoMittete.setPG(buildPG(mittente.getDescrizione()));
                             break;
@@ -418,10 +425,12 @@ public class MetadatiBuilder {
                             .stream()
                             .map(email -> email.getEmail())
                             .collect(Collectors.toList());
-                        if (mailsDestinatarioPAIPEList == null || mailsDestinatarioPAIPEList.isEmpty()) {
-                            log.error("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto destinatario non ha email)");
-                            throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Italiana (il contatto destinatario non ha email)");
-                        }
+                        // Stessa logica di fallback applicata al mittente: PEC IPA → placeholder
+                        List<String> indirizziPAIDestinatario = buildIndirizziDigitaliFallback(
+                            mailsDestinatarioPAIPEList,
+                            codiciIPAeDescrizioni,
+                            "Destinatario (doc id " + doc.getId() + ")"
+                        );
                         tipoDestinatario.setPAI(
                             buildPAI(
                                 codiciIPAeDescrizioni.get("des_amm"),
@@ -430,7 +439,7 @@ public class MetadatiBuilder {
                                 codiciIPAeDescrizioni.get("cod_aoo"),
                                 codiciIPAeDescrizioni.get("des_ou"),
                                 codiciIPAeDescrizioni.get("cod_uni_ou"),
-                                mailsDestinatarioPAIPEList
+                                indirizziPAIDestinatario
                             )
                         );
                         break;
@@ -454,6 +463,7 @@ public class MetadatiBuilder {
                             throw new VersatorePluginException("Non vi sono Indirizzi Digitali di Riferimento per la Pubblica Amministrazione Estera (il contatto destinatario non ha email)");
                         }
                         tipoDestinatario.setPAE(buildPAE(destinatario.getDescrizione(), mailsDestinatarioList));
+                        break;
                     case VARIO:
                         tipoDestinatario.setPG(buildPG(destinatario.getDescrizione()));
                         break;
@@ -494,7 +504,8 @@ public class MetadatiBuilder {
                 //---IdDoc
                 IdDocType idDocAllegato = new IdDocType();
                 ImprontaCrittograficaDelDocumentoType improntaCrittograficaDelDocumentoAllegato = new ImprontaCrittograficaDelDocumentoType();
-                improntaCrittograficaDelDocumentoAllegato.setImpronta(allegatoUnimatica.getImpronta().getBytes(StandardCharsets.UTF_8));
+                // hex SHA-256 -> 32 byte raw, come per il documento principale
+                improntaCrittograficaDelDocumentoAllegato.setImpronta(Hex.decodeHex(allegatoUnimatica.getImpronta()));
                 improntaCrittograficaDelDocumentoAllegato.setAlgoritmo((String) parametriVersamento.get("algoritmo"));
                 idDocAllegato.setImprontaCrittograficaDelDocumento(improntaCrittograficaDelDocumentoAllegato);
                 idDocAllegato.setIdentificativo(allegatoUnimatica.getIdFile().toString());
@@ -721,5 +732,35 @@ public class MetadatiBuilder {
             }
         }
         return pAEType;
+    }
+
+    /**
+     * Restituisce gli IndirizziDigitaliDiRiferimento da usare per una PAI con strategia di fallback,
+     * pensata per evitare che il versamento fallisca quando un contatto in rubrica è privo di email.
+     * Ordine applicato:
+     *   1) le email del contatto, se presenti;
+     *   2) la PEC recuperata dal DB IPA tramite IpaUtils (chiave KEY_PEC_PAI nella mappa
+     *      codiciIPAeDescrizioni), se presente;
+     *   3) placeholder testuale "Indirizzi digitali di riferimento non specificati".
+     * Entrambi i fallback (2) e (3) loggano un WARN che riporta il contesto per facilitare la
+     * bonifica della rubrica.
+     */
+    private List<String> buildIndirizziDigitaliFallback(List<String> mailsContatto,
+        Map<String, String> codiciIpa,
+        String contestoLog) {
+        if (mailsContatto != null && !mailsContatto.isEmpty()) {
+            return mailsContatto;
+        }
+        String pecDaIpa = codiciIpa != null ? codiciIpa.get(KEY_PEC_PAI) : null;
+        if (StringUtils.hasText(pecDaIpa)) {
+            log.warn("PAI {} senza email sul contatto; uso PEC recuperata da IPA: {}", contestoLog, pecDaIpa);
+            List<String> out = new ArrayList<>();
+            out.add(pecDaIpa);
+            return out;
+        }
+        log.warn("PAI {} senza email sul contatto e senza PEC su IPA; uso placeholder testuale", contestoLog);
+        List<String> out = new ArrayList<>();
+        out.add("Indirizzi digitali di riferimento non specificati");
+        return out;
     }
 }
