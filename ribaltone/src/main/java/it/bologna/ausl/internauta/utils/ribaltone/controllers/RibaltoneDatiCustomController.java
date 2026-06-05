@@ -24,6 +24,7 @@ import it.bologna.ausl.model.entities.ribaltonedati.QDatiImportatiTrasformazione
 import it.bologna.ausl.model.entities.ribaltonedati.QImportazioniOrganigramma;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration;
 import it.bologna.ausl.model.entities.ribaltonedati.RibaltoneDataConfiguration.SpecificheNonSensibiliKeys;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
@@ -75,7 +77,14 @@ public class RibaltoneDatiCustomController implements ControllerHandledException
     private RepositoryFactory repositoryFactory;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
 
     @Autowired
     private AuthenticatedSessionDataBuilder authenticatedSessionDataBuilder;

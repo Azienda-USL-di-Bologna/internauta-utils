@@ -16,6 +16,7 @@ import it.bologna.ausl.model.entities.masterjobs.Set;
 import it.bologna.ausl.model.entities.sendintegration.DocumentoLottoEntity;
 import it.bologna.ausl.model.entities.sendintegration.QDocumentoLottoEntity;
 import it.bologna.ausl.model.entities.sendintegration.SendIntegrationConfiguration;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
@@ -52,7 +54,14 @@ public class ErogatoreApiDelegateImpl implements ErogatoreApiDelegate {
     private MasterjobsObjectsFactory masterjobsObjectsFactory;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @PersistenceContext
     private EntityManager entityManager;

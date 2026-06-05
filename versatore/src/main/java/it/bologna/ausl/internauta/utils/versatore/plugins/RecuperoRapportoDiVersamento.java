@@ -5,10 +5,12 @@ import it.bologna.ausl.internauta.utils.versatore.utils.VersatoreConfigParams;
 import it.bologna.ausl.model.entities.versatore.RapportoDiVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -30,7 +32,14 @@ public abstract class RecuperoRapportoDiVersamento {
     protected VersatoreConfiguration versatoreConfiguration;
 
     @Autowired
+    protected PlatformTransactionManager transactionManager;
+
     protected TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    protected void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
 
     public void init(VersatoreConfiguration versatoreConfiguration) {
         this.versatoreConfiguration = versatoreConfiguration;
