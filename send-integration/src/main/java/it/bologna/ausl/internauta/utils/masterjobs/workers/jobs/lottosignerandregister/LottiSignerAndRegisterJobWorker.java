@@ -54,9 +54,6 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
     @Autowired
     private SendIntegrationRepositoryConfiguration repositoryConfiguration;
     
-    @Autowired
-    private PlatformTransactionManager platformTransactionManager;
-    
     @Override
     public String getName() {
         return this.name;
@@ -65,14 +62,11 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
     @Override
     protected JobWorkerResult doRealWork() throws MasterjobsWorkerException {
         log.info("sono in do doWork() di {}", getName());
-        TransactionTemplate innerTransactionTemplate = new TransactionTemplate(platformTransactionManager);
-        innerTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         try {
-            SendIntegrationConfiguration lepidaAziendaConfiguration = innerTransactionTemplate.execute(a -> {
+            SendIntegrationConfiguration lepidaAziendaConfiguration = transactionTemplate.execute(a -> {
                 return entityManager.find(SendIntegrationConfiguration.class, SendIntegrationConfiguration.Ids.lepidaAziendaConfiguration);
             });
-            
-            
             
             LottiSignerAndRegisterJobWorkerData workerData = getWorkerData();
             // leggo la configurazione dell'azienda a cui il lotto è associato, l'azienda è identificata dal paId del lotto
@@ -93,8 +87,8 @@ public class LottiSignerAndRegisterJobWorker extends JobWorker<LottiSignerAndReg
                 try {
                     InfoRegistrazioneLotto infoRegistrazioneLotto = scriptaWrapperManger.generaDocumentoPUProtocollato(
                         workerData.getPaId(), workerData.getLottoId(), workerData.getFirmatario(), workerData.getOutputBasePath(), paConfiguration);
-                    innerTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-                    innerTransactionTemplate.executeWithoutResult(a -> {
+                    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+                    transactionTemplate.executeWithoutResult(a -> {
                         LottoElaborato lottoElaborato;
                         try {
                             lottoElaborato = getLottoElaborato(
