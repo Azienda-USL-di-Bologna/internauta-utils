@@ -68,7 +68,8 @@ public class ParametriAziendeReader {
         giorniPESenzaFascicolazioneSollecito,
         parametriDirettoriDelibera,
         albi,
-        DSC
+        DSC,
+        abilitaRegolePostaInArrivo
     }
 
     @Autowired
