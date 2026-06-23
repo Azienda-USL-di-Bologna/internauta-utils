@@ -39,7 +39,9 @@ public class ConfigParams {
     
     public enum DownloaderParamsKey {
         uploadUrl,
+        uploadUrlInternal,
         downloadUrl,
+        downloadUrlInternal,
         uploaderBucket
     }
     
@@ -119,6 +121,22 @@ public class ConfigParams {
     }
     
     /**
+     * Torna l'url del downloder interno, da utilizzare nel caso il download lo dovrà effettuare il backend e non il browser
+     * @return 
+     */
+    public String getDownloaderUrlInternal() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.downloadUrlInternal.toString()));
+    }
+    
+    /**
+     * Torna l'url dell'uploader interno, da utilizzare nel caso il download lo dovrà effettuare il backend e non il browser
+     * @return 
+     */
+    public String getUploaderUrlInternal() {
+        return ((String)this.downloaderParams.get(DownloaderParamsKey.uploadUrlInternal.toString()));
+    }
+    
+    /**
      * Torna l'url dell'uploader sostituendo ai segnaposto (se ci sono) lo schema, l'hostname e la porta passati
      * @param scheme schema dell'url chiamante (es: http, https)
      * @param hostname hostname dell'url chiamante (es. localhost, gdml.inetrnal.ausl.bologna.it, ecc)
@@ -190,7 +208,6 @@ public class ConfigParams {
      */
     public String getExternalSignAndCertificateValidatorValidateDocumentUrl() {
         return (String) this.externalSignAndCertificateValidatorParams.get(ExternalSignAndCertificateValidatorParamsKey.validateDocumentUrl.toString());
-                
     }
     
     

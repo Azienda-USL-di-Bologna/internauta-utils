@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
+import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.IllegalStepStateException;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.ProcessWorkFlowException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.internauta.utils.bdm.utilities.Dumpable;
 import jakarta.persistence.EntityManager;
 import java.time.ZonedDateTime;
@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -55,6 +56,9 @@ public class Step implements Dumpable {
 
     @JsonIgnore
     protected EntityManager entityManager;
+    
+    @JsonIgnore
+    protected ObjectMapper objectMapper;
     
     @JsonIgnore
     protected Map<String, Object> processBag;
@@ -178,70 +182,84 @@ public class Step implements Dumpable {
         forwardStepList.add(stepId);
     }
 
-    public void undo(Bag runningContext, Bag context, Bag params) {
-
-//        if (1 == 1) {
-//            throw new UnsupportedOperationException("Se tutti i passi hanno fatto e la politica e' ANY non disfare ?!?!?");
-//        }
-        
-//        
-//        currentTaskIndex = 0;
-//        stepStatus = BdmStatus.NOT_STARTED;
-//        taskResults = new ArrayList<>();
-//        taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).forEach((t) -> {
-//            t.undo(context, params);
-//        });
-
+    public void reset() {
         enterDone = false;
         exitDone = false;
         stepStatus = BdmStatus.NOT_STARTED;
         currentTaskIndex = 0;
         stepOnTimeStamp = null;
+        taskList.forEach(t -> t.setStatus(BdmStatus.NOT_STARTED));
         for (int i = 0; i < taskResults.size(); i++) {
             taskResults.set(i, null);
         }
-//        taskResults = new ArrayList<>();
+    }
+    
+    public void undo(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
+
 
         runningContext.put(BdmProcess.CURRENT_STEP, this);
-
-        if (exitTaskList != null) {
-            exitTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+        try {
+            if (exitTaskList != null) {
+                exitTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
-        }
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.taskUndo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
 
-        if (taskList != null) {
-            taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+            if (taskList != null) {
+                taskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING || t.getStatus() == BdmStatus.ERROR)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
-        }
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.taskUndo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
 
-        if (enterTaskList != null) {
-            enterTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
+            if (enterTaskList != null) {
+                enterTaskList.stream().filter((t) -> (t.getStatus() == BdmStatus.FINISHED || t.getStatus() == BdmStatus.RUNNING)).
                     collect(Collectors.toCollection(LinkedList<Task>::new)).descendingIterator().
                     forEachRemaining((t) -> {
-                            t.setEntityManager(entityManager);
-                            t.setProcessBag(processBag);
-                            t.undo(runningContext, context, params);
-            });
+                        t.setEntityManager(entityManager);
+                        t.setObjectMapper(objectMapper);
+                        t.setProcessBag(processBag);
+                        t.taskUndo(runningContext, context, params);
+                        if (t.getStatus() == BdmStatus.ERROR) {
+                            stepStatus = BdmStatus.ERROR;
+                            throw new BdmRuntimeExceptionContainer(new ProcessWorkFlowException("error executing task: " + t.toString()));
+                        }
+                });
+            }
+            reset();
+        } catch (BdmRuntimeExceptionContainer t) {
+            if (t.getException() instanceof ProcessWorkFlowException ex)
+                throw ex;
+            else
+                throw new ProcessWorkFlowException("error executing task", t);
         }
     }
 
-    public void executeOnEnterTasks(Bag runningContext, Bag context, Bag params) throws ProcessWorkFlowException {
+    public void executeOnEnterTasks(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
         if (enterDone) {
             return;
         }
         if (enterTaskList != null) {
             for (Task t : enterTaskList) {
                 t.setEntityManager(entityManager);
+                t.setObjectMapper(objectMapper);
                 t.setProcessBag(processBag);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
@@ -252,13 +270,14 @@ public class Step implements Dumpable {
         enterDone = true;
     }
     
-    public void executeOnExitTasks(Bag runningContext, Bag context, Bag params) throws ProcessWorkFlowException {
+    public void executeOnExitTasks(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params) throws ProcessWorkFlowException {
         if (exitDone) {
             return;
         }
         if (exitTaskList != null) {
             for (Task t : exitTaskList) {
                 t.setEntityManager(entityManager);
+                t.setObjectMapper(objectMapper);
                 t.setProcessBag(processBag);
                 if (!t.getAuto()) {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
@@ -274,6 +293,7 @@ public class Step implements Dumpable {
         if (taskList != null) {
             Task currentTask = taskList.get(currentTaskIndex);
             currentTask.setEntityManager(entityManager);
+            currentTask.setObjectMapper(objectMapper);
             currentTask.setProcessBag(processBag);
             return currentTask;
             
@@ -393,13 +413,14 @@ public class Step implements Dumpable {
 
     public void addTask(Task task) {
         task.setEntityManager(entityManager);
+        task.setObjectMapper(objectMapper);
         task.setProcessBag(processBag);
         taskList.add(task);
         taskResults.add(null);
 //        taskMap.put(task.getId(), task);
     }
 
-    public BdmStatus stepOn(Bag runningContext, Bag context, Bag params) throws IllegalStepStateException, ProcessWorkFlowException {
+    public BdmStatus stepOn(Map<String, Object> runningContext, Map<String, Object> context, Map<String, Object> params, boolean onlyAuto) throws IllegalStepStateException, ProcessWorkFlowException {
         if (stepStatus == BdmStatus.ERROR || stepStatus == BdmStatus.ABORTED || stepStatus == BdmStatus.FINISHED) {
             throw new IllegalStepStateException("cannot stepon with StepStatus: " + stepStatus.toString());
         } 
@@ -430,6 +451,7 @@ public class Step implements Dumpable {
                 case SEQ:
                     Task currentTask = taskList.get(currentTaskIndex);
                     currentTask.setEntityManager(entityManager);
+                    currentTask.setObjectMapper(objectMapper);
                     currentTask.setProcessBag(processBag);
                     currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                     res = currentTask.execute(runningContext, context, params);
@@ -441,10 +463,13 @@ public class Step implements Dumpable {
                         currentTaskIndex++;
                         while (currentTaskIndex < taskList.size() && taskList.get(currentTaskIndex).getAuto()) {
                             currentTask = taskList.get(currentTaskIndex);
+                            currentTask.setEntityManager(entityManager);
+                            currentTask.setObjectMapper(objectMapper);
+                            currentTask.setProcessBag(processBag);
+                            currentTask.setStepOnTimeStamp(stepOnTimeStamp);
                             res = currentTask.execute(runningContext, context, params);
                             if (res.getStatus() != BdmStatus.FINISHED) {
                                 throw new ProcessWorkFlowException("Automatic task didn't finish!");
-
                             }
                             taskResults.set(currentTaskIndex, res);
                             currentTaskIndex++;
@@ -463,18 +488,21 @@ public class Step implements Dumpable {
                     // se non è automatico lo eseguo solo se non ne è proceduto già uno
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
-                        t.setEntityManager(entityManager);
-                        t.setProcessBag(processBag);
-                        if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
-                            if (t.getAuto() || !finishedOne) {
-                                res = t.execute(runningContext, context, params);
-                                taskResults.set(i, res);
-                                if (res.getStatus() == BdmStatus.ERROR) {
-                                    throw new ProcessWorkFlowException("task error");
-                                } else if (!t.getAuto() && res.getStatus() == BdmStatus.FINISHED) {
-                                    finishedOne = true;
-                                }
-                            }   
+                        if (!onlyAuto || t.getAuto()) {
+                            t.setEntityManager(entityManager);
+                            t.setObjectMapper(objectMapper);
+                            t.setProcessBag(processBag);
+                            if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
+                                if (t.getAuto() || !finishedOne) {
+                                    res = t.execute(runningContext, context, params);
+                                    taskResults.set(i, res);
+                                    if (res.getStatus() == BdmStatus.ERROR) {
+                                        throw new ProcessWorkFlowException("task error");
+                                    } else if (!t.getAuto() && res.getStatus() == BdmStatus.FINISHED) {
+                                        finishedOne = true;
+                                    }
+                                }   
+                            }
                         }
                     }
                     if (finishedOne || getNotFinishedTasks().isEmpty()) {
@@ -490,18 +518,23 @@ public class Step implements Dumpable {
 //                    int listSize = taskList.size();
                     for (int i = 0; i < taskList.size(); i++) {
                         Task t = taskList.get(i);
-                        t.setEntityManager(entityManager);
-                        t.setProcessBag(processBag);
-                        if (t.getStatus() == BdmStatus.NOT_STARTED || t.getStatus() == BdmStatus.RUNNING) {
-                            res = t.execute(runningContext, context, params);
-                            taskResults.set(i, res);
-                            if (res.getStatus() == BdmStatus.ERROR) {
-                                stepStatus = BdmStatus.ERROR;
-                                throw new ProcessWorkFlowException("error executing task: " + t.toString());
+                        if (!onlyAuto || t.getAuto()) {
+                            t.setEntityManager(entityManager);
+                            t.setObjectMapper(objectMapper);
+                            t.setProcessBag(processBag);
+                            switch (t.getStatus()) {
+                                case NOT_STARTED, RUNNING, ERROR -> {
+                                    res = t.execute(runningContext, context, params);
+                                    taskResults.set(i, res);
+                                    if (res.getStatus() == BdmStatus.ERROR) {
+                                        stepStatus = BdmStatus.ERROR;
+                                        throw new ProcessWorkFlowException("error executing task: " + t.toString());
+                                    }
+                                }
                             }
-                        }
-                        if (t.getStatus() == BdmStatus.FINISHED) {
-                            finishedTasks++;
+                            if (t.getStatus() == BdmStatus.FINISHED) {
+                                finishedTasks++;
+                            }
                         }
                     }
                     if (finishedTasks == taskList.size()) {
@@ -542,6 +575,14 @@ public class Step implements Dumpable {
 
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> getProcessBag() {

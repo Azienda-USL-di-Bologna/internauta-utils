@@ -60,7 +60,7 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                     if (ZonedDateTime.now().minusDays(giorniPrimaDiVersareDeli).isBefore(docDetail.getDataRegistrazione())) {
                         idoneo = false;
                     }
-                    if (doc.getAdditionalData().get("dati_pubblicazione") == null) {
+                    if (doc.getAdditionalData().getDatiPubblicazione() == null) {
                         log.info("Delibera non idonea perche senza pubblicazione: ", id.toString());
 
                         idoneo = false;
@@ -72,7 +72,7 @@ public class ParerIdoneitaCheckerService extends IdoneitaChecker {
                         idoneo = false;
 
                     }
-                    if (doc.getAdditionalData().get("dati_pubblicazione") == null) {
+                    if (doc.getAdditionalData().getDatiPubblicazione() == null) {
                         log.info("Determina non idonea perche senza pubblicazione: ", id.toString());
 
                         idoneo = false;

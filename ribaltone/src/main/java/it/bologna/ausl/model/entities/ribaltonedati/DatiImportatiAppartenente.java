@@ -262,6 +262,10 @@ public class DatiImportatiAppartenente implements Serializable, DatiRibaltoneInt
         return codiceFiscale + "_" + idCasella + "_" + idAzienda;
     }
 
+    public String getKeyFusione() {
+        return idAzienda + "_" + idCasella;
+    }
+
     @Override
     public TipologiaCsv getTipo() {
         return TipologiaCsv.APPARTENENTI;

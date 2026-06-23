@@ -13,6 +13,8 @@ import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Registro;
+import it.bologna.ausl.model.entities.scripta.Step;
+
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -92,17 +94,17 @@ public class DeliBuilder {
         //oltre che a cercare i firmatari cerco anche l'ufficio produttore
         String ufficioProduttore = null;
         for (AttoreDoc attore : listaAttoriDelDocumento) {
-            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.FIRMA)) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.FIRMA)) {
                 stringaDiFirmatari += "Proponente: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
             }
-            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_GENERALE)) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_GENERALE)) {
                 ufficioProduttore = attore.getIdStruttura().getNome();
                 stringaDiFirmatari += "DG: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
             }
-            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_AMMINISTRATIVO)) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_AMMINISTRATIVO)) {
                 stringaDiFirmatari += "DA: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
             }
-            if (attore.getRuolo().equals(AttoreDoc.RuoloAttoreDoc.DIRETTORE_SANITARIO)) {
+            if (attore.getIdStep().getId().equals(Step.StepIds.DIRETTORE_SANITARIO)) {
                 stringaDiFirmatari += "DS: " + attore.getIdPersona().getCodiceFiscale() + " - " + attore.getIdPersona().getDescrizione() + ", ";
             }
         }
@@ -119,11 +121,11 @@ public class DeliBuilder {
             stringaAllegati += Integer.toString(allegato.getId()) + " - ";
         }
         stringaAllegati = stringaAllegati.substring(0, stringaAllegati.length() - 3);
-        HashMap<String, Object> additionalData = doc.getAdditionalData();
+        Doc.AdditionalDataDoc additionalData = doc.getAdditionalData();
         String dataEsecutivita;
         if (additionalData != null) {
-            if (additionalData.containsKey("dati_pubblicazione") && additionalData.get("dati_pubblicazione") != null) {
-                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.get("dati_pubblicazione");
+            if (additionalData.getDatiPubblicazione() != null) {
+                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.getDatiPubblicazione();
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
                 } else {

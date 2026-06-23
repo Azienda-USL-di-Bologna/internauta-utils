@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -52,6 +53,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.RedisListCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -79,7 +81,14 @@ public class MasterjobsJobsQueuer {
     private RedisTemplate redisTemplate;
         
     @Autowired 
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Autowired
     private MasterjobsUtils masterjobsUtils;
@@ -104,6 +113,7 @@ public class MasterjobsJobsQueuer {
      * @return i jobs che che sono stati creati
      */
     public MasterjobsQueueData queueOnCommit(List<JobWorker> workers, String objectId, String objectType, String app, Boolean waitForObject, Set.SetPriority priority, String ip) {
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         MasterjobsQueueData queueData = transactionTemplate.execute(action -> {
             try {
                 MasterjobsQueueData _queueData = this.insertInDatabase(workers, objectId, objectType, app, waitForObject, priority, ip);

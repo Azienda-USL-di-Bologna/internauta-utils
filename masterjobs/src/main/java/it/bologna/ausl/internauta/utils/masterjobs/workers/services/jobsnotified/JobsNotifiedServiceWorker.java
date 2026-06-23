@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.UUID;
 import org.hibernate.Session;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
@@ -94,7 +93,7 @@ public class JobsNotifiedServiceWorker extends ServiceWorker {
     }
     
     @Override
-    public WorkerResult doWork() throws MasterjobsWorkerException {
+    public WorkerResult doRealWork() throws MasterjobsWorkerException {
         Integer waitNotifyMillis = serviceEntity.getWaitNotifyMillis();
         if (waitNotifyMillis != null) {
             /*

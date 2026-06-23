@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package it.bologna.ausl.internauta.utils.versatore.plugins.sdico.builders;
 
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
@@ -65,56 +61,77 @@ public class AllegatiBuilderSdico {
         List<IdentityFile> identityFiles = new ArrayList<>();
 
         for (Allegato allegato : allegati) {
-            log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
-            //prendo l'allegato originale (se è firmato scelgo quello firmato)
-            if (allegato.getFirmato()) {
-                Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
-                IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
+            // Saltiamo i figli di un contenitore (estratti da EML): il padre li contiene
+            // gia' e i loro blob su MinIO non sono affidabili (rigenerazione lazy / bucket temp).
+            // Eccezione: il principale viene versato anche se figlio.
+            if (!allegato.getEliminato()
+                && (allegato.getIdAllegatoPadre() == null || allegato.getPrincipale())) {
+                log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
+                //prendo l'allegato originale (se è firmato scelgo quello firmato)
+                if (allegato.getFirmato()) {
+                    Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
+                    // firmato=true ma originaleFirmato assente (firma esterna): ripiego sull'originale
+                    if (originaleFirmato == null) {
+                        Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
+                        IdentityFile identityFile = getAllegatoInformation(originale);
+                        identityFiles.add(identityFile);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                    } else {
+                        IdentityFile identityFile = getAllegatoInformation(originaleFirmato);
+                        identityFiles.add(identityFile);
+                        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO;
+                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                        versamentiAllegatiInfo.add(allegatoInformation);
+                    }
+                } else {
+                    Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
+                    IdentityFile identityFile = getAllegatoInformation(originale);
+                    identityFiles.add(identityFile);
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
+                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                    versamentiAllegatiInfo.add(allegatoInformation);
+                }
+                // Il CONVERTITO (non firmato) non viene versato: e' rigenerato on-demand
+                // sul bucket temp e potrebbe non essere piu' presente al momento del versamento.
+                // I CONVERTITO_FIRMATO / CONVERTITO_FIRMATO_P7M restano: essendo firmati,
+                // vengono salvati sul bucket persistente da FirmaInternautaManager.
+//
+//                Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
+//                if (convertito != null) {
+//                    IdentityFile identityFile = getAllegatoInformation(convertito);
+//                    identityFiles.add(identityFile);
+//                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO;
+//                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+//                    versamentiAllegatiInfo.add(allegatoInformation);
+//                }
 
-            } else {
-                Allegato.DettaglioAllegato originale = allegato.getDettagli().getOriginale();
-                IdentityFile identityFile = getAllegatoInformation(originale);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
-            }
-            //se ci sono prendo gli altri tipi di allegato
-            Allegato.DettaglioAllegato convertito = allegato.getDettagli().getConvertito();
-            if (convertito != null) {
-                IdentityFile identityFile = getAllegatoInformation(convertito);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
-            }
-            Allegato.DettaglioAllegato convertitoFirmato = allegato.getDettagli().getConvertitoFirmato();
-            if (convertitoFirmato != null) {
-                IdentityFile identityFile = getAllegatoInformation(convertitoFirmato);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
-            }
-            Allegato.DettaglioAllegato convertitoFirmatoP7M = allegato.getDettagli().getConvertitoFirmatoP7m();
-            if (convertitoFirmatoP7M != null) {
-                IdentityFile identityFile = getAllegatoInformation(convertitoFirmatoP7M);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO_P7M;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
-            }
-            Allegato.DettaglioAllegato originaleFirmatoP7M = allegato.getDettagli().getOriginaleFirmatoP7m();
-            if (originaleFirmatoP7M != null) {
-                IdentityFile identityFile = getAllegatoInformation(originaleFirmatoP7M);
-                identityFiles.add(identityFile);
-                Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO_P7M;
-                VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
-                versamentiAllegatiInfo.add(allegatoInformation);
+                //se ci sono prendo gli altri tipi di allegato:
+                Allegato.DettaglioAllegato convertitoFirmato = allegato.getDettagli().getConvertitoFirmato();
+                if (convertitoFirmato != null) {
+                    IdentityFile identityFile = getAllegatoInformation(convertitoFirmato);
+                    identityFiles.add(identityFile);
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO;
+                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                    versamentiAllegatiInfo.add(allegatoInformation);
+                }
+                Allegato.DettaglioAllegato convertitoFirmatoP7M = allegato.getDettagli().getConvertitoFirmatoP7m();
+                if (convertitoFirmatoP7M != null) {
+                    IdentityFile identityFile = getAllegatoInformation(convertitoFirmatoP7M);
+                    identityFiles.add(identityFile);
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.CONVERTITO_FIRMATO_P7M;
+                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                    versamentiAllegatiInfo.add(allegatoInformation);
+                }
+                Allegato.DettaglioAllegato originaleFirmatoP7M = allegato.getDettagli().getOriginaleFirmatoP7m();
+                if (originaleFirmatoP7M != null) {
+                    IdentityFile identityFile = getAllegatoInformation(originaleFirmatoP7M);
+                    identityFiles.add(identityFile);
+                    Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato = Allegato.DettagliAllegato.TipoDettaglioAllegato.ORIGINALE_FIRMATO_P7M;
+                    VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFile, versamentoBuilder, tipoAllegato);
+                    versamentiAllegatiInfo.add(allegatoInformation);
+                }
             }
         }
         mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
@@ -140,11 +157,11 @@ public class AllegatiBuilderSdico {
         //in "dettagli" nome del file ed estensione sono separati. Al momento solo i doc GEDI (tiplogia DOCUMENT_UTENTE) vengono caricati direttamente da
         //internauta, ecco il perché dell'aggiunta seguente nella stringa che formerà il nome del file.
         IdentityFile identityFile = new IdentityFile(dettaglio.getNome()
-                + (!(dettaglio.getEstensione().equals(estensione)) ? "." + dettaglio.getEstensione() : ""),
-                getUuidMinIObyFileId(dettaglio.getIdRepository()),
-                dettaglio.getHashSha256(),
-                null,
-                dettaglio.getMimeType());
+            + (!(dettaglio.getEstensione().equals(estensione)) ? "." + dettaglio.getEstensione() : ""),
+            getUuidMinIObyFileId(dettaglio.getIdRepository()),
+            dettaglio.getHashSha256(),
+            null,
+            dettaglio.getMimeType());
         //if (identityFile.getUuidMongo() == null) {
         identityFile.setFileBase64(dettaglio.getIdRepository());
         //}
@@ -179,10 +196,10 @@ public class AllegatiBuilderSdico {
      * @param tipoAllegato
      * @return
      */
-    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato, 
-            IdentityFile identityFile, 
-            VersamentoBuilder versamentoBuilder, 
-            Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato) {
+    private VersamentoAllegatoInformation createVersamentoAllegato(Integer idAllegato,
+        IdentityFile identityFile,
+        VersamentoBuilder versamentoBuilder,
+        Allegato.DettagliAllegato.TipoDettaglioAllegato tipoAllegato) {
         VersamentoAllegatoInformation allegatoInformation = new VersamentoAllegatoInformation();
         allegatoInformation.setIdAllegato(idAllegato);
         allegatoInformation.setTipoDettaglioAllegato(tipoAllegato);
@@ -199,13 +216,13 @@ public class AllegatiBuilderSdico {
      * @param identityFile
      * @return
      * @throws MinIOWrapperException
-     * @throws VersatorePluginException 
+     * @throws VersatorePluginException
      */
     private IdentityFile calcolaSHA256(IdentityFile identityFile) throws MinIOWrapperException, VersatorePluginException {
         MinIOWrapper minIOWrapper = versatoreRepositoryConfiguration.getVersatoreRepositoryManager().getMinIOWrapper();
         InputStream is = identityFile.getUuidMongo() != null
-                ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
-                : minIOWrapper.getByFileId(identityFile.getFileBase64());
+            ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
+            : minIOWrapper.getByFileId(identityFile.getFileBase64());
         try {
             identityFile.setHash(org.apache.commons.codec.digest.DigestUtils.sha256Hex(is));
         } catch (IOException ex) {

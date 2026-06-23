@@ -41,6 +41,7 @@ public class SendIntegrationJwtFilter extends OncePerRequestFilter {
             try  {
                 authorizationUtils.verifyTokenAndSetContext(token, now);
             } catch (Exception ex) {
+                logger.error("errore nel controllo del token", ex);
                 setResponseError(request, response, HttpServletResponse.SC_UNAUTHORIZED, "Accesso non autorizzato");
                 return;
             }

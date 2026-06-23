@@ -1,12 +1,16 @@
 package it.bologna.ausl.internauta.utils.ribaltone.repository;
 
 import it.bologna.ausl.blackbox.PermissionManager;
+import it.bologna.ausl.internauta.utils.ribaltone.configuration.RibaltoneConfiguration;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
@@ -16,6 +20,9 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Component
 public class RepositoryFactory {
+
+    @Autowired
+    private RibaltoneConfiguration ribaltoneConfiguration;
 
     @Autowired
     private DatiImportatiTrasformazioneRepository datiImportatiTrasformazioneRepository;
@@ -45,7 +52,14 @@ public class RepositoryFactory {
     private RibaltoneValidationCheckRepository ribaltoneValidationCheckRepository;
 
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -138,8 +152,12 @@ public class RepositoryFactory {
         return transactionTemplate;
     }
 
-    public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
-        this.transactionTemplate = transactionTemplate;
+    public RibaltoneConfiguration getRibaltoneConfiguration() {
+        return ribaltoneConfiguration;
+    }
+
+    public void setRibaltoneConfiguration(RibaltoneConfiguration ribaltoneConfiguration) {
+        this.ribaltoneConfiguration = ribaltoneConfiguration;
     }
 
 }

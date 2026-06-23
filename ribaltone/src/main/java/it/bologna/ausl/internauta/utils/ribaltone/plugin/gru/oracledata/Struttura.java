@@ -105,7 +105,7 @@ public class Struttura implements Serializable {
         fonteIntermediaStruttura.setCodiceEnte(codiceEnte);
 //        fonteIntermediaStruttura.setDatain(datain);
 //        fonteIntermediaStruttura.setDatafi(datafi);
-        fonteIntermediaStruttura.setDescrizione(WordUtils.capitalizeFully(descrizione).trim());
+        fonteIntermediaStruttura.setDescrizione(descrizione.trim().replaceAll("\\s+", " "));
         fonteIntermediaStruttura.setIdCasella(idCasella);
         if (idPadre == null) {
             idPadre = 0;

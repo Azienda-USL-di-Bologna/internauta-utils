@@ -1,12 +1,10 @@
 package it.bologna.ausl.internauta.utils.versatore.plugins.unimatica;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import tools.jackson.core.JacksonException;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoAllegatoInformation;
 import it.bologna.ausl.internauta.utils.versatore.VersamentoDocInformation;
 import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreHttpClientConfiguration;
-import it.bologna.ausl.internauta.utils.versatore.configuration.VersatoreRepositoryConfiguration;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginException;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatorePluginExceptionRitentabile;
 import it.bologna.ausl.internauta.utils.versatore.exceptions.VersatoreProcessingException;
@@ -16,20 +14,17 @@ import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.All
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.IndiceJsonBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.builders.MetadatiBuilder;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ErroreUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.IdentityFileUnimatica;
+import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.PaccoFileUnimatica;
 import it.bologna.ausl.internauta.utils.versatore.plugins.unimatica.entities.ResponseUnimatica;
-import it.bologna.ausl.model.entities.baborg.Persona;
-import it.bologna.ausl.model.entities.baborg.QPersona;
-import it.bologna.ausl.model.entities.baborg.QUtente;
+import it.bologna.ausl.minio.manager.exceptions.MinIOWrapperException;
 import it.bologna.ausl.model.entities.scripta.Allegato;
-import it.bologna.ausl.model.entities.scripta.Archivio;
 import it.bologna.ausl.model.entities.scripta.ArchivioDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
-import it.bologna.ausl.model.entities.versatore.QVersamento;
+import it.bologna.ausl.model.entities.tools.QSupportedFile;
+import it.bologna.ausl.model.entities.tools.SupportedFile;
 import it.bologna.ausl.model.entities.versatore.Versamento;
 import it.bologna.ausl.model.entities.versatore.VersatoreConfiguration;
-import it.bologna.ausl.riversamento.builder.IdentityFile;
-import it.bologna.ausl.riversamento.sender.PaccoFile;
-import jakarta.persistence.EntityManager;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,8 +34,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import okhttp3.Credentials;
-import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -67,7 +62,7 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
     private static final Logger log = LoggerFactory.getLogger(UnimaticaVersatoreService.class);
     private static final String UNIMATICA_VERSATORE_SERVICE = "UnimaticaVersatoreService";
     private static final String OK = "OK";
-    private static final String CANCELLATO = "CANCELLATO";
+    private static final String KO = "KO";
     private static final String ERRORE_PLUG_IN = "ERRORE_PLUG_IN";
     private static final String ERRORE_PLUG_IN_RITENTABILE = "ERRORE_PLUG_IN_RITENTABILE";
 
@@ -87,79 +82,110 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
 
     @Override
     public VersamentoDocInformation versaImpl(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
-        //TODO la gestione degli errori deve essere provata, in base a cosa poi unimatica restituisce
         Map<String, Object> mappaResultAndAllegati = new HashMap<>();
         //Reperisoco i risultati del versamento
-        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation, entityManager, versatoreRepositoryConfiguration, objectMapper);
+        mappaResultAndAllegati = versaDocumentoUnimatica(versamentoDocInformation);
         ResponseUnimatica response = (ResponseUnimatica) mappaResultAndAllegati.get("response");
         String responseJson = (String) mappaResultAndAllegati.get("responseJson");
         String xmlVersato = (String) mappaResultAndAllegati.get("xmlVersato");
+        ErroreUnimatica errore = (ErroreUnimatica) mappaResultAndAllegati.get("erroreUnimatica");
         List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaResultAndAllegati.get("versamentiAllegatiInformation");
 
         //Imposto i dati del DocInformation con i risultati
         versamentoDocInformation.setMetadatiVersati(xmlVersato);
         versamentoDocInformation.setDataVersamento(ZonedDateTime.now());
         if (response != null) {
-            if (response.getResponseCode().equals(OK)) {
+            if (response.getEsitoComplessivo().equals(OK)) {
                 versamentoDocInformation.setRapporto(responseJson);
                 versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
                 versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                 for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
                     versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.VERSATO);
                 }
+            } else if (response.getEsitoComplessivo().equals(KO)) {
+                Versamento.StatoVersamento statoVersamento = Versamento.StatoVersamento.ERRORE;
+                versamentoDocInformation.setRapporto(responseJson);
+                //prendo dal json della risposta gli errori e li concateno
+                String codiciErroriGenerali = response.getErroriGeneraliList()
+                    .stream()
+                    .map(obj -> obj.getCodice())
+                    .collect(Collectors.joining("|"));
+                String descrizioniErroriGenerali = response.getErroriGeneraliList()
+                    .stream()
+                    .map(obj -> obj.getDescrizione())
+                    .collect(Collectors.joining("|"));
+                String codiciErrori = response.getEsitoConsegnaUnimatica().getErroriList()
+                    .stream()
+                    .map(obj -> obj.getCodice())
+                    .collect(Collectors.joining("|"));
+                String descrizioniErrori = response.getEsitoConsegnaUnimatica().getErroriList()
+                    .stream()
+                    .map(obj -> obj.getDescrizione())
+                    .collect(Collectors.joining("|"));
+                String codiciErroriString = "Errori generali: (" + codiciErroriGenerali + ") - Errori esito consegna: (" + codiciErrori + ")";
+                String descrizioniErroriString = "Errori generali: (" + descrizioniErroriGenerali + ") - Errori esito consegna: (" + descrizioniErrori + ")";
+                versamentoDocInformation.setCodiceErrore(codiciErroriString);
+                versamentoDocInformation.setDescrizioneErrore(descrizioniErroriString);
+                versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                versamentoDocInformation.setStatoVersamento(statoVersamento);
+                if (versamentiAllegatiInformationList != null) {
+                    for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                        versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
+                    }
+                }
+                log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + descrizioniErroriString);
             } else {
-                switch (response.getResponseCode()) {
-                    case CANCELLATO: {
-                        versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ANNULLATO);
-                        versamentoDocInformation.setRapporto(response.getErrorMessage());
-                        log.warn("Il versamento del documento " + versamentoDocInformation.getIdDoc() + " è stato annullato, in quanto: " + response.getErrorMessage());
-                        break;
+                log.error("Codice response non riconosciuto");
+                versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
+                versamentoDocInformation.setCodiceErrore("SERVIZIO");
+            }
+        } else if (errore != null) {
+            switch (errore.getCodice()) {
+                case ERRORE_PLUG_IN_RITENTABILE:
+                case ERRORE_PLUG_IN: {
+                    Versamento.StatoVersamento statoVersamento = errore.getCodice().equals(ERRORE_PLUG_IN)
+                        ? Versamento.StatoVersamento.ERRORE
+                        : Versamento.StatoVersamento.ERRORE_RITENTABILE;
+                    versamentoDocInformation.setRapporto(responseJson);
+                    versamentoDocInformation.setCodiceErrore(errore.getCodice());
+                    versamentoDocInformation.setDescrizioneErrore(errore.getDescrizione());
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(statoVersamento);
+                    if (versamentiAllegatiInformationList != null) {
+                        for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                            versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
+                        }
                     }
-                    case ERRORE_PLUG_IN_RITENTABILE:
-                    case ERRORE_PLUG_IN: {
-                        Versamento.StatoVersamento statoVersamento = response.getResponseCode().equals(ERRORE_PLUG_IN)
-                            ? Versamento.StatoVersamento.ERRORE
-                            : Versamento.StatoVersamento.ERRORE_RITENTABILE;
-                        versamentoDocInformation.setRapporto(responseJson);
-                        versamentoDocInformation.setCodiceErrore(response.getResponseCode());
-                        versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
-                        versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
-                        versamentoDocInformation.setStatoVersamento(statoVersamento);
-                        if (versamentiAllegatiInformationList != null) {
-                            for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
-                                versamentoAllegatoInformation.setStatoVersamento(statoVersamento);
-                            }
-                        }
-                        log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + response.getErrorMessage());
-                        break;
+                    log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + errore.getDescrizione());
+                    break;
+                }
+                default: {
+                    versamentoDocInformation.setRapporto(responseJson);
+                    if (StringUtils.hasText(errore.getCodice())) {
+                        versamentoDocInformation.setCodiceErrore(errore.getCodice());
+                    } else {
+                        versamentoDocInformation.setCodiceErrore(ERRORE_PLUG_IN);
                     }
-                    default: {
-                        versamentoDocInformation.setRapporto(responseJson);
-                        if (StringUtils.hasText(response.getResponseCode())) {
-                            versamentoDocInformation.setCodiceErrore(response.getResponseCode());
-                        } else {
-                            versamentoDocInformation.setCodiceErrore(ERRORE_PLUG_IN);
-                        }
-                        if (StringUtils.hasText(response.getErrorMessage())) {
-                            versamentoDocInformation.setDescrizioneErrore(response.getErrorMessage());
-                        } else {
-                            versamentoDocInformation.setDescrizioneErrore("Errore non definito");
-                        }
-                        versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
-                        versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-                        if (versamentiAllegatiInformationList != null) {
-                            for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
-                                versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
-                            }
-                        }
-                        log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + versamentoDocInformation.getDescrizioneErrore());
-                        break;
+                    if (StringUtils.hasText(errore.getDescrizione())) {
+                        versamentoDocInformation.setDescrizioneErrore(errore.getDescrizione());
+                    } else {
+                        versamentoDocInformation.setDescrizioneErrore("Errore non definito");
                     }
+                    versamentoDocInformation.setStatoVersamentoPrecedente(versamentoDocInformation.getStatoVersamento());
+                    versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                    if (versamentiAllegatiInformationList != null) {
+                        for (VersamentoAllegatoInformation versamentoAllegatoInformation : versamentiAllegatiInformationList) {
+                            versamentoAllegatoInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE);
+                        }
+                    }
+                    log.error("Il plug-in Unimatica ha risposto con il seguente errore: " + versamentoDocInformation.getDescrizioneErrore());
+                    break;
                 }
 
             }
             versamentoDocInformation.setVersamentiAllegatiInformations(versamentiAllegatiInformationList);
         } else {
+            log.error("Response non pervenuta");
             versamentoDocInformation.setStatoVersamento(Versamento.StatoVersamento.ERRORE_RITENTABILE);
             versamentoDocInformation.setCodiceErrore("SERVIZIO");
         }
@@ -169,15 +195,15 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
 
     /**
      * Metodo che si occupa di fare la chiamata al Gateway di Unimatica per versare il documento
-     * indicato in versamentoDocInformation. Restituisce una mappa contenete ((TODO
-     * l'indice json e)) i metadati versati, la response proveniente da Unimatica e la lista dei
+     * indicato in versamentoDocInformation. Restituisce una mappa contenete
+     * l'indice json e i metadati versati, la response proveniente da Unimatica (o l'eventuale errore ricevuto) e la lista dei
      * VersamentoAllegatoInformation dei file versati.
      *
      * @param versamentoDocInformation
      * @return
      */
-    //TODO togliere entity manager e vers conf e object mapper
-    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation, EntityManager entityManager, VersatoreRepositoryConfiguration versatoreRepositoryConfiguration, ObjectMapper objectMapper) throws VersatoreProcessingException {
+    public Map<String, Object> versaDocumentoUnimatica(VersamentoDocInformation versamentoDocInformation) throws VersatoreProcessingException {
+
         log.info("Inizio con il versamento del doc: " + Integer.toString(versamentoDocInformation.getIdDoc()));
         //preparo i dati
         Integer idDoc = versamentoDocInformation.getIdDoc();
@@ -187,76 +213,43 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
         try {
             Doc doc = entityManager.find(Doc.class, idDoc);
             try {
-                //prendo l'archivio e il repsonsabile della gestione documentale
-                Archivio archivio = new Archivio();
-                List<ArchivioDoc> listaArchivioDocs = doc.getArchiviDocList();
-                if (listaArchivioDocs.isEmpty()) {
-                    throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
+                //prendo la lista degli archivi
+                List<ArchivioDoc> archiviDocList = doc.getArchiviDocList()
+                    .stream().filter(archivioListObj -> archivioListObj.getDataEliminazione() == null)
+                    .collect(Collectors.toList());
+                if (archiviDocList.isEmpty() || archiviDocList == null) {
+                    log.error("Il documento non è fascicolato");
+                    throw new VersatorePluginException("Il documento non è fascicolato");
                 }
-                Persona responsabileGestioneDocumentale = new Persona();
-                if (doc.getTipologia() != Doc.TipologiaDoc.RGPICO) {
-                    //controllo che il documento non sia già stato versato per questo archivio radice
-                    if (!(numeroVersamentiDocPerArchivio(idDoc, versamentoDocInformation.getIdArchivio(), entityManager) > 0)) {
-                        archivio = entityManager.find(Archivio.class, versamentoDocInformation.getIdArchivio());
-                        if (archivio.getId() != null && !listaArchivioDocs.isEmpty()) {
-                            Archivio archivioDaLista = new Archivio();
-                            for (ArchivioDoc archivioDoc : listaArchivioDocs) {
-                                //controllo se il documento appartiene a un sottofasicolo o a un inserto anziché al fasciolo radice
-                                //e controllo che non sia stato eliminato logicamente
-                                if (archivioDoc.getIdArchivio().getIdArchivioRadice().getId().equals(archivio.getId()) && archivioDoc.getDataEliminazione() == null) {
-                                    archivioDaLista = archivioDoc.getIdArchivio();
-                                }
-                            }
-                            if (archivioDaLista.getId() != null) {
-                                archivio = archivioDaLista;
-                            } else {
-                                //se archivioDaLista è vuoto allora il documento è stato eliminato logicamente dal fasicolo, e non è collegato ad altri fascicoli,
-                                //in quel caso non verso il documento
-                                ErroreUnimatica erroreGenerale = new ErroreUnimatica();
-                                erroreGenerale.setDescrizione("Il documento è stato cancellato logicamente dal fascicolo");
-                                erroreGenerale.setCodice(CANCELLATO);
-                                risultatoEVersamentiAllegati.put("response", response);
-                                return risultatoEVersamentiAllegati;
-                            }
-                        } else {
-                            throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
+                //ulteriori controlli da aggiungere se ce ne sarà bisogno
+                //eseguo controlli specificie per le tipologie di documento
+                /*switch (doc.getTipologia()) {
+                    case DETERMINA:
+                    case DELIBERA:
+                    //se esiste solo un fasicolo per il documento vuol dire che non è stato fascicolato perché trovo solo il fascicolo speciale
+                        if (archiviDocList.size() == 1) {
+                            log.error("Il documento non è fascicolato");
+                            throw new VersatorePluginException("Il documento non è fascicolato");
                         }
-                    } else {
-                        //se il documento è già stato versato per questo fascicolo radice non proseguo con il versamento
-                        ErroreUnimatica erroreGenerale = new ErroreUnimatica();
-                        erroreGenerale.setDescrizione("Il documento è già stato versato per questa fasicolazione");
-                        erroreGenerale.setCodice(CANCELLATO);
-                        risultatoEVersamentiAllegati.put("response", response);
-                        return risultatoEVersamentiAllegati;
-                    }
-                } else {
-                    if (listaArchivioDocs.get(0).getId() != null) {
-                        archivio = listaArchivioDocs.get(0).getIdArchivio();
-                    } else {
-                        throw new VersatorePluginException("Il documento non è collegato ad alcun fasciolo");
-                    }
-                    //prendo il responsabile della gestione documentale, inserire se serve
-                    /*String usernameResponsabileGestioneDocumentale = (String) parametriVersamento.get("usernameResponsabileGestioneDocumentale");
-                    if (!usernameResponsabileGestioneDocumentale.isEmpty()
-                        && usernameResponsabileGestioneDocumentale != null
-                        && usernameResponsabileGestioneDocumentale != "") {
-                        responsabileGestioneDocumentale = personaDaUsernameEAzienda(usernameResponsabileGestioneDocumentale, doc.getIdAzienda().getId());
-                    } else {
-                        throw new VersatorePluginException("Non è stato indicato il Responsabile della Gestione Documentale");
-                    }*/
-                }
+                        break;
+                }*/
                 log.info("accedo ai dati degli allegati e li inserisco nell'XML");
+
+                //gestisco gli allegati, il principale e gli altri secondari
                 List<Allegato> allegati = doc.getAllegati();
-                //TODO cambia configuration
                 AllegatiBuilderUnimatica allegatiBuild = new AllegatiBuilderUnimatica(versatoreRepositoryConfiguration);
-                Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, allegati);
+                Map<String, Object> mappaDatiAllegati = allegatiBuild.buildMappaAllegati(doc, allegati, getSupportedFiles());
                 AllegatoUnimatica documentoPrincipale = (AllegatoUnimatica) mappaDatiAllegati.get("documentoPrincipale");
                 List<AllegatoUnimatica> allegatiSecondariList = (List<AllegatoUnimatica>) mappaDatiAllegati.get("allegatiSecondari");
+                List<VersamentoAllegatoInformation> versamentiAllegatiInformationList = (List<VersamentoAllegatoInformation>) mappaDatiAllegati.get("versamentiAllegatiInfo");
+                risultatoEVersamentiAllegati.put("versamentiAllegatiInformation", versamentiAllegatiInformationList);
+
                 //creazione dell xml dei metadati
-                MetadatiBuilder metadatiBuilder = new MetadatiBuilder(parametriVersamento, doc, archivio, documentoPrincipale, allegatiSecondariList);
+                MetadatiBuilder metadatiBuilder = new MetadatiBuilder(parametriVersamento, doc, archiviDocList, documentoPrincipale, allegatiSecondariList);
                 metadatiBuilder.build();
                 String metadati = metadatiBuilder.toString();
-                risultatoEVersamentiAllegati.put("metadati", metadati);
+                risultatoEVersamentiAllegati.put("xmlVersato", metadati);
+                //log.info("XML versato:\n" + metadati);
                 byte[] fileMetadati = metadati.getBytes(StandardCharsets.UTF_8);
                 //calcolo lo sha 256 del file di metadati
                 String sha256HexMetadati = "";
@@ -266,52 +259,51 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                     log.error("Errore nel calcoalre l'hashSHA256 del file xml dei metadati", ex);
                     throw new VersatorePluginException("Errore nel calcoalre l'hashSHA256 del file xml dei metadati");
                 }
+
                 //creazione dell'indice json
                 IndiceJsonBuilder indiceJsonBuilder = new IndiceJsonBuilder(parametriVersamento, doc, documentoPrincipale, allegatiSecondariList, sha256HexMetadati);
                 Map<String, Object> indiceJsonMap = indiceJsonBuilder.build();
                 String indiceJsonString = objectMapper.writeValueAsString(indiceJsonMap);
                 risultatoEVersamentiAllegati.put("indiceJson", indiceJsonString);
+                log.info("Indice JSON:\n" + indiceJsonString);
 
                 // --Sezione di collegamento con UNIMATICA e versamento--
                 //creazione del multipart
                 //metadati e json
-                //TODO vedere come costruire il nome
-                String nomeFileMetadati = "idDoc" + doc.getId() + "_idArchivio" + archivio.getId() + "_" + documentoPrincipale.getNomeFile() + ".xml";
+                //il nome sarà l'id allegato
                 MultipartBody.Builder buildernew = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addPart(
-                        Headers.of("Content-Disposition", "form-data; name=\"json\""),
-                        RequestBody.create(indiceJsonString, MediaType.parse("application/json"))
-                    )
-                    .addFormDataPart("file", nomeFileMetadati, RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
+                    .addFormDataPart("indice", indiceJsonString)
+                    .addFormDataPart("metadati", String.valueOf(documentoPrincipale.getIdFile()) + ".xml", RequestBody.create(MediaType.parse("application/xml"), fileMetadati));
 
                 // Conversione degli allegati da inputstream to byte[] e aggiungo al multipart
-                List<IdentityFile> identityFiles = (List<IdentityFile>) mappaDatiAllegati.get("identityFiles");
-                List<PaccoFile> paccoFiles = creazionePaccoFile(identityFiles);
+                List<IdentityFileUnimatica> identityFiles = (List<IdentityFileUnimatica>) mappaDatiAllegati.get("identityFiles");
+                List<PaccoFileUnimatica> paccoFiles = creazionePaccoFile(identityFiles);
                 log.info("Ciclo i file...");
                 if (paccoFiles != null) {
-                    for (PaccoFile paccoFile : paccoFiles) {
+                    for (PaccoFileUnimatica paccoFile : paccoFiles) {
                         log.info("Inserisco nel body il file " + paccoFile.getId() + ", " + paccoFile.getFileName());
+                        Integer idAllegatoDaVersare = paccoFile.getIdAllegato();
                         byte[] bytes;
                         try (InputStream is = paccoFile.getInputStream()) {
                             bytes = IOUtils.toByteArray(is);
-                            buildernew.addFormDataPart(paccoFile.getId(), paccoFile.getFileName(), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
+                            buildernew.addFormDataPart("documenti", String.valueOf(idAllegatoDaVersare), RequestBody.create(MediaType.parse(paccoFile.getMime()), bytes));
                         } catch (Exception ex) {
                             log.error("Problemi con l'inputstream dei file", ex);
+                            throw new VersatorePluginExceptionRitentabile("Problemi con l'inputstream dei file");
                         }
                     }
                 }
                 // creazione di body multipart
                 log.info("Costruisco il MultiPart");
                 MultipartBody requestBody = buildernew.build();
-                //TODO da togliere
-                risultatoEVersamentiAllegati.put("requestBody", requestBody);
                 //credenziali autorizzazione
                 String username = (String) parametriVersamento.get("username");
                 String password = (String) parametriVersamento.get("password");
 
                 // richiesta
                 log.info("Costruisco la request");
+
                 Request request = new Request.Builder()
                     .url(unimaticaServizioVersamentoURI)
                     .post(requestBody)
@@ -327,30 +319,29 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                         String resBodyString = resp.body().string();
                         log.info("Body: " + resBodyString);
                         risultatoEVersamentiAllegati.put("responseJson", resBodyString);
-                        //ObjectMapper objectMapper = new ObjectMapper();
                         try {
                             response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
-
                         } catch (JacksonException ex) {
                             log.error("Errore nel parsing della response arrivata da Unimatica", ex);
+                            ErroreUnimatica erroreGenerale = new ErroreUnimatica();
+                            erroreGenerale.setDescrizione("Errore nel parsing della response arrivata da Unimatica");
+                            erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
+                            risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
                         }
+                        risultatoEVersamentiAllegati.put("response", response);
                     } else {
                         log.error("ERROR: message = " + resp.message());
                         String resBodyString = resp.body().string();
                         log.error("Body: " + resBodyString);
                         log.error(resp.toString());
-                        try {
-                            response = objectMapper.readValue(resBodyString, ResponseUnimatica.class);
-
-                        } catch (JacksonException ex) {
-                            log.error("Errore nel parsing della response arrivata da Unimatica", ex);
-                        }
-                        /*response.setErrorMessage(resp.toString());
+                        ErroreUnimatica erroreGenerale = new ErroreUnimatica();
+                        erroreGenerale.setDescrizione(resp.toString());
                         if (resp.code() == 500) {
-                            response.setResponseCode(ERRORE_PLUG_IN_RITENTABILE);
+                            erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
                         } else {
-                            response.setResponseCode(ERRORE_PLUG_IN);
-                        }*/
+                            erroreGenerale.setCodice(ERRORE_PLUG_IN);
+                        }
+                        risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
                     }
                     resp.close(); // chiudo la response
                 } catch (Throwable ex) {
@@ -358,67 +349,29 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
                     ErroreUnimatica erroreGenerale = new ErroreUnimatica();
                     erroreGenerale.setDescrizione("Errore nella chiamata di riversamento");
                     erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
+                    risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
                 }
             } catch (VersatorePluginException e) {
                 log.error("Errore:", e);
                 ErroreUnimatica erroreGenerale = new ErroreUnimatica();
                 erroreGenerale.setDescrizione(e.getMessage());
                 erroreGenerale.setCodice(ERRORE_PLUG_IN);
+                risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
             } catch (VersatorePluginExceptionRitentabile e) {
                 log.error("Errore:", e);
                 ErroreUnimatica erroreGenerale = new ErroreUnimatica();
                 erroreGenerale.setDescrizione(e.getMessage());
                 erroreGenerale.setCodice(ERRORE_PLUG_IN_RITENTABILE);
+                risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
             }
         } catch (Exception e) {
             ErroreUnimatica erroreGenerale = new ErroreUnimatica();
             erroreGenerale.setDescrizione("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage());
             erroreGenerale.setCodice(ERRORE_PLUG_IN);
             log.error("Causa errore: " + e.getCause() + ", messaggio: " + e.getMessage(), e);
+            risultatoEVersamentiAllegati.put("erroreUnimatica", erroreGenerale);
         }
         return risultatoEVersamentiAllegati;
-    }
-
-    /**
-     * Metodo che conta quante volte un documento è stato versato per uno stesso
-     * archivio
-     *
-     * @param idDoc
-     * @param idArchivio
-     * @return
-     */
-    //TODO levare entity manager
-    private Long numeroVersamentiDocPerArchivio(Integer idDoc, Integer idArchivio, EntityManager entityManager) {
-        JPAQueryFactory jPAQueryFactory = new JPAQueryFactory(entityManager);
-        Long numeroDocVersati = jPAQueryFactory.select(QVersamento.versamento.count())
-            .from(QVersamento.versamento)
-            .where(QVersamento.versamento.idDoc.id.eq(idDoc)
-                .and(QVersamento.versamento.idArchivio.id.eq(idArchivio))
-                .and(QVersamento.versamento.stato.eq(Versamento.StatoVersamento.VERSATO.toString())))
-            .fetchOne();
-        return numeroDocVersati;
-    }
-
-    /**
-     * Metodo che dato uno username ti restituisce la persona
-     *
-     * @param codiceFiscale
-     * @return
-     */
-    private Persona personaDaUsernameEAzienda(String username, Integer idAzienda) {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-
-        QUtente utente = QUtente.utente;
-        QPersona persona = QPersona.persona;
-
-        Persona result = queryFactory
-            .select(persona)
-            .from(utente)
-            .join(utente.idPersona, persona)
-            .where(utente.idAzienda.id.eq(idAzienda)
-                .and(utente.username.eq(username)))
-            .fetchOne();
-        return result;
     }
 
     /**
@@ -428,25 +381,35 @@ public class UnimaticaVersatoreService extends VersatoreDocs {
      * @param identityFiles
      * @return
      */
-    //TODO togliere minio wrapper
-    private List<PaccoFile> creazionePaccoFile(List<IdentityFile> identityFiles) {
-        List<PaccoFile> filesList = new ArrayList<>();
-        for (IdentityFile identityFile : identityFiles) {
+    private List<PaccoFileUnimatica> creazionePaccoFile(List<IdentityFileUnimatica> identityFiles) {
+        List<PaccoFileUnimatica> filesList = new ArrayList<>();
+        for (IdentityFileUnimatica identityFile : identityFiles) {
             log.info("Cerco l'allegato: " + identityFile.getFileName());
-            PaccoFile paccoFile = new PaccoFile();
-            /*try {
+            PaccoFileUnimatica paccoFile = new PaccoFileUnimatica();
+            try {
                 InputStream is = identityFile.getUuidMongo() != null
                     ? minIOWrapper.getByUuid(identityFile.getUuidMongo())
                     : minIOWrapper.getByFileId(identityFile.getFileBase64());
-                paccoFile.setInputStream(is);*/
-            paccoFile.setMime(identityFile.getMime());
-            paccoFile.setFileName(identityFile.getFileName());
-            paccoFile.setId(identityFile.getId());
-            filesList.add(paccoFile);
-            /*} catch (MinIOWrapperException ex) {
+                paccoFile.setInputStream(is);
+                paccoFile.setMime(identityFile.getMime());
+                paccoFile.setFileName(identityFile.getFileName());
+                paccoFile.setId(identityFile.getId());
+                paccoFile.setIdAllegato(identityFile.getIdAllegato());
+                filesList.add(paccoFile);
+            } catch (MinIOWrapperException ex) {
                 log.error("Errore nel reperire il file da MinIO", ex);
-            }*/
+            }
         }
         return filesList;
+    }
+
+    /**
+     *Ritorna la lisata dei file supportati
+    @param entityManager
+    @return
+     */
+    public List<SupportedFile> getSupportedFiles() {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+        return queryFactory.selectFrom(QSupportedFile.supportedFile).fetch();
     }
 }

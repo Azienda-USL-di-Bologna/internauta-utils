@@ -6,17 +6,19 @@ import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess;
 import it.bologna.ausl.internauta.utils.bdm.core.BdmProcess.BdmStatus;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.BdmRuntimeExceptionContainer;
 import it.bologna.ausl.internauta.utils.bdm.core.exceptions.StorageException;
-import it.bologna.ausl.internauta.utils.bdm.utilities.Bag;
 import it.bologna.ausl.model.entities.bdm.QProcess;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
@@ -35,7 +37,14 @@ public class DbProcessStorageManager implements ProcessStorageManager {
     private EntityManager entityManager;
     
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -167,7 +176,7 @@ public class DbProcessStorageManager implements ProcessStorageManager {
     }
 
     @Override
-    public List<String> getProcessList(Bag queryParams) throws StorageException {
+    public List<String> getProcessList(Map<String, Object> queryParams) throws StorageException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

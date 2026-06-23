@@ -31,6 +31,8 @@ import it.bologna.ausl.model.entities.scripta.AttoreDoc;
 import it.bologna.ausl.model.entities.scripta.Doc;
 import it.bologna.ausl.model.entities.scripta.DocDetail;
 import it.bologna.ausl.model.entities.scripta.Doc.StatoDoc;
+import it.bologna.ausl.model.entities.scripta.Step.StepIds;
+
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DELIBERA;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DETERMINA;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.DOCUMENT;
@@ -41,6 +43,7 @@ import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGPICO;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDETE;
 import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGDELI;
 import it.bologna.ausl.model.entities.scripta.QAttoreDoc;
+import it.bologna.ausl.model.entities.scripta.Step;
 import it.bologna.ausl.model.entities.titolario.Titolo;
 import it.bologna.ausl.model.entities.versatore.QVersamento;
 import it.bologna.ausl.model.entities.versatore.Versamento;
@@ -234,12 +237,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
             // In questa lista ci saranno gli id di tutti gli allegati che saranno versati con i rispettivi dettagli
             List<String> idAllegatiWithTipoDettaglio = new ArrayList<>();
             for (Allegato allegato : allegati) {
-                for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
-                    Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
-                    // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
-                    if (dettaglioAllegato != null) {
-                        pairsAllegati.add(Pair.of(allegato, tipoDettaglioAllegato));
-                        idAllegatiWithTipoDettaglio.add(allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                if (!allegato.getEliminato()) {
+                    for (Allegato.DettagliAllegato.TipoDettaglioAllegato tipoDettaglioAllegato : Allegato.DettagliAllegato.TipoDettaglioAllegato.values()) {
+                        Allegato.DettaglioAllegato dettaglioAllegato = allegato.getDettagli().getByKey(tipoDettaglioAllegato);
+                        // dettaglioAllegato è null quando per il tipoDettaglio (eg. convertito, etc.) non esiste un allegato
+                        if (dettaglioAllegato != null) {
+                            pairsAllegati.add(Pair.of(allegato, tipoDettaglioAllegato));
+                            idAllegatiWithTipoDettaglio.add(allegato.getId().toString() + "_" + getKeyByTipo(tipoDettaglioAllegato));
+                        }
                     }
                 }
             }
@@ -440,7 +445,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
 
         addNewAttribute(docAttributes, InfocertAttributesEnum.MODALITA_DI_FORMAZIONE, modalitaFormazione);
 
-        List<AttoreDoc> responsabili = getAttoriDoc(doc, Arrays.asList("RESPONSABILE"));
+        List<AttoreDoc> responsabili = getAttoriDoc(doc, Arrays.asList(Step.StepIds.RESPONSABILE));
         for (AttoreDoc attoreDoc : responsabili) {
             Persona attore = attoreDoc.getIdPersona();
             addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "RGD") // Responsabile Gestione Documentale
@@ -453,7 +458,7 @@ public class InfocertVersatoreService extends VersatoreDocs {
         // Soggetti che registrano, FIRMATARI
         List<AttoreDoc> attori = new ArrayList<>();
         attori = getAttoriDoc(doc, Arrays.asList(
-            "FIRMA", "RICEZIONE", "DIRETTORE_GENERALE", "DIRETTORE_AMMINISTRATIVO", "DIRETTORE_SANITARIO", "DIRETTORE_SCIENTIFICO"));
+            Step.StepIds.FIRMA, Step.StepIds.RICEZIONE, Step.StepIds.DIRETTORE_GENERALE, Step.StepIds.DIRETTORE_AMMINISTRATIVO, Step.StepIds.DIRETTORE_SANITARIO, Step.StepIds.DIRETTORE_SCIENTIFICO));
         for (AttoreDoc attoreDoc : attori) {
             Persona attore = attoreDoc.getIdPersona();
             addNewAttribute(docAttributes, InfocertAttributesEnum.RUOLO_N, index, "Soggetto che effettua la registrazione")
@@ -896,14 +901,14 @@ public class InfocertVersatoreService extends VersatoreDocs {
      * @param ruolo Il ruolo.
      * @return La lista di attori del documento.
      */
-    private List<AttoreDoc> getAttoriDoc(final Doc doc, final List<String> ruoli) {
+    private List<AttoreDoc> getAttoriDoc(final Doc doc, final List<StepIds> ruoli) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         QAttoreDoc qAttoreDoc = QAttoreDoc.attoreDoc;
 
         List<AttoreDoc> attoriDoc = queryFactory
             .select(qAttoreDoc)
             .from(qAttoreDoc)
-            .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.ruolo.in(ruoli)))
+            .where(qAttoreDoc.idDoc.eq(doc).and(qAttoreDoc.idStep.id.in(ruoli)))
             .fetch();
         if (attoriDoc.isEmpty()) {
             log.error("Attori {} not found", ruoli.toString());

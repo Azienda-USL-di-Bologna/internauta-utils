@@ -412,7 +412,52 @@ public class MinIOWrapper {
     public MinIOWrapperFileInfo putWithBucket(InputStream obj, String codiceAzienda, String path, String fileName, Map<String, Object> metadata, boolean overWrite, String bucket) throws MinIOWrapperException {
         return putWithBucket(obj, codiceAzienda, path, fileName, metadata, overWrite, null, bucket);
     }
+    
+    /**
+     * duplica il file passato identificato da idRepository nel path passato
+     * @param idRepository
+     * @param destPath
+     * @param cloneMetadata indica se clonare anche i metadati
+     * @return
+     * @throws MinIOWrapperException
+     * @throws IOException 
+     */
+    public MinIOWrapperFileInfo clone(String idRepository, String destPath, boolean cloneMetadata) throws MinIOWrapperException, IOException {
+        return clone(idRepository, destPath, null, cloneMetadata);
+    }
+    
+    /**
+     * duplica il file passato identificato da idRepository nel path passato, con il nome file passato 
+     * @param idRepository
+     * @param destPath
+     * @param newFileName il nuovo nome che deve avere il file (se null viene usato il nome del file da copiare)
+     * @param cloneMetadata indica se clonare anche i metadati
+     * @return
+     * @throws MinIOWrapperException
+     * @throws IOException 
+     */
+    public MinIOWrapperFileInfo clone(String idRepository, String destPath, String newFileName, boolean cloneMetadata) throws MinIOWrapperException, IOException {
+        MinIOWrapperFileInfo fileInfo = getFileInfoByFileId(idRepository);
+        try (InputStream is = getByFileId(idRepository)) {
+            MinIOWrapperFileInfo newFileInfo = putWithBucket(
+                is, fileInfo.getCodiceAzienda(), 
+                destPath, 
+                StringUtils.hasText(newFileName)? newFileName: fileInfo.getFileName(), 
+                cloneMetadata? fileInfo.getMetadata(): null, 
+                false, fileInfo.getBucketName()
+            );
+            return newFileInfo;
+        }
+    }
 
+    /**
+     * Restituisce una stringa di massimo 255 caratteri inserendo un un uuid
+     * prima dell'estensione. Se l'estesione è più lunga di 8 caratteri viene
+     * accorciata anche questa a 8. Se la stringa passata come parametro non
+     * supera i 255 caratteri, viene subito ritornata senza modifiche.
+     *
+     * @param name il nome da accorciare
+     */
     /**
      * Restituisce una stringa di massimo 255 caratteri inserendo un un uuid
      * prima dell'estensione. Se l'estesione è più lunga di 8 caratteri viene
@@ -693,7 +738,8 @@ public class MinIOWrapper {
     public String getFileNameForNotOverwrite(Connection conn, String fileName) {
         Integer fileNameIndex = conn.createQuery("select nextval(:filename_seq)").addParameter("filename_seq", "repo.file_names_seq")
             .executeAndFetchFirst(Integer.class);
-        return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + "." + StringUtils.getFilenameExtension(fileName);
+        String filenameExtension = StringUtils.getFilenameExtension(fileName);
+        return StringUtils.stripFilenameExtension(fileName) + "_" + fileNameIndex.toString() + (StringUtils.hasText(filenameExtension) ? "." + filenameExtension : "");
     }
 
     private String metadataToStringNullSafe(Map<String, Object> metadata) throws JacksonException {

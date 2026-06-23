@@ -11,6 +11,7 @@ import it.bologna.ausl.model.entities.sendintegration.ApiKeyStoreEntry;
 import it.bologna.ausl.model.entities.sendintegration.QApiKeyStoreEntry;
 import it.bologna.ausl.internauta.utils.sendintegration.authorization.exceptions.NotValidJwtException;
 import it.bologna.ausl.internauta.utils.sendintegration.exceptions.RuntimeExceptionContainer;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.text.ParseException;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -39,7 +41,14 @@ public class SendIntegrationAuthorizationUtils {
     private EntityManager entityManager;
     
     @Autowired
+    private PlatformTransactionManager transactionManager;
+
     private TransactionTemplate transactionTemplate;
+
+    @PostConstruct
+    private void initTransactionTemplate() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
     
     @Transactional(rollbackFor = Throwable.class)
     public ApiKeyStoreEntry getApiKeyEntryForErogatore(UUID apiKey, ZonedDateTime now) throws NotValidJwtException {
@@ -161,7 +170,9 @@ public class SendIntegrationAuthorizationUtils {
             String apiSecret = apiKeyStoreEntry.getApiSecret().toString();
             JWSVerifier verifier = new MACVerifier(apiSecret);
             if (!signedToken.verify(verifier)) {
-                throw new NotValidJwtException("il token non è valido");
+                String error = "il token non è valido";
+                logger.error(error);
+                throw new NotValidJwtException(error);
             }
         } catch (JOSEException ex) {
             String error = "errore nel parsing del token";

@@ -7,6 +7,7 @@ import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.X509CertUtils;
@@ -20,7 +21,9 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
 import java.security.SignatureException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -28,6 +31,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -205,6 +209,7 @@ public class AuthorizationUtilityFunctions {
     
     /**
      * genera un token JWT con i claims passati e il secret passato
+     * da usare se si una una chiave simmetrica (es. la stringa secret per firmare il token di internauta)
      * @param secret
      * @param claims
      * @return
@@ -222,6 +227,37 @@ public class AuthorizationUtilityFunctions {
             // Serializza il token
             String token = signedJWT.serialize();
             return token;
+        } catch (Exception ex) {
+            String error = "errore nella generazione del token JWT";
+            logger.error(error, ex);
+            throw new AuthorizationUtilsException(error, ex);
+        }
+    }
+    
+    /**
+     * genera un token JWT con i claims passati e il secret passato
+     * da usare se si una una chiave asimmetrica (es un .p12)
+     * @param privateKey
+     * @param cert se passatto viene inserito all'interno dell'header x5c del token
+     * @param claims
+     * @return
+     * @throws AuthorizationUtilsException 
+     */
+    public static String generateJWT(PrivateKey privateKey, Certificate cert, JWTClaimsSet claims) throws AuthorizationUtilsException {
+        try {
+            JWSHeader.Builder jwsHeaderBuilder = new JWSHeader.Builder(JWSAlgorithm.RS256);
+            if (cert != null) {
+                List<Base64> x5c = Arrays.asList(Base64.encode(cert.getEncoded()));
+                jwsHeaderBuilder = jwsHeaderBuilder.x509CertChain(x5c);
+            }
+            JWSHeader header = jwsHeaderBuilder.build();
+
+            SignedJWT signedJWT = new SignedJWT(header, claims);
+
+            JWSSigner signer = new RSASSASigner(privateKey);
+            signedJWT.sign(signer);
+
+            return signedJWT.serialize();
         } catch (Exception ex) {
             String error = "errore nella generazione del token JWT";
             logger.error(error, ex);
