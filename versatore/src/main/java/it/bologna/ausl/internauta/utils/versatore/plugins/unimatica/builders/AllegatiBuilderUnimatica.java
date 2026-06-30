@@ -58,6 +58,8 @@ public class AllegatiBuilderUnimatica {
         List<IdentityFileUnimatica> identityFiles = new ArrayList<>();
         AllegatoUnimatica documentoPrincipale = new AllegatoUnimatica();
         List<AllegatoUnimatica> allegatiSecondariList = new ArrayList<>();
+        // Per PE/PU la stampa unica deve sempre essere tra gli allegati versati: la tracciamo durante il ciclo
+        boolean stampaUnicaPresente = false;
         for (Allegato allegato : allegatiList) {
             // Saltiamo i figli di un contenitore (estratti da EML): il padre li contiene
             // gia' e i loro blob su MinIO non sono affidabili (rigenerazione lazy / bucket temp).
@@ -65,6 +67,10 @@ public class AllegatiBuilderUnimatica {
             if (!allegato.getEliminato()
                 && (allegato.getIdAllegatoPadre() == null || allegato.getPrincipale())) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
+                // Stampa unica (originale) raccolta per il versamento, sia che sia firmata sia che non lo sia
+                if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)) {
+                    stampaUnicaPresente = true;
+                }
                 if (allegato.getFirmato()) {
                     //guardo se è firmato e in tal caso lo processo
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
@@ -170,6 +176,13 @@ public class AllegatiBuilderUnimatica {
                     }
                 }
             }
+        }
+        // Un PE o un PU deve sempre avere la stampa unica tra gli allegati da versare
+        if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
+            || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA))
+            && !stampaUnicaPresente) {
+            log.error("Il documento non ha la stampa unica tra gli allegati da versare");
+            throw new VersatorePluginException("Il documento non ha la stampa unica tra gli allegati da versare");
         }
         mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
         mappaPerAllegati.put("identityFiles", identityFiles);
