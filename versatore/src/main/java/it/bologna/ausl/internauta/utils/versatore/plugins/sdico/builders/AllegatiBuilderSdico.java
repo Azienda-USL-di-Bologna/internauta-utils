@@ -59,6 +59,8 @@ public class AllegatiBuilderSdico {
         Map<String, Object> mappaPerAllegati = new HashMap<>();
         List<VersamentoAllegatoInformation> versamentiAllegatiInfo = new ArrayList<>();
         List<IdentityFile> identityFiles = new ArrayList<>();
+        // Per PE/PU/dete/deli la stampa unica deve sempre essere tra gli allegati versati: la tracciamo durante il ciclo
+        boolean stampaUnicaPresente = false;
 
         for (Allegato allegato : allegati) {
             // Saltiamo i figli di un contenitore (estratti da EML): il padre li contiene
@@ -67,6 +69,10 @@ public class AllegatiBuilderSdico {
             if (!allegato.getEliminato()
                 && (allegato.getIdAllegatoPadre() == null || allegato.getPrincipale())) {
                 log.info("Raccologo i dati dell'allegato ID " + allegato.getId());
+                // Stampa unica (originale) raccolta per il versamento
+                if (allegato.getTipo().equals(Allegato.TipoAllegato.STAMPA_UNICA)) {
+                    stampaUnicaPresente = true;
+                }
                 //prendo l'allegato originale (se è firmato scelgo quello firmato)
                 if (allegato.getFirmato()) {
                     Allegato.DettaglioAllegato originaleFirmato = allegato.getDettagli().getOriginaleFirmato();
@@ -133,6 +139,15 @@ public class AllegatiBuilderSdico {
                     versamentiAllegatiInfo.add(allegatoInformation);
                 }
             }
+        }
+        // Un PE, PU, determina o delibera deve sempre avere la stampa unica tra gli allegati da versare
+        if ((doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_ENTRATA)
+            || doc.getTipologia().equals(Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA)
+            || doc.getTipologia().equals(Doc.TipologiaDoc.DETERMINA)
+            || doc.getTipologia().equals(Doc.TipologiaDoc.DELIBERA))
+            && !stampaUnicaPresente) {
+            log.error("Il documento non ha la stampa unica tra gli allegati da versare");
+            throw new VersatorePluginException("Il documento non ha la stampa unica tra gli allegati da versare");
         }
         mappaPerAllegati.put("versamentiAllegatiInfo", versamentiAllegatiInfo);
         mappaPerAllegati.put("identityFiles", identityFiles);
