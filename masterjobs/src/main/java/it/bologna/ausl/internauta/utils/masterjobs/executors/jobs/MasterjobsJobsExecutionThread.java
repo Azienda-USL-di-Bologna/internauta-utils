@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.jpa.impl.JPAUpdateClause;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsObjectsFactory;
 import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsUtils;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingThreadsRegistry;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsBadDataException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsDataBaseException;
 import it.bologna.ausl.internauta.utils.masterjobs.exceptions.MasterjobsExecutionThreadsException;
@@ -104,7 +105,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
     
     @Autowired
     protected MasterjobsUtils masterjobsUtils;
-    
+
+    @Autowired
+    protected MasterjobsWorkingThreadsRegistry workingThreadsRegistry;
+
     protected MasterjobsJobsExecutionThread self;
     
     protected String activeThreadsSetName;
@@ -234,8 +238,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             public Object execute(RedisOperations operations) throws DataAccessException {
                 operations.multi();
                 //esegui le operazioni da includere nella transazione
-                operations.opsForHash().put(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
-                operations.opsForHash().delete(stoppedThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+                operations.opsForHash().put(activeThreadsSetName, getUniqueName(), String.valueOf(Thread.currentThread().getId()));
+                operations.opsForHash().delete(stoppedThreadsSetName, getUniqueName());
                 operations.exec();
                 return null;
             }
@@ -265,8 +269,8 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
                 operations.multi();
                 //esegui le operazioni da includere nella transazione
                 if (moveOnstoppedThreadsSet)
-                    operations.opsForHash().put(stoppedThreadsSetName, String.valueOf(Thread.currentThread().getId()), getUniqueName());
-                operations.opsForHash().delete(activeThreadsSetName, String.valueOf(Thread.currentThread().getId()));
+                    operations.opsForHash().put(stoppedThreadsSetName, getUniqueName(), String.valueOf(Thread.currentThread().getId()));
+                operations.opsForHash().delete(activeThreadsSetName, getUniqueName());
                 operations.exec();
                 return null;
             }
@@ -607,7 +611,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
         Questa tornerà true solo se tutti i job dei set precendeti sono stati eseguiti
         */
         if (debuggingCanExecuteSet(set) && (!set.getWaitObject() || this.isSetSequentiallyExecutable(set))) {
-            /* 
+            // registro il set come in esecuzione su questa istanza: così regenerateQueue lo riconosce come vivo e non lo duplica
+            workingThreadsRegistry.register(getUniqueName(), set.getId());
+            try {
+            /*
             tengo una lista dei job completati.
             Questa mi serve nel caso un job vada in errore, in modo da aggiornare sulla coda i job ancora non eseguiti
             */
@@ -698,6 +705,10 @@ public abstract class MasterjobsJobsExecutionThread implements Runnable {
             
             // elimino la workQueue
             redisTemplate.delete(this.workQueue);
+            } finally {
+                // fine esecuzione set: de-registro e rimuovo la chiave viva (anche in caso di errore)
+                workingThreadsRegistry.unregister(getUniqueName());
+            }
         } else {
             // non posso eseguire il set perché devo aspettare l'esecuzione di un set precendente, sposto in wait queue
             redisTemplate.opsForList().move(

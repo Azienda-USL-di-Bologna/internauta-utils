@@ -10,11 +10,13 @@ import it.bologna.ausl.internauta.utils.masterjobs.executors.jobs.MasterjobsWait
 import it.bologna.ausl.internauta.utils.masterjobs.executors.services.MasterjobsServicesExecutionScheduler;
 import it.bologna.ausl.internauta.utils.masterjobs.workers.jobs.MasterjobsJobsQueuer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
@@ -44,6 +46,9 @@ public class MasterjobsThreadsManager {
     
     @Autowired
     private MasterjobsJobsQueuer masterjobsJobsQueuer;
+
+    @Autowired
+    private MasterjobsWorkingThreadsRegistry workingThreadsRegistry;
     
     @Autowired
     @Qualifier(value = "redisMaterjobs")
@@ -86,6 +91,27 @@ public class MasterjobsThreadsManager {
         scheduleExecutionThreads(masterjobsApplicationConfig.getHighPriorityThreadsNumber(), executorService, MasterjobsHighPriorityJobsExecutionThread.class);
         scheduleExecutionThreads(masterjobsApplicationConfig.getHighestPriorityThreadsNumber(), executorService, MasterjobsHighestPriorityJobsExecutionThread.class);
         scheduleExecutionThreads(masterjobsApplicationConfig.getWaitQueueThreadsNumber(), executorService, MasterjobsWaitQueueJobsExecutionThread.class);
+
+        // avvio l'alive checker: mantiene vive (TTL) le chiavi dei set in esecuzione su questa istanza
+        scheduleWorkingThreadsAliveChecker();
+    }
+
+    /**
+     * Schedula l'alive checker: periodicamente rinfresca il TTL delle chiavi Redis dei set
+     * attualmente in esecuzione su questa istanza, così i set vivi restano distinguibili dagli orfani.
+     */
+    private void scheduleWorkingThreadsAliveChecker() {
+        int aliveCheckerMillis = masterjobsApplicationConfig.getAliveCheckerMillis();
+        scheduledExecutorService.scheduleAtFixedRate(
+            () -> {
+                // il try/catch evita che un errore transitorio annulli il task periodico (scheduleAtFixedRate)
+                try {
+                    workingThreadsRegistry.aliveCheck();
+                } catch (Exception ex) {
+                    log.error("errore nell'alive checker dei working threads", ex);
+                }
+            },
+            aliveCheckerMillis, aliveCheckerMillis, TimeUnit.MILLISECONDS);
     }
     
     /**
@@ -121,15 +147,23 @@ public class MasterjobsThreadsManager {
      * in modo che vengano smistati nelle loro code di appartenenza
     */
     private void moveWorkQueueInWaitQueue() {
+        // work queue dei thread vivi (job in corso su questa o altre istanze): non vanno recuperate, altrimenti si duplicherebbe il job
+        Set<String> liveWorkQueues = new HashSet<>();
+        for (String uniqueName : workingThreadsRegistry.getLiveThreadUniqueNames()) {
+            liveWorkQueues.add(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", uniqueName));
+        }
         // prendo tutte le code di work (viene eseguito il comando redis keys masterjobsWork_*)
         Set workQueues = redisTemplate.keys(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", "*"));
         if (workQueues != null && ! workQueues.isEmpty()) {
             // per ogni coda di work trovata, sposto tutti gli elementi nella waitQueue
             for (Object workQueue : workQueues) {
-                // quando nella coda di work non c'è più nulla la move torna null
-                while ( redisTemplate.opsForList().move(
-                        workQueue, RedisListCommands.Direction.LEFT, 
-                        masterjobsApplicationConfig.getWaitQueue(), RedisListCommands.Direction.RIGHT) != null) {};
+                // salto le work queue dei thread vivi: recupero (sposto in waitQueue) solo le orfane
+                if (!liveWorkQueues.contains(workQueue.toString())) {
+                    // quando nella coda di work non c'è più nulla la move torna null
+                    while ( redisTemplate.opsForList().move(
+                            workQueue, RedisListCommands.Direction.LEFT,
+                            masterjobsApplicationConfig.getWaitQueue(), RedisListCommands.Direction.RIGHT) != null) {};
+                }
             }
         }
     }
