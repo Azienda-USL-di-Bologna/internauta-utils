@@ -28,6 +28,7 @@ public class ParametriAziendeWriter {
      */
     public enum ParametriAzienda {
         ribaltoneConf,
+        configurazioniNoteDoc,
     }
 
     @Autowired

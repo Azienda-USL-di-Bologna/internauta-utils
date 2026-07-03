@@ -23,7 +23,19 @@ public class MasterjobsApplicationConfig {
     
     @Value("${masterjobs.manager.jobs-executor.redis-stopped-threads-set-name}")
     private String stoppedThreadsSetName;
-    
+
+    // nome (prefisso) delle chiavi Redis che tracciano i thread che stanno eseguendo un set
+    @Value("${masterjobs.manager.jobs-executor.redis-working-threads-set-name:masterjobsWorkingThreadsSet}")
+    private String workingThreadsSetName;
+
+    // ogni quanto l'alive checker rinfresca il TTL delle chiavi dei set in esecuzione
+    @Value("${masterjobs.manager.jobs-executor.alive-checker-millis:10000}")
+    private int aliveCheckerMillis;
+
+    // TTL delle chiavi dei set in esecuzione: se non rinfrescate entro questo tempo (crash) scadono
+    @Value("${masterjobs.manager.jobs-executor.working-threads-ttl-millis:30000}")
+    private int workingThreadsTtlMillis;
+
     @Value("${masterjobs.manager.jobs-executor.commands-stream-name}")
     private String commandsStreamName;
     
@@ -86,6 +98,18 @@ public class MasterjobsApplicationConfig {
     
     public String getStoppedThreadsSetName() {
         return stoppedThreadsSetName;
+    }
+
+    public String getWorkingThreadsSetName() {
+        return workingThreadsSetName;
+    }
+
+    public int getAliveCheckerMillis() {
+        return aliveCheckerMillis;
+    }
+
+    public int getWorkingThreadsTtlMillis() {
+        return workingThreadsTtlMillis;
     }
 
     public String getCommandsStreamName() {

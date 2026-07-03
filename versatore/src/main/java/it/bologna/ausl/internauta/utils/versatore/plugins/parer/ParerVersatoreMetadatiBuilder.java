@@ -240,8 +240,8 @@ public final class ParerVersatoreMetadatiBuilder {
                 datiSpecificiBuilder.insertNewTag("Destinatari", "Vedi annesso elenco destinatari");
             }
             Doc.AdditionalDataDoc additionalDataDoc  = (Doc.AdditionalDataDoc) doc.getAdditionalData();
-            HashMap<String, Object> datiPubblicazione = new HashMap<String, Object>();
-            datiPubblicazione = (HashMap<String, Object>) additionalDataDoc.getDatiPubblicazione();
+            HashMap<String, String> datiPubblicazione = new HashMap<String, String>();
+            datiPubblicazione = (HashMap<String, String>) additionalDataDoc.getDatiPubblicazione();
             LocalDateTime dataEsecutivita = null;
             LocalDateTime inizioPubblicazione = null;
             LocalDateTime finePubblicazione = null;
@@ -290,9 +290,9 @@ public final class ParerVersatoreMetadatiBuilder {
         }
         if (doc.getTipologia() == Doc.TipologiaDoc.PROTOCOLLO_IN_USCITA || doc.getTipologia() == Doc.TipologiaDoc.DETERMINA) {
             Doc.AdditionalDataDoc additionalDataDoc = (Doc.AdditionalDataDoc) doc.getAdditionalData();
-            HashMap<String, Object> metadatiTrasparenza = new HashMap<String, Object>();
+            HashMap<String, String> metadatiTrasparenza = new HashMap<String, String>();
             if (additionalDataDoc != null && additionalDataDoc.getMetadatiTrasparenza() != null) {
-                metadatiTrasparenza = (HashMap<String, Object>) additionalDataDoc.getMetadatiTrasparenza();
+                metadatiTrasparenza = (HashMap<String, String>) additionalDataDoc.getMetadatiTrasparenza();
                 String descrizione = (String) metadatiTrasparenza.get("descrizione");
                 String tipoProvvedimento = (String) metadatiTrasparenza.get("id_tipo_provvedimento");
                 if (descrizione != null || !descrizione.equals("")) {

@@ -27,6 +27,7 @@ import it.bologna.ausl.model.entities.masterjobs.QJobNotified;
 import it.bologna.ausl.model.entities.masterjobs.QObjectStatus;
 import it.bologna.ausl.model.entities.masterjobs.QSet;
 import it.bologna.ausl.model.entities.masterjobs.QWorkingObject;
+import it.bologna.ausl.internauta.utils.masterjobs.MasterjobsWorkingThreadsRegistry;
 import it.bologna.ausl.model.entities.masterjobs.Set;
 import it.bologna.ausl.model.entities.masterjobs.SetInterface;
 import it.bologna.ausl.model.entities.masterjobs.WorkingObject;
@@ -99,6 +100,9 @@ public class MasterjobsJobsQueuer {
     
     @Autowired
     private MasterjobsApplicationConfig masterjobsApplicationConfig;
+
+    @Autowired
+    private MasterjobsWorkingThreadsRegistry workingThreadsRegistry;
     
     /**
      * Accoda i jobs solo dopo che la transazione in corso committa,
@@ -599,11 +603,19 @@ public class MasterjobsJobsQueuer {
      * Cancella tutte le code relative ai jobs
      */
     private void deleteAllJobsQueue() {        
+        // work queue dei thread vivi (job in corso): non vanno cancellate
+        java.util.Set<String> liveWorkQueues = new java.util.HashSet<>();
+        for (String uniqueName : workingThreadsRegistry.getLiveThreadUniqueNames()) {
+            liveWorkQueues.add(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", uniqueName));
+        }
         // prendo tutte le code di work (viene eseguito il comando redis keys masterjobsWork_*)
         java.util.Set workQueues = redisTemplate.keys(masterjobsApplicationConfig.getWorkQueue().replace("[thread_name]", "*"));
         if (workQueues != null && ! workQueues.isEmpty()) {
             for (Object workQueue : workQueues) {
-                redisTemplate.delete(workQueue);
+                // salto le work queue dei thread vivi
+                if (!liveWorkQueues.contains(workQueue.toString())) {
+                    redisTemplate.delete(workQueue);
+                }
             }
         }
         redisTemplate.delete(masterjobsApplicationConfig.getWaitQueue());
@@ -650,10 +662,10 @@ public class MasterjobsJobsQueuer {
         transactionTemplate.executeWithoutResult(a -> {
             QSet qSet = QSet.set;
             QJob qJob = QJob.job;
-            
+
             // setto tutto nello stato iniziale
             log.info("resetto tutti i jobs e gli object_status su DB...");
-            resetJobsState(false);
+            resetJobsState(false, java.util.Collections.emptySet());
             
             // prendo tutti i set e per ognuno, rigenero il json dei jobs e lo inserisco nella coda di esecuzione
             log.info("estraggo tutti i set dal DB...");
@@ -724,6 +736,10 @@ public class MasterjobsJobsQueuer {
         } else {
             log.info("non metto in pausa tutti i threads");
         }
+
+        // leggo i set attualmente in esecuzione (vivi): non vanno toccati durante la rigenerazione
+        java.util.Set<Long> liveSetIds = workingThreadsRegistry.getLiveSetIds();
+        log.info(String.format("set attualmente in esecuzione (non verranno rigenerati): %s", liveSetIds));
         
         // cancello tutte le code relative ai jobs, in quanto rigenererò tutto da capo a partire dai jobs nel database
         log.info("rimuovo tutte le code relative ai jobs...");
@@ -733,7 +749,7 @@ public class MasterjobsJobsQueuer {
         transactionTemplate.executeWithoutResult(a -> {
             // setto tutto nello stato iniziale
             log.info("resetto tutti i jobs e gli object_status su DB...");
-            resetJobsState(false);
+            resetJobsState(false, liveSetIds);
         });
         
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
@@ -754,6 +770,10 @@ public class MasterjobsJobsQueuer {
             
             // usando la fetchAll ciclo tramite iteratore per evitare di caricare in memoria tutta la lista dei set
             setWithJobIdsArrays.forEach(setWithJobIdsArray -> {
+                // i set in esecuzione (vivi) non vanno rigenerati, altrimenti si duplicherebbe un job già in corso
+                if (liveSetIds.contains(setWithJobIdsArray.getId())) {
+                    log.info(String.format("il set %s è in esecuzione: lo salto nella rigenerazione", setWithJobIdsArray.getId()));
+                } else {
                 log.info(String.format("processo il set %s, ne estraggo i job...", setWithJobIdsArray.getId()));
                 
                 // calcolo la coda di esecuzione in cui inserirlo in base a quanto indicato sul set
@@ -788,6 +808,7 @@ public class MasterjobsJobsQueuer {
                     }
                     throw new MasterjobsRuntimeExceptionWrapper(errorMessage, ex);
                 }
+                }
             });
         });
         if (stopThreads) {
@@ -805,7 +826,7 @@ public class MasterjobsJobsQueuer {
      * Lo stato iniziale è IDLE per gli objectStatus e READY per i jobs
      * @param onlyInError se true resetta solo quelli in errore, se false, tutti
      */
-    private void resetJobsState(boolean onlyInError) {
+    private void resetJobsState(boolean onlyInError, java.util.Set<Long> liveSetIds) {
         QJob qJob = QJob.job;
         QObjectStatus qObjectStatus = QObjectStatus.objectStatus;
 
@@ -830,6 +851,9 @@ public class MasterjobsJobsQueuer {
             .set(qJob.state, Job.JobState.READY);
         if (onlyInError)
             querySet = querySet.where(qJob.state.eq(Job.JobState.ERROR));
+        // non resetto i job dei set attualmente in esecuzione (vivi)
+        if (liveSetIds != null && !liveSetIds.isEmpty())
+            querySet = querySet.where(qJob.set.id.notIn(liveSetIds));
         querySet.execute();
     }
     
@@ -846,7 +870,7 @@ public class MasterjobsJobsQueuer {
             prima setto gli objectStatus in error nello stato IDLE usando la select for update e poi
             anche i job in error nello stato READY
             */
-            resetJobsState(true);
+            resetJobsState(true, java.util.Collections.emptySet());
         }); // committo
         
         /* 
