@@ -125,7 +125,7 @@ public class DeliBuilder {
         String dataEsecutivita;
         if (additionalData != null) {
             if (additionalData.getDatiPubblicazione() != null) {
-                HashMap<String, Object> datiPubblicazione = (HashMap<String, Object>) additionalData.getDatiPubblicazione();
+                HashMap<String, String> datiPubblicazione = (HashMap<String, String>) additionalData.getDatiPubblicazione();
                 if (datiPubblicazione.containsKey("data_esecutivita") && datiPubblicazione.get("data_esecutivita") != null) {
                     dataEsecutivita = (String) datiPubblicazione.get("data_esecutivita");
                 } else {

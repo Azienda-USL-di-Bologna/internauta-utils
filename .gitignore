@@ -30,3 +30,5 @@ versatore/prova.txt
 nbactions.xml
 flying-saucer-core/bin/
 flying-saucer-pdf/bin/
+minIO-manager/src/test/java/it/bologna/ausl/minio/manager/test/Gus.java
+

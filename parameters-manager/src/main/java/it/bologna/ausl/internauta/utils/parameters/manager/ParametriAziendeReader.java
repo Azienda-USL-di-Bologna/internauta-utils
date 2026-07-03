@@ -68,7 +68,9 @@ public class ParametriAziendeReader {
         giorniPESenzaFascicolazioneSollecito,
         parametriDirettoriDelibera,
         albi,
-        DSC
+        DSC,
+        configurazioniNoteDoc,
+        abilitaRegolePostaInArrivo
     }
 
     @Autowired
@@ -122,12 +124,12 @@ public class ParametriAziendeReader {
         BooleanExpression filter = QParametroAziende.parametroAziende.nome.eq(nome);
         if (idAziende != null) {
             BooleanTemplate filterAzienda = Expressions.booleanTemplate("cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
-                    QParametroAziende.parametroAziende.idAziende, org.apache.commons.lang3.StringUtils.join(idAziende, ","));
+                QParametroAziende.parametroAziende.idAziende, org.apache.commons.lang3.StringUtils.join(idAziende, ","));
             filter = filter.and(filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull()));
         }
         if (idApplicazioni != null) {
             BooleanTemplate filterApplicazioni = Expressions.booleanTemplate("cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
-                    QParametroAziende.parametroAziende.idApplicazioni, org.apache.commons.lang3.StringUtils.join(idApplicazioni, ","));
+                QParametroAziende.parametroAziende.idApplicazioni, org.apache.commons.lang3.StringUtils.join(idApplicazioni, ","));
             filter = filter.and(filterApplicazioni.or(QParametroAziende.parametroAziende.idApplicazioni.isNull()));
         }
 
@@ -154,8 +156,8 @@ public class ParametriAziendeReader {
     public Map<String, Object> getAllAziendaApplicazioneParameters(String app, Integer idAzienda, boolean includeHiddenFromApi) {
 
         BooleanTemplate filterAzienda = Expressions.booleanTemplate(
-                "cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
-                QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
+            "cast(tools.array_overlap({0}, tools.string_to_integer_array({1}, ',')) as boolean)=true",
+            QParametroAziende.parametroAziende.idAziende, idAzienda.toString());
         BooleanExpression filterAziendaOrNull = filterAzienda.or(QParametroAziende.parametroAziende.idAziende.isNull());
 
         BooleanExpression applicazioniEmptyArray = Expressions.TRUE;
@@ -164,16 +166,16 @@ public class ParametriAziendeReader {
 
         if (app != null) {
             applicazioniOverlap = Expressions.booleanTemplate(
-                    "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
-                    QParametroAziende.parametroAziende.idApplicazioni, app);
+                "cast(tools.array_overlap({0}, string_to_array({1}, ',')) as boolean)=true",
+                QParametroAziende.parametroAziende.idApplicazioni, app);
 
             applicazioniIsNull = QParametroAziende.parametroAziende.idApplicazioni.isNull();
             applicazioniEmptyArray = Expressions.booleanTemplate("cast (cardinality({0}) as integer) = 0", QParametroAziende.parametroAziende.idApplicazioni);
         }
 
         BooleanExpression filter = filterAziendaOrNull.and(applicazioniOverlap
-                .or(applicazioniEmptyArray)
-                .or(applicazioniIsNull));
+            .or(applicazioniEmptyArray)
+            .or(applicazioniIsNull));
         if (!includeHiddenFromApi) {
             BooleanExpression onlyVisibleOnApi = QParametroAziende.parametroAziende.hideFromApi.eq(false);
             filter = filter.and(onlyVisibleOnApi);

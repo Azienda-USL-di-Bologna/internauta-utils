@@ -6,6 +6,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Gus",
+      "request": "launch",
+      "mainClass": "it.bologna.ausl.minio.manager.test.Gus",
+      "projectName": "minIO-manager"
+    },
+    {
+      "type": "java",
       "name": "Current File",
       "request": "launch",
       "mainClass": "${file}"

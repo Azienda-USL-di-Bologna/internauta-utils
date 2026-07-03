@@ -414,7 +414,9 @@ public class MinIOWrapper {
     }
     
     /**
-     * duplica il file passato identificato da idRepository nel path passato
+     * duplica il file passato identificato da idRepository nel path passato senza specificare il nome
+     * NB: se si clona nello stesso path il nome del file sarà del tipo \<nomefileoriginale_numero\>,
+     *  sarebbe meglio usare quella in cui si specifica il nome, questa funzione è pensata per duplicare il file in un altro path
      * @param idRepository
      * @param destPath
      * @param cloneMetadata indica se clonare anche i metadati
