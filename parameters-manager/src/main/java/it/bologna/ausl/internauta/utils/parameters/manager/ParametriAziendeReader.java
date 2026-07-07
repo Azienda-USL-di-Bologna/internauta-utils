@@ -65,6 +65,7 @@ public class ParametriAziendeReader {
         onlyoffice,
         pdfConverterUrl,
         abilitaFlussiInternauta,
+        tipologieDocumentaliInScripta,
         giorniPESenzaFascicolazioneSollecito,
         parametriDirettoriDelibera,
         albi,
