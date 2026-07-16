@@ -71,7 +71,9 @@ public class ParametriAziendeReader {
         albi,
         DSC,
         configurazioniNoteDoc,
-        abilitaRegolePostaInArrivo
+        abilitaRegolePostaInArrivo,
+        pubblicatore,
+        notificaDelibereInAttesaScadute
     }
 
     @Autowired
