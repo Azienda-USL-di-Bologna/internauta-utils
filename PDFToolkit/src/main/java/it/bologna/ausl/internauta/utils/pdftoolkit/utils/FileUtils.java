@@ -3,6 +3,7 @@ package it.bologna.ausl.internauta.utils.pdftoolkit.utils;
 import it.bologna.ausl.estrattore.ExtractorCreator;
 import it.bologna.ausl.estrattore.ExtractorResult;
 import it.bologna.ausl.estrattore.exception.ExtractorException;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -54,7 +55,10 @@ public class FileUtils {
         ExtractorCreator ec = new ExtractorCreator(tmp);
 
         if (ec.isExtractable()) {
-            extractAllResult = ec.extractAll(folderToSave);
+            String nameForCreatedFile = (nomeFile != null && !nomeFile.isBlank())
+                ? FilenameUtils.getBaseName(nomeFile)
+                : null;
+            extractAllResult = ec.extractAll(folderToSave, nameForCreatedFile);
         }
 
         return extractAllResult;
