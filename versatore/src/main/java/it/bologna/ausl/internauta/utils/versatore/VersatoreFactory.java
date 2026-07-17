@@ -71,6 +71,9 @@ public class VersatoreFactory {
         IdoneitaChecker idoneitaCheckerInstance;
         RecuperoRapportoDiVersamento recuperoRapportoDiVersamentoInstance = null; //metto null di default così almeno inizializzo, visto che non tutti i provider instanziano il servizio
         for (VersatoreConfiguration configuration : configurations) {
+            // Azzero a ogni iterazione: solo alcuni provider (UNIMATICA) valorizzano il recupero;
+            // senza reset l'istanza di una config precedente verrebbe registrata sull'hostId sbagliato
+            recuperoRapportoDiVersamentoInstance = null;
             VersatoreProviders provider = VersatoreProviders.valueOf(configuration.getProvider().getId());
             switch (provider) {
                 case PARER:
@@ -92,8 +95,15 @@ public class VersatoreFactory {
                     versatoreDocsInstance = beanFactory.getBean(UnimaticaVersatoreService.class);
                     versatoreDocsInstance.init(configuration);
                     idoneitaCheckerInstance = beanFactory.getBean(UnimaticaIdoneitaCheckerService.class);
-                    recuperoRapportoDiVersamentoInstance = beanFactory.getBean(UnimaticaRecuperoRapportoDiVersamentoService.class);
-                    recuperoRapportoDiVersamentoInstance.init(configuration);
+                    // Il recupero rapporto di versamento è opzionale: se in configuration mancano i dati
+                    // che gli servono, l'init fallisce ma non deve compromettere versatore e idoneità (obbligatori)
+                    try {
+                        recuperoRapportoDiVersamentoInstance = beanFactory.getBean(UnimaticaRecuperoRapportoDiVersamentoService.class);
+                        recuperoRapportoDiVersamentoInstance.init(configuration);
+                    } catch (Exception ex) {
+                        logger.warn("Init recupero rapporto di versamento non riuscito per hostId {}: dati mancanti o non validi in configuration, il recupero non sarà attivo per questa configurazione", configuration.getHostId(), ex);
+                        recuperoRapportoDiVersamentoInstance = null;
+                    }
                     break;
                 default:
                     throw new VersatoreProcessingException("Provider: " + provider + " not found");
