@@ -44,6 +44,9 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
 
     private static final ZoneId ROME = ZoneId.of("Europe/Rome");
 
+    // flag per stampare il range temporale una sola volta per esecuzione (checkDocImpl è per-doc)
+    private boolean rangeLogged = false;
+
     @Override
     protected void finalize() throws Throwable {
         super.finalize(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
@@ -59,6 +62,12 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
         throws VersatoreProcessingException {
 
         Doc doc = entityManager.find(Doc.class, id);
+
+        // logga una sola volta il range temporale effettivamente letto dai parametri (utile per diagnosi)
+        if (!rangeLogged) {
+            logRangeTemporale(doc);
+            rangeLogged = true;
+        }
 
         log.debug("Sto calcolando l'idoneita del doc id " + id + ", registrato il " + doc.getDataRegistrazione());
 
@@ -182,6 +191,15 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
     /** Parses una data stringa ISO-8601 a midnight Rome time. */
     private ZonedDateTime parseDate(String date) {
         return LocalDate.parse(date).atStartOfDay(ROME);
+    }
+
+    // stampa il range temporale attivo per l'azienda del doc: dal/al (range assoluto) e days/direction (finestra relativa protocollo)
+    private void logRangeTemporale(Doc doc) {
+        String dal = getCurrentConfigMapByAzienda(doc, DATA_REGISTRAZIONE).map(c -> (String) c.get(DAL)).orElse(null);
+        String al = getCurrentConfigMapByAzienda(doc, DATA_REGISTRAZIONE).map(c -> (String) c.get(AL)).orElse(null);
+        Integer days = getCurrentConfigMapByAzienda(doc, PROTOCOLLO, DATA_REGISTRAZIONE).map(c -> (Integer) c.get(DAYS)).orElse(null);
+        String direction = getCurrentConfigMapByAzienda(doc, PROTOCOLLO, DATA_REGISTRAZIONE).map(c -> (String) c.get(DIRECTION)).orElse(null);
+        log.info("[Unimatica idoneità] Range temporale attivo (azienda {}): dal={}, al={}, protocollo days={}, direction={}", doc.getIdAzienda().getId(), dal, al, days, direction);
     }
 
     /**
