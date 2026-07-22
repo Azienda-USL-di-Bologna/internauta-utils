@@ -74,9 +74,10 @@ public class RgPicoBuilder {
         String idClassifica = archivio.getIdTitolo().getIdEsterno().toString();
         String classificazioneArchivistica = archivio.getIdTitolo().getClassificazione();
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
-        //TODO in futuro prendere da db scripta.registro
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
-        //String codiceRegistro = registro.getCodice().toString();
+        // Codice registro dal registro attivo e ufficiale del documento (come Unimatica),
+        // non più dalla configurazione statica parametriAzienda.
+        String codiceRegistro = registro.getCodice().toString();
+        //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String numeroProgressivo = docDetail.getNumeroRegistrazione().toString();
         String annoRegistrazione = docDetail.getAnnoRegistrazione().toString();
         String denominazioneDellAmministrazione = (String) mappaParametri.get("denominazioneAmministrazione");

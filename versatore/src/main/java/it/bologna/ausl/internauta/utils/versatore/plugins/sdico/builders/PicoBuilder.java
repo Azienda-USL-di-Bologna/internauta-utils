@@ -74,9 +74,10 @@ public class PicoBuilder {
         String numeroProtocollo = df.format(docDetail.getNumeroRegistrazione());
         String stringaDiFirmatari = "";
         String repertorio = (String) mappaParametri.get("repertorio");
-        //String codiceRegistro = registro.getCodice().toString();
-        //TODO in futuro prendere da db scripta.registro
-        String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
+        // Codice registro dal registro attivo e ufficiale del documento (come Unimatica),
+        // non più dalla configurazione statica parametriAzienda.
+        String codiceRegistro = registro.getCodice().toString();
+        //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String responsabileProcedimento;
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
