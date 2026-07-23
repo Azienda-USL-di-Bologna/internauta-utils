@@ -67,8 +67,9 @@ public class DocumentoGEDIBuilder {
         DecimalFormat df = new DecimalFormat("0000000");
         String numeroDocumento = df.format(docDetail.getNumeroRegistrazione());
         String nomeSistemaVersante = (String) parametriVersamento.get("idSistemaVersante");
+        // Codice registro dal registro attivo e ufficiale del documento (come Unimatica),
+        // non più dalla configurazione statica parametriAzienda.
         String codiceRegistro = registro.getCodice().toString();
-        //TODO in futuro prendere da db scripta.registro
         //String codiceRegistro = (String) mappaParametri.get("codiceRegistro");
         String anniTenuta = "illimitato";
         if (archivio.getAnniTenuta() != 999) {
@@ -111,7 +112,6 @@ public class DocumentoGEDIBuilder {
         versamentoBuilder.addSinglemetadataByParams(false, "repertorio", Arrays.asList(repertorio), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "idDocumentoOriginale", Arrays.asList(Integer.toString(doc.getId())), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "applicativoProduzione", Arrays.asList((String) mappaParametri.get("applicativoProduzione")), TESTO);
-        //TODO vedere anche qui come settare il registro
         versamentoBuilder.addSinglemetadataByParams(false, "registro", Arrays.asList(codiceRegistro), TESTO);
         //versamentoBuilder.addSinglemetadataByParams(false, "annotazione", Arrays.asList(anniTenuta), TESTO);
         versamentoBuilder.addSinglemetadataByParams(false, "ufficioProduttore", Arrays.asList(archivioDetail.getIdStruttura().getNome()), TESTO);

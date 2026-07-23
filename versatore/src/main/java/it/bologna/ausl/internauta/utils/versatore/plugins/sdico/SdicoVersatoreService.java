@@ -251,13 +251,19 @@ public class SdicoVersatoreService extends VersatoreDocs {
                     }
                 }
                 List<RegistroDoc> listaRegistri = doc.getRegistroDocList();
-                Registro registro = new Registro();
+                Registro registro = null;
                 if (listaRegistri != null) {
                     for (RegistroDoc reg : listaRegistri) {
                         if (reg.getIdRegistro().getAttivo() && reg.getIdRegistro().getUfficiale()) {
                             registro = reg.getIdRegistro();
+                            break;
                         }
                     }
+                }
+                // Senza un registro attivo e ufficiale il versamento fallisce: il motivo finisce
+                // nella descrizione errore della riga di versamento, così il doc resta sanabile.
+                if (registro == null) {
+                    throw new VersatorePluginException("Non è presente un registro attivo e ufficiale per il documento con id " + doc.getId());
                 }
                 List<DocDetailInterface.FirmatarioObject> listaFirmatari = docDetail.getFirmatari();
                 List<Persona> firmatari = new ArrayList<>();
