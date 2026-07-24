@@ -265,6 +265,9 @@ public class Step implements Dumpable {
                     throw new ProcessWorkFlowException("Only automatic tasks are allowed on enter");
                 }
                 t.execute(runningContext, context, params);
+                if (t.getStatus() == BdmStatus.ERROR) {
+                    throw new ProcessWorkFlowException(String.format("task %s return error", t.getTaskType()));
+                }
             }
         }
         enterDone = true;
