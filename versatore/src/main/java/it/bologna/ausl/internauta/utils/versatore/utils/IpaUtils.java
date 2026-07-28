@@ -94,9 +94,10 @@ public class IpaUtils {
                                 "SELECT a.des_amm, ao.des_aoo "
                                 + "FROM ipa.amministrazioni a "
                                 + "JOIN ipa.aoo ao ON a.cod_amm = ao.cod_amm "
-                                + "WHERE ao.cod_amm = :cod_amm"
+                                + "WHERE ao.cod_amm = :cod_amm AND ao.cod_aoo = :cod_aoo"
                             )
                                 .addParameter("cod_amm", cod_amm)
+                                .addParameter("cod_aoo", cod_aoo)
                                 .executeAndFetchTable();
                             Row codiciEdescrizioniRow = codiciEdescrizioniTable.rows().get(0);
                             codiciIPAeDescrizioni.put("des_aoo", titleCase(codiciEdescrizioniRow.getString("des_aoo")));
