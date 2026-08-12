@@ -11,10 +11,12 @@ import static it.bologna.ausl.model.entities.scripta.Doc.TipologiaDoc.RGPICO;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -42,6 +44,9 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
 
     private static final ZoneId ROME = ZoneId.of("Europe/Rome");
 
+    // flag per stampare il range temporale una sola volta per esecuzione (checkDocImpl è per-doc)
+    private boolean rangeLogged = false;
+
     @Override
     protected void finalize() throws Throwable {
         super.finalize(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
@@ -57,6 +62,12 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
         throws VersatoreProcessingException {
 
         Doc doc = entityManager.find(Doc.class, id);
+
+        // logga una sola volta il range temporale effettivamente letto dai parametri (utile per diagnosi)
+        if (!rangeLogged) {
+            logRangeTemporale(doc);
+            rangeLogged = true;
+        }
 
         log.debug("Sto calcolando l'idoneita del doc id " + id + ", registrato il " + doc.getDataRegistrazione());
 
@@ -80,7 +91,7 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
      */
     private boolean resolveIdoneitaByDateRange(Doc doc) {
         //nel caso la mappa ritornata sia empty vuol dire che non sono state date condizioni di data, perciò, in quel caso, eseguo il controllo di idoneità sempre
-        return getCurrentConfigMap(UNIMATICA, DATA_REGISTRAZIONE)
+        return getCurrentConfigMapByAzienda(doc, DATA_REGISTRAZIONE)
             .map(cond -> {
                 String dal = (String) cond.get(DAL);
                 String al = (String) cond.get(AL);
@@ -132,7 +143,7 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
         //days sono i giorni da sottrarre alla data di oggi e la direzione (before/after) indica se prendere prima o dopo  di quella data.
         //ad esempio se la direzione è before e days 10 prendo quei doc registrati da almeno 10 giorni
         //se invece la direzione è after e days è 1 prenderò quelli registrati da non più di un giorno
-        return getCurrentConfigMap(UNIMATICA, PROTOCOLLO, DATA_REGISTRAZIONE)
+        return getCurrentConfigMapByAzienda(doc, PROTOCOLLO, DATA_REGISTRAZIONE)
             .map(cond -> {
                 Integer days = (Integer) cond.get(DAYS);
                 String direction = (String) cond.get(DIRECTION);
@@ -180,6 +191,33 @@ public class UnimaticaIdoneitaCheckerService extends IdoneitaChecker {
     /** Parses una data stringa ISO-8601 a midnight Rome time. */
     private ZonedDateTime parseDate(String date) {
         return LocalDate.parse(date).atStartOfDay(ROME);
+    }
+
+    // stampa il range temporale attivo per l'azienda del doc: dal/al (range assoluto) e days/direction (finestra relativa protocollo)
+    private void logRangeTemporale(Doc doc) {
+        String dal = getCurrentConfigMapByAzienda(doc, DATA_REGISTRAZIONE).map(c -> (String) c.get(DAL)).orElse(null);
+        String al = getCurrentConfigMapByAzienda(doc, DATA_REGISTRAZIONE).map(c -> (String) c.get(AL)).orElse(null);
+        Integer days = getCurrentConfigMapByAzienda(doc, PROTOCOLLO, DATA_REGISTRAZIONE).map(c -> (Integer) c.get(DAYS)).orElse(null);
+        String direction = getCurrentConfigMapByAzienda(doc, PROTOCOLLO, DATA_REGISTRAZIONE).map(c -> (String) c.get(DIRECTION)).orElse(null);
+        log.info("[Unimatica idoneità] Range temporale attivo (azienda {}): dal={}, al={}, protocollo days={}, direction={}", doc.getIdAzienda().getId(), dal, al, days, direction);
+    }
+
+    /**
+     * Recupera le condizioni di idoneità configurate per l'azienda del doc,
+     * cercandole sotto "unimatica" -> "&lt;idAzienda&gt;" -> chiavi passate.
+     * Se per quell'azienda non è configurato nulla, ricade sulle condizioni
+     * generiche del provider ("unimatica" -> chiavi passate).
+     * @param doc il doc di cui si sta valutando l'idoneità, da cui si ricava l'azienda
+     * @param keys le chiavi da navigare sotto il livello azienda
+     * @return la mappa delle condizioni, empty se non configurate a nessuno dei due livelli
+     */
+    private Optional<Map<String, Object>> getCurrentConfigMapByAzienda(Doc doc, String... keys) {
+        String idAzienda = String.valueOf(doc.getIdAzienda().getId());
+        String[] keysAzienda = Stream.concat(Stream.of(UNIMATICA, idAzienda), Arrays.stream(keys)).toArray(String[]::new);
+        String[] keysProvider = Stream.concat(Stream.of(UNIMATICA), Arrays.stream(keys)).toArray(String[]::new);
+
+        Optional<Map<String, Object>> configAzienda = getCurrentConfigMap(keysAzienda);
+        return configAzienda.isPresent() ? configAzienda : getCurrentConfigMap(keysProvider);
     }
 
     /**

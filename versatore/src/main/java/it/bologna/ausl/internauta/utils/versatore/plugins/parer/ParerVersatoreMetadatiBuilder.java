@@ -626,13 +626,15 @@ public final class ParerVersatoreMetadatiBuilder {
                         unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(frontespizio.getIdRepository()), "FRONTESPIZIO", "", frontespizio.getNome(), i, identityFilePrincipale, "DocumentoGenerico", "annotazione", "Contenuto", "FILE", null, null);
                         VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
                         versamentiAllegatiInfo.add(allegatoInformation);
-                    } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
-                        Allegato.DettaglioAllegato schedaSintesiTrasparenza = allegato.getDettagli().getOriginale();
-                        IdentityFile identityFilePrincipale = new IdentityFile("sintesitrasparenza.pdf", getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), schedaSintesiTrasparenza.getHashMd5(), "PDF", "application/pdf");
-                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), "SCHEDA SINTESI TRASPARENZA", "", schedaSintesiTrasparenza.getNome(), i, identityFilePrincipale, "Documento Generico", "annotazione", "Contenuto", "FILE", null, null);
-                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
-                        versamentiAllegatiInfo.add(allegatoInformation);
-                    } else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.NOTE_DOCUMENTO) {
+                    } 
+//                    else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.SINTESI_TRASPARENZA && allegato.getDettagli() != null) {
+//                        Allegato.DettaglioAllegato schedaSintesiTrasparenza = allegato.getDettagli().getOriginale();
+//                        IdentityFile identityFilePrincipale = new IdentityFile("sintesitrasparenza.pdf", getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), schedaSintesiTrasparenza.getHashMd5(), "PDF", "application/pdf");
+//                        unitaDocumentariaBuilder.addDocumentoSecondario(getUuidMinIObyFileId(schedaSintesiTrasparenza.getIdRepository()), "SCHEDA SINTESI TRASPARENZA", "", schedaSintesiTrasparenza.getNome(), i, identityFilePrincipale, "Documento Generico", "annotazione", "Contenuto", "FILE", null, null);
+//                        VersamentoAllegatoInformation allegatoInformation = createVersamentoAllegato(allegato.getId(), identityFilePrincipale);
+//                        versamentiAllegatiInfo.add(allegatoInformation);
+//                    } 
+                    else if (allegato.getSottotipo() == Allegato.SottotipoAllegato.NOTE_DOCUMENTO) {
                         if (includiNoteParer) {
                             Allegato.DettaglioAllegato noteDocumento = allegato.getDettagli().getOriginale();
                             IdentityFile identityFilePrincipale = new IdentityFile("notedocumento.pdf", getUuidMinIObyFileId(noteDocumento.getIdRepository()), noteDocumento.getHashMd5(), "PDF", "application/pdf");

@@ -65,12 +65,15 @@ public class ParametriAziendeReader {
         onlyoffice,
         pdfConverterUrl,
         abilitaFlussiInternauta,
+        tipologieDocumentaliInScripta,
         giorniPESenzaFascicolazioneSollecito,
         parametriDirettoriDelibera,
         albi,
         DSC,
         configurazioniNoteDoc,
-        abilitaRegolePostaInArrivo
+        abilitaRegolePostaInArrivo,
+        pubblicatore,
+        notificaDelibereInAttesaScadute
     }
 
     @Autowired

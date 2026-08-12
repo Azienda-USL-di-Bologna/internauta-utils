@@ -99,12 +99,13 @@ public class UnimaticaRecuperoRapportoDiVersamentoService extends RecuperoRappor
             if (response.isSuccessful()) {
                 log.info("Message: " + response.message());
                 String resBodyString = response.body().string();
-                log.info("Body: " + resBodyString);
+                //log.info("Body: " + resBodyString);
                 String responseXmlEstratto = extractXml(resBodyString);
                 rapportoDiVersamento.setIdVersamento(versamento);
                 rapportoDiVersamento.setRapporto(responseXmlEstratto);
                 rapportoDiVersamento.setStato(RapportoDiVersamento.StatoRapportoDiVersamento.RECUPERATO);
                 String esito = getEsito(responseXmlEstratto);
+                log.info("Esito: " + esito);
                 if (esito.equals(OK) || esito.equals(OK_PARZIALE)) {
                     rapportoDiVersamento.setInConservazione(Boolean.TRUE);
                 } else if (esito.equals(KO)) {
